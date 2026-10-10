@@ -24,6 +24,19 @@ internal fun withHeadlessFixture(test: (Path) -> Unit) {
 }
 
 internal fun runHeadlessProbe(root: Path, main: Class<*>, scenario: String, configFallback: Boolean = false) {
+    val output = root.resolve("probe-output.txt")
+    val process = headlessProbeBuilder(root, main, scenario, configFallback)
+        .redirectErrorStream(true).redirectOutput(output.toFile()).start()
+    try {
+        assertTrue(process.waitFor(45, TimeUnit.SECONDS), "Probe timed out: $scenario")
+        assertEquals(0, process.exitValue(), Files.readString(output))
+    } finally {
+        stopHeadlessProbe(process)
+    }
+}
+
+/** Also used by multi-process fixtures that need explicit stdin/stdout barriers. */
+internal fun headlessProbeBuilder(root: Path, main: Class<*>, scenario: String, configFallback: Boolean = false): ProcessBuilder {
     // Gradle's worker JVM puts test/runtime entries in its classloader, not necessarily java.class.path.
     val classpath = linkedSetOf<String>()
     classpath.addAll(System.getProperty("java.class.path").split(File.pathSeparator))
@@ -34,13 +47,12 @@ internal fun runHeadlessProbe(root: Path, main: Class<*>, scenario: String, conf
         }
         loader = loader.parent
     }
-    val output = root.resolve("probe-output.txt")
     val builder = ProcessBuilder(
         File(System.getProperty("java.home"), "bin/java").absolutePath,
         "-Djava.awt.headless=true", "-Duser.home=${root.resolve("home")}",
         "-Djava.io.tmpdir=${root.resolve("tmp")}", "-cp", classpath.joinToString(File.pathSeparator),
         main.name, root.toString(), scenario,
-    ).directory(root.toFile()).redirectErrorStream(true).redirectOutput(output.toFile())
+    ).directory(root.toFile())
     builder.environment().apply {
         clear()
         put("HOME", root.resolve("home").toString())
@@ -53,15 +65,13 @@ internal fun runHeadlessProbe(root: Path, main: Class<*>, scenario: String, conf
         put("PATH", root.resolve("bin").toString())
         put("LANG", "C.UTF-8")
     }
-    val process = builder.start()
-    try {
-        assertTrue(process.waitFor(45, TimeUnit.SECONDS), "Probe timed out: $scenario")
-        assertEquals(0, process.exitValue(), Files.readString(output))
-    } finally {
-        process.descendants().forEach { it.destroyForcibly() }
-        if (process.isAlive) {
-            process.destroyForcibly()
-            process.waitFor(5, TimeUnit.SECONDS)
-        }
+    return builder
+}
+
+internal fun stopHeadlessProbe(process: Process) {
+    process.descendants().forEach { it.destroyForcibly() }
+    if (process.isAlive) {
+        process.destroyForcibly()
+        process.waitFor(5, TimeUnit.SECONDS)
     }
 }
