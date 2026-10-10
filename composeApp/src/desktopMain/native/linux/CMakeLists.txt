@@ -85,6 +85,21 @@ target_include_directories(linux_http_recovery_test PRIVATE "${MPV_INCLUDE_DIR}"
 target_link_libraries(linux_http_recovery_test PRIVATE "${MPV_LIBRARY}")
 set_target_properties(linux_http_recovery_test PROPERTIES BUILD_RPATH "${MPV_LIBRARY_DIR}")
 
+# SPDIF recovery policy and a test-only real-libmpv shim; no display/GTK/JNI.
+add_executable(linux_audio_recovery_test EXCLUDE_FROM_ALL tests/audio_recovery_test.cpp)
+target_compile_features(linux_audio_recovery_test PRIVATE cxx_std_17)
+target_compile_options(linux_audio_recovery_test PRIVATE -Wall -Wextra -Werror)
+target_include_directories(linux_audio_recovery_test PRIVATE "${MPV_INCLUDE_DIR}" "${CMAKE_CURRENT_SOURCE_DIR}")
+target_link_libraries(linux_audio_recovery_test PRIVATE "${MPV_LIBRARY}")
+set_target_properties(linux_audio_recovery_test PROPERTIES BUILD_RPATH "${MPV_LIBRARY_DIR}")
+
+add_library(linux_audio_recovery_probe SHARED EXCLUDE_FROM_ALL tests/audio_recovery_probe.cpp)
+target_compile_features(linux_audio_recovery_probe PRIVATE cxx_std_17)
+target_compile_options(linux_audio_recovery_probe PRIVATE -Wall -Wextra -Werror)
+target_include_directories(linux_audio_recovery_probe PRIVATE "${MPV_INCLUDE_DIR}" "${CMAKE_CURRENT_SOURCE_DIR}")
+target_link_libraries(linux_audio_recovery_probe PRIVATE "${MPV_LIBRARY}")
+set_target_properties(linux_audio_recovery_probe PROPERTIES BUILD_RPATH "${MPV_LIBRARY_DIR}")
+
 # Deterministic chrome policy fixtures; no display, WM, mpv or JNI initialization.
 add_executable(linux_pip_geometry_dispatch_test EXCLUDE_FROM_ALL tests/pip_geometry_dispatch_test.cpp)
 target_compile_features(linux_pip_geometry_dispatch_test PRIVATE cxx_std_17)

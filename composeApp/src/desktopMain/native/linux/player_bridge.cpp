@@ -6,6 +6,7 @@
 #include "seek_thumbnails.h"
 #include "separate_audio.h"
 #include "http_recovery_events.h"
+#include "audio_passthrough_recovery.h"
 
 #include <algorithm>
 #include <atomic>
@@ -214,6 +215,7 @@ struct Player {
     std::string lastShaderMedia;
     int lastVideoHdr = -1; // Event thread only; never carried to a replacement player.
     LinuxHttpRecoveryEvents recoveryEvents; // Protected by operations, including seek issuance.
+    LinuxAudioPassthroughRecovery audioRecovery; // Same operation lock and per-player lifetime.
     bool ownsX11Lifetime = false;
 
     void reserveX11Lifetime() {
@@ -346,10 +348,27 @@ struct Player {
             mpv_event *event = mpv_wait_event(mpv, 0.2);
             if (stopping) break;
             LinuxHttpRecoveryEvents::Result translated;
+            bool audioRecovered = false;
             {
                 std::lock_guard<std::mutex> lock(operations);
                 if (stopping) break;
                 translated = recoveryEvents.accept(*event, LinuxHttpRecoveryEvents::Clock::now());
+                if (!translated.failure && !recoveryEvents.failed()) {
+                    const auto audio = audioRecovery.accept(mpv, *event);
+                    audioRecovered = audio.recovered;
+                    if (audio.error < 0) {
+                        // Use the existing terminal-error translator and callbacks. Do not
+                        // swallow a rejected chain reset or keep retrying a broken PCM output.
+                        mpv_event_end_file end{};
+                        end.reason = MPV_END_FILE_REASON_ERROR;
+                        end.error = audio.error;
+                        mpv_event failure{};
+                        failure.event_id = MPV_EVENT_END_FILE;
+                        failure.data = &end;
+                        translated = recoveryEvents.accept(failure, LinuxHttpRecoveryEvents::Clock::now());
+                        if (translated.failure) translated.failure->stop = true;
+                    }
+                }
                 if (translated.started) {
                     fileReady = ended = false;
                 }
@@ -368,6 +387,7 @@ struct Player {
             }
             // No operation lock across JNI callbacks. The sink preserves this order on the EDT.
             translated.deliverFailure([&](const std::string &name, double value) { emit(env, name, value); });
+            if (audioRecovered) emit(env, "audioPassthroughFallback", 1.0);
             switch (event->event_id) {
                 case MPV_EVENT_PROPERTY_CHANGE: {
                     auto *property = static_cast<mpv_event_property *>(event->data);
@@ -805,8 +825,10 @@ JNI_METHOD(jlong, create)(
         std::string audio = text(env, sourceAudioUrl);
         checkMpv(setLinuxSeparateAudio(player->mpv, audio), "audio-files");
         checkMpv(mpv_initialize(player->mpv), "mpv_initialize");
-        // HTTP status warnings plus definitive seek errors only; no general log forwarding.
-        checkMpv(mpv_request_log_messages(player->mpv, "warn"), "request recovery log events");
+        // SPDIF recovery needs mpv's exact verbose PCM-fallback marker. Other
+        // messages are discarded, never forwarded or written to a new log sink.
+        const char *recoveryLogLevel = player->stringProperty("audio-spdif").empty() ? "warn" : "v";
+        checkMpv(mpv_request_log_messages(player->mpv, recoveryLogLevel), "request recovery log events");
         checkMpv(mpv_observe_property(player->mpv, 1, "video-params", MPV_FORMAT_NODE), "observe video-params");
         const char *load[] = {"loadfile", source.c_str(), nullptr};
         checkMpv(mpv_command(player->mpv, load), "loadfile");
