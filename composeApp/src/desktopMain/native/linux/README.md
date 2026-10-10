@@ -142,9 +142,33 @@ necessary for the shared engine to publish real snapshots. EOF and buffering sta
 are queried through properties/events. Disposal stops/wakes/joins the event thread,
 releases its global JNI reference, and calls `mpv_terminate_destroy`.
 Decoded colour metadata also produces `videoParams`, solely to keep SDR colour
-presets off HDR/unknown sources. Detailed HTTP status/log classification and the
-advanced HDR/profile event system are deferred. Generic mpv error messages reach the existing
-error callback; this does not promise full upstream stream-recovery semantics.
+presets off HDR/unknown sources. The advanced HDR/profile event system remains deferred.
+
+`http_recovery_events.h` translates warning-level FFmpeg HTTP status and definitive
+error-level failed-seek evidence into the existing `seekFailureTargetMs` (first)
+and `mpvStartupError:` / `mpvPlaybackError:` callbacks. Raw log text/URLs are not
+forwarded. HTTP evidence expires after 10 seconds and seek targets after 15;
+new loads and successful playback clear pending state. An ordered private mpv
+client message fences each seek from older queued logs. Overlapping seeks omit
+an ambiguous target so shared recovery uses its existing playhead fallback.
+Terminal failures emit once; a failed seek stops the dead demuxer and cannot
+appear as successful EOF. Ordinary errors retain libmpv's error text and normal
+EOF remains EOF. Retry, mode and TorBox node-hop policy remain in Kotlin.
+Full-player retry/resume and real TorBox acceptance are still pending.
+
+Headless native coverage (after configuring the normal CMake build with the
+private runtime) uses the production adapter and a loopback HTTP range fixture:
+
+```sh
+unset DISPLAY WAYLAND_DISPLAY NUVIO_RUN_LIVE_DISPLAY_TESTS
+cmake --build composeApp/build/native/linux --target linux_http_recovery_test
+composeApp/build/native/linux/linux_http_recovery_test
+python3 composeApp/src/desktopMain/native/linux/tests/http_recovery_test.py \
+  composeApp/build/native/linux/linux_http_recovery_test
+```
+
+The real mpv 0.41 probe uses null video/audio output with hardware decoding,
+scripts and user configuration disabled; it does not create native windows.
 
 Shared `extraMpvOptions` retain the existing configuration-mode contract. In Off,
 the shared controller omits custom entries. Add accepts custom options only when

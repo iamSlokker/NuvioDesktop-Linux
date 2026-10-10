@@ -5,6 +5,7 @@
 #include "awt_x11_lifecycle.h"
 #include "seek_thumbnails.h"
 #include "separate_audio.h"
+#include "http_recovery_events.h"
 
 #include <algorithm>
 #include <atomic>
@@ -212,7 +213,7 @@ struct Player {
     int64_t lastShaderSize = -1;
     std::string lastShaderMedia;
     int lastVideoHdr = -1; // Event thread only; never carried to a replacement player.
-    bool playbackStarted = false; // Only accessed by the event thread.
+    LinuxHttpRecoveryEvents recoveryEvents; // Protected by operations, including seek issuance.
     bool ownsX11Lifetime = false;
 
     void reserveX11Lifetime() {
@@ -344,6 +345,29 @@ struct Player {
         while (!stopping) {
             mpv_event *event = mpv_wait_event(mpv, 0.2);
             if (stopping) break;
+            LinuxHttpRecoveryEvents::Result translated;
+            {
+                std::lock_guard<std::mutex> lock(operations);
+                if (stopping) break;
+                translated = recoveryEvents.accept(*event, LinuxHttpRecoveryEvents::Clock::now());
+                if (translated.started) {
+                    fileReady = ended = false;
+                }
+                if (translated.loaded) { fileReady = true; ended = false; }
+                if (translated.restarted) ended = false;
+                if (translated.eof) ended = true;
+                if (translated.failure) {
+                    fileReady = ended = false;
+                    // A failed range seek can leave time-pos/eof-reached at duration.
+                    // Stop the dead demuxer before the existing Kotlin recovery takes over.
+                    if (translated.failure->stop) {
+                        const char *stop[] = {"stop", nullptr};
+                        mpv_command(mpv, stop);
+                    }
+                }
+            }
+            // No operation lock across JNI callbacks. The sink preserves this order on the EDT.
+            translated.deliverFailure([&](const std::string &name, double value) { emit(env, name, value); });
             switch (event->event_id) {
                 case MPV_EVENT_PROPERTY_CHANGE: {
                     auto *property = static_cast<mpv_event_property *>(event->data);
@@ -353,30 +377,17 @@ struct Player {
                     break;
                 }
                 case MPV_EVENT_FILE_LOADED:
-                    fileReady = true;
-                    ended = false;
-                    reportVideoParams(env);
-                    emit(env, "fileLoaded");
+                    if (translated.loaded) {
+                        reportVideoParams(env);
+                        emit(env, "fileLoaded");
+                    }
                     break;
                 case MPV_EVENT_VIDEO_RECONFIG:
                     reportVideoParams(env);
                     break;
                 case MPV_EVENT_PLAYBACK_RESTART:
-                    playbackStarted = true;
-                    ended = false;
-                    emit(env, "playbackRestart");
+                    if (translated.restarted) emit(env, "playbackRestart");
                     break;
-                case MPV_EVENT_END_FILE: {
-                    auto *end = static_cast<mpv_event_end_file *>(event->data);
-                    if (end && end->reason == MPV_END_FILE_REASON_ERROR) {
-                        fileReady = false;
-                        emit(env, std::string(playbackStarted ? "mpvPlaybackError:" : "mpvStartupError:") +
-                            mpv_error_string(end->error));
-                    } else if (end && end->reason == MPV_END_FILE_REASON_EOF) {
-                        ended = true;
-                    }
-                    break;
-                }
                 case MPV_EVENT_SHUTDOWN:
                     stopping = true;
                     break;
@@ -575,9 +586,9 @@ void headerOptions(mpv_handle *mpv, std::vector<std::string> &headers) {
 }
 
 void seek(Player &player, jlong ms, const char *mode) {
-    std::string seconds = std::to_string(static_cast<double>(ms) / 1000.0);
-    const char *command[] = {"seek", seconds.c_str(), mode, nullptr};
-    checkMpv(mpv_command(player.mpv, command), "seek");
+    const bool relative = std::string_view(mode).substr(0, 8) == "relative";
+    checkMpv(player.recoveryEvents.commandSeek(player.mpv, ms, mode,
+        relative ? player.number("time-pos", -1.0) : 0.0, LinuxHttpRecoveryEvents::Clock::now()), "seek");
     player.ended = false;
 }
 
@@ -794,6 +805,8 @@ JNI_METHOD(jlong, create)(
         std::string audio = text(env, sourceAudioUrl);
         checkMpv(setLinuxSeparateAudio(player->mpv, audio), "audio-files");
         checkMpv(mpv_initialize(player->mpv), "mpv_initialize");
+        // HTTP status warnings plus definitive seek errors only; no general log forwarding.
+        checkMpv(mpv_request_log_messages(player->mpv, "warn"), "request recovery log events");
         checkMpv(mpv_observe_property(player->mpv, 1, "video-params", MPV_FORMAT_NODE), "observe video-params");
         const char *load[] = {"loadfile", source.c_str(), nullptr};
         checkMpv(mpv_command(player->mpv, load), "loadfile");
@@ -907,7 +920,9 @@ JNI_METHOD(jboolean, isPaused)(JNIEnv *env, jobject, jlong handle) {
     return withPlayer(env, handle, [](Player &p) -> jboolean { return p.flag("pause"); });
 }
 JNI_METHOD(jboolean, isEnded)(JNIEnv *env, jobject, jlong handle) {
-    return withPlayer(env, handle, [](Player &p) -> jboolean { return p.ended || p.flag("eof-reached"); });
+    return withPlayer(env, handle, [](Player &p) -> jboolean {
+        return p.recoveryEvents.ended(p.ended || p.flag("eof-reached"));
+    });
 }
 JNI_METHOD(jboolean, isLoading)(JNIEnv *env, jobject, jlong handle) {
     return withPlayer(env, handle, [](Player &p) -> jboolean {

@@ -26,6 +26,21 @@ class SeekRateLimitRecoveryTest {
     }
 
     @Test
+    fun recognisesTheLinuxAdapterPayloadWithoutRequiringFfmpegDetails() {
+        assertTrue(SeekRateLimitRecovery.isRateLimited("HTTP error 429; Seek failed"))
+        assertTrue(SeekRateLimitRecovery.isRateLimited("HTTP error 429; loading failed"))
+        assertFalse(SeekRateLimitRecovery.isRateLimited("HTTP error 403; Seek failed"))
+        assertFalse(SeekRateLimitRecovery.isRateLimited("HTTP error 503; loading failed"))
+        assertFalse(SeekRateLimitRecovery.isRateLimited("Playback seek failed: Seek failed"))
+    }
+
+    @Test
+    fun anAmbiguousNativeSeekFallsBackToTheLastRealPlayhead() {
+        assertEquals(450_000L, SeekRateLimitRecovery.safeResumeMs(null, 450_000L, 1_800_000L))
+        assertEquals(900_000L, SeekRateLimitRecovery.safeResumeMs(900_000L, 450_000L, 1_800_000L))
+    }
+
+    @Test
     fun onlyPinnedOrDirectHostLinksReopenWithoutAskingTheResolver() {
         val pinned = PlaybackRedirectResolution(
             source,
