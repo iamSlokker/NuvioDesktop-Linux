@@ -6,12 +6,197 @@ import com.nuvio.app.features.debrid.DebridProvider
 import com.nuvio.app.features.debrid.DebridProviderCapability
 import com.nuvio.app.features.debrid.DebridServiceCredential
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.async
+import kotlinx.coroutines.cancelAndJoin
+import kotlinx.coroutines.withTimeout
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
+import kotlin.test.assertNull
 
 class CloudLibraryStoreTest {
+    @Test
+    fun `failed provider is isolated and a later refresh recovers`() = runBlocking {
+        val alpha = cloudProvider("alpha", "Alpha")
+        val beta = cloudProvider("beta", "Beta")
+        var failed = true
+        val first = FakeCloudProviderApi(alpha, emptyList(), listResult = {
+            if (failed) Result.failure(IllegalStateException("fixture failure"))
+            else Result.success(listOf(cloudItem(alpha, "recovered")))
+        })
+        val second = FakeCloudProviderApi(beta, listOf(cloudItem(beta, "healthy")))
+        val store = CloudLibraryStore(
+            credentialsProvider = { listOf(DebridServiceCredential(alpha, "a"), DebridServiceCredential(beta, "b")) },
+            providerApis = listOf(first, second),
+        )
+        val initial = store.refresh()
+        assertEquals("fixture failure", initial.providers.first().errorMessage)
+        assertEquals(listOf("healthy"), initial.items.map { it.id })
+        failed = false
+        val recovered = store.refresh()
+        assertTrue(recovered.providers.all { it.errorMessage == null })
+        assertEquals(listOf("recovered", "healthy"), recovered.items.map { it.id })
+        assertEquals(listOf("healthy"), initial.items.map { it.id })
+        assertEquals(listOf("a", "a"), first.listKeys)
+        assertEquals(listOf("b", "b"), second.listKeys)
+    }
+
+    @Test
+    fun `absent credentials produce empty refresh and cannot reuse cached playback url`() = runBlocking {
+        val provider = cloudProvider("alpha", "Alpha")
+        val api = FakeCloudProviderApi(provider, listOf(cloudItem(provider, "unused")))
+        val store = CloudLibraryStore(credentialsProvider = { emptyList() }, providerApis = listOf(api))
+        val state = store.refresh()
+        assertTrue(state.isLoaded && !state.isRefreshing)
+        assertTrue(state.providers.isEmpty())
+        val item = cloudItem(provider, "cached")
+        assertEquals(CloudLibraryPlaybackResult.MissingCredentials,
+            store.resolvePlayback(item, item.files.single().copy(playbackUrl = "https://fixture.test/cached")))
+        assertTrue(api.listKeys.isEmpty())
+        assertEquals(0, api.resolvePlaybackCalls)
+    }
+
+    @Test
+    fun `unavailable provider api does not prevent another provider refresh`() = runBlocking {
+        val missing = cloudProvider("missing", "Missing")
+        val ready = cloudProvider("ready", "Ready")
+        val store = CloudLibraryStore(
+            credentialsProvider = { listOf(DebridServiceCredential(missing, "m"), DebridServiceCredential(ready, "r")) },
+            providerApis = listOf(FakeCloudProviderApi(ready, listOf(cloudItem(ready, "one")))),
+        )
+        val state = store.refresh()
+        assertTrue(!state.providers.first().errorMessage.isNullOrBlank())
+        assertEquals(listOf("one"), state.items.map { it.id })
+        val item = cloudItem(missing, "one")
+        assertTrue(store.resolvePlayback(item, item.files.single()) is CloudLibraryPlaybackResult.Failed)
+    }
+
+    @Test
+    fun `window boundary uses injected clock and explicit window overrides default`() = runBlocking {
+        val provider = cloudProvider("alpha", "Alpha")
+        val now = 100L * MILLIS_PER_DAY
+        val boundary = now - 7L * MILLIS_PER_DAY
+        var clockReads = 0
+        val store = CloudLibraryStore(
+            credentialsProvider = { listOf(DebridServiceCredential(provider, "token")) },
+            providerApis = listOf(FakeCloudProviderApi(provider, listOf(
+                cloudItem(provider, "old", boundary - 1), cloudItem(provider, "boundary", boundary),
+                cloudItem(provider, "new", now), cloudItem(provider, "undated"),
+            ))),
+            windowProvider = { DebridCloudLibraryWindow.DAYS_7 },
+            nowEpochMs = { clockReads++; now },
+        )
+        assertEquals(DebridCloudLibraryWindow.DAYS_7, store.window())
+        assertEquals(listOf("new", "boundary", "undated"), store.refresh().items.map { it.id })
+        assertEquals(listOf("new", "boundary", "old", "undated"), store.refresh(DebridCloudLibraryWindow.ALL).items.map { it.id })
+        assertEquals(2, clockReads)
+    }
+
+    @Test
+    fun `equal provider item and file ids retain distinct progress identities`() = runBlocking {
+        val alpha = cloudProvider("alpha", "Alpha")
+        val beta = cloudProvider("beta", "Beta")
+        val items = listOf(cloudItem(alpha, "same"), cloudItem(beta, "same"))
+        val store = CloudLibraryStore(
+            credentialsProvider = { listOf(DebridServiceCredential(alpha, "a"), DebridServiceCredential(beta, "b")) },
+            providerApis = listOf(FakeCloudProviderApi(alpha, listOf(items[0])), FakeCloudProviderApi(beta, listOf(items[1]))),
+        )
+        val state = store.refresh()
+        assertEquals(2, state.items.size)
+        assertEquals(2, state.items.map { it.stableKey }.toSet().size)
+        for (item in items) {
+            val target = assertNotNull(state.findPlaybackTargetForProgress(item.stableKey, item.playbackVideoId(item.files.single())))
+            assertEquals(item, target.item)
+        }
+        val updated = state.withResolvedPlaybackUrl(items[0], items[0].files.single(), "https://fixture.test/alpha")
+        assertEquals("https://fixture.test/alpha", updated.items[0].files.single().playbackUrl)
+        assertNull(updated.items[1].files.single().playbackUrl)
+    }
+
+    @Test
+    fun `resolve delegates exact credential item and file and preserves provider result`() = runBlocking {
+        val provider = cloudProvider("alpha", "Alpha")
+        val item = cloudItem(provider, "one")
+        val file = item.files.single().copy(sizeBytes = 123L)
+        val expected = CloudLibraryPlaybackResult.Success("https://fixture.test/play", "resolved.mkv", 456L)
+        val api = FakeCloudProviderApi(provider, emptyList(), playbackResult = { key, actualItem, actualFile ->
+            assertEquals("fixture-token", key)
+            assertEquals(item, actualItem)
+            assertEquals(file, actualFile)
+            expected
+        })
+        val store = CloudLibraryStore(credentialsProvider = { listOf(DebridServiceCredential(provider, "fixture-token")) }, providerApis = listOf(api))
+        assertEquals(expected, store.resolvePlayback(item, file))
+        assertEquals(1, api.resolvePlaybackCalls)
+    }
+
+    @Test
+    fun `resolve propagates provider failure and can retry successfully`() = runBlocking {
+        val provider = cloudProvider("alpha", "Alpha")
+        var result: CloudLibraryPlaybackResult = CloudLibraryPlaybackResult.Failed("fixture unavailable")
+        val api = FakeCloudProviderApi(provider, emptyList(), playbackResult = { _, _, _ -> result })
+        val store = CloudLibraryStore(credentialsProvider = { listOf(DebridServiceCredential(provider, "token")) }, providerApis = listOf(api))
+        val item = cloudItem(provider, "one")
+        assertEquals(result, store.resolvePlayback(item, item.files.single()))
+        result = CloudLibraryPlaybackResult.Success("https://fixture.test/retry")
+        assertEquals(result, store.resolvePlayback(item, item.files.single()))
+        assertEquals(2, api.resolvePlaybackCalls)
+    }
+
+    @Test
+    fun `nonplayable file never reads credentials or invokes provider`() = runBlocking {
+        val provider = cloudProvider("alpha", "Alpha")
+        val store = CloudLibraryStore(credentialsProvider = { error("credentials must not be read") }, providerApis = emptyList())
+        val item = cloudItem(provider, "one")
+        assertEquals(CloudLibraryPlaybackResult.NotPlayable, store.resolvePlayback(item, item.files.single().copy(playable = false)))
+    }
+
+    @Test
+    fun `cancelled suspended refresh does not poison next refresh`() = runBlocking {
+        withTimeout(5_000) {
+            val provider = cloudProvider("alpha", "Alpha")
+            val entered = CompletableDeferred<Unit>()
+            val blocked = CompletableDeferred<Unit>()
+            var calls = 0
+            val api = FakeCloudProviderApi(provider, emptyList(), listResult = {
+                if (++calls == 1) { entered.complete(Unit); blocked.await() }
+                Result.success(listOf(cloudItem(provider, "ready")))
+            })
+            val store = CloudLibraryStore(credentialsProvider = { listOf(DebridServiceCredential(provider, "token")) }, providerApis = listOf(api))
+            val pending = async { store.refresh() }
+            entered.await()
+            pending.cancelAndJoin()
+            assertTrue(pending.isCancelled)
+            assertEquals(listOf("ready"), store.refresh().items.map { it.id })
+            assertEquals(2, calls)
+        }
+    }
+
+    @Test
+    fun `overlapping refreshes return independent snapshots even when older request finishes last`() = runBlocking {
+        withTimeout(5_000) {
+            val provider = cloudProvider("alpha", "Alpha")
+            val entered = CompletableDeferred<Unit>()
+            val release = CompletableDeferred<Unit>()
+            var calls = 0
+            val api = FakeCloudProviderApi(provider, emptyList(), listResult = {
+                val call = ++calls
+                if (call == 1) { entered.complete(Unit); release.await() }
+                Result.success(listOf(cloudItem(provider, if (call == 1) "old" else "new")))
+            })
+            val store = CloudLibraryStore(credentialsProvider = { listOf(DebridServiceCredential(provider, "token")) }, providerApis = listOf(api))
+            val old = async { store.refresh() }
+            entered.await()
+            val current = store.refresh()
+            assertEquals(listOf("new"), current.items.map { it.id })
+            release.complete(Unit)
+            assertEquals(listOf("old"), old.await().items.map { it.id })
+            assertEquals(listOf("new"), current.items.map { it.id })
+        }
+    }
+
     @Test
     fun `filename metadata from playable file enriches cleaned debrid item`() {
         val provider = cloudProvider(id = "torbox", name = "TorBox")
@@ -301,12 +486,17 @@ class CloudLibraryStoreTest {
 private class FakeCloudProviderApi(
     override val provider: DebridProvider,
     private val items: List<CloudLibraryItem>,
+    private val listResult: (suspend (String) -> Result<List<CloudLibraryItem>>)? = null,
+    private val playbackResult: (suspend (String, CloudLibraryItem, CloudLibraryFile) -> CloudLibraryPlaybackResult)? = null,
 ) : CloudLibraryProviderApi {
+    val listKeys = mutableListOf<String>()
     var resolvePlaybackCalls: Int = 0
         private set
 
-    override suspend fun listItems(apiKey: String): Result<List<CloudLibraryItem>> =
-        Result.success(items)
+    override suspend fun listItems(apiKey: String): Result<List<CloudLibraryItem>> {
+        listKeys += apiKey
+        return listResult?.invoke(apiKey) ?: Result.success(items)
+    }
 
     override suspend fun resolvePlayback(
         apiKey: String,
@@ -314,7 +504,8 @@ private class FakeCloudProviderApi(
         file: CloudLibraryFile,
     ): CloudLibraryPlaybackResult {
         resolvePlaybackCalls += 1
-        return CloudLibraryPlaybackResult.Success(url = "https://example.test/${item.id}/${file.id}")
+        return playbackResult?.invoke(apiKey, item, file)
+            ?: CloudLibraryPlaybackResult.Success(url = "https://example.test/${item.id}/${file.id}")
     }
 }
 

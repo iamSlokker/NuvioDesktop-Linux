@@ -128,9 +128,12 @@ object CollectionRepository {
 
     fun importFromJson(jsonString: String): Result<List<Collection>> {
         return runCatching {
-            rawCollectionsJson = json.parseToJsonElement(jsonString)
+            // Stage the candidate before replacing either live models or preservation state.
+            val parsed = json.parseToJsonElement(jsonString)
             val imported = json.decodeFromString<List<Collection>>(jsonString)
-            _collections.value = CollectionMobileSettingsRepository.applyToCollections(imported)
+            val decorated = CollectionMobileSettingsRepository.applyToCollections(imported)
+            rawCollectionsJson = parsed
+            _collections.value = decorated
             persist()
             imported
         }
