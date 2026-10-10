@@ -41,6 +41,10 @@ fun isShortcutFile(path: String): Boolean {
 fun resolveGameLaunchTarget(path: String): GameLaunchTarget {
     val trimmed = path.trim()
     if (isProtocolLaunchTarget(trimmed)) return GameLaunchTarget.Protocol(trimmed)
+    if (linuxGamesHost() && trimmed.endsWith(".desktop", ignoreCase = true)) {
+        return LinuxGameDiscovery.desktopTarget(File(trimmed))
+            ?: error("Unsupported or unavailable Linux game desktop entry")
+    }
     if (!isShortcutFile(trimmed)) return GameLaunchTarget.Executable(trimmed)
     val shortcut = readShortcut(File(trimmed)) ?: return GameLaunchTarget.ShellShortcut(trimmed)
     shortcut.url?.let { url ->

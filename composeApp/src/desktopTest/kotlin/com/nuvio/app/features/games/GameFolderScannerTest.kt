@@ -24,7 +24,7 @@ class GameFolderScannerTest {
         root.exe("Hollow_Knight/hollow_knight.exe")
         File(root, "Empty Folder").mkdirs()
 
-        val result = GameFolderScanner.scan(root, existing = emptyList())
+        val result = GameFolderScanner.scan(root, existing = emptyList(), linux = false)
 
         assertEquals(listOf("Hades", "Hollow Knight"), result.candidates.map { it.title })
         assertEquals(1, result.foldersWithoutExecutable)
@@ -92,7 +92,7 @@ class GameFolderScannerTest {
         common.exe("Portal 2/portal2.exe")
         common.exe("Unknown Game/game.exe")
 
-        val result = GameFolderScanner.scan(root, existing = emptyList())
+        val result = GameFolderScanner.scan(root, existing = emptyList(), linux = false)
 
         val portal = result.candidates.first { it.folder.name == "Portal 2" }
         assertEquals("Portal 2", portal.title)
@@ -123,7 +123,7 @@ class GameFolderScannerTest {
         )
         // Portal 2 matches on app id only when the scan can resolve one; here it is a plain folder,
         // so only path and title matches apply.
-        val result = GameFolderScanner.scan(root, existing)
+        val result = GameFolderScanner.scan(root, existing, linux = false)
 
         assertEquals(listOf("New Game", "Portal 2"), result.candidates.map { it.title })
         assertEquals(2, result.skippedExisting)
@@ -135,7 +135,7 @@ class GameFolderScannerTest {
         val game = File(root, "Celeste").apply { mkdirs() }
         game.exe("Celeste.exe")
 
-        val result = GameFolderScanner.scan(game, existing = emptyList())
+        val result = GameFolderScanner.scan(game, existing = emptyList(), linux = false)
 
         assertEquals(1, result.candidates.size)
         assertEquals("Celeste", result.candidates.single().title)

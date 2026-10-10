@@ -185,7 +185,7 @@ class GameLaunchTargetTest {
         File(shortcuts, "Gone.lnk").writeBytes(shellLink(target = File(root, "Missing/gone.exe").absolutePath))
         File(shortcuts, "Notepad.lnk").writeBytes(shellLink(target = null, idList = true))
 
-        val result = GameFolderScanner.scan(shortcuts, existing = emptyList())
+        val result = GameFolderScanner.scan(shortcuts, existing = emptyList(), linux = false)
 
         assertEquals(listOf("Digimon Story Time Stranger", "Hades", "Notepad"), result.candidates.map { it.title })
         assertEquals(listOf(2160960L, null, null), result.candidates.map { it.steamAppId })
@@ -206,7 +206,7 @@ class GameLaunchTargetTest {
             GameEntry(id = "2", title = "Terraria: Journey's End", steamAppId = 105600),
         )
 
-        val result = GameFolderScanner.scan(shortcuts, existing)
+        val result = GameFolderScanner.scan(shortcuts, existing, linux = false)
 
         assertTrue(result.candidates.isEmpty())
         assertEquals(2, result.skippedExisting)

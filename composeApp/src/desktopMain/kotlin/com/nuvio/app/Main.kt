@@ -52,6 +52,7 @@ import com.nuvio.app.features.p2p.P2pStreamingEngine
 import com.nuvio.app.features.player.DesktopRendererApi
 import com.nuvio.app.features.player.PlatformPlayerSurface
 import com.nuvio.app.features.player.PlayerSettingsStorage
+import com.nuvio.app.features.discord.DiscordRichPresencePlatform
 import com.nuvio.app.features.player.desktop.DesktopHostOs
 import com.nuvio.app.features.mdblist.HeroCastMetadataService
 import com.nuvio.app.features.mdblist.MdbListMetadataService
@@ -485,6 +486,7 @@ fun main() {
         val exitDesktopApplication = {
             flushWindowGeometry()
             P2pStreamingEngine.shutdown()
+            if (DesktopHostOs.current == DesktopHostOs.LINUX) DiscordRichPresencePlatform.shutdown()
             exitApplication()
         }
         DesktopApplicationExit.install(exitDesktopApplication)

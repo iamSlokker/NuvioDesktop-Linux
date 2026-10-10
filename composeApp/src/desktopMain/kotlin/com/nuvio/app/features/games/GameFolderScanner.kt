@@ -39,38 +39,63 @@ data class GameFolderScanResult(
  * largest. The result is right far more often than not and is always editable afterwards.
  */
 object GameFolderScanner {
-    fun scan(root: File, existing: List<GameEntry>): GameFolderScanResult {
-        val gamesDirectory = gamesDirectoryFor(root)
-        val manifests = steamManifestsBeside(gamesDirectory)
-        val existingPaths = existing.mapNotNull { it.executablePath?.lowercase() }.toSet()
-        val existingAppIds = existing.mapNotNull { it.steamAppId }.toSet()
-        val existingTitles = existing.map { it.title.normalizedGameTitle() }.toSet()
+    fun scan(root: File, existing: List<GameEntry>): GameFolderScanResult = scan(root, existing, linuxGamesHost())
 
-        val gameFolders = gamesDirectory
+    internal fun scan(root: File, existing: List<GameEntry>, linux: Boolean): GameFolderScanResult {
+        if (linux && !LinuxGameDiscovery.allowedRoot(root)) return GameFolderScanResult(emptyList(), 0, 0)
+        val gamesDirectory = gamesDirectoryFor(root)
+        if (linux && !LinuxGameDiscovery.allowedRoot(gamesDirectory)) return GameFolderScanResult(emptyList(), 0, 0)
+        val manifests = steamManifestsBeside(gamesDirectory, linux)
+        fun pathKey(path: String): String = if (linux) runCatching { File(path).canonicalPath }.getOrDefault(path)
+            else path.lowercase()
+        val existingPaths = existing.mapNotNull { it.executablePath?.let(::pathKey) }.toMutableSet()
+        if (linux) existing.mapNotNull { it.executablePath }.filter { it.endsWith(".desktop", true) }.forEach { path ->
+            LinuxGameDiscovery.desktopTarget(File(path))?.path?.let { existingPaths += pathKey(it) }
+        }
+        val existingAppIds = existing.mapNotNull { it.steamAppId }.toMutableSet()
+        val existingTitles = existing.map { it.title.normalizedGameTitle() }.toMutableSet()
+
+        val linuxChildren = if (linux) LinuxGameDiscovery.children(gamesDirectory) else emptyList()
+        val singleLinuxGame = linux && LinuxGameDiscovery.choose(gamesDirectory)?.let {
+            it.parentFile == gamesDirectory || it.relativeTo(gamesDirectory).invariantSeparatorsPath
+                .substringBefore('/') in setOf("bin", "linux", "linux64")
+        } == true
+        val gameFolders = (if (linux) {
+            if (singleLinuxGame) listOf(gamesDirectory) else linuxChildren.filter {
+                LinuxGameDiscovery.directory(it) && !it.isHidden && it.name !in IGNORED_FOLDERS
+            }.take(128)
+        } else gamesDirectory
             .listFiles { file: File -> file.isDirectory && !file.isHidden && file.name !in IGNORED_FOLDERS }
             ?.sortedBy { it.name.lowercase() }
-            .orEmpty()
+            .orEmpty())
             // A folder holding one game directly, with no sub-folders to speak of, is the game.
             .ifEmpty { listOf(gamesDirectory) }
 
         var skippedExisting = 0
         var withoutExecutable = 0
         fun keepUnlessPresent(candidate: GameFolderCandidate, resolvedPath: String?): GameFolderCandidate? {
-            val alreadyPresent = candidate.executablePath.lowercase() in existingPaths ||
-                (resolvedPath != null && resolvedPath.lowercase() in existingPaths) ||
+            val alreadyPresent = pathKey(candidate.executablePath) in existingPaths ||
+                (resolvedPath != null && pathKey(resolvedPath) in existingPaths) ||
                 (candidate.steamAppId != null && candidate.steamAppId in existingAppIds) ||
                 candidate.title.normalizedGameTitle() in existingTitles
             if (alreadyPresent) skippedExisting += 1
+            else if (linux) {
+                existingPaths += pathKey(candidate.executablePath)
+                if (resolvedPath != null) existingPaths += pathKey(resolvedPath)
+                candidate.steamAppId?.let { existingAppIds += it }
+                existingTitles += candidate.title.normalizedGameTitle()
+            }
             return candidate.takeUnless { alreadyPresent }
         }
 
-        val shortcuts = gamesDirectory
-            .listFiles { file: File -> file.isFile && isShortcutFile(file.name) }
-            ?.sortedBy { it.name.lowercase() }
-            .orEmpty()
+        val shortcuts = if (linux) linuxChildren.filter { it.extension.equals("desktop", true) }
+            else gamesDirectory.listFiles { file: File -> file.isFile && isShortcutFile(file.name) }
+                ?.sortedBy { it.name.lowercase() }.orEmpty()
         val shortcutCandidates = shortcuts
             .mapNotNull { shortcut ->
-                val target = resolveGameLaunchTarget(shortcut.absolutePath)
+                val target = if (linux) LinuxGameDiscovery.desktopTarget(shortcut)
+                    else resolveGameLaunchTarget(shortcut.absolutePath)
+                if (target == null) { withoutExecutable += 1; return@mapNotNull null }
                 val candidate = shortcutCandidate(shortcut, target)
                 if (candidate == null) {
                     withoutExecutable += 1
@@ -80,7 +105,7 @@ object GameFolderScanner {
             }
 
         val folderCandidates = gameFolders.mapNotNull { folder ->
-            val executable = chooseExecutable(folder)
+            val executable = if (linux) LinuxGameDiscovery.choose(folder) else chooseExecutable(folder)
             if (executable == null) {
                 // The root itself, standing in for an absent list of sub-folders, is not "a folder
                 // with no executable" when the shortcuts in it were the games.
@@ -139,13 +164,14 @@ object GameFolderScanner {
     }
 
     /** Steam's manifests keyed by install directory (lower-cased), when [gamesDirectory] is `common`. */
-    private fun steamManifestsBeside(gamesDirectory: File): Map<String, SteamAppManifest> {
+    private fun steamManifestsBeside(gamesDirectory: File, linux: Boolean): Map<String, SteamAppManifest> {
         if (!gamesDirectory.name.equals("common", ignoreCase = true)) return emptyMap()
         val steamApps = gamesDirectory.parentFile ?: return emptyMap()
         if (!steamApps.name.equals("steamapps", ignoreCase = true)) return emptyMap()
-        return steamApps
-            .listFiles { file: File -> file.isFile && file.name.startsWith("appmanifest_") && file.extension == "acf" }
-            .orEmpty()
+        val files = if (linux) LinuxGameDiscovery.children(steamApps).filter {
+            it.isFile && it.length() <= 1024 * 1024 && it.name.startsWith("appmanifest_") && it.extension == "acf"
+        } else steamApps.listFiles { file: File -> file.isFile && file.name.startsWith("appmanifest_") && file.extension == "acf" }.orEmpty().toList()
+        return files
             .mapNotNull { manifest -> runCatching { parseSteamAppManifest(manifest.readText()) }.getOrNull() }
             .associateBy { it.installDirectory.lowercase() }
     }

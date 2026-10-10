@@ -40,7 +40,14 @@ internal actual object DiscordRichPresencePlatform {
             size > ARTWORK_PROBE_CACHE_LIMIT
     }
 
+    private val linuxBackend by lazy {
+        LinuxDiscordPresence(DISCORD_APPLICATION_ID, send = { connection, activity ->
+            sendActivity(connection, activity, logDetails = false)
+        })
+    }
+
     actual fun update(activity: DiscordRichPresenceActivity?) {
+        if (isLinuxDiscordHost()) { linuxBackend.update(activity); return }
         scope.launch {
             mutex.withLock {
                 val payloadKey = activity?.toPayloadKey() ?: "clear"
@@ -62,46 +69,7 @@ internal actual object DiscordRichPresencePlatform {
                 }
 
                 runCatching {
-                    val activity = activity.withResolvedArtwork()
-                    val discordActivity = activity.toDiscordActivity()
-                    try {
-                        activeConnection.setActivity(discordActivity)
-                    } catch (error: DiscordRpcCommandException) {
-                        // A catalogue controls its artwork URL. Discord may reject an otherwise
-                        // valid activity when that particular external asset is unsupported or
-                        // inaccessible, which previously made MAL/Kitsu playback look as though
-                        // Rich Presence itself was broken. Preserve the useful playback fields and
-                        // retry with the bundled Nuvio asset; metadata and artwork resolution stay
-                        // completely outside the RPC transport.
-                        if (activity.imageUrl.isNullOrBlank()) throw error
-                        // Step down one artwork at a time rather than straight to the bundled
-                        // asset: the rejected URL is usually the poster, and the episode thumbnail
-                        // or backdrop behind it is a plain CDN image Discord accepts happily.
-                        val nextArtwork = activity.fallbackImageUrl
-                            ?.takeIf { it.isNotBlank() && it != activity.imageUrl }
-                        println(
-                            "[nuvio-discord] external artwork rejected by Discord " +
-                                "(${error.safeDescription}); retrying with " +
-                                if (nextArtwork != null) "the next artwork" else "bundled artwork",
-                        )
-                        val bundled = activity.copy(imageUrl = null, fallbackImageUrl = null)
-                        if (nextArtwork == null) {
-                            activeConnection.setActivity(bundled.toDiscordActivity())
-                        } else {
-                            try {
-                                activeConnection.setActivity(
-                                    activity.copy(imageUrl = nextArtwork, fallbackImageUrl = null)
-                                        .toDiscordActivity(),
-                                )
-                            } catch (_: DiscordRpcCommandException) {
-                                activeConnection.setActivity(bundled.toDiscordActivity())
-                            }
-                        }
-                    }
-                    println(
-                        "[nuvio-discord] activity updated title=\"${activity.title}\" " +
-                            "subtitle=\"${activity.subtitle.orEmpty()}\" type=${activity.type} playing=${activity.isPlaying}",
-                    )
+                    sendActivity(activeConnection, activity)
                 }.onFailure { error ->
                     closeConnection()
                     println("[nuvio-discord] activity update failed: ${error.message}")
@@ -110,7 +78,51 @@ internal actual object DiscordRichPresencePlatform {
         }
     }
 
+    private fun sendActivity(activeConnection: DiscordIpcConnection, activity: DiscordRichPresenceActivity, logDetails: Boolean = true) {
+        val activity = activity.withResolvedArtwork(logDetails)
+        val discordActivity = activity.toDiscordActivity()
+        try {
+            activeConnection.setActivity(discordActivity)
+        } catch (error: DiscordRpcCommandException) {
+            // A catalogue controls its artwork URL. Discord may reject an otherwise
+            // valid activity when that particular external asset is unsupported or
+            // inaccessible, which previously made MAL/Kitsu playback look as though
+            // Rich Presence itself was broken. Preserve the useful playback fields and
+            // retry with the bundled Nuvio asset; metadata and artwork resolution stay
+            // completely outside the RPC transport.
+            if (activity.imageUrl.isNullOrBlank()) throw error
+            // Step down one artwork at a time rather than straight to the bundled
+            // asset: the rejected URL is usually the poster, and the episode thumbnail
+            // or backdrop behind it is a plain CDN image Discord accepts happily.
+            val nextArtwork = activity.fallbackImageUrl
+                ?.takeIf { it.isNotBlank() && it != activity.imageUrl }
+            if (logDetails) println(
+                "[nuvio-discord] external artwork rejected by Discord " +
+                    "(${error.safeDescription}); retrying with " +
+                    if (nextArtwork != null) "the next artwork" else "bundled artwork",
+            )
+            val bundled = activity.copy(imageUrl = null, fallbackImageUrl = null)
+            if (nextArtwork == null) {
+                activeConnection.setActivity(bundled.toDiscordActivity())
+            } else {
+                try {
+                    activeConnection.setActivity(
+                        activity.copy(imageUrl = nextArtwork, fallbackImageUrl = null)
+                            .toDiscordActivity(),
+                    )
+                } catch (_: DiscordRpcCommandException) {
+                    activeConnection.setActivity(bundled.toDiscordActivity())
+                }
+            }
+        }
+        if (logDetails) println(
+            "[nuvio-discord] activity updated title=\"${activity.title}\" " +
+                "subtitle=\"${activity.subtitle.orEmpty()}\" type=${activity.type} playing=${activity.isPlaying}",
+        )
+    }
+
     actual fun shutdown() {
+        if (isLinuxDiscordHost()) { linuxBackend.shutdown(); return }
         scope.launch {
             mutex.withLock {
                 runCatching { connection?.setActivity(null) }
@@ -169,7 +181,7 @@ internal actual object DiscordRichPresencePlatform {
      * characters, so over-long candidates never reach it: a raw URL that is too long is dropped,
      * and a poster whose *proxied* URL is too long is sent raw (cropped beats the logo).
      */
-    private fun DiscordRichPresenceActivity.withResolvedArtwork(): DiscordRichPresenceActivity {
+    private fun DiscordRichPresenceActivity.withResolvedArtwork(logDetails: Boolean = true): DiscordRichPresenceActivity {
         val candidates = listOfNotNull(imageUrl, fallbackImageUrl)
             .map { it.trim() }
             .filter { it.startsWith("https://") || it.startsWith("http://") }
@@ -184,7 +196,7 @@ internal actual object DiscordRichPresencePlatform {
             val proxiedFits = fitsDiscordAssetLimit(proxied)
             val probe = artworkProbeCache[proxied] ?: probeArtworkProxy(proxied).also { result ->
                 artworkProbeCache[proxied] = result
-                println(
+                if (logDetails) println(
                     "[nuvio-discord] artwork ${artworkHost(candidate)}: ${result.name.lowercase()}" +
                         if (proxiedFits) "" else " (proxied URL exceeds $DISCORD_ASSET_URL_LIMIT chars; sending raw)",
                 )
@@ -243,10 +255,17 @@ internal actual object DiscordRichPresencePlatform {
     }
 }
 
-private class DiscordIpcConnection(
-    private val file: RandomAccessFile,
+internal class DiscordIpcConnection(
+    private val transport: DiscordIpcTransport,
 ) {
+    constructor(file: RandomAccessFile) : this(object : DiscordIpcTransport {
+        override fun readFully(bytes: ByteArray) = file.readFully(bytes)
+        override fun write(bytes: ByteArray) = file.write(bytes)
+        override fun close() = file.close()
+    })
+
     fun handshake(clientId: String) {
+        transport.beginCommand()
         writeFrame(
             opcode = OPCODE_HANDSHAKE,
             payload = buildJsonObject {
@@ -259,6 +278,7 @@ private class DiscordIpcConnection(
     }
 
     fun setActivity(activity: JsonObject?) {
+        transport.beginCommand()
         val nonce = UUID.randomUUID().toString()
         val command = buildJsonObject {
             put("cmd", "SET_ACTIVITY")
@@ -284,7 +304,7 @@ private class DiscordIpcConnection(
     }
 
     fun close() {
-        file.close()
+        transport.close()
     }
 
     private fun writeFrame(opcode: Int, payload: JsonObject) {
@@ -294,14 +314,14 @@ private class DiscordIpcConnection(
             .putInt(opcode)
             .putInt(payloadBytes.size)
             .array()
-        file.write(header)
-        file.write(payloadBytes)
+        transport.write(header)
+        transport.write(payloadBytes)
     }
 
     private fun readFramePayload(): JsonObject {
         while (true) {
             val header = ByteArray(DISCORD_FRAME_HEADER_BYTES)
-            file.readFully(header)
+            transport.readFully(header)
             val headerBuffer = ByteBuffer.wrap(header).order(ByteOrder.LITTLE_ENDIAN)
             val opcode = headerBuffer.int
             val payloadLength = headerBuffer.int
@@ -309,7 +329,7 @@ private class DiscordIpcConnection(
                 throw IOException("Discord IPC returned an invalid frame length: $payloadLength")
             }
             val payloadBytes = ByteArray(payloadLength)
-            file.readFully(payloadBytes)
+            transport.readFully(payloadBytes)
             val payloadText = payloadBytes.toString(StandardCharsets.UTF_8)
             val payload = runCatching {
                 Json.parseToJsonElement(payloadText) as? JsonObject
@@ -351,7 +371,7 @@ private fun JsonObject.commandErrorOrNull(): DiscordRpcCommandException? {
 private fun JsonObject.stringValue(key: String): String? =
     (this[key] as? JsonElement)?.jsonPrimitive?.contentOrNull
 
-private fun DiscordRichPresenceActivity.toDiscordActivity(): JsonObject {
+internal fun DiscordRichPresenceActivity.toDiscordActivity(): JsonObject {
     val titleText = title.trim().takeIf { it.isNotBlank() } ?: "Nuvio"
     val subtitleText = subtitle?.trim()?.takeIf { it.isNotBlank() }
     val episodeLabelText = episodeLabel?.trim()?.takeIf { it.isNotBlank() }
@@ -517,7 +537,7 @@ private fun discordPresenceAssets(
 
 private enum class ArtworkProbe { Proxied, ProxyRefused, Unfetchable, ProxyUnavailable }
 
-private fun DiscordRichPresenceActivity.toPayloadKey(): String =
+internal fun DiscordRichPresenceActivity.toPayloadKey(): String =
     listOf(
         type.name,
         title.trim(),
@@ -555,3 +575,5 @@ private const val ARTWORK_PROBE_TIMEOUT_MS = 5_000
 private const val ARTWORK_PROBE_CACHE_LIMIT = 128
 private const val DISCORD_APPLICATION_ID = "1522129829363843195"
 private const val DISCORD_LARGE_IMAGE_KEY = "nuvio_logo"
+
+private fun isLinuxDiscordHost(): Boolean = System.getProperty("os.name").equals("Linux", ignoreCase = true)

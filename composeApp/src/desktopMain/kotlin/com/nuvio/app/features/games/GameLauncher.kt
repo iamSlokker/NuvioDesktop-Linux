@@ -24,7 +24,11 @@ object GameLauncher {
                 dialogTitle = "Choose game executable or shortcut"
                 fileSelectionMode = JFileChooser.FILES_ONLY
                 isMultiSelectionEnabled = false
-                fileFilter = FileNameExtensionFilter("Applications and shortcuts (*.exe, *.lnk, *.url)", "exe", "lnk", "url")
+                fileFilter = if (linuxGamesHost()) object : javax.swing.filechooser.FileFilter() {
+                    override fun accept(file: File): Boolean = file.isDirectory || LinuxGameDiscovery.runnable(file) ||
+                        (file.extension.equals("desktop", true) && LinuxGameDiscovery.desktopTarget(file) != null)
+                    override fun getDescription(): String = "Linux executables, scripts, AppImages and game desktop entries"
+                } else FileNameExtensionFilter("Applications and shortcuts (*.exe, *.lnk, *.url)", "exe", "lnk", "url")
                 if (initialFile?.isFile == true) selectedFile = initialFile
             }
             if (chooser.showOpenDialog(null) == JFileChooser.APPROVE_OPTION) {
