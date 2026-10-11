@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=Nuvio Desktop
+Comment=Desktop media player
+Exec=nuvio-desktop
+Icon=com.nuvio.media.desktop
+Terminal=false
+Categories=AudioVideo;Video;Player;
+StartupWMClass=com.nuvio.app.MainKt

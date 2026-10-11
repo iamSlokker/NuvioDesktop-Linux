@@ -1,0 +1,28 @@
+# Canonical media builder: digest-pinned Ubuntu 22.04 and signed APT snapshot.
+# The audited runtime records this exact image ID; CI builds it from source first.
+ARG MEDIA_BUILDER_IMAGE
+FROM ${MEDIA_BUILDER_IMAGE}
+ENV DEBIAN_FRONTEND=noninteractive
+COPY apt-prefetch.py /apt-prefetch.py
+RUN apt-get -o Acquire::Check-Valid-Until=false -o APT::Update::Error-Mode=any update \
+ && python3 /apt-prefetch.py libgtk-3-dev libwebkit2gtk-4.1-dev desktop-file-utils squashfs-tools fakeroot file unzip git xdg-utils \
+ && apt-get install -y --no-install-recommends libgtk-3-dev libwebkit2gtk-4.1-dev desktop-file-utils squashfs-tools fakeroot file unzip git xdg-utils \
+ && dpkg-query -W -f='${Package}\t${Version}\n' | LC_ALL=C sort > /builder-packages.tsv \
+ && rm -rf /var/lib/apt/lists/* /apt-prefetch.py
+COPY jdk.tar.gz cmake.whl config.json /inputs/
+RUN python3 - <<'PY'
+import hashlib,json,pathlib,tarfile,zipfile
+p=pathlib.Path('/inputs')
+cfg=json.loads((p/'config.json').read_text())
+for name,file in [('jdk','jdk.tar.gz'),('cmake','cmake.whl')]:
+    assert hashlib.sha256((p/file).read_bytes()).hexdigest()==cfg['tools'][name]['sha256'],name
+with tarfile.open(p/'jdk.tar.gz') as t:
+    t.extractall('/opt/java')
+with zipfile.ZipFile(p/'cmake.whl') as z:
+    z.extractall('/opt/cmake-wheel')
+PY
+RUN ln -s /opt/java/* /opt/jdk \
+ && chmod +x /opt/cmake-wheel/cmake/data/bin/* \
+ && rm -rf /inputs
+ENV JAVA_HOME=/opt/jdk
+ENV PATH=/opt/cmake-wheel/cmake/data/bin:/opt/jdk/bin:/usr/bin:/bin

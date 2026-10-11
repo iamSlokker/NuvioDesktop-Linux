@@ -1,0 +1,10 @@
+[
+  "--share=ipc",
+  "--share=network",
+  "--socket=x11",
+  "--socket=pulseaudio",
+  "--device=dri",
+  "--own-name=org.mpris.MediaPlayer2.Nuvio",
+  "--talk-name=org.freedesktop.ScreenSaver",
+  "--env=GDK_BACKEND=x11"
+]

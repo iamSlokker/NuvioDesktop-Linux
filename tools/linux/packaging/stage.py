@@ -1,0 +1,66 @@
+#!/usr/bin/env python3
+"""Allowlisted canonical image; never stage a checkout or a developer runtime tree."""
+import datetime
+import hashlib
+import json
+import pathlib
+import shutil
+import subprocess
+import sys
+
+from fetch import CONFIG
+
+
+def stage(work, source=pathlib.Path('/source'), media=pathlib.Path('/media')):
+    info = json.loads((work / 'source-info.json').read_text())
+    app = source / 'composeApp/build/compose/binaries/main/app/nuvio'
+    if not (app / 'bin/nuvio').is_file() or not (app / 'lib/runtime/lib/libjawt.so').is_file():
+        raise ValueError('Missing Compose/jpackage image or bundled JAWT')
+    destination = work / 'canonical'
+    shutil.rmtree(destination, ignore_errors=True)
+    shutil.copytree(app, destination, symlinks=True)
+    native = destination / 'lib/native'
+    native.mkdir()
+    contract = json.loads((media / 'share/nuvio-media-runtime/manifest.json').read_text())['artifact_contract']
+    for name, record in contract['libraries'].items():
+        src = media / name
+        shutil.copy2(src, native / src.name)
+        if record['soname'] != src.name:
+            (native / record['soname']).symlink_to(src.name)
+    shutil.copy2(work / 'native/libplayer_bridge.so', native / 'libplayer_bridge.so')
+    here = source / 'tools/linux/packaging'
+    shutil.copy2(here / 'nuvio-desktop', destination / 'bin/nuvio-desktop')
+    (destination / 'bin/nuvio-desktop').chmod(0o755)
+    share = destination / 'share'
+    shutil.copytree(media / 'share', share, dirs_exist_ok=True)
+    licenses = share / 'licenses/Nuvio'
+    licenses.mkdir(parents=True)
+    shutil.copy2(source / 'LICENSE', licenses / 'COPYING')
+    shutil.copytree(source / 'composeApp/src/desktopMain/resources/player-shaders',
+                    licenses / 'player-shaders', ignore=shutil.ignore_patterns('*.glsl'))
+    shutil.copytree(pathlib.Path('/opt/jdk/legal'), share / 'licenses/Java', dirs_exist_ok=True)
+    shutil.copy2('/builder-packages.tsv', share / 'nuvio-media-runtime/package-builder-packages.tsv')
+    info['media_inventory_sha256'] = hashlib.sha256((media / 'share/nuvio-media-runtime/inventory.json').read_bytes()).hexdigest()
+    info['jdk_release'] = dict(line.split('=', 1) for line in pathlib.Path('/opt/jdk/release').read_text().splitlines() if '=' in line)
+    (destination / 'release-info.json').write_text(json.dumps(info, indent=2, sort_keys=True) + '\n')
+    instant = datetime.datetime.fromtimestamp(info['source_date_epoch'], datetime.timezone.utc)
+    stamp = dict(BUILD_ID=instant.strftime('%Y%m%d-%H%M%S') + '.' + info['source_sha256'][:12],
+                 BUILD_TIME=instant.strftime('%Y-%m-%dT%H:%M:%SZ'), VERSION_NAME=info['version'],
+                 VERSION_CODE=info['version_code'], CHANNEL=info['channel'], GIT_COMMIT=info['git_commit'],
+                 BUILD_KIND=info['build_kind'], SOURCE_SHA256=info['source_sha256'], DIRTY=str(info['dirty']).lower())
+    (destination / 'lib/app/build-info.properties').write_text(''.join(f'{k}={v}\n' for k,v in stamp.items()))
+    desktop = share / 'applications' / (CONFIG['application_id'] + '.desktop')
+    desktop.parent.mkdir(parents=True)
+    shutil.copy2(here / desktop.name, desktop)
+    icon = share / 'icons/hicolor/512x512/apps' / (CONFIG['application_id'] + '.png')
+    icon.parent.mkdir(parents=True)
+    subprocess.run(['java', '-Djava.awt.headless=true', str(here / 'ResizeIcon.java'),
+                    str(source / 'composeApp/src/desktopMain/resources/icons/nuvio-app-icon.png'), str(icon)], check=True)
+    subprocess.run(['desktop-file-validate', str(desktop)], check=True)
+    # SDK/header/pkg-config artifacts never enter the application image.
+    if any(p.suffix in ['.a', '.h', '.pc', '.la'] for p in native.rglob('*')):
+        raise ValueError('Development artifact in private native directory')
+
+
+if __name__ == '__main__':
+    stage(pathlib.Path(sys.argv[1]))

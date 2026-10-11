@@ -49,6 +49,7 @@ target_link_libraries(player_bridge PRIVATE JNI::JNI JNI::AWT Threads::Threads "
 target_link_options(player_bridge PRIVATE "LINKER:-z,defs")
 
 get_filename_component(MPV_LIBRARY_DIR "${MPV_LIBRARY}" DIRECTORY)
+option(NUVIO_PACKAGE_BUILD "Use relocatable jpackage Linux library layout" OFF)
 set_target_properties(player_bridge PROPERTIES
     CXX_STANDARD 17
     CXX_STANDARD_REQUIRED YES
@@ -58,6 +59,11 @@ set_target_properties(player_bridge PROPERTIES
     # Local development only: resolve libmpv without requiring LD_LIBRARY_PATH.
     BUILD_RPATH "$ORIGIN;${MPV_LIBRARY_DIR}"
 )
+if(NUVIO_PACKAGE_BUILD)
+    set_target_properties(player_bridge PROPERTIES
+        BUILD_WITH_INSTALL_RPATH YES
+        INSTALL_RPATH "$ORIGIN;$ORIGIN/../runtime/lib")
+endif()
 
 # Built explicitly by the opt-in smoke suite; no test hooks in player_bridge.
 add_executable(linux_seek_thumbnail_probe EXCLUDE_FROM_ALL

@@ -51,6 +51,7 @@ tools
 !/tools/linux/media-runtime/tests/*.lua
 !/tools/linux/media-runtime/tests/cuda-mapper-failure.c
 !/tools/linux/media-runtime/tests/vectors.json
+!/tools/linux/packaging/
 /app/
 
 # TorrServer P2P binary (bundled at build/package time, not committed)

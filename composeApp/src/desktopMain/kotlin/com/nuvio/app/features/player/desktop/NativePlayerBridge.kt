@@ -15,6 +15,11 @@ internal fun findPackagedNativeRuntime(
     javaHome: File?,
     requiredFiles: List<String>,
 ): File? {
+    if (platform == DesktopHostOs.LINUX) {
+        // jpackage Linux image: lib/runtime (java.home), lib/native (private JNI/media).
+        val runtimeDir = javaHome?.parentFile?.resolve("native") ?: return null
+        return runtimeDir.takeIf { dir -> requiredFiles.all { dir.resolve(it).isFile } }
+    }
     if (platform != DesktopHostOs.WINDOWS) return null
     val installDir = javaHome?.parentFile?.takeIf { it.isDirectory } ?: return null
     return installDir.takeIf { dir -> requiredFiles.all { dir.resolve(it).isFile } }
@@ -189,7 +194,12 @@ internal object NativePlayerBridge {
     private fun loadNativeLibrary() {
         val platform = DesktopHostOs.current
         if (platform == DesktopHostOs.LINUX) {
-            val library = findLocalBuildLibrary(nativeDirectoryName(platform), nativeLibraryName(platform))
+            val libraryName = nativeLibraryName(platform)
+            val library = findPackagedNativeRuntime(
+                platform, System.getProperty("java.home")?.let(::File),
+                listOf(libraryName, "libmpv.so.2"),
+            )?.resolve(libraryName)
+                ?: findLocalBuildLibrary(nativeDirectoryName(platform), libraryName)
                 ?: error("Linux native player bridge not found; run :composeApp:buildLinuxPlayerBridge first.")
             System.load(library.absolutePath)
             loadedRuntimeDir = library.parentFile

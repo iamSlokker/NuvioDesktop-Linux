@@ -1541,14 +1541,14 @@ compose.desktop {
 
         nativeDistributions {
             targetFormats(TargetFormat.Dmg, TargetFormat.Msi, TargetFormat.Deb)
-            packageName = "Nuvio"
+            packageName = if (isLinuxHost) "nuvio" else "Nuvio"
             packageVersion = desktopReleasePackageVersion
             vendor = "Nuvio Media"
             // Becomes the exe's FileDescription, which is the name Explorer shows for a pin made
             // straight from Nuvio.exe (and the taskbar tooltip). The exe itself stays Nuvio.exe:
             // the in-place updater, taskbar pins and the official app's shortcut-name checks all
             // key on that filename.
-            description = "Nuvio HTPC"
+            description = if (isLinuxHost) "Nuvio Desktop" else "Nuvio HTPC"
             // jdk.management is here for one call: the decoded-animation cache budget is a fraction
             // of physical RAM (see animatedImageCacheBudgetBytes), and OperatingSystemMXBean is the
             // only way to read that without going native. Measured cost of the module in a jlink
@@ -1557,6 +1557,12 @@ compose.desktop {
             // addition to the runtime image, and the only way to attribute UI-thread CPU
             // that Compose draw probes cannot see.
             modules("java.net.http", "jdk.httpserver", "jdk.management", "jdk.jfr")
+            if (isLinuxHost) {
+                // Runtime services used through reflection/ServiceLoader are not
+                // always found by jdeps. Keep compilers/jpackage out of the image.
+                modules("java.desktop", "java.naming", "java.sql", "java.security.jgss",
+                    "jdk.crypto.ec", "jdk.unsupported", "jdk.charsets", "jdk.zipfs")
+            }
             macOS {
                 bundleID = "com.nuvio.media.desktop"
                 iconFile.set(project.file("src/desktopMain/resources/icons/nuvio-app-icon.icns"))

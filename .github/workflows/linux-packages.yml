@@ -1,0 +1,152 @@
+name: Linux packages
+on:
+  workflow_dispatch:
+    inputs:
+      channel:
+        description: Build channel (stable requires clean version-tagged source)
+        type: choice
+        options: [nightly, stable]
+        default: nightly
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: read
+
+concurrency:
+  group: linux-packages-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  packages:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 180
+    env:
+      DISPLAY: ''
+      WAYLAND_DISPLAY: ''
+      NUVIO_RUN_LIVE_DISPLAY_TESTS: ''
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - name: Builder prerequisites (runner only)
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Only host orchestration tools. App/native compilation uses the
+          # digest/snapshot/hash-pinned disposable builder in the repository.
+          sudo apt-get update
+          sudo apt-get install -y podman jq flatpak ostree desktop-file-utils libwebkit2gtk-4.1-0 libva2 libva-drm2 libva-x11-2 libxss1 libasound2 libpulse0 liblcms2-2
+          dpkg-query -W > "$RUNNER_TEMP/runner-packages.tsv"
+      - uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+        with:
+          path: |
+            build/linux-media-runtime/downloads
+            build/linux-packaging/inputs
+            build/linux-packaging/gradle/caches/modules-2
+            build/linux-packaging/gradle/wrapper
+          key: linux-inputs-${{ hashFiles('tools/linux/media-runtime/**', 'tools/linux/packaging/config.json', 'gradle/**', '**/*.gradle.kts') }}
+      - name: Build private media from pinned source
+        shell: bash
+        run: |
+          unset DISPLAY WAYLAND_DISPLAY NUVIO_RUN_LIVE_DISPLAY_TESTS
+          tools/linux/media-runtime/build.sh --jobs 2
+      - name: Build DEB and AppImage from canonical Compose image
+        id: native
+        continue-on-error: true # Preserve independent Flatpak evidence on a format failure.
+        shell: bash
+        run: |
+          unset DISPLAY WAYLAND_DISPLAY NUVIO_RUN_LIVE_DISPLAY_TESTS
+          channel='${{ inputs.channel || 'nightly' }}'
+          if [[ "$GITHUB_REF_TYPE" == tag ]]; then
+            version=$(sed -n 's/^VERSION_NAME=//p' composeApp/Configuration/DesktopVersion.properties)
+            [[ "$GITHUB_REF_NAME" == "v$version" ]] || { echo 'Tag/version mismatch'; exit 1; }
+            channel=stable
+          fi
+          python3 tools/linux/packaging/build.py --format native --channel "$channel" --jobs 2
+      - name: Independently verify DEB in its pinned builder
+        id: deb
+        continue-on-error: true
+        shell: bash
+        run: |
+          set -euo pipefail
+          unset DISPLAY WAYLAND_DISPLAY NUVIO_RUN_LIVE_DISPLAY_TESTS
+          builder=$(jq -er '.builder_image_id' build/linux-packaging/canonical/release-info.json)
+          podman run --rm --network=none --userns=keep-id --cap-drop=all \
+            --security-opt label=disable --security-opt no-new-privileges \
+            --env PYTHONDONTWRITEBYTECODE=1 \
+            --mount "type=bind,src=$PWD/build/linux-packaging,dst=/output" \
+            --mount "type=bind,src=$PWD/tools/linux/packaging,dst=/packaging,ro" \
+            "$builder" python3 /packaging/verify.py artifacts /output --formats deb
+      - name: Prepare isolated pinned Flatpak runtime
+        id: flatpak_runtime
+        continue-on-error: true
+        shell: bash
+        run: |
+          unset DISPLAY WAYLAND_DISPLAY NUVIO_RUN_LIVE_DISPLAY_TESTS
+          export FLATPAK_USER_DIR="$RUNNER_TEMP/nuvio-flatpak"
+          echo "FLATPAK_USER_DIR=$FLATPAK_USER_DIR" >> "$GITHUB_ENV"
+          branch=$(jq -r .flatpak_branch tools/linux/packaging/config.json)
+          commit=$(jq -r .flatpak_runtime_commit tools/linux/packaging/config.json)
+          flatpak remote-add --user --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
+          flatpak install --user --noninteractive --no-related flathub "org.gnome.Platform/x86_64/$branch"
+          flatpak update --user --noninteractive --no-related --commit="$commit" "org.gnome.Platform/x86_64/$branch"
+          [[ $(flatpak info --user --show-commit "org.gnome.Platform//$branch") == "$commit" ]]
+      - name: Export and verify Flatpak
+        id: flatpak
+        if: ${{ !cancelled() && steps.flatpak_runtime.outcome == 'success' }}
+        continue-on-error: true
+        shell: bash
+        run: |
+          unset DISPLAY WAYLAND_DISPLAY NUVIO_RUN_LIVE_DISPLAY_TESTS
+          python3 tools/linux/packaging/build.py --format flatpak
+      - name: Checksum available packages and evidence
+        id: evidence
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          cp "$RUNNER_TEMP/runner-packages.tsv" build/linux-packaging/artifacts/
+          cd build/linux-packaging/artifacts
+          rm -f SHA256SUMS
+          sha256sum -- * > "$RUNNER_TEMP/SHA256SUMS"
+          mv "$RUNNER_TEMP/SHA256SUMS" SHA256SUMS
+          sha256sum -c SHA256SUMS
+      - name: Require all three valid packages
+        if: always()
+        shell: bash
+        run: |
+          unset DISPLAY WAYLAND_DISPLAY NUVIO_RUN_LIVE_DISPLAY_TESTS
+          python3 tools/linux/packaging/verify.py artifacts build/linux-packaging --formats all
+          [[ '${{ steps.native.outcome }}' == success ]]
+          [[ '${{ steps.deb.outcome }}' == success ]]
+          [[ '${{ steps.flatpak.outcome }}' == success ]]
+          [[ '${{ steps.evidence.outcome }}' == success ]]
+      - name: Report independent format results
+        if: always()
+        env:
+          NATIVE_RESULT: ${{ steps.native.outcome }}
+          DEB_RESULT: ${{ steps.deb.outcome }}
+          FLATPAK_RESULT: ${{ steps.flatpak.outcome }}
+          FLATPAK_RUNTIME_RESULT: ${{ steps.flatpak_runtime.outcome }}
+          EVIDENCE_RESULT: ${{ steps.evidence.outcome }}
+        shell: bash
+        run: |
+          {
+            echo '| Check | Outcome |'
+            echo '| --- | --- |'
+            echo "| DEB static verification | $DEB_RESULT |"
+            echo "| Native build including AppImage | $NATIVE_RESULT |"
+            echo "| Flatpak runtime preparation | $FLATPAK_RUNTIME_RESULT |"
+            echo "| Flatpak export and static verification | $FLATPAK_RESULT |"
+            echo "| Available artifact checksums | $EVIDENCE_RESULT |"
+            echo
+            echo 'Q02 remains partial. AppImage relocation blocks the three-format gate; independent successes do not establish release or manual acceptance.'
+          } >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        if: always()
+        with:
+          name: nuvio-linux-x86_64-${{ github.sha }}
+          path: build/linux-packaging/artifacts/*
+          if-no-files-found: error
+          compression-level: 0

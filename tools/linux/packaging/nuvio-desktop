@@ -1,0 +1,9 @@
+#!/bin/sh
+set -eu
+# The original jpackage launcher keeps its name/layout. No working-directory or
+# PATH discovery of native code, no extraction and no inherited loader override.
+image=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
+unset LD_PRELOAD
+export LD_LIBRARY_PATH="$image/lib/native:$image/lib/runtime/lib:$image/lib/runtime/lib/server"
+export GDK_BACKEND=x11
+exec "$image/bin/nuvio" "$@"
