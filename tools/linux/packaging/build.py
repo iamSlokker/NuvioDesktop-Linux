@@ -96,10 +96,12 @@ def native(args, work):
     context.mkdir(exist_ok=True)
     for src, dst in [(MEDIA / 'manifest.json', 'manifest.json'), (HERE / 'config.json', 'config.json'),
                      (HERE / 'apt-prefetch.py', 'apt-prefetch.py'),
+                     (HERE / 'install-builder-tools.py', 'install-builder-tools.py'),
                      (inputs / 'jdk', 'jdk.tar.gz'), (inputs / 'cmake', 'cmake.whl')]:
         shutil.copy2(src, context / dst)
     media_builder = json.loads((runtime / 'share/nuvio-media-runtime/build-info.json').read_text())['builder_image_id']
     identity = hashlib.sha256((HERE / 'Containerfile').read_bytes() + (HERE / 'apt-prefetch.py').read_bytes() +
+                              (HERE / 'install-builder-tools.py').read_bytes() +
                               media_builder.encode() +
                               (HERE / 'config.json').read_bytes() + (MEDIA / 'manifest.json').read_bytes()).hexdigest()
     image = 'localhost/nuvio-package-builder:' + identity

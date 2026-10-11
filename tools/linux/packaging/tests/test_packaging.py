@@ -4,21 +4,113 @@ import hashlib
 import json
 import os
 import pathlib
+import runpy
+import shlex
 import shutil
 import subprocess
 import sys
 import tempfile
 import unittest
+from types import SimpleNamespace
+from unittest.mock import patch
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1]))
 from fetch import CONFIG, fetch
 from verify import entries, scan_bytes, check_webkit_relocation
 from formats import PLATFORM
 from build import development_source
+import build as packaging_build
 from flatpak import launcher_text
 
 
 class PackagingContractTest(unittest.TestCase):
+    def test_containerfile_uses_conventional_instructions_without_heredocs(self):
+        text = (packaging_build.HERE / 'Containerfile').read_text()
+        self.assertNotIn('<<', text)
+        continued = False
+        for line in text.splitlines():
+            line = line.strip()
+            if not line or line.startswith('#'):
+                continue
+            if not continued:
+                self.assertIn(line.split()[0], {'ARG', 'FROM', 'ENV', 'COPY', 'RUN'})
+            continued = line.endswith('\\')
+        self.assertFalse(continued)
+        self.assertIn('RUN python3 /install-builder-tools.py', text)
+
+    def test_native_build_context_and_identity_include_tool_installer(self):
+        class BuildCaptured(Exception):
+            pass
+
+        with tempfile.TemporaryDirectory() as tmp:
+            root = pathlib.Path(tmp)
+            here, media, work, runtime = [root / name for name in ['packaging', 'media', 'work', 'runtime']]
+            for directory in [here, media, work, runtime / 'share/nuvio-media-runtime']:
+                directory.mkdir(parents=True)
+            for name in ['Containerfile', 'config.json', 'apt-prefetch.py', 'install-builder-tools.py']:
+                shutil.copy2(packaging_build.HERE / name, here / name)
+            (media / 'manifest.json').write_text('{}')
+            (runtime / 'share/nuvio-media-runtime/build-info.json').write_text(
+                json.dumps({'builder_image_id': 'fixture-media-builder'}))
+            images = []
+
+            def fake_fetch(spec, destination):
+                destination.parent.mkdir(parents=True, exist_ok=True)
+                destination.write_bytes(b'fixture input')
+                return destination
+
+            def capture_build(*args, **kwargs):
+                if args[:2] != ('podman', 'build'):
+                    if 'stdout' in kwargs:
+                        kwargs['stdout'].close()
+                    return
+                context = args[-1]
+                # Check actual context generation against every Containerfile COPY.
+                for line in (here / 'Containerfile').read_text().splitlines():
+                    if line.startswith('COPY '):
+                        for name in shlex.split(line)[1:-1]:
+                            self.assertTrue((context / name).is_file(), name)
+                self.assertEqual((here / 'install-builder-tools.py').read_bytes(),
+                                 (context / 'install-builder-tools.py').read_bytes())
+                images.append(args[args.index('--tag') + 1])
+                raise BuildCaptured
+
+            with patch.object(packaging_build, 'HERE', here), patch.object(packaging_build, 'MEDIA', media), \
+                    patch.object(packaging_build, 'fetch', side_effect=fake_fetch), \
+                    patch.object(packaging_build, 'run', side_effect=capture_build):
+                for suffix in ['', '\n# changed installer fixture\n']:
+                    if suffix:
+                        with (here / 'install-builder-tools.py').open('a') as f:
+                            f.write(suffix)
+                    with self.assertRaises(BuildCaptured):
+                        packaging_build.native(SimpleNamespace(runtime=str(runtime), jobs=2), work)
+            self.assertNotEqual(images[0], images[1])
+
+    def test_tool_installer_checks_both_hashes_before_extracting(self):
+        script = str(packaging_build.HERE / 'install-builder-tools.py')
+        with tempfile.TemporaryDirectory() as tmp:
+            inputs = pathlib.Path(tmp)
+            files = {'jdk': 'jdk.tar.gz', 'cmake': 'cmake.whl'}
+            cfg = {'tools': {name: {'sha256': hashlib.sha256(name.encode()).hexdigest()} for name in files}}
+            (inputs / 'config.json').write_text(json.dumps(cfg))
+            for invalid in [None, 'jdk', 'cmake']:
+                with self.subTest(invalid=invalid):
+                    for name, filename in files.items():
+                        (inputs / filename).write_bytes(b'corrupt' if name == invalid else name.encode())
+                    with patch('pathlib.Path', return_value=inputs), \
+                            patch('tarfile.open') as tar, patch('zipfile.ZipFile') as wheel:
+                        if invalid:
+                            with self.assertRaisesRegex(AssertionError, invalid):
+                                runpy.run_path(script, run_name='__main__')
+                            tar.assert_not_called()
+                            wheel.assert_not_called()
+                        else:
+                            runpy.run_path(script, run_name='__main__')
+                            tar.assert_called_once_with(inputs / 'jdk.tar.gz')
+                            wheel.assert_called_once_with(inputs / 'cmake.whl')
+                            tar.return_value.__enter__.return_value.extractall.assert_called_once_with('/opt/java')
+                            wheel.return_value.__enter__.return_value.extractall.assert_called_once_with('/opt/cmake-wheel')
+
     def test_flatpak_launcher_keeps_runtime_driver_extensions_after_private_libraries(self):
         with tempfile.TemporaryDirectory(prefix='nuvio flatpak ') as tmp:
             root = pathlib.Path(tmp)

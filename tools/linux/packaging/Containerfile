@@ -10,17 +10,8 @@ RUN apt-get -o Acquire::Check-Valid-Until=false -o APT::Update::Error-Mode=any u
  && dpkg-query -W -f='${Package}\t${Version}\n' | LC_ALL=C sort > /builder-packages.tsv \
  && rm -rf /var/lib/apt/lists/* /apt-prefetch.py
 COPY jdk.tar.gz cmake.whl config.json /inputs/
-RUN python3 - <<'PY'
-import hashlib,json,pathlib,tarfile,zipfile
-p=pathlib.Path('/inputs')
-cfg=json.loads((p/'config.json').read_text())
-for name,file in [('jdk','jdk.tar.gz'),('cmake','cmake.whl')]:
-    assert hashlib.sha256((p/file).read_bytes()).hexdigest()==cfg['tools'][name]['sha256'],name
-with tarfile.open(p/'jdk.tar.gz') as t:
-    t.extractall('/opt/java')
-with zipfile.ZipFile(p/'cmake.whl') as z:
-    z.extractall('/opt/cmake-wheel')
-PY
+COPY install-builder-tools.py /install-builder-tools.py
+RUN python3 /install-builder-tools.py && rm /install-builder-tools.py
 RUN ln -s /opt/java/* /opt/jdk \
  && chmod +x /opt/cmake-wheel/cmake/data/bin/* \
  && rm -rf /inputs
