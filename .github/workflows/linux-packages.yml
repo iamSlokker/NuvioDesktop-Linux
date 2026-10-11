@@ -78,6 +78,25 @@ jobs:
             --mount "type=bind,src=$PWD/build/linux-packaging,dst=/output" \
             --mount "type=bind,src=$PWD/tools/linux/packaging,dst=/packaging,ro" \
             "$builder" python3 /packaging/verify.py artifacts /output --formats deb
+      - name: Smoke-install DEB on Ubuntu 22.04
+        id: deb_smoke
+        if: ${{ !cancelled() && steps.deb.outcome == 'success' }}
+        continue-on-error: true
+        shell: bash
+        run: |
+          set -euo pipefail
+          unset DISPLAY WAYLAND_DISPLAY NUVIO_RUN_LIVE_DISPLAY_TESTS
+          debs=(build/linux-packaging/artifacts/*.deb)
+          [[ ${#debs[@]} -eq 1 && -s "${debs[0]}" ]]
+          sudo env DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends "$PWD/${debs[0]}"
+          [[ "$(dpkg-query -W -f='${Status}' nuvio-desktop)" == "install ok installed" ]]
+          sudo dpkg --audit
+          sudo dpkg -V nuvio-desktop
+          test -x /usr/bin/nuvio-desktop
+          test -s /opt/nuvio-desktop/lib/runtime/lib/server/libjvm.so
+          test -s /opt/nuvio-desktop/lib/native/libplayer_bridge.so
+          test -s /opt/nuvio-desktop/lib/native/libmpv.so.2
+          echo "DEB Ubuntu 22.04 smoke test PASSED"
       - name: Prepare isolated pinned Flatpak runtime
         id: flatpak_runtime
         continue-on-error: true
@@ -120,6 +139,7 @@ jobs:
           python3 tools/linux/packaging/verify.py artifacts build/linux-packaging --formats all
           [[ '${{ steps.native.outcome }}' == success ]]
           [[ '${{ steps.deb.outcome }}' == success ]]
+          [[ '${{ steps.deb_smoke.outcome }}' == success ]]
           [[ '${{ steps.flatpak.outcome }}' == success ]]
           [[ '${{ steps.evidence.outcome }}' == success ]]
       - name: Report independent format results
@@ -127,6 +147,7 @@ jobs:
         env:
           NATIVE_RESULT: ${{ steps.native.outcome }}
           DEB_RESULT: ${{ steps.deb.outcome }}
+          DEB_SMOKE_RESULT: ${{ steps.deb_smoke.outcome }}
           FLATPAK_RESULT: ${{ steps.flatpak.outcome }}
           FLATPAK_RUNTIME_RESULT: ${{ steps.flatpak_runtime.outcome }}
           EVIDENCE_RESULT: ${{ steps.evidence.outcome }}
@@ -136,6 +157,7 @@ jobs:
             echo '| Check | Outcome |'
             echo '| --- | --- |'
             echo "| DEB static verification | $DEB_RESULT |"
+            echo "| DEB Ubuntu install | $DEB_SMOKE_RESULT |"
             echo "| Native build including AppImage | $NATIVE_RESULT |"
             echo "| Flatpak runtime preparation | $FLATPAK_RUNTIME_RESULT |"
             echo "| Flatpak export and static verification | $FLATPAK_RESULT |"
