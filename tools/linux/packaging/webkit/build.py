@@ -161,7 +161,7 @@ def main():
         image = 'localhost/nuvio-webkit-builder:' + builder_key
         with tempfile.TemporaryDirectory(prefix='nuvio-webkit-builder-') as tmp:
             shutil.copy2(HERE.parent / 'apt-prefetch.py', tmp)
-            subprocess.run(['podman', 'build', '--pull=never', '--network=host', '--file', str(HERE / 'Containerfile'),
+            subprocess.run(['podman', 'build', '--pull-never', '--network=host', '--file', str(HERE / 'Containerfile'),
                             '--build-arg', 'PACKAGING_BUILDER_IMAGE=' + base, '--tag', image, tmp], check=True)
         image_id = subprocess.check_output(['podman', 'image', 'inspect', '--format', '{{.Id}}', image], text=True).strip()
         ccache = work / 'ccache'
