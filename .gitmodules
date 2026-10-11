@@ -2,3 +2,9 @@
 	path = MPVKit
 	url = https://github.com/NuvioMedia/MPVKit.git
 	branch = Nuvio
+[submodule "TorrServer"]
+	path = vendor/TorrServer
+	url = https://github.com/YouROK/TorrServer.git
+[submodule "quickjs-kt"]
+	path = vendor/quickjs-kt
+	url = https://github.com/dokar3/quickjs-kt.git
