@@ -136,7 +136,11 @@ jobs:
           # Reuse canonical app/media. Engine source/patch preparation, bounded
           # compilation and artifact inspection use the pinned container.
           # Download/ccache hits never bypass provenance or artifact checks.
-          python3 tools/linux/packaging/build.py --format appimage
+          if ! python3 tools/linux/packaging/build.py --format appimage; then
+            echo '=== WEBKIT BUILD ERROR LOG ==='
+            find build/linux-webkit/generations -type f -name build.log -print -exec tail -n 100 {} \; || true
+            exit 1
+          fi
       - name: Save verified downloads and compiler cache even after a format failure
         if: ${{ always() && steps.inputs_cache.outputs.cache-primary-key != '' }}
         continue-on-error: true # Cache availability cannot replace artifact verification.
