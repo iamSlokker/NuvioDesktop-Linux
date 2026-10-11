@@ -11,14 +11,31 @@ import subprocess
 import tempfile
 import zipfile
 from formats import PLATFORM
+from webkit.stage import linked_paths
 
 FORBIDDEN = [b'/home/hmacedo', b'/var/home/hmacedo', b'/home/linuxbrew', b'/opt/homebrew',
              b'/source/', b'/work/prefix', b'/recipes/']
+
+# A bare substring search also rejects mandatory copyright URLs/file globs and
+# libyuv's explicitly relative __FILE__ diagnostics. Recognize those bounded
+# forms; retain rejection of absolute paths, nested build paths and ambiguous
+# text. Never exempt a whole file or rewrite a library/license to pass the audit.
+SOURCE_REFERENCES = [
+    rb'(?m)^(?:[ \t]*|Source:[ \t]+)(?P<path>https?://[A-Za-z0-9][A-Za-z0-9.-]*(?::[0-9]+)?/[^\x00\s\"\'<>]+)(?=\r?$)',
+    rb'(?m)^Files:[ \t]+(?P<path>[A-Za-z0-9_.*?+-][A-Za-z0-9_./*?+-]*)(?=[ \t\r\n]|\Z)',
+    rb'(?:\A|\x00)(?P<path>\.\.?/[A-Za-z0-9_./+-]+)(?=\x00|\Z)',
+]
 
 
 def scan_bytes(data, name):
     for token in FORBIDDEN:
         if token in data:
+            if token == b'/source/':
+                references = [match.span('path') for pattern in SOURCE_REFERENCES
+                              for match in re.finditer(pattern, data)]
+                if all(any(start <= hit.start() and hit.end() <= end for start, end in references)
+                       for hit in re.finditer(re.escape(token), data)):
+                    continue
             raise ValueError(f'Build-machine path in {name}: {token!r}')
     if re.search(rb'(?<![A-Za-z0-9_./])/(?:var/)?home/[^/\s\x00]+/', data):
         raise ValueError('Absolute developer home path in ' + name)
@@ -39,13 +56,12 @@ def entries(root):
     return result
 
 
-def check_webkit_relocation(image):
-    if (image / 'lib/webkit2gtk-4.1').is_dir():
-        library = image / 'lib/native/libwebkit2gtk-4.1.so.0'
-        if not library.is_file() or b'WEBKIT_EXEC_PATH\x00' not in library.read_bytes():
-            raise ValueError('AppImage blocked: release WebKit hardcodes helper paths; '
-                             'WEBKIT_EXEC_PATH is developer-build-only. '
-                             'A reviewed relocatable WebKit build is required.')
+def check_webkit_relocation(image, required=False):
+    if (required or (image / 'lib/webkit2gtk-4.1').exists()
+            or (image / 'lib/native/libwebkit2gtk-4.1.so.0').exists()
+            or (image / 'share/nuvio-webkit/runtime.json').exists()):
+        from webkit.contract import check_runtime
+        check_runtime(image)
 
 
 def check_abi(path, label):
@@ -125,6 +141,14 @@ def check_image(root):
             raise ValueError('Bundled platform ABI/graphics driver: ' + rel)
         check_abi(p, rel)
         dynamic = subprocess.check_output(['readelf', '-d', str(p)], text=True)
+        if (root / 'share/nuvio-webkit/runtime.json').is_file():
+            from webkit.contract import ENGINE_FILES, PROCESSES
+            if rel in ENGINE_FILES + PROCESSES:
+                segments = subprocess.check_output(['readelf', '-lW', str(p)], text=True)
+                if 'GNU_RELRO' not in segments or not re.search(r'\b(?:BIND_NOW|NOW)\b', dynamic):
+                    raise ValueError('Private engine lacks full RELRO: ' + rel)
+                if any('E' in line.split()[-2] for line in segments.splitlines() if line.strip().startswith('GNU_STACK')):
+                    raise ValueError('Private engine requests executable stack: ' + rel)
         needed = re.findall(r'\(NEEDED\).*?\[(.*?)\]', dynamic)
         for dep in needed:
             if '/' in dep or re.match(r'lib(cuda|nvcuvid|nvidia|cudart)', dep):
@@ -135,8 +159,10 @@ def check_image(root):
         result = subprocess.check_output(['ldd', str(p)], text=True, env=env, stderr=subprocess.STDOUT)
         if 'not found' in result:
             raise ValueError('Unresolved image dependency: ' + rel + '\n' + result)
-        for dep, path in re.findall(r'(\S+) => (/\S+)', result):
-            if dep in ['libmpv.so.2', 'libplayer_bridge.so'] or dep.startswith(('libav', 'libsw', 'libplacebo')):
+        for dep, path in linked_paths(result):
+            private_webkit = (root / 'share/nuvio-webkit/runtime.json').is_file() and dep.startswith(
+                ('libwebkit', 'libjavascriptcore', 'libgtk-3', 'libgdk-3'))
+            if private_webkit or dep in ['libmpv.so.2', 'libplayer_bridge.so'] or dep.startswith(('libav', 'libsw', 'libplacebo')):
                 if not pathlib.Path(path).resolve().is_relative_to(root):
                     raise ValueError('Private media resolved outside image: ' + dep)
         elf_records.append(dict(file=rel, needed=needed))
@@ -165,7 +191,12 @@ def artifacts(work, formats):
                 root = pathlib.Path(tmp) / 'squashfs-root'
                 if not os.access(root / 'AppRun', os.X_OK):
                     raise ValueError('Missing AppRun')
-                report = check_image(root / 'usr/lib/nuvio-desktop')
+                payload = root / 'usr/lib/nuvio-desktop'
+                check_webkit_relocation(payload, required=True)
+                entries(root)  # Include outer AppRun/desktop/icon links in the path audit.
+                report = check_image(payload)
+                if report['source'] != json.loads((work / 'canonical/release-info.json').read_text()):
+                    raise ValueError('AppImage source/version differs from canonical image')
                 (dest / 'appimage-audit.json').write_text(json.dumps(report, indent=2) + '\n')
         else:
             # Parse/import the actual bundle into a disposable repository, never

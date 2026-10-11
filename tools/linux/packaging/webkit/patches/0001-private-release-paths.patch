@@ -1,0 +1,166 @@
+--- a/Source/WTF/wtf/PlatformGTK.cmake
++++ b/Source/WTF/wtf/PlatformGTK.cmake
+@@ -43,0 +44 @@
++    glib/NuvioRelocation.h
+--- /dev/null
++++ b/Source/WTF/wtf/glib/NuvioRelocation.h
+@@ -0,0 +1,50 @@
++// SPDX-License-Identifier: BSD-2-Clause
++// Nuvio's AppImage-only WebKit build. No environment or system-path fallback.
++#pragma once
++#include <dlfcn.h>
++#include <glib.h>
++#include <stdlib.h>
++#include <sys/stat.h>
++#include <unistd.h>
++
++static const char* nuvioPackageRoot() __attribute__((noinline));
++static const char* nuvioPackageRoot()
++{
++    static const char* root = [] {
++        Dl_info info { };
++        if (!dladdr(reinterpret_cast<void*>(&nuvioPackageRoot), &info) || !info.dli_fname)
++            g_error("Nuvio WebKit: cannot locate private engine");
++        char* library = realpath(info.dli_fname, nullptr);
++        if (!library)
++            g_error("Nuvio WebKit: private engine path is unavailable");
++        char* directory = g_path_get_dirname(library);
++        free(library);
++        const char* suffix = g_str_has_suffix(directory, "/lib/native") ? "/lib/native" : "/lib/webkit2gtk-4.1";
++        if (!g_str_has_suffix(directory, suffix) || strlen(directory) == strlen(suffix))
++            g_error("Nuvio WebKit: engine/helper must be inside its private directory");
++        directory[strlen(directory) - strlen(suffix)] = '\0';
++        const char* result = g_intern_string(directory);
++        g_free(directory);
++        return result;
++    }();
++    return root;
++}
++
++static inline const char* nuvioPrivatePath(const char* relative, bool executable = false)
++{
++    char* candidate = g_build_filename(nuvioPackageRoot(), relative, nullptr);
++    char* resolved = realpath(candidate, nullptr);
++    g_free(candidate);
++    char* prefix = g_strconcat(nuvioPackageRoot(), "/", nullptr);
++    if (!resolved || !g_str_has_prefix(resolved, prefix))
++        g_error("Nuvio WebKit: missing or escaping private resource: %s", relative);
++    g_free(prefix);
++    struct stat status { };
++    if (stat(resolved, &status) || access(resolved, R_OK)
++        || (executable && (!S_ISREG(status.st_mode) || access(resolved, X_OK)
++            || (status.st_mode & (S_ISUID | S_ISGID)))))
++        g_error("Nuvio WebKit: invalid private resource permissions: %s", relative);
++    const char* result = g_intern_string(resolved);
++    free(resolved);
++    return result;
++}
+--- a/Source/WTF/wtf/glib/Sandbox.cpp
++++ b/Source/WTF/wtf/glib/Sandbox.cpp
+@@ -26,0 +27 @@
++#include <wtf/glib/NuvioRelocation.h>
+@@ -54 +55 @@
+-            BWRAP_EXECUTABLE,
++            nuvioPrivatePath("bin/nuvio-bwrap", true),
+@@ -59 +60 @@
+-            "true",
++            "/usr/bin/true",
+@@ -67 +68 @@
+-            WTFLogAlways("Bubblewrap does not work inside of this container, sandboxing will be disabled.");
++            g_error("Nuvio WebKit: bubblewrap is unavailable; refusing unsandboxed fallback");
+@@ -86 +87,3 @@
+-    return !isInsideFlatpak() && !isInsideSnap() && !isInsideUnsupportedContainer();
++    if (isInsideFlatpak() || isInsideSnap())
++        g_error("Nuvio WebKit: nested Flatpak/Snap launch is unsupported");
++    return !isInsideUnsupportedContainer();
+--- a/Source/WebKit/Shared/glib/ProcessExecutablePathGLib.cpp
++++ b/Source/WebKit/Shared/glib/ProcessExecutablePathGLib.cpp
+@@ -27,0 +28 @@
++#include <wtf/glib/NuvioRelocation.h>
+@@ -31,0 +33 @@
++#include <wtf/glib/GUniquePtr.h>
+@@ -63 +65,2 @@
+-    return FileSystem::pathByAppendingComponent(FileSystem::stringFromFileSystemRepresentation(PKGLIBEXECDIR), StringView::fromLatin1(processName));
++    GUniquePtr<char> relative(g_build_filename("lib/webkit2gtk-4.1", processName, nullptr));
++    return FileSystem::stringFromFileSystemRepresentation(nuvioPrivatePath(relative.get(), true));
+--- a/Source/WebKit/UIProcess/API/glib/WebKitWebContext.cpp
++++ b/Source/WebKit/UIProcess/API/glib/WebKitWebContext.cpp
+@@ -20,0 +21 @@
++#include <wtf/glib/NuvioRelocation.h>
+@@ -349,6 +350,2 @@
+-    const char* bundleDirectory = g_getenv("WEBKIT_INJECTED_BUNDLE_PATH");
+-    if (bundleDirectory && g_file_test(bundleDirectory, G_FILE_TEST_IS_DIR))
+-        return bundleDirectory;
+-
+-    static const char* injectedBundlePath = PKGLIBDIR G_DIR_SEPARATOR_S "injected-bundle" G_DIR_SEPARATOR_S;
+-    return injectedBundlePath;
++    nuvioPrivatePath("lib/native/webkit2gtk-4.1/injected-bundle/" INJECTED_BUNDLE_FILENAME);
++    return nuvioPrivatePath("lib/native/webkit2gtk-4.1/injected-bundle");
+@@ -522 +519 @@
+-    bindtextdomain(GETTEXT_PACKAGE, LOCALEDIR);
++    bindtextdomain(GETTEXT_PACKAGE, nuvioPrivatePath("share/locale"));
+--- a/Source/WebKit/UIProcess/Launcher/glib/BubblewrapLauncher.cpp
++++ b/Source/WebKit/UIProcess/Launcher/glib/BubblewrapLauncher.cpp
+@@ -18,0 +19 @@
++#include <wtf/glib/NuvioRelocation.h>
+@@ -345,0 +347,6 @@
++    // The AppImage launcher generates mount-specific module caches. Mount only
++    // those cache files read-only; do not expose their parent temporary directory.
++    for (const auto* name : { "GDK_PIXBUF_MODULE_FILE", "GTK_IM_MODULE_FILE" }) {
++        if (const auto* path = g_getenv(name))
++            bindIfExists(args, path);
++    }
+@@ -483 +490,3 @@
+-        enabled = !g_strcmp0(env, "1");
++        if (!g_strcmp0(env, "1"))
++            g_error("Nuvio WebKit: debug sandbox permissions are forbidden");
++        enabled = 0;
+@@ -775 +784 @@
+-        "--ro-bind-try", DATADIR, DATADIR,
++        "--ro-bind", nuvioPrivatePath("share"), nuvioPrivatePath("share"),
+@@ -782 +791 @@
+-        "--ro-bind-try", LIBDIR, LIBDIR,
++        "--ro-bind", nuvioPrivatePath("lib"), nuvioPrivatePath("lib"),
+@@ -793 +802,2 @@
+-        "--ro-bind-try", PKGLIBEXECDIR, PKGLIBEXECDIR,
++        // Restore the private image after /tmp was replaced, including mounted AppImages.
++        "--ro-bind", nuvioPackageRoot(), nuvioPackageRoot(),
+@@ -818 +828 @@
+-            "--ro-bind", DBUS_PROXY_EXECUTABLE, DBUS_PROXY_EXECUTABLE,
++            "--ro-bind", nuvioPrivatePath("bin/nuvio-dbus-proxy", true), nuvioPrivatePath("bin/nuvio-dbus-proxy", true),
+@@ -963 +973 @@
+-        BWRAP_EXECUTABLE,
++        nuvioPrivatePath("bin/nuvio-bwrap", true),
+--- a/Source/WebKit/UIProcess/Launcher/glib/ProcessLauncherGLib.cpp
++++ b/Source/WebKit/UIProcess/Launcher/glib/ProcessLauncherGLib.cpp
+@@ -231,0 +232,5 @@
++    if (!sandboxEnabled && m_launchOptions.processType == ProcessType::Web)
++        g_error("Nuvio WebKit: refusing an unsandboxed content process");
++    if (sandboxEnabled && (isInsideFlatpak() || isInsideSnap()))
++        g_error("Nuvio WebKit: nested Flatpak/Snap launch is unsupported");
++
+--- a/Source/WebKit/UIProcess/Launcher/glib/XDGDBusProxy.cpp
++++ b/Source/WebKit/UIProcess/Launcher/glib/XDGDBusProxy.cpp
+@@ -26,0 +27 @@
++#include <wtf/glib/NuvioRelocation.h>
+@@ -200 +201 @@
+-        DBUS_PROXY_EXECUTABLE,
++        nuvioPrivatePath("bin/nuvio-dbus-proxy", true),
+--- a/Source/WebKit/UIProcess/glib/WebProcessPoolGLib.cpp
++++ b/Source/WebKit/UIProcess/glib/WebProcessPoolGLib.cpp
+@@ -291,0 +292,2 @@
++    if (!enabled)
++        g_error("Nuvio WebKit: disabling the sandbox is forbidden");
+@@ -312 +314 @@
+-        return;
++        g_error("Nuvio WebKit: unsandboxed Valgrind launch is forbidden");
+@@ -318 +320 @@
+-            return;
++            g_error("Nuvio WebKit: sandbox disable override is forbidden");
+--- a/Source/WebKit/WebProcess/gtk/WebProcessMainGtk.cpp
++++ b/Source/WebKit/WebProcess/gtk/WebProcessMainGtk.cpp
+@@ -27,0 +28 @@
++#include <wtf/glib/NuvioRelocation.h>
+@@ -85 +86 @@
+-        bindtextdomain(GETTEXT_PACKAGE, LOCALEDIR);
++        bindtextdomain(GETTEXT_PACKAGE, nuvioPrivatePath("share/locale"));

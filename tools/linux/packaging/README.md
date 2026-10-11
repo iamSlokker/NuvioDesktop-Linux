@@ -27,8 +27,13 @@ from verified source. The media builder image ID recorded in that artifact is
 the packaging container's base, so it must still exist in the local Podman store.
 If missing, rebuild media; never substitute an arbitrary host image.
 
-`--format native` builds DEB and AppImage only. `--format flatpak` exports an
-already completed canonical image. `--gradle-cache DIR --offline` optionally
+`--format deb` builds the canonical application image and DEB. `--format native`
+also builds AppImage. `--format flatpak` exports an already completed canonical
+image. `--format webkit` builds/resumes only the pinned AppImage engine;
+`--format appimage` reuses the canonical application/media and builds that engine
+if necessary. Neither AppImage-only command rebuilds media or modifies an existing
+DEB/Flatpak artifact. An optional `--webkit-generation PATH` must pass the engine
+recipe, provenance, policy and file-inventory checks before assembly. `--gradle-cache DIR --offline` optionally
 seeds verified Gradle module/wrapper inputs. Project build output, configuration
 cache, Gradle initialization scripts and local.properties are not copied;
 the disposable snapshot receives an empty local.properties required by upstream.
@@ -113,31 +118,45 @@ VAAPI/DRM and platform ABI dependencies; no system JDK or libmpv is required.
 There are no maintainer scripts or global library registrations. Uninstall
 removes package files and intentionally retains user XDG data.
 
-AppImage assembly is **blocked**, not accepted as portable. The pinned builder's
-Ubuntu WebKitGTK **2.50.4-0ubuntu0.22.04.1** hardcodes
-`/usr/lib/x86_64-linux-gnu/webkit2gtk-4.1`, `/usr/bin/bwrap` and
-`/usr/bin/xdg-dbus-proxy`; it does not contain `WEBKIT_EXEC_PATH`. WebKit's
-[process-path implementation](https://github.com/WebKit/WebKit/blob/webkitgtk-2.50.4/Source/WebKit/Shared/glib/ProcessExecutablePathGLib.cpp)
-only enables that override in developer builds. Relative ELF RUNPATH and copying
-subprocesses cannot fix those executable paths. The checked-in assembly scaffold
-fails before emitting an AppImage with that library. A separately reviewed,
-pinned relocatable WebKit/subprocess/sandbox build is needed, with matching
-notices/sources and portable GTK shared-data handling. The strict payload scan
-also found upstream SVG artist home-directory metadata in Ubuntu's GTK library;
-it is not this developer's data, but is another unresolved portable-payload
-audit finding. No binary string patch, host-WebKit fallback or sandbox bypass
-is used. The AppImage tool/runtime pins are ready; no successful AppImage build
-or runtime acceptance is claimed.
+AppImage uses the dedicated [production engine stage](webkit/README.md), not the
+builder's non-relocatable system WebKit. WebKitGTK **2.50.4**, its JavaScriptCore,
+Web/Network/GPU processes and injected bundle are built together with developer
+mode OFF and Bubblewrap ON. A pinned source patch resolves private paths from
+the loaded library/executable and mounts the private image read-only in child
+namespaces, including paths with spaces and mounts beneath `/tmp`.
 
-The [relocation feasibility audit](WEBKIT-RELOCATION.md) confirms the exact source
-archive, all three subprocesses (including GPUProcess), production build options
-and the separate sandbox launch/probe paths. No supported release relocation
-switch or suitable maintained drop-in solution was established. A custom release
-source build is plausible but needs a measured cold-build/cache strategy and
-namespace-capable isolated sandbox acceptance; the current builder's headless
-bubblewrap probe fails to create a UID map. That container failure is not proof
-of host-wide incompatibility. No WebKit compilation or speculative engine patch
-was started, and DEB/Flatpak assembly remains unchanged.
+The AppImage-only GTK source build retains Ubuntu's 3.24.33-1ubuntu2.2 patches,
+relocates GTK resource accessors, and removes upstream SVG editor home-path
+metadata before compiling resources. No binary strings are patched. Private
+Bubblewrap, xdg-dbus-proxy, GIO/TLS, pixbuf and GStreamer modules, schemas, MIME,
+icons and notices are assembled in the recorded engine builder. The wrapper
+regenerates absolute module caches for each mounted location. Host graphics/ABI
+libraries remain outside the package, as before.
+
+Missing private helpers and sandbox-disable requests fail closed. Seccomp rules,
+namespace flags and D-Bus filters remain upstream policy. WebProcess is sandboxed;
+upstream NetworkProcess is trusted, and GTK GPUProcess does not request the
+WebProcess sandbox. This does not claim all subprocesses are equally isolated.
+The old marker/string guard is replaced by verified engine provenance, payload
+hashes/modes, helper/resource requirements, ELF/ABI/dependency and path checks.
+Compilation alone is not runtime or sandbox acceptance.
+
+[WEBKIT-RELOCATION.md](WEBKIT-RELOCATION.md) records the exact root cause,
+implementation and acceptance boundary. The previous UID-map failure occurred
+inside Podman; the user subsequently verified Bubblewrap on the actual Bazzite
+host. Build containers are not used as evidence of WebProcess sandbox acceptance.
+
+Local AppImage acceptance now includes an actual 258,505,208-byte artifact,
+extraction/static inspection (4,225 entries, 410 ELF records), verified checksums
+and two production-overlay runs on a private Xvfb display. The runs exercised
+private Web/Network processes and the WebProcess seccomp/namespaces/read-only
+mounts at unrelated paths containing spaces, including a symlinked launcher.
+GTK3's production sandbox opt-in is set by the AppImage launcher; the engine
+rejects unsandboxed WebProcess launches. See the [exact evidence and limits](WEBKIT-RELOCATION.md#local-acceptance-2026-10-11).
+DEB/Flatpak artifact hashes are unchanged. This reuses their preserved dirty
+canonical application identity, not a freshly stamped application build from
+HEAD. Nuvio itself and FUSE-mounted playback have not been launched/tested here.
+DEB continues using distribution WebKit and Flatpak continues using GNOME WebKit.
 
 Flatpak uses GNOME's GTK/WebKit, Vulkan loader and driver extensions; it removes
 the duplicate private Vulkan loader. Older-baseline application/private media
@@ -182,16 +201,25 @@ commit there; export/import verification uses disposable output repositories.
 [linux-packages.yml](../../../.github/workflows/linux-packages.yml) runs on manual
 dispatch/version tags, checks out one commit, rebuilds private media, builds
 native packages and exports Flatpak, checks all three outputs and uploads
-artifacts/checksums. Only input downloads/Gradle module artifacts are cached;
-native/final package outputs are rebuilt. Official actions are commit-pinned.
-No release is automatically published and no signing/release secret is needed.
-The workflow is configured but has not run on GitHub. DEB has an independent
-static-verification step in its pinned builder; Flatpak preparation/export has
-separate outcomes and still runs after native-format failure. Available evidence
-is checksummed/uploaded and the job summary reports each outcome. The mandatory
-all-three-package check still fails while AppImage is blocked; independent DEB
-or Flatpak success does not open the release gate. `--format all` also
-continues independent export and returns failure if any format fails.
+artifacts/checksums. Verified downloads, Gradle module artifacts and a bounded
+WebKit ccache are cached; native/final package outputs are checked anew. Engine
+cache reuse requires matching source/recipe/base-image identity, build policy,
+file contents/modes and corresponding-source inventory. The same recipe supports
+a cold build. Official actions are commit-pinned. Compiler inputs are saved even
+after a failed format; cache availability never changes the release gate.
+
+DEB static verification/smoke installation, Flatpak preparation/export and
+AppImage engine/assembly report separate outcomes. The mandatory all-three-format
+gate still fails if any format or required verification fails. `--format all`
+also continues independent exports and returns failure if any format fails.
+The user confirmed DEB build/audit/smoke-install on Ubuntu 22.04 in Actions run
+**38137016659**, and Flatpak real playback on Bazzite. The new custom-engine CI
+path has not run on GitHub; its cold-build time, disk and memory fit must be
+verified there. No release is automatically published.
+The measured local full WebKit compile/link pass took 3h09m42s and peaked at
+13.24 GiB aggregate container memory. A subsequent link-hardening correction
+rebuilt in 3m56s through the compiler cache. These measurements do not establish
+that the complete cold pipeline fits a standard GitHub runner.
 
 ### Public service configuration release blocker
 
@@ -245,14 +273,16 @@ See [FFmpeg compliance](https://ffmpeg.org/legal.html),
 This is a redistribution inventory, not legal certification. Frozen WebKit/media
 snapshots require deliberate security refreshes, not indefinite deployment.
 
-Manual acceptance must still cover fresh DEB install/launch/playback/desktop
-integration/uninstall; AppImage executable launch/playback/library portability;
-and Bazzite Flatpak install/XWayland HUD/playback/audio/GPU/sandbox integrations.
+User-reported DEB smoke installation and Bazzite Flatpak playback are accepted
+within those tested boundaries. Broader DEB desktop/playback/uninstall, AppImage
+executable launch/playback/library portability and the remaining device/session
+integrations still require acceptance.
 Never run these against the user's live desktop without explicit authorization.
 
-## Local evidence
+## Retained initial local evidence
 
-At `linux` HEAD `d261f848` plus this dirty packaging snapshot, with Temurin 17
+This is historical evidence for the original packaging scaffold, before the
+subsequent CI and AppImage engine work described above. At `linux` HEAD `d261f848` plus this dirty packaging snapshot, with Temurin 17
 and all three display/live-test variables unset:
 
 - Production/test Kotlin compilation and Compose application-image build pass.

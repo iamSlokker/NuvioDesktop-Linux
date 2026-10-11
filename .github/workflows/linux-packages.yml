@@ -20,7 +20,7 @@ concurrency:
 jobs:
   packages:
     runs-on: ubuntu-22.04
-    timeout-minutes: 180
+    timeout-minutes: 360
     env:
       DISPLAY: ''
       WAYLAND_DISPLAY: ''
@@ -38,20 +38,25 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y podman jq flatpak ostree desktop-file-utils libwebkit2gtk-4.1-0 libva2 libva-drm2 libva-x11-2 libxss1 libasound2 libpulse0 liblcms2-2
           dpkg-query -W > "$RUNNER_TEMP/runner-packages.tsv"
-      - uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+      - uses: actions/cache/restore@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+        id: inputs_cache
         with:
           path: |
             build/linux-media-runtime/downloads
             build/linux-packaging/inputs
             build/linux-packaging/gradle/caches/modules-2
             build/linux-packaging/gradle/wrapper
-          key: linux-inputs-${{ hashFiles('tools/linux/media-runtime/**', 'tools/linux/packaging/config.json', 'gradle/**', '**/*.gradle.kts') }}
+            build/linux-webkit/downloads
+            build/linux-webkit/ccache
+          key: linux-inputs-${{ hashFiles('tools/linux/media-runtime/**', 'tools/linux/packaging/config.json', 'tools/linux/packaging/webkit/manifest.json', 'tools/linux/packaging/webkit/Containerfile', 'tools/linux/packaging/webkit/patches/**', 'tools/linux/packaging/webkit/build*.sh', 'gradle/**', '**/*.gradle.kts') }}-${{ github.run_id }}-${{ github.run_attempt }}
+          restore-keys: |
+            linux-inputs-${{ hashFiles('tools/linux/media-runtime/**', 'tools/linux/packaging/config.json', 'tools/linux/packaging/webkit/manifest.json', 'tools/linux/packaging/webkit/Containerfile', 'tools/linux/packaging/webkit/patches/**', 'tools/linux/packaging/webkit/build*.sh', 'gradle/**', '**/*.gradle.kts') }}-
       - name: Build private media from pinned source
         shell: bash
         run: |
           unset DISPLAY WAYLAND_DISPLAY NUVIO_RUN_LIVE_DISPLAY_TESTS
           tools/linux/media-runtime/build.sh --jobs 2
-      - name: Build DEB and AppImage from canonical Compose image
+      - name: Build canonical Compose image and DEB
         id: native
         continue-on-error: true # Preserve independent Flatpak evidence on a format failure.
         shell: bash
@@ -63,7 +68,7 @@ jobs:
             [[ "$GITHUB_REF_NAME" == "v$version" ]] || { echo 'Tag/version mismatch'; exit 1; }
             channel=stable
           fi
-          python3 tools/linux/packaging/build.py --format native --channel "$channel" --jobs 2
+          python3 tools/linux/packaging/build.py --format deb --channel "$channel" --jobs 2
       - name: Independently verify DEB in its pinned builder
         id: deb
         continue-on-error: true
@@ -119,6 +124,32 @@ jobs:
         run: |
           unset DISPLAY WAYLAND_DISPLAY NUVIO_RUN_LIVE_DISPLAY_TESTS
           python3 tools/linux/packaging/build.py --format flatpak
+      - name: Build and verify AppImage with private production WebKit
+        id: appimage
+        if: ${{ !cancelled() && steps.native.outcome == 'success' }}
+        continue-on-error: true
+        timeout-minutes: 240
+        shell: bash
+        run: |
+          set -euo pipefail
+          unset DISPLAY WAYLAND_DISPLAY NUVIO_RUN_LIVE_DISPLAY_TESTS
+          # Reuse canonical app/media. Engine source/patch preparation, bounded
+          # compilation and artifact inspection use the pinned container.
+          # Download/ccache hits never bypass provenance or artifact checks.
+          python3 tools/linux/packaging/build.py --format appimage
+      - name: Save verified downloads and compiler cache even after a format failure
+        if: ${{ always() && steps.inputs_cache.outputs.cache-primary-key != '' }}
+        continue-on-error: true # Cache availability cannot replace artifact verification.
+        uses: actions/cache/save@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+        with:
+          key: ${{ steps.inputs_cache.outputs.cache-primary-key }}
+          path: |
+            build/linux-media-runtime/downloads
+            build/linux-packaging/inputs
+            build/linux-packaging/gradle/caches/modules-2
+            build/linux-packaging/gradle/wrapper
+            build/linux-webkit/downloads
+            build/linux-webkit/ccache
       - name: Checksum available packages and evidence
         id: evidence
         if: always()
@@ -138,6 +169,7 @@ jobs:
           unset DISPLAY WAYLAND_DISPLAY NUVIO_RUN_LIVE_DISPLAY_TESTS
           python3 tools/linux/packaging/verify.py artifacts build/linux-packaging --formats all
           [[ '${{ steps.native.outcome }}' == success ]]
+          [[ '${{ steps.appimage.outcome }}' == success ]]
           [[ '${{ steps.deb.outcome }}' == success ]]
           [[ '${{ steps.deb_smoke.outcome }}' == success ]]
           [[ '${{ steps.flatpak.outcome }}' == success ]]
@@ -146,6 +178,7 @@ jobs:
         if: always()
         env:
           NATIVE_RESULT: ${{ steps.native.outcome }}
+          APPIMAGE_RESULT: ${{ steps.appimage.outcome }}
           DEB_RESULT: ${{ steps.deb.outcome }}
           DEB_SMOKE_RESULT: ${{ steps.deb_smoke.outcome }}
           FLATPAK_RESULT: ${{ steps.flatpak.outcome }}
@@ -158,12 +191,13 @@ jobs:
             echo '| --- | --- |'
             echo "| DEB static verification | $DEB_RESULT |"
             echo "| DEB Ubuntu install | $DEB_SMOKE_RESULT |"
-            echo "| Native build including AppImage | $NATIVE_RESULT |"
+            echo "| Canonical image and DEB build | $NATIVE_RESULT |"
+            echo "| Private WebKit and AppImage | $APPIMAGE_RESULT |"
             echo "| Flatpak runtime preparation | $FLATPAK_RUNTIME_RESULT |"
             echo "| Flatpak export and static verification | $FLATPAK_RESULT |"
             echo "| Available artifact checksums | $EVIDENCE_RESULT |"
             echo
-            echo 'Q02 remains partial. AppImage relocation blocks the three-format gate; independent successes do not establish release or manual acceptance.'
+            echo 'Q02 remains partial. All three verified formats are mandatory; independent successes and a compiled engine do not establish release or manual acceptance.'
           } >> "$GITHUB_STEP_SUMMARY"
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         if: always()

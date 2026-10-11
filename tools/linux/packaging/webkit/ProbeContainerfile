@@ -1,0 +1,6 @@
+# Test tools only. This image is never used as the AppImage runtime input.
+ARG WEBKIT_BUILDER_IMAGE
+FROM ${WEBKIT_BUILDER_IMAGE}
+RUN apt-get -o Acquire::Check-Valid-Until=false -o APT::Update::Error-Mode=any update \
+ && apt-get install -y --no-install-recommends xvfb xauth \
+ && rm -rf /var/lib/apt/lists/*

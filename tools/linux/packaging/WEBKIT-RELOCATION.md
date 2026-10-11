@@ -1,9 +1,115 @@
-# AppImage WebKitGTK relocation feasibility
+# AppImage WebKitGTK relocation
 
-Audited on 2026-10-10 at `linux` HEAD `d261f848` with the existing uncommitted
-Q02 packaging work. **AppImage remains blocked.** No WebKit compilation,
-application launch, graphical process, binary patch or sandbox bypass was used.
-Existing DEB/Flatpak artifacts and the canonical image are retained unchanged.
+## Current implementation (2026-10-11)
+
+The AppImage-only engine stage is now implemented under [webkit/](webkit/README.md).
+It uses the verified 2.50.4 release source, a source-level private-path patch,
+production mode, Bubblewrap and the existing Ubuntu 22.04 packaging builder.
+DEB and Flatpak retain their working distribution/GNOME WebKit arrangements.
+The user reports DEB CI smoke-install success in run 38137016659 and real Flatpak
+playback on Bazzite. The earlier namespace failure below was inside Podman;
+the actual host Bubblewrap test subsequently passed.
+
+The source patch covers process discovery, the injected bundle, locale paths,
+Bubblewrap spawning/container probing, D-Bus proxy spawning/binding, and private
+read-only sandbox mounts. Paths come from `dladdr`/`realpath` and must remain
+inside the private image. Missing, escaping, non-executable or setuid helpers
+are rejected. Sandbox disable overrides, debug sandbox permissions and unsupported
+nested-container fallback are fatal. No developer mode, binary string patching,
+host WebKit or unsandboxed fallback is used.
+
+GTK3's 4.1 API requires explicit sandbox opt-in. The AppImage launcher sets the
+verified release's production `WEBKIT_FORCE_SANDBOX=1` hook before context
+creation. The isolated overlay run without that hook stopped at the fail-closed
+WebProcess guard; it did not run content unsandboxed. DEB/Flatpak launchers are
+unchanged. Shared, module and executable linker flags include full RELRO, with
+the injected bundle covered by cache-policy and actual ELF verification.
+
+The pinned-source comparison checks the unchanged seccomp construction,
+namespace flags and D-Bus filtering. WebProcess is the upstream sandbox boundary;
+NetworkProcess remains trusted and GTK GPUProcess does not set the WebProcess
+sandbox flag. GPU private-path resolution is required without claiming a new
+GPU sandbox policy. The image is mounted read-only after `/tmp` is replaced.
+Only generated GTK/pixbuf cache files are added read-only, not their parent
+temporary directory.
+
+Ubuntu GTK's source patches are retained, its resource accessors are relocated,
+and SVG editor export-path metadata is removed at source before recompilation.
+Installed Adwaita SVG export paths are removed during assembly, retaining changed
+originals and exact patches in corresponding source. MIME/schema/icon caches are
+regenerated from packaged inputs. Absolute build/home paths remain rejected.
+The path scanner distinguishes standalone license URLs, relative copyright file
+globs and complete source-relative diagnostic strings from absolute paths; tests
+retain rejection of absolute/nested build paths and mixed safe/unsafe contents.
+Original copyright notices and the distribution libyuv binary stay intact.
+The assembler includes private modules/scanners, schemas, MIME, icons and
+licenses, and uses the same recorded builder for dependency closure. It preserves
+the existing graphics-driver exclusions and GLIBC/GLIBCXX ceilings. A separate
+source artifact retains original WebKit/GTK inputs, local/generated patches,
+recipes, package versions, notices and build evidence. This does not discharge
+the separately documented source obligations for all transitive dependencies.
+
+Builds use pinned inputs, bounded compile/link concurrency, a memory-limited
+container and a bounded compiler cache. Source/recipe/base-image identity names
+each generation; bytes, modes, symlinks and source/build-policy records are
+checked before reuse. AppImage assembly reuses the canonical application/media
+instead of rebuilding them. CI records each format independently and retains
+the mandatory all-three-format gate. Custom-engine CI acceptance is pending.
+
+See the engine README for the isolated Xvfb acceptance procedure. A compiler
+success, path-resolver fixture or host Bubblewrap probe alone cannot establish
+actual WebProcess/controls-overlay acceptance. Existing user profiles, installed
+Nuvio/Flatpak and the active desktop are outside the validation environment.
+
+### Local acceptance (2026-10-11)
+
+The actual AppImage is built and statically verified. Its extracted payload has
+4,225 entries and 410 ELF records (408 loose, two embedded JNI), with private
+dependency resolution, relative RUNPATH, link/permission/inventory checks,
+GLIBC <= 2.35, GLIBCXX <= 3.4.30 and no rejected developer paths. The outer pinned
+AppImage runtime also passes the path/ABI checks. SHA256:
+`4196b7a41df36b7d71b5293ee7fb5ea18c57d33561e72464cdf7b1e6d0e7928f`.
+The AppImage is 258,505,208 bytes; artifact checksums and the retained DEB/Flatpak
+hashes pass. The engine recipe is `2dcd7dfbcb09a6d5fc5264844aaa210a764eabbf82ecd4dc24ab443782f9393d`.
+
+Two isolated production-overlay runs pass: an image beneath `/tmp` and an
+unrelated repository-filesystem path with a symlinked entry point, both with
+spaces. Actual private WebProcess, NetworkProcess, bubblewrap and D-Bus proxy
+executables were observed. UI/engine helpers mapped private WebKit/JSC/GTK/GDK.
+The real controls page returned a JavaScript/native message. WebProcess had
+NoNewPrivs=1, seccomp mode 2 with one additional filter, distinct PID/mount/network
+namespaces, a read-only image mount, access to its private resources and no access
+to the outside sentinel. The pinned-source fixture separately confirms unchanged
+upstream seccomp and D-Bus filtering. GPUProcess resolution is covered statically
+and by the production resolver; the CPU-painted HUD does not launch GPUProcess.
+
+Thirty-one packaging unit tests, 27 production-resolver cases and two configured
+compiler-path probes pass. The full compilation/link pass took 3h09m42s, peaked
+at 13.24 GiB aggregate cgroup memory (6.82 GiB maximum process RSS), and used no
+swap. After the payload audit caught missing module RELRO flags, the corrected
+engine rebuilt through ccache in 3m56s. No failed candidate bypassed the audit.
+The initial isolated launch also failed closed until the GTK3 sandbox opt-in was
+added. A harness-only Unix-socket path-length failure was fixed by keeping XDG
+runtime directories short and separate from deliberately long image paths.
+
+This is a development candidate, not production or full-player acceptance. It
+reuses the preserved canonical application's `d261f848...` dirty identity/content
+digest; the engine and assembly have separate provenance. All 1,603 tracked
+application/build inputs were compared with the retained snapshot and match.
+The new engine/assembly CI path, full Nuvio/FUSE-mounted playback, accessibility,
+portals, desktop/graphics integration and cross-distribution acceptance remain
+pending. Isolated-session accessibility/portal warnings are not acceptance of
+those integrations. Optional AppStream metadata is still absent. Public defaults
+and complete redistribution materials remain separate release blockers.
+No Nuvio launch, active-display test, host installation or user-profile change
+was performed. Q02 remains `LINUX_PARTIAL / YES`.
+
+## Historical feasibility evidence (2026-10-10)
+
+The remainder records the original audit at `linux` HEAD `d261f848`. Its statements
+about an absent implementation/build and then-pending CI/manual checks describe
+that earlier state. Current implementation and acceptance are described above.
+Existing DEB/Flatpak artifacts and canonical image are retained unchanged.
 
 ## Exact input and root cause
 

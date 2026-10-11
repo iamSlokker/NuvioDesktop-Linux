@@ -30,5 +30,5 @@ cmake --build /output/native --parallel "$NUVIO_BUILD_JOBS" \
 /output/native/linux_audio_recovery_test
 python3 tools/linux/packaging/stage.py /output
 python3 tools/linux/packaging/verify.py image /output/canonical
-python3 tools/linux/packaging/formats.py /output
-python3 tools/linux/packaging/verify.py artifacts /output --formats native
+python3 tools/linux/packaging/formats.py /output --deb-only
+python3 tools/linux/packaging/verify.py artifacts /output --formats deb

@@ -122,6 +122,7 @@ def native(args, work):
                '--env', 'HOME=/tmp/nuvio-build', '--env', 'GRADLE_USER_HOME=/gradle',
                '--env', 'SOURCE_DATE_EPOCH=' + str(info['source_date_epoch']),
                '--env', 'NUVIO_BUILD_CHANNEL=' + args.channel,
+               '--env', 'NUVIO_PACKAGE_FORMAT=deb',
                '--env', 'NUVIO_BUILD_JOBS=' + str(args.jobs)]
     if args.offline:
         command += ['--env', 'NUVIO_GRADLE_OFFLINE=1']
@@ -132,15 +133,32 @@ def native(args, work):
     run(*command, image, 'bash', '/source/tools/linux/packaging/native-build.sh')
 
 
+def appimage(args, work):
+    for name in ['appimagetool', 'appimage-runtime']:
+        fetch(CONFIG['tools'][name], work / 'inputs' / name)
+    generation = args.webkit_generation
+    if not generation:
+        result = work / 'engine-result.json'
+        command = ['python3', HERE / 'webkit/build.py', '--packaging-work-dir', work, '--result-file', result]
+        if args.webkit_source_archive:
+            command += ['--source-archive', args.webkit_source_archive]
+        run(*command)
+        generation = json.loads(result.read_text())['generation']
+    run('python3', HERE / 'webkit/package.py', '--packaging-work-dir', work,
+        '--engine-generation', pathlib.Path(generation).resolve())
+
+
 def main():
     p = argparse.ArgumentParser(description=__doc__)
-    p.add_argument('--format', choices=['native', 'flatpak', 'all'], default='all')
+    p.add_argument('--format', choices=['native', 'deb', 'flatpak', 'all', 'webkit', 'appimage'], default='all')
     p.add_argument('--runtime', help='Previously audited private runtime; omitted: build from canonical recipe')
     p.add_argument('--work-dir', default=str(REPO / 'build/linux-packaging'))
     p.add_argument('--channel', choices=['stable', 'nightly'], default='nightly')
     p.add_argument('--jobs', type=int, default=4)
     p.add_argument('--gradle-cache', help='Optional Gradle dependency/wrapper cache to seed the isolated build')
     p.add_argument('--offline', action='store_true')
+    p.add_argument('--webkit-source-archive', help='Optional pinned WebKit source archive for the isolated engine stage')
+    p.add_argument('--webkit-generation', help='Optional verified engine generation; otherwise build/resume the pinned engine')
     args = p.parse_args()
     if any(os.environ.get(k) for k in ['DISPLAY', 'WAYLAND_DISPLAY', 'NUVIO_RUN_LIVE_DISPLAY_TESTS']):
         p.error('Unset DISPLAY, WAYLAND_DISPLAY and NUVIO_RUN_LIVE_DISPLAY_TESTS before packaging')
@@ -153,7 +171,16 @@ def main():
     with (work / '.lock').open('w') as lock:
         fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
         failures = []
-        if args.format in ['native', 'all']:
+        if args.format == 'appimage':
+            appimage(args, work)
+            return
+        if args.format == 'webkit':
+            command = ['python3', HERE / 'webkit/build.py', '--packaging-work-dir', work]
+            if args.webkit_source_archive:
+                command += ['--source-archive', args.webkit_source_archive]
+            run(*command)
+            return
+        if args.format in ['native', 'deb', 'all']:
             try:
                 native(args, work)
             except (subprocess.CalledProcessError, ValueError) as error:
@@ -166,6 +193,11 @@ def main():
                 run('python3', HERE / 'verify.py', 'artifacts', work, '--formats', 'flatpak')
             except (subprocess.CalledProcessError, ValueError) as error:
                 failures.append('flatpak: ' + str(error))
+        if args.format in ['native', 'all']:
+            try:
+                appimage(args, work)
+            except (subprocess.CalledProcessError, ValueError) as error:
+                failures.append('appimage: ' + str(error))
         if failures:
             raise SystemExit('\n'.join(failures))
 

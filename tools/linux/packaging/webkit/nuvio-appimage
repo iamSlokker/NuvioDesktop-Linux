@@ -1,0 +1,43 @@
+#!/bin/sh
+set -eu
+unset LD_PRELOAD LD_LIBRARY_PATH WEBKIT_EXEC_PATH WEBKIT_INJECTED_BUNDLE_PATH
+image=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd -P)
+library_path="$image/lib/native:$image/lib/runtime/lib:$image/lib/runtime/lib/server"
+export GDK_BACKEND=x11
+# GTK3's 4.1 API still requires sandbox opt-in. This production hook enables it
+# before WebProcessPool creation; the private engine rejects disable requests.
+export WEBKIT_FORCE_SANDBOX=1
+export GSETTINGS_SCHEMA_DIR="$image/share/glib-2.0/schemas"
+export XDG_DATA_DIRS="$image/share:/usr/local/share:/usr/share"
+export GIO_MODULE_DIR="$image/lib/native/gio/modules"
+export GIO_EXTRA_MODULES="$GIO_MODULE_DIR"
+export GDK_PIXBUF_MODULEDIR="$image/lib/native/gdk-pixbuf-2.0/2.10.0/loaders"
+export GTK_PATH="$image/lib/native/gtk-3.0"
+export GST_PLUGIN_SYSTEM_PATH_1_0="$image/lib/native/gstreamer-1.0"
+export GST_PLUGIN_PATH_1_0=
+export GST_PLUGIN_SCANNER="$image/bin/nuvio-gst-plugin-scanner"
+export GST_PLUGIN_SCANNER_1_0="$GST_PLUGIN_SCANNER"
+# These caches contain absolute module paths. Generate them for this mount,
+# without rewriting libraries or putting build paths into the packaged cache.
+cache=$(mktemp -d "${TMPDIR:-/tmp}/nuvio-modules.XXXXXXXX")
+child=
+cleanup() { rm -rf -- "$cache"; }
+stop() { if [ -n "$child" ]; then kill -TERM "$child" 2>/dev/null || :; fi; }
+trap cleanup EXIT
+trap stop HUP INT TERM
+export GDK_PIXBUF_MODULE_FILE="$cache/pixbuf.cache"
+export GTK_IM_MODULE_FILE="$cache/immodules.cache"
+mkdir "$cache/gstreamer"
+export GST_REGISTRY="$cache/gstreamer/registry.bin"
+export GST_REGISTRY_1_0="$GST_REGISTRY"
+# Keep host mktemp/mkdir/rm on host libraries; only private executables use this
+# closure (important on hosts newer than the Ubuntu build baseline).
+LD_LIBRARY_PATH="$library_path" "$image/bin/nuvio-pixbuf-query" "$GDK_PIXBUF_MODULEDIR"/*.so > "$GDK_PIXBUF_MODULE_FILE"
+LD_LIBRARY_PATH="$library_path" "$image/bin/nuvio-gtk-query" "$image/lib/native/gtk-3.0/3.0.0/immodules"/*.so > "$GTK_IM_MODULE_FILE"
+LD_LIBRARY_PATH="$library_path" "$image/bin/nuvio" "$@" <&0 &
+child=$!
+result=0
+wait "$child" || result=$?
+# An interrupted wait must not remove caches while the app is still exiting.
+if kill -0 "$child" 2>/dev/null; then wait "$child" || result=$?; fi
+exit "$result"

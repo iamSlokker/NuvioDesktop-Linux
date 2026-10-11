@@ -1,0 +1,15 @@
+# Inherit the canonical, snapshot-pinned Ubuntu 22.04 packaging builder.
+ARG PACKAGING_BUILDER_IMAGE
+FROM ${PACKAGING_BUILDER_IMAGE}
+COPY apt-prefetch.py /apt-prefetch.py
+RUN apt-get -o Acquire::Check-Valid-Until=false -o APT::Update::Error-Mode=any update \
+ && python3 /apt-prefetch.py bison flex ruby gperf ccache time gettext unifdef libgcrypt20-dev libtasn1-6-dev libicu-dev libharfbuzz-dev libharfbuzz-icu0 libjpeg-dev libepoxy-dev libxml2-dev libxslt1-dev libpng-dev libsqlite3-dev libwebp-dev libsoup-3.0-dev libsecret-1-dev libseccomp-dev libwoff-dev libavif-dev libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev libgstreamer-plugins-bad1.0-dev libsystemd-dev libhyphen-dev libevent-dev liblcms2-dev \
+ && apt-get install -y --no-install-recommends bison flex ruby gperf ccache time gettext unifdef libgcrypt20-dev libtasn1-6-dev libicu-dev libharfbuzz-dev libharfbuzz-icu0 libjpeg-dev libepoxy-dev libxml2-dev libxslt1-dev libpng-dev libsqlite3-dev libwebp-dev libsoup-3.0-dev libsecret-1-dev libseccomp-dev libwoff-dev libavif-dev libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev libgstreamer-plugins-bad1.0-dev libsystemd-dev libhyphen-dev libevent-dev liblcms2-dev \
+ && dpkg-query -W -f='${Package}\t${Version}\n' | LC_ALL=C sort > /webkit-builder-packages.tsv \
+ && rm -rf /var/lib/apt/lists/* /apt-prefetch.py
+COPY apt-prefetch.py /apt-prefetch.py
+RUN apt-get -o Acquire::Check-Valid-Until=false -o APT::Update::Error-Mode=any update \
+ && python3 /apt-prefetch.py libmanette-0.2-dev libenchant-2-dev flite1-dev autopoint gtk-doc-tools libgirepository1.0-dev librsvg2-common \
+ && apt-get install -y --no-install-recommends libmanette-0.2-dev libenchant-2-dev flite1-dev autopoint gtk-doc-tools libgirepository1.0-dev librsvg2-common \
+ && dpkg-query -W -f='${Package}\t${Version}\n' | LC_ALL=C sort > /webkit-builder-packages.tsv \
+ && rm -rf /var/lib/apt/lists/* /apt-prefetch.py

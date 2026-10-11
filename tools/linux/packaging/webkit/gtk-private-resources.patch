@@ -1,0 +1,44 @@
+--- a/gtk/gtkprivate.c
++++ b/gtk/gtkprivate.c
+@@ -37,0 +38,26 @@
++/* AppImage-only source build: keep GTK resources beside its loaded library. */
++#include <dlfcn.h>
++static const gchar *
++nuvio_gtk_path (const gchar *relative)
++{
++  Dl_info info;
++  gchar *library, *directory, *path;
++  const gchar *result;
++  if (!dladdr ((void *) &_gtk_get_libdir, &info) || !info.dli_fname)
++    g_error ("Nuvio GTK: cannot locate private library");
++  library = realpath (info.dli_fname, NULL);
++  if (!library)
++    g_error ("Nuvio GTK: private library path is unavailable");
++  directory = g_path_get_dirname (library);
++  free (library);
++  if (!g_str_has_suffix (directory, "/lib/native") || strlen (directory) <= strlen ("/lib/native"))
++    g_error ("Nuvio GTK: unexpected private library layout");
++  directory[strlen (directory) - strlen ("/lib/native")] = '\0';
++  path = g_build_filename (directory, relative, NULL);
++  result = g_intern_string (path);
++  g_free (path);
++  g_free (directory);
++  return result;
++}
++
++
+@@ -41 +67 @@
+-  return GTK_DATADIR;
++  return nuvio_gtk_path ("share");
+@@ -47 +73 @@
+-  return GTK_LIBDIR;
++  return nuvio_gtk_path ("lib/native");
+@@ -53 +79 @@
+-  return GTK_SYSCONFDIR;
++  return nuvio_gtk_path ("etc");
+@@ -59 +85 @@
+-  return GTK_LOCALEDIR;
++  return nuvio_gtk_path ("share/locale");
+@@ -65 +91 @@
+-  return GTK_DATA_PREFIX;
++  return nuvio_gtk_path ("");

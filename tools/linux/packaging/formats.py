@@ -9,7 +9,7 @@ import shutil
 import subprocess
 import sys
 
-from fetch import CONFIG
+from fetch import CONFIG, fetch
 
 HERE = pathlib.Path(__file__).resolve().parent
 # Platform ABI and graphics driver entry points stay outside the AppImage.
@@ -23,74 +23,15 @@ def run(*args, **kwargs):
     return subprocess.run([str(a) for a in args], check=True, **kwargs)
 
 
-def portable_support(image):
-    native = image / 'lib/native'
-    webkit = pathlib.Path('/usr/lib/x86_64-linux-gnu/libwebkit2gtk-4.1.so.0')
-    if b'WEBKIT_EXEC_PATH\x00' not in webkit.read_bytes():
-        raise ValueError('AppImage blocked: release WebKit hardcodes helper paths; '
-                         'a reviewed relocatable WebKit build is required. '
-                         'Do not disable its sandbox or depend on host WebKit.')
-    # WebKit executes these out of process; the .so closure alone is insufficient.
-    helpers = pathlib.Path('/usr/lib/x86_64-linux-gnu/webkit2gtk-4.1')
-    if not helpers.is_dir():
-        raise ValueError('Missing WebKitGTK subprocess directory')
-    shutil.copytree(helpers, image / 'lib/webkit2gtk-4.1', symlinks=False)
-    for name in ['glib-2.0/schemas', 'mime']:
-        shutil.copytree(pathlib.Path('/usr/share') / name, image / 'share' / name, dirs_exist_ok=True)
-    pending = [p for p in image.rglob('*') if p.is_file() and not p.is_symlink() and p.open('rb').read(4) == b'\x7fELF']
-    seen, packages = set(), set()
-    env = dict(os.environ, LD_LIBRARY_PATH=f'{native}:{image}/lib/runtime/lib:{image}/lib/runtime/lib/server')
-    while pending:
-        elf = pending.pop()
-        key = str(elf.resolve())
-        if key in seen:
-            continue
-        seen.add(key)
-        output = subprocess.check_output(['ldd', str(elf)], text=True, env=env)
-        if 'not found' in output:
-            raise ValueError('Unresolved portable input: ' + str(elf) + '\n' + output)
-        for soname, path in re.findall(r'(\S+) => (/\S+)', output):
-            if PLATFORM.match(soname) or pathlib.Path(path).resolve().is_relative_to(image.resolve()):
-                continue
-            src = pathlib.Path(path).resolve()
-            target = native / src.name
-            if target.exists():
-                if target.read_bytes() != src.read_bytes():
-                    raise ValueError('Conflicting private library: ' + soname)
-                continue
-            shutil.copy2(src, target)
-            if soname != src.name:
-                (native / soname).symlink_to(src.name)
-            pending.append(target)
-            for candidate in [src, pathlib.Path('/' + str(src).removeprefix('/usr/'))]:
-                owner = subprocess.run(['dpkg-query', '-S', str(candidate)], text=True, capture_output=True)
-                if owner.returncode == 0:
-                    packages.update(line.split(': ', 1)[0].split(':')[0] for line in owner.stdout.splitlines())
-                    break
-            else:
-                raise ValueError('No redistribution inventory owner: ' + str(src))
-    notices = image / 'share/licenses/Ubuntu'
-    notices.mkdir(parents=True)
-    for package in sorted(packages):
-        source = pathlib.Path('/usr/share/doc') / package / 'copyright'
-        if not source.is_file():
-            raise ValueError('Missing platform-library notice: ' + package)
-        shutil.copy2(source, notices / (package + '.copyright'))
-    (notices / 'packages.json').write_text(json.dumps(sorted(packages), indent=2) + '\n')
-    # Relative lookup for copied libraries and subprocesses. JDK layout untouched.
-    for p in list(native.iterdir()) + list((image / 'lib/webkit2gtk-4.1').rglob('*')):
-        if p.is_file() and not p.is_symlink() and p.open('rb').read(4) == b'\x7fELF':
-            run('patchelf', '--set-rpath', '$ORIGIN:$ORIGIN/../native:$ORIGIN/../../native:$ORIGIN/../runtime/lib', p)
-    launcher = image / 'bin/nuvio-desktop'
-    text = launcher.read_text().replace('exec "$image/bin/nuvio"', '''export WEBKIT_EXEC_PATH="$image/lib/webkit2gtk-4.1"
-export WEBKIT_INJECTED_BUNDLE_PATH="$image/lib/webkit2gtk-4.1/injected-bundle"
-export GSETTINGS_SCHEMA_DIR="$image/share/glib-2.0/schemas"
-export XDG_DATA_DIRS="$image/share:/usr/local/share:/usr/share"
-exec "$image/bin/nuvio"''')
-    launcher.write_text(text)
+def portable_support(image, engine=None, resource_sources=None):
+    if engine is None:
+        raise ValueError('AppImage blocked: a verified production WebKit generation is required; '
+                         'use --format webkit then --format appimage --webkit-generation PATH')
+    from webkit.stage import stage
+    stage(image, engine, resource_sources)
 
 
-def build(work):
+def build(work, deb_only=False):
     image = work / 'canonical'
     info = json.loads((image / 'release-info.json').read_text())
     suffix = '' if info['channel'] == 'stable' else '~nightly'
@@ -140,11 +81,29 @@ Description: {CONFIG['display_name']}
     shutil.copy2(work / 'source-info.json', sources / 'source-info.json')
     shutil.make_archive(str(artifacts / ('Nuvio-source-' + info['git_commit'][:12])), 'gztar', sources)
     run('python3', HERE / 'verify.py', 'artifacts', work, '--formats', 'deb')
+    if not deb_only:
+        build_appimage(work)
+
+
+def build_appimage(work, engine=None):
+    # Reuse the canonical app/media image. Never remove existing DEB/Flatpak
+    # artifacts when iterating on the AppImage-only engine.
+    # Recheck tool bytes even when assembling independently of the native build.
+    for name in ['appimagetool', 'appimage-runtime']:
+        fetch(CONFIG['tools'][name], work / 'inputs' / name)
+    image = work / 'canonical'
+    info = json.loads((image / 'release-info.json').read_text())
+    suffix = '' if info['channel'] == 'stable' else '~nightly'
+    version = info['version'] + suffix + '+git.' + info['git_commit'][:12]
+    if info['dirty']:
+        version += '.dirty.' + info['source_sha256'][:12]
+    artifacts = work / 'artifacts'
+    artifacts.mkdir(exist_ok=True)
     appdir = work / 'Nuvio.AppDir'
     shutil.rmtree(appdir, ignore_errors=True)
     portable = appdir / 'usr/lib/nuvio-desktop'
     shutil.copytree(image, portable, symlinks=True)
-    portable_support(portable)
+    portable_support(portable, engine, work / 'webkit-resource-sources')
     shutil.copy2(image / 'share/applications/com.nuvio.media.desktop.desktop', appdir / 'com.nuvio.media.desktop.desktop')
     shutil.copy2(image / 'share/icons/hicolor/512x512/apps/com.nuvio.media.desktop.png', appdir / 'com.nuvio.media.desktop.png')
     (appdir / '.DirIcon').symlink_to('com.nuvio.media.desktop.png')
@@ -164,4 +123,4 @@ Description: {CONFIG['display_name']}
 
 
 if __name__ == '__main__':
-    build(pathlib.Path(sys.argv[1]))
+    build(pathlib.Path(sys.argv[1]), deb_only='--deb-only' in sys.argv[2:])
