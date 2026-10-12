@@ -1290,7 +1290,7 @@ private fun TabbedGridContent(
                             NuvioPosterCard(
                                 title = item.name,
                                 imageUrl = item.poster,
-                                fallbackImageUrl = item.rawPosterUrl,
+                                fallbackImageUrl = item.posterFallback,
                                 shape = NuvioPosterShape.Poster,
                                 detailLine = item.releaseInfo,
                                 isWatched = WatchingState.isPosterWatched(
