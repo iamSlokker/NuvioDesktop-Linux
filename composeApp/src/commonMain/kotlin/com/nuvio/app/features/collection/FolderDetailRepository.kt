@@ -466,42 +466,43 @@ object FolderDetailRepository {
     }
 
     private fun rebuildAllTab() {
-        val current = _uiState.value
-        if (!current.showAllTab) return
-        val sourceTabs = current.tabs.filter { !it.isAllTab }
+        _uiState.update { current ->
+            if (!current.showAllTab) return@update current
+            val sourceTabs = current.tabs.filter { !it.isAllTab }
 
-        // Round-robin merge
-        val merged = mutableListOf<MetaPreview>()
-        val seenKeys = mutableSetOf<String>()
-        val iterators = sourceTabs.map { it.items.iterator() }
-        var hasMore = true
-        while (hasMore) {
-            hasMore = false
-            for (iterator in iterators) {
-                if (iterator.hasNext()) {
-                    val item = iterator.next()
-                    if (seenKeys.add(item.stableKey())) {
-                        merged.add(item)
+            // Round-robin merge
+            val merged = mutableListOf<MetaPreview>()
+            val seenKeys = mutableSetOf<String>()
+            val iterators = sourceTabs.map { it.items.iterator() }
+            var hasMore = true
+            while (hasMore) {
+                hasMore = false
+                for (iterator in iterators) {
+                    if (iterator.hasNext()) {
+                        val item = iterator.next()
+                        if (seenKeys.add(item.stableKey())) {
+                            merged.add(item)
+                        }
+                        hasMore = true
                     }
-                    hasMore = true
                 }
             }
-        }
 
-        val updatedTabs = current.tabs.toMutableList()
-        val allTabIndex = updatedTabs.indexOfFirst { it.isAllTab }
-        if (allTabIndex >= 0) {
-            val hasInitialLoads = sourceTabs.any { it.isLoading }
-            val hasLoadMore = sourceTabs.any { it.isLoadingMore }
-            val errorMessage = sourceTabs.firstOrNull { it.error != null }?.error
-            updatedTabs[allTabIndex] = updatedTabs[allTabIndex].copy(
-                items = merged,
-                isLoading = hasInitialLoads,
-                isLoadingMore = hasLoadMore,
-                error = errorMessage.takeIf { merged.isEmpty() },
-            )
+            val updatedTabs = current.tabs.toMutableList()
+            val allTabIndex = updatedTabs.indexOfFirst { it.isAllTab }
+            if (allTabIndex >= 0) {
+                val hasInitialLoads = sourceTabs.any { it.isLoading }
+                val hasLoadMore = sourceTabs.any { it.isLoadingMore }
+                val errorMessage = sourceTabs.firstOrNull { it.error != null }?.error
+                updatedTabs[allTabIndex] = updatedTabs[allTabIndex].copy(
+                    items = merged,
+                    isLoading = hasInitialLoads,
+                    isLoadingMore = hasLoadMore,
+                    error = errorMessage.takeIf { merged.isEmpty() },
+                )
+            }
+            current.copy(tabs = updatedTabs)
         }
-        _uiState.value = current.copy(tabs = updatedTabs)
     }
 
     fun getCatalogSectionsForRows(): List<HomeCatalogSection> {
