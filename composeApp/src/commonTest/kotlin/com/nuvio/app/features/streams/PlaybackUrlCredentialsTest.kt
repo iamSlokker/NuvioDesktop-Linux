@@ -13,6 +13,13 @@ class PlaybackUrlCredentialsTest {
     }
 
     @Test
+    fun staticApiKeysDoNotExpirePlaybackButRealTokensStillDo() {
+        assertFalse("https://example.test/video?api_key=public-static".hasLikelyExpiringPlaybackCredentials())
+        assertFalse("https://example.test/video?apikey=public-static".hasLikelyExpiringPlaybackCredentials())
+        assertTrue("https://example.test/video?api_key=public-static&expires=1234".hasLikelyExpiringPlaybackCredentials())
+    }
+
+    @Test
     fun ignoresStableFormatHints() {
         assertFalse("https://example.com/proxy?ext=m3u8".hasLikelyExpiringPlaybackCredentials())
         assertFalse("https://example.com/video.mp4?quality=1080p&format=mp4".hasLikelyExpiringPlaybackCredentials())

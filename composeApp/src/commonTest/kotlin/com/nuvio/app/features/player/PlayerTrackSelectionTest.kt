@@ -6,6 +6,16 @@ import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 class PlayerTrackSelectionTest {
+    @Test
+    fun audioLanguageSelectionAlreadyAcceptsIso639TwoCodesWithoutNativeChanges() {
+        val languages = listOf("deu", "eng", "fra", "por", "pt-BR")
+        assertEquals(1, findPreferredTrackIndex(languages, listOf("en"), { it }))
+        assertEquals(2, findPreferredTrackIndex(languages, listOf("fr"), { it }))
+        assertEquals(4, findPreferredTrackIndex(languages, listOf("pt-BR", "en"), { it }))
+        assertEquals(1, findPreferredTrackIndex(languages, listOf("ja", "en"), { it }))
+        assertEquals(-1, findPreferredTrackIndex(languages, listOf("ja"), { it }))
+    }
+
     private val englishSpanishTracks = listOf(
         SubtitleTrack(index = 0, id = "1", label = "English", language = "eng"),
         SubtitleTrack(index = 1, id = "2", label = "Spanish", language = "spa"),
