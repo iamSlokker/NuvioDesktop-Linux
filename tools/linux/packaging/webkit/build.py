@@ -17,8 +17,6 @@ import tempfile
 
 HERE = pathlib.Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE.parent))
-from webkit.builder_seed import load_seed
-from webkit.execution import container_name, preflight, stream_build
 
 MANIFEST = json.loads((HERE / 'manifest.json').read_text())
 BUILD_INPUTS = ['manifest.json', 'Containerfile', 'build.py', 'build-engine.sh', 'build-gtk.sh',
@@ -118,6 +116,13 @@ def retain_source(generation, archive, gtk_inputs):
                 target.parent.mkdir(parents=True, exist_ok=True)
                 shutil.copy2(source, target)
     return inventory(destination)
+
+
+# Container preparation imports this file as bare `build`, without
+# the parent `webkit` package. Package consumers retain mockable imports.
+if __package__ == 'webkit' or __name__ == '__main__':
+    from webkit.builder_seed import load_seed
+    from webkit.execution import container_name, preflight, stream_build
 
 
 def main():
