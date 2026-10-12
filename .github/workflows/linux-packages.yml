@@ -51,6 +51,31 @@ jobs:
           key: linux-inputs-${{ hashFiles('tools/linux/media-runtime/**', 'tools/linux/packaging/config.json', 'tools/linux/packaging/webkit/manifest.json', 'tools/linux/packaging/webkit/Containerfile', 'tools/linux/packaging/webkit/patches/**', 'tools/linux/packaging/webkit/build*.sh', 'gradle/**', '**/*.gradle.kts') }}-${{ github.run_id }}-${{ github.run_attempt }}
           restore-keys: |
             linux-inputs-${{ hashFiles('tools/linux/media-runtime/**', 'tools/linux/packaging/config.json', 'tools/linux/packaging/webkit/manifest.json', 'tools/linux/packaging/webkit/Containerfile', 'tools/linux/packaging/webkit/patches/**', 'tools/linux/packaging/webkit/build*.sh', 'gradle/**', '**/*.gradle.kts') }}-
+      - name: Diagnose Podman resource controllers
+        shell: bash
+        run: |
+          set -euo pipefail
+          podman --version
+          cat /sys/fs/cgroup/cgroup.controllers || true
+          image=docker.io/library/busybox:1.36
+          podman pull "$image"
+          base=(--rm --network=none --userns=keep-id --cap-drop=all
+                --security-opt label=disable --security-opt no-new-privileges)
+          probe() {
+            local label="$1"
+            shift
+            if podman run "${base[@]}" "$@" "$image" /bin/true; then
+              echo "PODMAN_${label}=SUPPORTED"
+            else
+              echo "PODMAN_${label}=UNAVAILABLE"
+            fi
+          }
+          probe BASELINE
+          probe CPU --cpus=4
+          probe MEMORY --memory=18g --memory-swap=18g
+          probe PIDS --pids-limit=512
+          echo "Diagnostic stop: expensive builds deliberately skipped"
+          exit 1
       - name: Build private media from pinned source
         shell: bash
         run: |
