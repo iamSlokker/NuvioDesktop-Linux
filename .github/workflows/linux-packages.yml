@@ -11,11 +11,24 @@ on:
         description: Export only the WebKit builder seed; not a validated package release
         type: boolean
         default: false
+      webkit_run_id:
+        description: Optional successful Linux WebKit engine run to consume without recompilation
+        type: string
+      webkit_sha256:
+        description: SHA256 of that trusted candidate's SHA256SUMS file
+        type: string
+      builder_run_id:
+        description: Canonical seed run used by that engine (required with webkit_run_id)
+        type: string
+      builder_seed_sha256:
+        description: Trusted builder-seed.json SHA256 (required with webkit_run_id)
+        type: string
   push:
     tags: ['v*']
 
 permissions:
   contents: read
+  actions: read
 
 concurrency:
   group: linux-packages-${{ github.ref }}
@@ -28,6 +41,10 @@ jobs:
     env:
       # Tag pushes always retain the complete three-format build/release gate.
       BOOTSTRAP_ONLY: ${{ github.event_name == 'workflow_dispatch' && inputs.bootstrap_only && 'true' || 'false' }}
+      ENGINE_RUN: ${{ inputs.webkit_run_id }}
+      ENGINE_SHA: ${{ inputs.webkit_sha256 }}
+      SEED_RUN: ${{ inputs.builder_run_id }}
+      SEED_SHA: ${{ inputs.builder_seed_sha256 }}
       DISPLAY: ''
       WAYLAND_DISPLAY: ''
       NUVIO_RUN_LIVE_DISPLAY_TESTS: ''
@@ -35,6 +52,16 @@ jobs:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
           persist-credentials: false
+      - name: Validate optional verified engine inputs
+        run: |
+          set -euo pipefail
+          if [[ -n "$ENGINE_RUN" ]]; then
+            [[ "$BOOTSTRAP_ONLY" != true && "$GITHUB_EVENT_NAME" == workflow_dispatch ]]
+            [[ "$ENGINE_RUN" =~ ^[0-9]+$ && "$SEED_RUN" =~ ^[0-9]+$ ]]
+            [[ "$ENGINE_SHA" =~ ^[0-9a-f]{64}$ && "$SEED_SHA" =~ ^[0-9a-f]{64}$ ]]
+          else
+            [[ -z "$ENGINE_SHA$SEED_RUN$SEED_SHA" ]]
+          fi
       - name: Builder prerequisites (runner only)
         shell: bash
         run: |
@@ -42,8 +69,25 @@ jobs:
           # Only host orchestration tools. App/native compilation uses the
           # digest/snapshot/hash-pinned disposable builder in the repository.
           sudo apt-get update
-          sudo apt-get install -y podman jq flatpak ostree desktop-file-utils libwebkit2gtk-4.1-0 libva2 libva-drm2 libva-x11-2 libxss1 libasound2 libpulse0 liblcms2-2
+          sudo apt-get install -y podman gh jq flatpak ostree desktop-file-utils libwebkit2gtk-4.1-0 libva2 libva-drm2 libva-x11-2 libxss1 libasound2 libpulse0 liblcms2-2
           dpkg-query -W > "$RUNNER_TEMP/runner-packages.tsv"
+      - name: Download trusted engine and its canonical builder seed
+        if: ${{ env.ENGINE_RUN != '' }}
+        timeout-minutes: 20
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          gh api "repos/$GITHUB_REPOSITORY/actions/runs/$SEED_RUN" > "$RUNNER_TEMP/seed-run.json"
+          jq -e '.path == ".github/workflows/linux-packages.yml" and .head_branch == "linux" and .conclusion == "success" and (.event == "workflow_dispatch" or .event == "push")' "$RUNNER_TEMP/seed-run.json"
+          gh run download "$SEED_RUN" --repo "$GITHUB_REPOSITORY" --name nuvio-webkit-builder-seed --dir build/webkit-builder-seed
+          [[ $(jq -r .head_sha "$RUNNER_TEMP/seed-run.json") == $(jq -r .canonical_git_commit build/webkit-builder-seed/builder-seed.json) ]]
+          python3 -c 'import sys; sys.path.insert(0,"tools/linux/packaging"); from webkit.builder_seed import verify_seed; from pathlib import Path; import os; verify_seed(Path("build/webkit-builder-seed"), os.environ["SEED_SHA"])'
+          gh api "repos/$GITHUB_REPOSITORY/actions/runs/$ENGINE_RUN" > "$RUNNER_TEMP/engine-run.json"
+          jq -e '.path == ".github/workflows/linux-webkit.yml" and .head_branch == "linux" and .conclusion == "success" and .event == "workflow_dispatch"' "$RUNNER_TEMP/engine-run.json"
+          attempt=$(jq -er .run_attempt "$RUNNER_TEMP/engine-run.json")
+          gh run download "$ENGINE_RUN" --repo "$GITHUB_REPOSITORY" --name "webkit-candidate-$ENGINE_RUN-$attempt" --dir build/webkit-candidate
+          [[ $(sha256sum build/webkit-candidate/SHA256SUMS | cut -d' ' -f1) == "$ENGINE_SHA" ]]
       - uses: actions/cache/restore@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
         id: inputs_cache
         with:
@@ -77,7 +121,13 @@ jobs:
             [[ "$GITHUB_REF_NAME" == "v$version" ]] || { echo 'Tag/version mismatch'; exit 1; }
             channel=stable
           fi
-          python3 tools/linux/packaging/build.py --format deb --channel "$channel" --jobs 2
+          if [[ -n "$ENGINE_RUN" ]]; then
+            python3 tools/linux/packaging/canonical_from_seed.py \
+              --builder-seed build/webkit-builder-seed --builder-seed-sha256 "$SEED_SHA" \
+              --channel "$channel" --jobs 2
+          else
+            python3 tools/linux/packaging/build.py --format deb --channel "$channel" --jobs 2
+          fi
       - name: Export immutable WebKit builder bootstrap
         id: builder_seed
         if: ${{ !cancelled() && steps.native.outcome == 'success' }}
@@ -169,7 +219,14 @@ jobs:
           # Reuse canonical app/media. Engine source/patch preparation, bounded
           # compilation and artifact inspection use the pinned container.
           # Download/ccache hits never bypass provenance or artifact checks.
-          if ! python3 tools/linux/packaging/build.py --format appimage; then
+          engine_args=()
+          if [[ -n "$ENGINE_RUN" ]]; then
+            generation=$(python3 tools/linux/packaging/webkit/import_candidate.py \
+              --candidate build/webkit-candidate --sha256 "$ENGINE_SHA" \
+              --packaging-work-dir build/linux-packaging --work-dir build/linux-webkit)
+            engine_args=(--webkit-generation "$generation")
+          fi
+          if ! python3 tools/linux/packaging/build.py --format appimage "${engine_args[@]}"; then
             echo '=== WEBKIT BUILD ERROR LOG ==='
             find build/linux-webkit/generations -type f -name build.log -print -exec tail -n 100 {} \; || true
             exit 1

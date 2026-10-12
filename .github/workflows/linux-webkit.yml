@@ -108,7 +108,13 @@ jobs:
             build/linux-webkit/ccache-snapshot
       - name: Export completed candidate and exact assembly builder
         if: ${{ success() && steps.build.outcome == 'success' }}
-        run: python3 tools/linux/packaging/webkit/export_candidate.py --work-dir build/linux-webkit
+        run: |
+          set -euo pipefail
+          python3 tools/linux/packaging/webkit/export_candidate.py --work-dir build/linux-webkit
+          {
+            echo 'Candidate checksum-manifest trust anchor (for Linux packages webkit_sha256):'
+            sha256sum build/linux-webkit/export/SHA256SUMS
+          } >> "$GITHUB_STEP_SUMMARY"
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         if: always()
         with:
@@ -137,4 +143,12 @@ jobs:
             echo "Engine build: $BUILD_RESULT; stopped/cache snapshot: $CACHE_RESULT"
             echo 'A completed candidate is BUILT_ONLY. AppImage payload/ELF/relocation/sandbox gates remain mandatory.'
             echo 'Retries reuse completed ccache entries; incomplete objects/install trees are not accepted engines.'
+            for stats in build/linux-webkit/generations/*/ccache-stats.txt; do
+              if [[ -f "$stats" ]]; then
+                echo 'Final compiler counters (startup counters are historical, not this attempt):'
+                echo '```text'
+                cat "$stats"
+                echo '```'
+              fi
+            done
           } >> "$GITHUB_STEP_SUMMARY"

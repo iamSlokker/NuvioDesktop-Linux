@@ -151,13 +151,35 @@ the trusted artifact's SHA256SUMS, load its exact image and extract the generati
 under `generations/`. `package.py` still requires the current recipe **and the
 same canonical packaging builder ID**, then runs the full AppImage payload audit.
 A new canonical image with a different builder ID cannot consume it by renaming
-directories. Automatic cross-run application/candidate assembly is not added.
+directories. The packaging workflow can instead consume a successful engine run
+with four manual inputs: `webkit_run_id`, `webkit_sha256` (the SHA256 of its
+`SHA256SUMS` file), `builder_run_id`, and `builder_seed_sha256`. Inputs are checked
+as a complete set; bootstrap-only and tag-triggered builds cannot select this path.
+The downloader requires successful runs from the expected workflows/branch and
+checks the seed commit and caller-supplied trust anchors.
+
+`canonical_from_seed.py` verifies and imports the same immutable canonical builder,
+then builds the current application commit through the existing `native-build.sh`.
+Private media is still rebuilt/audited, and source stamps, native/JVM tests, DEB
+verification and Flatpak export remain the ordinary pipeline. The small adapter
+keeps `build.py` unchanged because the existing bootstrap receipt pins its bytes;
+it does not loosen that receipt or accept a different builder with similar inputs.
+`webkit/import_candidate.py` verifies both archive hashes, extracts only safe engine
+entries, checks the current recipe, sandbox/build policy, inventory and matching
+canonical builder, then imports and verifies the exact assembly image. It publishes
+the generation only after success. AppImage receives `--webkit-generation`; any
+import failure stops that step instead of falling back to another compilation.
+The existing AppImage payload/ELF/resource/path and all-three-format gates still run.
 The mandatory three-format release gate remains unchanged for normal/tag builds;
 bootstrap-only runs use the explicit non-release seed gate described above.
 
-CI resource fit and transfers still need a real run. The reported four-hour
-timeout in run 38188755529 motivated this separation; no new workflow/full engine
-compile was launched while implementing it. Safe local review commands:
+The intentional 20-minute attempt in run 38280547370 demonstrated real reuse:
+its uploaded final `ccache-stats.txt` records 370 hits (367 direct, 3 preprocessed)
+and 1,627 cumulative misses. The startup 0-hit/370-miss counters were inherited
+from the previous run, before compilation. Cache restoration therefore worked;
+it does not imply the engine was complete. Full-build resource/time acceptance
+and final package verification are separate from those cache results.
+Safe local review commands:
 
 ```sh
 env -u DISPLAY -u WAYLAND_DISPLAY -u NUVIO_RUN_LIVE_DISPLAY_TESTS \

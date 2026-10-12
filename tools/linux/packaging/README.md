@@ -224,9 +224,14 @@ in run **38188755529** timed out after four hours. The
 [dedicated manual WebKit workflow and verified builder bootstrap](webkit/README.md#independent-manual-ci-and-builder-bootstrap)
 separate engine retries from application/media/DEB/Flatpak builds. Compiler
 output streams live, resources are reported and only stopped-container cache
-snapshots upload. This revised workflow has not run on GitHub; resource fit and
-cache/artifact transfers remain unverified there. No release is automatically
-published.
+snapshots upload. Run 38280547370's final compiler statistics demonstrate 370
+cache hits after restoring a previous attempt, despite its intentional timeout.
+A successful standalone engine can be selected through the four verified-handoff
+inputs documented in the WebKit README. The current application is built in that
+engine's exact canonical seed image; completed engine import does not replace
+any DEB/Flatpak/AppImage audit or allow a different builder identity. Full engine
+and package acceptance remain distinct from successful cache transfer/reuse.
+No release is automatically published.
 The measured local full WebKit compile/link pass took 3h09m42s and peaked at
 13.24 GiB aggregate container memory. A subsequent link-hardening correction
 rebuilt in 3m56s through the compiler cache. These measurements do not establish

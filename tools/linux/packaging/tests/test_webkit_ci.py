@@ -40,6 +40,49 @@ def run_script(step):
 
 
 class WorkflowIntegrationTest(unittest.TestCase):
+    def test_engine_handoff_requires_complete_manual_inputs(self):
+        step = named_step('linux-packages.yml', 'Validate optional verified engine inputs')
+        empty = dict(ENGINE_RUN='', ENGINE_SHA='', SEED_RUN='', SEED_SHA='', BOOTSTRAP_ONLY='false',
+                     GITHUB_EVENT_NAME='workflow_dispatch')
+        good = dict(empty, ENGINE_RUN='123', ENGINE_SHA='a' * 64, SEED_RUN='456', SEED_SHA='b' * 64)
+        cases = [(empty, True), (dict(empty, GITHUB_EVENT_NAME='push'), True), (good, True),
+                 (dict(good, BOOTSTRAP_ONLY='true'), False), (dict(good, GITHUB_EVENT_NAME='push'), False)]
+        cases += [(dict(good, **{name: ''}), False) for name in ['ENGINE_RUN', 'ENGINE_SHA', 'SEED_RUN', 'SEED_SHA']]
+        for values, success in cases:
+            with self.subTest(values=values):
+                result = subprocess.run(['bash', '-c', run_script(step)], env=dict(os.environ, **values), capture_output=True)
+                self.assertEqual(result.returncode == 0, success)
+
+    def test_appimage_uses_verified_generation_and_never_recompiles_failed_import(self):
+        script = run_script(named_step('linux-packages.yml', 'Build and verify AppImage with private production WebKit'))
+        stub = '''
+python3() {
+  if [[ "$*" == *import_candidate.py* ]]; then
+    [[ "$FIXTURE_IMPORT" == success ]] || return 17
+    printf '/fixture/verified generation\\n'
+  else
+    printf '%s\\n' "$@" > "$FIXTURE_ARGS"
+  fi
+}
+'''
+        with tempfile.TemporaryDirectory() as tmp:
+            args = pathlib.Path(tmp) / 'args'
+            for engine_run, imported in [('', 'success'), ('123', 'success'), ('123', 'failure')]:
+                with self.subTest(engine_run=engine_run, imported=imported):
+                    args.unlink(missing_ok=True)
+                    result = subprocess.run(['bash', '-c', stub + script], capture_output=True,
+                        env=dict(os.environ, ENGINE_RUN=engine_run, ENGINE_SHA='a' * 64,
+                                 FIXTURE_IMPORT=imported, FIXTURE_ARGS=str(args)))
+                    if imported == 'failure':
+                        self.assertNotEqual(result.returncode, 0)
+                        self.assertFalse(args.exists())
+                    else:
+                        self.assertEqual(result.returncode, 0, result.stderr)
+                        expected = ['tools/linux/packaging/build.py', '--format', 'appimage']
+                        if engine_run:
+                            expected += ['--webkit-generation', '/fixture/verified generation']
+                        self.assertEqual(args.read_text().splitlines(), expected)
+
     def test_bootstrap_is_manual_opt_in_and_normal_release_steps_are_guarded(self):
         text = (seed.REPO / '.github/workflows/linux-packages.yml').read_text()
         self.assertRegex(text, r'bootstrap_only:\n        description: [^\n]+\n        type: boolean\n        default: false')
