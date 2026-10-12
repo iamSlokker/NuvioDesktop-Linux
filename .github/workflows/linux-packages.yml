@@ -51,40 +51,6 @@ jobs:
           key: linux-inputs-${{ hashFiles('tools/linux/media-runtime/**', 'tools/linux/packaging/config.json', 'tools/linux/packaging/webkit/manifest.json', 'tools/linux/packaging/webkit/Containerfile', 'tools/linux/packaging/webkit/patches/**', 'tools/linux/packaging/webkit/build*.sh', 'gradle/**', '**/*.gradle.kts') }}-${{ github.run_id }}-${{ github.run_attempt }}
           restore-keys: |
             linux-inputs-${{ hashFiles('tools/linux/media-runtime/**', 'tools/linux/packaging/config.json', 'tools/linux/packaging/webkit/manifest.json', 'tools/linux/packaging/webkit/Containerfile', 'tools/linux/packaging/webkit/patches/**', 'tools/linux/packaging/webkit/build*.sh', 'gradle/**', '**/*.gradle.kts') }}-
-      - name: Diagnose Podman resource controllers
-        shell: bash
-        run: |
-          set -euo pipefail
-          podman --version
-          cat /sys/fs/cgroup/cgroup.controllers || true
-          image=docker.io/library/busybox:1.36
-          podman pull "$image"
-          base=(--rm --network=none --userns=keep-id --cap-drop=all
-                --security-opt label=disable --security-opt no-new-privileges)
-          probe() {
-            local label="$1"
-            shift
-            if podman run "${base[@]}" "$@" "$image" /bin/true; then
-              echo "PODMAN_${label}=SUPPORTED"
-            else
-              echo "PODMAN_${label}=UNAVAILABLE"
-            fi
-          }
-          probe BASELINE
-          probe MEMORY --memory=18g --memory-swap=18g
-          probe PIDS --pids-limit=512
-          podman run "${base[@]}" --memory=18g --memory-swap=18g --pids-limit=512 "$image" /bin/sh -ec '
-            memory=$(cat /sys/fs/cgroup/memory.max)
-            pids=$(cat /sys/fs/cgroup/pids.max)
-            echo "PODMAN_MEMORY_MAX=$memory"
-            echo "PODMAN_PIDS_MAX=$pids"
-            test "$memory" != max
-            test "$memory" -le 19327352832
-            test "$pids" = 512
-          '
-          echo "PODMAN_COMBINED_START=SUPPORTED"
-          echo "Diagnostic stop: expensive builds deliberately skipped"
-          exit 1
       - name: Build private media from pinned source
         shell: bash
         run: |
