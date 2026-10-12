@@ -169,7 +169,7 @@ def main():
         memory = str(MANIFEST['memory_gib']) + 'g'
         command = ['podman', 'run', '--rm', '--network=none', '--userns=keep-id', '--cap-drop=all',
                    '--security-opt', 'label=disable', '--security-opt', 'no-new-privileges',
-                   '--memory=' + memory, '--memory-swap=' + memory, '--cpus=' + str(MANIFEST['jobs']),
+                   '--memory=' + memory, '--memory-swap=' + memory,
                    '--env', 'NUVIO_WEBKIT_RECIPE_ID=' + identity, '--env', 'PYTHONDONTWRITEBYTECODE=1',
                    '--pids-limit=512', '--mount', f'type=bind,src={generation},dst=/work',
                    '--mount', f'type=bind,src={ccache},dst=/work/ccache',
