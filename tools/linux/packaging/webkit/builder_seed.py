@@ -12,7 +12,9 @@ import re
 import subprocess
 
 HERE = pathlib.Path(__file__).resolve().parent
-REPO = HERE.parents[3]
+# Assembly imports these helpers from /packaging/webkit without a checkout.
+# Only seed creation/validation needs the complete repository input inventory.
+REPO = next((parent for parent in HERE.parents if parent / 'tools/linux/packaging/webkit' == HERE), None)
 
 
 def digest(path):
@@ -31,6 +33,8 @@ def image_id(value):
 
 
 def inputs():
+    if REPO is None:
+        raise ValueError('Builder seed validation requires the complete repository checkout')
     # These are builder inputs, not application/engine inputs. Engine-only fixes
     # must not require rebuilding Nuvio just to obtain the same base toolchain.
     names = ['tools/linux/packaging/' + name for name in

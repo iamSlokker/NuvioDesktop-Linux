@@ -3,6 +3,8 @@ import hashlib
 import io
 import json
 import pathlib
+import shutil
+import subprocess
 import sys
 import tarfile
 import tempfile
@@ -18,6 +20,35 @@ from webkit.contract import ENGINE_FILES, PROCESSES
 
 
 class EngineHandoffTest(unittest.TestCase):
+    def test_assembly_helpers_import_without_repository_but_seed_validation_fails_closed(self):
+        # Match /packaging/webkit: importing inventory/build-policy helpers must
+        # not try to walk four parents to a checkout that isn't mounted there.
+        with tempfile.TemporaryDirectory(dir='/tmp') as tmp:
+            root = pathlib.Path(tmp)
+            shutil.copytree(packaging.HERE, root, dirs_exist_ok=True, ignore=shutil.ignore_patterns('__pycache__'))
+            script = '''
+from pathlib import Path
+from formats import build_appimage
+from verify import artifacts
+from webkit.stage import archive_source
+from webkit.build import inventory
+from webkit.builder_seed import inputs, REPO
+assert REPO is None
+fixture = Path('fixture')
+fixture.mkdir()
+(fixture / 'payload').write_bytes(b'fixture')
+(fixture / 'payload').chmod(0o644)
+assert inventory(fixture)['payload']['mode'] == 0o644
+try:
+    inputs()
+except ValueError as error:
+    assert 'repository' in str(error)
+else:
+    raise AssertionError('Seed validation accepted a missing repository')
+'''
+            result = subprocess.run([sys.executable, '-B', '-c', script], cwd=root, capture_output=True, text=True)
+            self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+
     def candidate(self, root):
         base, image = 'a' * 64, 'b' * 64
         identity = engine.recipe_identity(base)
