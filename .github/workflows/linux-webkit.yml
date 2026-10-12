@@ -1,0 +1,140 @@
+name: Linux WebKit engine
+on:
+  workflow_dispatch:
+    inputs:
+      builder_run_id:
+        description: Trusted Linux packages run exporting nuvio-webkit-builder-seed
+        type: string
+        required: true
+      builder_seed_sha256:
+        description: builder-seed.json SHA256 from that run's summary (not a mutable image tag)
+        type: string
+        required: true
+      runner:
+        description: Ubuntu x64 runner label; recommend configured 8 CPU / 32 GB / 300 GB larger runner (see WebKit README)
+        type: string
+        default: ubuntu-22.04
+      compile_minutes:
+        description: Attempt budget (1-300 minutes); reserve job time for cleanup and cache uploads
+        type: string
+        default: '270'
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: linux-webkit-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  engine:
+    if: github.ref == 'refs/heads/linux'
+    runs-on: ${{ inputs.runner }}
+    timeout-minutes: 360
+    env:
+      DISPLAY: ''
+      WAYLAND_DISPLAY: ''
+      NUVIO_RUN_LIVE_DISPLAY_TESTS: ''
+      PYTHONDONTWRITEBYTECODE: '1'
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - name: Validate dispatch inputs
+        env:
+          COMPILE_MINUTES: ${{ inputs.compile_minutes }}
+          SEED_RUN: ${{ inputs.builder_run_id }}
+          SEED_SHA: ${{ inputs.builder_seed_sha256 }}
+        run: |
+          set -euo pipefail
+          [[ "$COMPILE_MINUTES" =~ ^[1-9][0-9]{0,2}$ && "$COMPILE_MINUTES" -le 300 ]]
+          [[ "$SEED_RUN" =~ ^[0-9]+$ && "$SEED_SHA" =~ ^[0-9a-f]{64}$ ]]
+          [[ $(uname -m) == x86_64 ]]
+      - name: Install or verify host orchestration tools
+        timeout-minutes: 15
+        run: bash tools/linux/packaging/webkit/setup-runner.sh
+      - name: Headless orchestrator preflight
+        timeout-minutes: 2
+        run: |
+          set -euo pipefail
+          df -h "$PWD" "$(timeout 30s podman info --format '{{.Store.GraphRoot}}')"
+          python3 tools/linux/packaging/webkit/execution.py preflight --work-dir build/linux-webkit
+      - name: Download immutable canonical builder seed
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SEED_RUN: ${{ inputs.builder_run_id }}
+        run: |
+          set -euo pipefail
+          gh api "repos/$GITHUB_REPOSITORY/actions/runs/$SEED_RUN" > "$RUNNER_TEMP/seed-run.json"
+          jq -e '.path == ".github/workflows/linux-packages.yml" and .head_branch == "linux" and (.event == "workflow_dispatch" or .event == "push")' "$RUNNER_TEMP/seed-run.json"
+          gh run download "$SEED_RUN" --repo "$GITHUB_REPOSITORY" --name nuvio-webkit-builder-seed --dir build/webkit-builder-seed
+          [[ $(jq -r .head_sha "$RUNNER_TEMP/seed-run.json") == $(jq -r .canonical_git_commit build/webkit-builder-seed/builder-seed.json) ]]
+      - uses: actions/cache/restore@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+        id: cache
+        with:
+          path: |
+            build/linux-webkit/downloads
+            build/linux-webkit/ccache-snapshot
+          key: webkit-inputs-v1-${{ inputs.builder_seed_sha256 }}-${{ hashFiles('tools/linux/packaging/webkit/manifest.json', 'tools/linux/packaging/webkit/Containerfile', 'tools/linux/packaging/webkit/patches/**', 'tools/linux/packaging/webkit/build*.sh') }}-${{ github.run_id }}-${{ github.run_attempt }}
+          restore-keys: |
+            webkit-inputs-v1-${{ inputs.builder_seed_sha256 }}-${{ hashFiles('tools/linux/packaging/webkit/manifest.json', 'tools/linux/packaging/webkit/Containerfile', 'tools/linux/packaging/webkit/patches/**', 'tools/linux/packaging/webkit/build*.sh') }}-
+      - name: Restore completed compiler cache entries
+        run: python3 tools/linux/packaging/webkit/execution.py restore --work-dir build/linux-webkit
+      - name: Build or resume only the pinned engine
+        id: build
+        timeout-minutes: 315
+        env:
+          SEED_SHA: ${{ inputs.builder_seed_sha256 }}
+          COMPILE_MINUTES: ${{ inputs.compile_minutes }}
+        run: |
+          unset DISPLAY WAYLAND_DISPLAY NUVIO_RUN_LIVE_DISPLAY_TESTS
+          python3 -u tools/linux/packaging/webkit/build.py \
+            --builder-seed build/webkit-builder-seed --builder-seed-sha256 "$SEED_SHA" \
+            --work-dir build/linux-webkit --timeout-minutes "$COMPILE_MINUTES" \
+            --result-file build/linux-webkit/engine-result.json
+      - name: Stop compiler and snapshot completed cache entries
+        id: quiescent
+        timeout-minutes: 10
+        if: ${{ always() && steps.cache.outputs.cache-primary-key != '' }}
+        run: python3 tools/linux/packaging/webkit/execution.py snapshot --work-dir build/linux-webkit
+      - uses: actions/cache/save@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+        if: ${{ always() && steps.quiescent.outcome == 'success' }}
+        continue-on-error: true # Cache is an optimization, never engine acceptance.
+        with:
+          key: ${{ steps.cache.outputs.cache-primary-key }}
+          path: |
+            build/linux-webkit/downloads
+            build/linux-webkit/ccache-snapshot
+      - name: Export completed candidate and exact assembly builder
+        if: ${{ success() && steps.build.outcome == 'success' }}
+        run: python3 tools/linux/packaging/webkit/export_candidate.py --work-dir build/linux-webkit
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        if: always()
+        with:
+          name: webkit-evidence-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            build/linux-webkit/generations/*/build.log
+            build/linux-webkit/generations/*/*resources.txt
+            build/linux-webkit/generations/*/*stats.txt
+            build/linux-webkit/generations/*/container-memory-peak.bytes
+            build/linux-webkit/generations/*/build-complete.json
+          if-no-files-found: warn
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        if: success()
+        with:
+          name: webkit-candidate-${{ github.run_id }}-${{ github.run_attempt }}
+          path: build/linux-webkit/export/*
+          if-no-files-found: error
+          compression-level: 0
+      - name: Report acceptance boundary
+        if: always()
+        env:
+          BUILD_RESULT: ${{ steps.build.outcome }}
+          CACHE_RESULT: ${{ steps.quiescent.outcome }}
+        run: |
+          {
+            echo "Engine build: $BUILD_RESULT; stopped/cache snapshot: $CACHE_RESULT"
+            echo 'A completed candidate is BUILT_ONLY. AppImage payload/ELF/relocation/sandbox gates remain mandatory.'
+            echo 'Retries reuse completed ccache entries; incomplete objects/install trees are not accepted engines.'
+          } >> "$GITHUB_STEP_SUMMARY"

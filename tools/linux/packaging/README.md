@@ -208,14 +208,25 @@ file contents/modes and corresponding-source inventory. The same recipe supports
 a cold build. Official actions are commit-pinned. Compiler inputs are saved even
 after a failed format; cache availability never changes the release gate.
 
+Manual `bootstrap_only=true` runs retain the media/canonical build and require
+successful immutable WebKit builder-seed export/upload. They skip Flatpak,
+AppImage and normal package release checks/uploads, and report **BOOTSTRAP ONLY**.
+They are not validated releases. The option defaults to false and never applies
+to tag pushes; the normal three-format release gate remains mandatory.
+
 DEB static verification/smoke installation, Flatpak preparation/export and
 AppImage engine/assembly report separate outcomes. The mandatory all-three-format
 gate still fails if any format or required verification fails. `--format all`
 also continues independent exports and returns failure if any format fails.
 The user confirmed DEB build/audit/smoke-install on Ubuntu 22.04 in Actions run
-**38137016659**, and Flatpak real playback on Bazzite. The new custom-engine CI
-path has not run on GitHub; its cold-build time, disk and memory fit must be
-verified there. No release is automatically published.
+**38137016659**, and Flatpak real playback on Bazzite. The custom-engine attempt
+in run **38188755529** timed out after four hours. The
+[dedicated manual WebKit workflow and verified builder bootstrap](webkit/README.md#independent-manual-ci-and-builder-bootstrap)
+separate engine retries from application/media/DEB/Flatpak builds. Compiler
+output streams live, resources are reported and only stopped-container cache
+snapshots upload. This revised workflow has not run on GitHub; resource fit and
+cache/artifact transfers remain unverified there. No release is automatically
+published.
 The measured local full WebKit compile/link pass took 3h09m42s and peaked at
 13.24 GiB aggregate container memory. A subsequent link-hardening correction
 rebuilt in 3m56s through the compiler cache. These measurements do not establish

@@ -7,6 +7,10 @@ on:
         type: choice
         options: [nightly, stable]
         default: nightly
+      bootstrap_only:
+        description: Export only the WebKit builder seed; not a validated package release
+        type: boolean
+        default: false
   push:
     tags: ['v*']
 
@@ -22,6 +26,8 @@ jobs:
     runs-on: ubuntu-22.04
     timeout-minutes: 360
     env:
+      # Tag pushes always retain the complete three-format build/release gate.
+      BOOTSTRAP_ONLY: ${{ github.event_name == 'workflow_dispatch' && inputs.bootstrap_only && 'true' || 'false' }}
       DISPLAY: ''
       WAYLAND_DISPLAY: ''
       NUVIO_RUN_LIVE_DISPLAY_TESTS: ''
@@ -47,11 +53,14 @@ jobs:
             build/linux-packaging/gradle/caches/modules-2
             build/linux-packaging/gradle/wrapper
             build/linux-webkit/downloads
-            build/linux-webkit/ccache
-          key: linux-inputs-${{ hashFiles('tools/linux/media-runtime/**', 'tools/linux/packaging/config.json', 'tools/linux/packaging/webkit/manifest.json', 'tools/linux/packaging/webkit/Containerfile', 'tools/linux/packaging/webkit/patches/**', 'tools/linux/packaging/webkit/build*.sh', 'gradle/**', '**/*.gradle.kts') }}-${{ github.run_id }}-${{ github.run_attempt }}
+            build/linux-webkit/ccache-snapshot
+          key: linux-inputs-v2-${{ hashFiles('tools/linux/media-runtime/**', 'tools/linux/packaging/config.json', 'tools/linux/packaging/webkit/manifest.json', 'tools/linux/packaging/webkit/Containerfile', 'tools/linux/packaging/webkit/patches/**', 'tools/linux/packaging/webkit/build*.sh', 'gradle/**', '**/*.gradle.kts') }}-${{ github.run_id }}-${{ github.run_attempt }}
           restore-keys: |
-            linux-inputs-${{ hashFiles('tools/linux/media-runtime/**', 'tools/linux/packaging/config.json', 'tools/linux/packaging/webkit/manifest.json', 'tools/linux/packaging/webkit/Containerfile', 'tools/linux/packaging/webkit/patches/**', 'tools/linux/packaging/webkit/build*.sh', 'gradle/**', '**/*.gradle.kts') }}-
+            linux-inputs-v2-${{ hashFiles('tools/linux/media-runtime/**', 'tools/linux/packaging/config.json', 'tools/linux/packaging/webkit/manifest.json', 'tools/linux/packaging/webkit/Containerfile', 'tools/linux/packaging/webkit/patches/**', 'tools/linux/packaging/webkit/build*.sh', 'gradle/**', '**/*.gradle.kts') }}-
+      - name: Restore completed WebKit compiler cache entries
+        run: python3 tools/linux/packaging/webkit/execution.py restore --work-dir build/linux-webkit
       - name: Build private media from pinned source
+        id: media
         shell: bash
         run: |
           unset DISPLAY WAYLAND_DISPLAY NUVIO_RUN_LIVE_DISPLAY_TESTS
@@ -69,8 +78,31 @@ jobs:
             channel=stable
           fi
           python3 tools/linux/packaging/build.py --format deb --channel "$channel" --jobs 2
+      - name: Export immutable WebKit builder bootstrap
+        id: builder_seed
+        if: ${{ !cancelled() && steps.native.outcome == 'success' }}
+        continue-on-error: ${{ env.BOOTSTRAP_ONLY != 'true' }}
+        run: |
+          set -euo pipefail
+          python3 tools/linux/packaging/webkit/builder_seed.py \
+            --packaging-work-dir build/linux-packaging --output build/webkit-builder-seed
+          {
+            echo 'Dedicated WebKit workflow bootstrap (trust this run before using):'
+            echo "Run ID: $GITHUB_RUN_ID"
+            sha256sum build/webkit-builder-seed/builder-seed.json
+          } >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        id: builder_seed_upload
+        if: ${{ !cancelled() && steps.builder_seed.outcome == 'success' }}
+        continue-on-error: ${{ env.BOOTSTRAP_ONLY != 'true' }}
+        with:
+          name: nuvio-webkit-builder-seed
+          path: build/webkit-builder-seed/*
+          if-no-files-found: error
+          compression-level: 0
       - name: Independently verify DEB in its pinned builder
         id: deb
+        if: ${{ env.BOOTSTRAP_ONLY != 'true' }}
         continue-on-error: true
         shell: bash
         run: |
@@ -85,7 +117,7 @@ jobs:
             "$builder" python3 /packaging/verify.py artifacts /output --formats deb
       - name: Smoke-install DEB on Ubuntu 22.04
         id: deb_smoke
-        if: ${{ !cancelled() && steps.deb.outcome == 'success' }}
+        if: ${{ !cancelled() && env.BOOTSTRAP_ONLY != 'true' && steps.deb.outcome == 'success' }}
         continue-on-error: true
         shell: bash
         run: |
@@ -104,6 +136,7 @@ jobs:
           echo "DEB Ubuntu 22.04 smoke test PASSED"
       - name: Prepare isolated pinned Flatpak runtime
         id: flatpak_runtime
+        if: ${{ env.BOOTSTRAP_ONLY != 'true' }}
         continue-on-error: true
         shell: bash
         run: |
@@ -118,7 +151,7 @@ jobs:
           [[ $(flatpak info --user --show-commit "org.gnome.Platform//$branch") == "$commit" ]]
       - name: Export and verify Flatpak
         id: flatpak
-        if: ${{ !cancelled() && steps.flatpak_runtime.outcome == 'success' }}
+        if: ${{ !cancelled() && env.BOOTSTRAP_ONLY != 'true' && steps.flatpak_runtime.outcome == 'success' }}
         continue-on-error: true
         shell: bash
         run: |
@@ -126,7 +159,7 @@ jobs:
           python3 tools/linux/packaging/build.py --format flatpak
       - name: Build and verify AppImage with private production WebKit
         id: appimage
-        if: ${{ !cancelled() && steps.native.outcome == 'success' }}
+        if: ${{ !cancelled() && env.BOOTSTRAP_ONLY != 'true' && steps.native.outcome == 'success' }}
         continue-on-error: true
         timeout-minutes: 240
         shell: bash
@@ -141,8 +174,13 @@ jobs:
             find build/linux-webkit/generations -type f -name build.log -print -exec tail -n 100 {} \; || true
             exit 1
           fi
-      - name: Save verified downloads and compiler cache even after a format failure
+      - name: Stop WebKit compiler before caching
+        id: webkit_quiescent
+        timeout-minutes: 10
         if: ${{ always() && steps.inputs_cache.outputs.cache-primary-key != '' }}
+        run: python3 tools/linux/packaging/webkit/execution.py snapshot --work-dir build/linux-webkit
+      - name: Save verified downloads and compiler cache even after a format failure
+        if: ${{ always() && steps.webkit_quiescent.outcome == 'success' }}
         continue-on-error: true # Cache availability cannot replace artifact verification.
         uses: actions/cache/save@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
         with:
@@ -153,10 +191,10 @@ jobs:
             build/linux-packaging/gradle/caches/modules-2
             build/linux-packaging/gradle/wrapper
             build/linux-webkit/downloads
-            build/linux-webkit/ccache
+            build/linux-webkit/ccache-snapshot
       - name: Checksum available packages and evidence
         id: evidence
-        if: always()
+        if: ${{ always() && env.BOOTSTRAP_ONLY != 'true' }}
         shell: bash
         run: |
           set -euo pipefail
@@ -167,7 +205,7 @@ jobs:
           mv "$RUNNER_TEMP/SHA256SUMS" SHA256SUMS
           sha256sum -c SHA256SUMS
       - name: Require all three valid packages
-        if: always()
+        if: ${{ always() && env.BOOTSTRAP_ONLY != 'true' }}
         shell: bash
         run: |
           unset DISPLAY WAYLAND_DISPLAY NUVIO_RUN_LIVE_DISPLAY_TESTS
@@ -178,8 +216,27 @@ jobs:
           [[ '${{ steps.deb_smoke.outcome }}' == success ]]
           [[ '${{ steps.flatpak.outcome }}' == success ]]
           [[ '${{ steps.evidence.outcome }}' == success ]]
+      - name: Require bootstrap seed export and upload
+        if: ${{ always() && env.BOOTSTRAP_ONLY == 'true' }}
+        env:
+          MEDIA_RESULT: ${{ steps.media.outcome }}
+          NATIVE_RESULT: ${{ steps.native.outcome }}
+          SEED_RESULT: ${{ steps.builder_seed.outcome }}
+          UPLOAD_RESULT: ${{ steps.builder_seed_upload.outcome }}
+          SEED_ARTIFACT_ID: ${{ steps.builder_seed_upload.outputs.artifact-id }}
+        run: |
+          set -euo pipefail
+          {
+            echo 'BOOTSTRAP ONLY — not a validated release'
+            echo "Media: $MEDIA_RESULT; canonical build: $NATIVE_RESULT"
+            echo "Seed export: $SEED_RESULT; seed upload: $UPLOAD_RESULT"
+            echo 'Flatpak/AppImage and the normal three-format release gate were intentionally skipped.'
+          } >> "$GITHUB_STEP_SUMMARY"
+          [[ "$MEDIA_RESULT" == success && "$NATIVE_RESULT" == success ]]
+          [[ "$SEED_RESULT" == success && "$UPLOAD_RESULT" == success ]]
+          [[ "$SEED_ARTIFACT_ID" =~ ^[0-9]+$ ]]
       - name: Report independent format results
-        if: always()
+        if: ${{ always() && env.BOOTSTRAP_ONLY != 'true' }}
         env:
           NATIVE_RESULT: ${{ steps.native.outcome }}
           APPIMAGE_RESULT: ${{ steps.appimage.outcome }}
@@ -204,7 +261,7 @@ jobs:
             echo 'Q02 remains partial. All three verified formats are mandatory; independent successes and a compiled engine do not establish release or manual acceptance.'
           } >> "$GITHUB_STEP_SUMMARY"
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
-        if: always()
+        if: ${{ always() && env.BOOTSTRAP_ONLY != 'true' }}
         with:
           name: nuvio-linux-x86_64-${{ github.sha }}
           path: build/linux-packaging/artifacts/*

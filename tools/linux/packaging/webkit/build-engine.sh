@@ -6,6 +6,9 @@ export LC_ALL=C TZ=UTC CCACHE_DIR=/work/ccache CCACHE_BASEDIR=/work
   echo 'A real container memory limit is required for the engine build' >&2; exit 1;
 }
 ccache --max-size=8G
+ccache --show-stats
+# Record cache and memory evidence even when Ninja/linking fails or is stopped.
+trap 'ccache --show-stats > /work/ccache-stats.txt; cat /work/ccache-stats.txt; cat /sys/fs/cgroup/memory.peak > /work/container-memory-peak.bytes' EXIT
 cmake -S /work/source/webkitgtk-2.50.4 -B /work/objects -G Ninja \
   -DPORT=GTK -DCMAKE_BUILD_TYPE=Release -DDEVELOPER_MODE=OFF \
   -DCMAKE_C_COMPILER=gcc-12 -DCMAKE_CXX_COMPILER=g++-12 \

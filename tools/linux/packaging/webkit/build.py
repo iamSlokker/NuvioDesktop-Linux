@@ -17,9 +17,12 @@ import tempfile
 
 HERE = pathlib.Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE.parent))
+from webkit.builder_seed import load_seed
+from webkit.execution import container_name, preflight, stream_build
 
 MANIFEST = json.loads((HERE / 'manifest.json').read_text())
 BUILD_INPUTS = ['manifest.json', 'Containerfile', 'build.py', 'build-engine.sh', 'build-gtk.sh',
+                'execution.py',
                 'prepare-source.py', 'prepare-gtk.py', 'clean-gtk-resources.py', 'gtk-private-resources.patch']
 
 
@@ -101,6 +104,8 @@ def retain_source(generation, archive, gtk_inputs):
     shutil.copytree(HERE, destination / 'recipe', dirs_exist_ok=True,
                     ignore=shutil.ignore_patterns('__pycache__'))
     shutil.copy2(HERE.parent / 'apt-prefetch.py', destination / 'apt-prefetch.py')
+    if (generation / 'builder-seed.json').exists():
+        shutil.copy2(generation / 'builder-seed.json', destination / 'builder-seed.json')
     for name in ['gtk-resource-paths.patch', 'gtk-resource-paths.json',
                  'webkit-builder-packages.tsv', 'build-resources.txt', 'gtk-build-resources.txt',
                  'container-memory-peak.bytes']:
@@ -118,21 +123,36 @@ def retain_source(generation, archive, gtk_inputs):
 def main():
     from fetch import fetch
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--packaging-work-dir', type=pathlib.Path, required=True)
+    origin = parser.add_mutually_exclusive_group(required=True)
+    origin.add_argument('--packaging-work-dir', type=pathlib.Path)
+    origin.add_argument('--builder-seed', type=pathlib.Path, help='Verified canonical builder export; no app tree required')
+    parser.add_argument('--builder-seed-sha256', help='Receipt SHA256 from the trusted producing run')
     parser.add_argument('--work-dir', type=pathlib.Path)
+    parser.add_argument('--timeout-minutes', type=int, default=210, help='Compiler budget; leave time for CI cache upload')
     parser.add_argument('--source-archive', type=pathlib.Path, help='Optional already downloaded pinned archive')
     parser.add_argument('--result-file', type=pathlib.Path, help='Write the selected verified generation for the packaging driver')
     args = parser.parse_args()
     if any(os.environ.get(k) for k in ['DISPLAY', 'WAYLAND_DISPLAY', 'NUVIO_RUN_LIVE_DISPLAY_TESTS']):
         parser.error('Unset display/live-test variables')
-    packaging = args.packaging_work_dir.resolve()
+    packaging = args.packaging_work_dir.resolve() if args.packaging_work_dir else None
+    if not packaging and not args.work_dir:
+        parser.error('--builder-seed requires --work-dir')
+    if args.timeout_minutes < 1:
+        parser.error('--timeout-minutes must be positive')
     work = (args.work_dir or packaging.parent / 'linux-webkit').resolve()
     if work == HERE or HERE.is_relative_to(work) or work.is_relative_to(HERE) or work == packaging:
         parser.error('Unsafe engine output directory')
-    base = json.loads((packaging / 'canonical/release-info.json').read_text())['builder_image_id']
     work.mkdir(parents=True, exist_ok=True)
     with (work / '.lock').open('w') as lock:
         fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        if args.result_file:
+            args.result_file.unlink(missing_ok=True)
+        # Recheck after CI cache/download restoration, before a large OCI import.
+        # The CLI must enforce the same early gate as the workflow.
+        if args.builder_seed:
+            preflight(work, MANIFEST)
+        base = (load_seed(args.builder_seed.resolve(), args.builder_seed_sha256) if args.builder_seed else
+                json.loads((packaging / 'canonical/release-info.json').read_text())['builder_image_id'])
         identity = recipe_identity(base)
         generation = work / 'generations' / identity
         if valid_cache(generation, identity):
@@ -140,8 +160,7 @@ def main():
                 args.result_file.write_text(json.dumps(dict(generation=str(generation), recipe_identity=identity)) + '\n')
             print(generation / 'install/opt/nuvio-webkit')
             return
-        if shutil.disk_usage(work).free < MANIFEST['minimum_free_disk_gib'] * 1024**3:
-            raise ValueError('At least 40 GiB free disk required for a cold engine build')
+        preflight(work, MANIFEST)
         archive = work / 'downloads' / ('webkitgtk-' + MANIFEST['version'] + '.tar.xz')
         if args.source_archive:
             if digest(args.source_archive) != MANIFEST['source']['sha256']:
@@ -164,24 +183,36 @@ def main():
             subprocess.run(['podman', 'build', '--pull-never', '--network=host', '--file', str(HERE / 'Containerfile'),
                             '--build-arg', 'PACKAGING_BUILDER_IMAGE=' + base, '--tag', image, tmp], check=True)
         image_id = subprocess.check_output(['podman', 'image', 'inspect', '--format', '{{.Id}}', image], text=True).strip()
+        # Importing/building images consumes disk too. Recheck before compilation.
+        preflight(work, MANIFEST)
         ccache = work / 'ccache'
         ccache.mkdir(exist_ok=True)
         memory = str(MANIFEST['memory_gib']) + 'g'
-        command = ['podman', 'run', '--rm', '--network=none', '--userns=keep-id', '--cap-drop=all',
+        name = container_name(work)
+        command = ['podman', 'run', '--rm', '--name', name, '--label', 'org.nuvio.webkit.work=' + name,
+                   '--network=none', '--userns=keep-id', '--cap-drop=all',
                    '--security-opt', 'label=disable', '--security-opt', 'no-new-privileges',
                    '--memory=' + memory, '--memory-swap=' + memory,
                    '--env', 'NUVIO_WEBKIT_RECIPE_ID=' + identity, '--env', 'PYTHONDONTWRITEBYTECODE=1',
+                   '--env', 'CCACHE_DIR=/work/ccache', '--env', 'CCACHE_TEMPDIR=/tmp/nuvio-ccache',
+                   '--env', 'CCACHE_MAXSIZE=' + str(MANIFEST['ccache_gib']) + 'G',
+                   '--env', 'NINJA_STATUS=[%f/%t %p elapsed=%es] ',
                    '--pids-limit=512', '--mount', f'type=bind,src={generation},dst=/work',
                    '--mount', f'type=bind,src={ccache},dst=/work/ccache',
                    '--mount', f'type=bind,src={archive},dst=/source-archive.tar.xz,ro',
                    '--mount', f'type=bind,src={gtk_inputs},dst=/gtk-inputs,ro',
                    '--mount', f'type=bind,src={HERE},dst=/recipe,ro', image_id, 'bash', '-ec',
+                   'mkdir -p "$CCACHE_TEMPDIR"; ccache --show-stats; '
                    'python3 /recipe/prepare-source.py; '
                    'python3 /recipe/test-source-policy.py /source-archive.tar.xz; '
                    'bash /recipe/build-gtk.sh; python3 /recipe/test-relocation.py; bash /recipe/build-engine.sh']
-        with (generation / 'build.log').open('w') as log:
-            subprocess.run(command, stdout=log, stderr=subprocess.STDOUT, check=True)
+        if args.builder_seed:
+            shutil.copy2(args.builder_seed / 'builder-seed.json', generation / 'builder-seed.json')
+        stream_build(command, generation / 'build.log', work, args.timeout_minutes * 60)
+        from webkit.contract import require_files
+        require_files(generation / 'install/opt/nuvio-webkit')
         record = dict(recipe_identity=identity, source_sha256=MANIFEST['source']['sha256'],
+                      packaging_builder_image_id=base,
                       builder_image_id=image_id, files=inventory(generation / 'install/opt/nuvio-webkit'),
                       build_policy=build_policy(generation),
                       corresponding_source=retain_source(generation, archive, gtk_inputs),

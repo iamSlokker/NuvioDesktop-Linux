@@ -22,6 +22,8 @@
   },
   "jobs": 4,
   "memory_gib": 18,
+  "minimum_available_memory_gib": 14,
+  "minimum_cpus": 2,
   "minimum_free_disk_gib": 40,
   "ccache_gib": 8
 }

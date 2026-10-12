@@ -43,6 +43,136 @@ The runtime manifest retains policy switches and a digest of the full build
 policy. Exact compiler flags, including container prefix maps, remain in the
 corresponding-source `engine-build.json` rather than the runtime payload.
 
+## Independent manual CI and builder bootstrap
+
+[Linux WebKit engine](../../../../.github/workflows/linux-webkit.yml) is a
+`workflow_dispatch` workflow on `linux`. It runs the same pinned GTK/WebKit stage
+without media compilation, Gradle, JNI, DEB, Flatpak or Nuvio launch. Canonical
+builds still use `--packaging-work-dir`; independent builds use `--builder-seed`.
+
+One bootstrap is unavoidable: there is no published digest-pinned packaging
+builder image. The packaging workflow now exports `nuvio-webkit-builder-seed`
+after its canonical build, before AppImage compilation. The exporter verifies
+the canonical source-content digest and builder input hashes, then exports the
+exact OCI image and a receipt containing its ID, archive SHA256, recipe hashes
+and canonical commit. The builder image contains no application/private config.
+
+For this initial export, manually dispatch **Linux packages** on `linux` with
+`bootstrap_only=true`. It retains the existing pinned media and canonical
+application/DEB build needed by the seed provenance contract. It skips DEB
+smoke installation, Flatpak runtime/export, AppImage compilation, normal package
+uploads and the three-format release gate. A separate gate requires successful
+media/canonical builds, seed export **and upload with an artifact ID**. Its summary
+is explicitly **BOOTSTRAP ONLY — not a validated release**. The option defaults
+to false; tag pushes always retain the normal full build and release gate.
+
+Choose a **trusted** producing run and enter its run ID and the receipt SHA256
+from its summary into the manual workflow. It checks the originating workflow,
+branch and commit, the caller-supplied receipt hash, recipe inputs, OCI bytes and
+loaded immutable image ID. No mutable tag or arbitrary base is accepted. The
+receipt digest is an operator-supplied trust anchor, not a signed attestation;
+do not obtain it solely from an untrusted downloaded artifact. Earlier runs did
+not export seeds, so one new bootstrap/export is needed. A matching existing
+local canonical build can export without compiling anything:
+
+```sh
+python3 tools/linux/packaging/webkit/builder_seed.py \
+  --packaging-work-dir build/linux-packaging --output build/webkit-builder-seed
+```
+
+Reuse that seed on later attempts. Engine-only changes do not invalidate it;
+packaging/media builder input changes require a new bootstrap. WebKit's small
+dependency image still extends that exact base using the signed APT snapshot.
+Its immutable ID is retained for later assembly. No application/media rebuild
+is needed for an engine retry.
+
+The runner input defaults to `ubuntu-22.04`; a larger Linux x86_64 runner label
+can be selected. On GitHub-hosted Ubuntu, `setup-runner.sh` explicitly installs
+Podman, UID mapping/network/storage helpers, Python, curl, jq, gh, CA roots and
+zstd from the runner's signed distribution repositories. These are orchestration
+tools; the pinned compiler/libraries still come exclusively from the verified
+container. On self-hosted runners it checks pre-provisioned tools and performs
+no installation. The script refuses local/non-Actions use and requires Python
+3.10+, rootless Podman and cgroup v2. It does not enable privileged containers,
+relax host namespace policy or remove memory/process limits.
+
+For a cold engine build, use a **configured GitHub larger Ubuntu x64 runner with
+8 CPUs, 32 GB RAM and 300 GB SSD**, or a dedicated self-hosted Linux x86_64 runner
+with comparable RAM and at least 100 GiB free build/image/cache space. GitHub lists
+that [larger-runner configuration](https://docs.github.com/en/actions/reference/runners/larger-runners);
+its label is chosen when provisioning it and is not a built-in `ubuntu-22.04`
+alias. Repository access/billing must be configured by its owner. The standard
+runner is not a guaranteed cold-build target; its default remains available for
+explicit preflight diagnostics. No larger runner has been provisioned or measured
+by this change, so build time/cache-transfer acceptance is still pending.
+
+Before downloading/importing a seed or building containers, preflight prints total/available RAM,
+affinity CPU count and disk, and requires **14 GiB available RAM, two CPUs and
+40 GiB free disk**. Available RAM respects the containing cgroup; the engine CLI
+rechecks before seed import (after cache restoration) and after loading/extending
+images. The RAM floor provides modest margin over the
+measured 13.24 GiB local peak, not a guarantee. Podman's image store, up-to-8-GiB
+cache snapshot and exported artifacts also need room. A standard runner may
+fail preflight; use sufficient infrastructure instead of removing limits.
+There is no `--cpus`: concurrency remains four Ninja jobs, two GTK jobs and one
+link job, with 18 GiB memory/no-extra-swap and 512-process container limits.
+
+Compiler stdout/stderr stream live and append unabridged to `build.log`. Ninja
+prints completed/total edges, percentage and elapsed time. Every minute the
+supervisor prints log-byte growth, seconds since output, host RAM/disk and
+`podman stats` CPU/memory/PIDs. Quiet links remain visible without declaring
+every silence a stall. ccache stats print before compilation and on WebKit shell
+exit when its trap can run. Logs/resource evidence upload even after failure.
+
+The dedicated compiler budget defaults to 270 minutes (maximum 300), inside a
+315-minute step/360-minute job. Canonical packaging defaults to 210 minutes
+inside its existing 240-minute step. Deadline/SIGINT/SIGTERM handling removes
+only the named/labelled compiler container and waits for the client. An
+`always()` cleanup repeats this check before snapshot/save. Failure to confirm
+cleanup or finish the snapshot prevents cache upload. Each cleanup command has
+a 30/60-second timeout; cleanup/snapshot workflow steps have a ten-minute limit.
+The Podman client wait is also bounded to 30 seconds. Runner loss, SIGKILL or exhausting the entire
+job budget can still prevent uploads; they cannot be guaranteed after host loss.
+
+Only a stopped-container `ccache-snapshot` is uploaded, under unique run/attempt
+keys and recipe/builder restore prefixes. `CCACHE_TEMPDIR` is inside the disposable
+container, outside the cache mount. Snapshot/restore copy completed result and
+manifest entries plus counters, excluding temporary files, locks, symlinks and
+arbitrary configuration. Existing local cache/generations are retained. Fresh
+runner retries recheck source and rebuild through **ccache**, not incomplete
+object/install trees. A retained work directory can also resume its objects.
+Cache availability is optional and never acceptance.
+
+Successful builds recheck the completion contract and export `engine.tar.gz`,
+the exact `engine-builder.oci` for assembly, and `SHA256SUMS`. The engine archive
+includes install inventory, build policy, CMake cache and corresponding source,
+omitting temporary objects. It remains **BUILT_ONLY**. For later assembly, check
+the trusted artifact's SHA256SUMS, load its exact image and extract the generation
+under `generations/`. `package.py` still requires the current recipe **and the
+same canonical packaging builder ID**, then runs the full AppImage payload audit.
+A new canonical image with a different builder ID cannot consume it by renaming
+directories. Automatic cross-run application/candidate assembly is not added.
+The mandatory three-format release gate remains unchanged for normal/tag builds;
+bootstrap-only runs use the explicit non-release seed gate described above.
+
+CI resource fit and transfers still need a real run. The reported four-hour
+timeout in run 38188755529 motivated this separation; no new workflow/full engine
+compile was launched while implementing it. Safe local review commands:
+
+```sh
+env -u DISPLAY -u WAYLAND_DISPLAY -u NUVIO_RUN_LIVE_DISPLAY_TESTS \
+  PYTHONDONTWRITEBYTECODE=1 python3 -m unittest discover \
+  -s tools/linux/packaging/tests -v
+python3 -c 'import ast,pathlib; [ast.parse(p.read_text(), filename=str(p)) for p in pathlib.Path("tools/linux/packaging").rglob("*.py")]'
+bash -n tools/linux/packaging/webkit/build-engine.sh
+bash -n tools/linux/packaging/webkit/build-gtk.sh
+git diff --check
+git diff -- .github/workflows/linux-packages.yml tools/linux/packaging
+git status --short
+```
+
+## Production engine and acceptance boundary
+
 `patches/0001-private-release-paths.patch` is local to this engine build. Paths
 come from `dladdr` and `realpath`, not the working directory or developer-mode
 environment variables. Missing/escaping/non-executable or setuid helpers are
