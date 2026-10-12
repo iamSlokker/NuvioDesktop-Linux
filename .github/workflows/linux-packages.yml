@@ -74,6 +74,17 @@ jobs:
           probe CPU --cpus=4
           probe MEMORY --memory=18g --memory-swap=18g
           probe PIDS --pids-limit=512
+          echo "=== TEMPORARY CPU DELEGATION ==="
+          unit="user@$(id -u).service"
+          sudo systemctl set-property --runtime "$unit" "Delegate=cpu cpuset memory pids"
+          systemctl show "$unit" -p Delegate -p DelegateControllers
+          podman run "${base[@]}" --cpus=4 --memory=18g --memory-swap=18g --pids-limit=512 "$image" /bin/sh -ec '
+            for key in cpu.max memory.max memory.swap.max pids.max; do
+              printf "%s=" "$key"
+              cat "/sys/fs/cgroup/$key"
+            done
+          '
+          echo "PODMAN_COMBINED_START=SUPPORTED"
           echo "Diagnostic stop: expensive builds deliberately skipped"
           exit 1
       - name: Build private media from pinned source
