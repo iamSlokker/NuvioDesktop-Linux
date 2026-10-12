@@ -1,5 +1,6 @@
 package com.nuvio.app.features.debrid
 
+import com.nuvio.app.features.addons.RAW_HTTP_TRUNCATION_MARKER
 import com.nuvio.app.features.addons.RawHttpResponse
 import com.nuvio.app.features.addons.httpRequestRaw
 import kotlinx.serialization.ExperimentalSerializationApi
@@ -134,28 +135,26 @@ internal object TorboxApiClient {
         )
 
     suspend fun listCloudTorrents(apiKey: String): DebridApiResponse<TorboxEnvelopeDto<List<TorboxCloudItemDto>>> =
-        request(
-            method = "GET",
-            url = "$BASE_URL/v1/api/torrents/mylist",
-            apiKey = apiKey,
-            allowLargeResponse = true,
-        )
+        listCloudItems(apiKey, "torrents")
 
     suspend fun listCloudUsenet(apiKey: String): DebridApiResponse<TorboxEnvelopeDto<List<TorboxCloudItemDto>>> =
-        request(
-            method = "GET",
-            url = "$BASE_URL/v1/api/usenet/mylist",
-            apiKey = apiKey,
-            allowLargeResponse = true,
-        )
+        listCloudItems(apiKey, "usenet")
 
     suspend fun listCloudWebDownloads(apiKey: String): DebridApiResponse<TorboxEnvelopeDto<List<TorboxCloudItemDto>>> =
-        request(
-            method = "GET",
-            url = "$BASE_URL/v1/api/webdl/mylist",
-            apiKey = apiKey,
-            allowLargeResponse = true,
-        )
+        listCloudItems(apiKey, "webdl")
+
+    private suspend fun listCloudItems(
+        apiKey: String,
+        kind: String,
+    ): DebridApiResponse<TorboxEnvelopeDto<List<TorboxCloudItemDto>>> =
+        fetchTorboxCloudPages { offset, limit ->
+            request(
+                method = "GET",
+                url = "$BASE_URL/v1/api/$kind/mylist?offset=$offset&limit=$limit",
+                apiKey = apiKey,
+                allowLargeResponse = true,
+            )
+        }
 
     suspend fun requestDownloadLink(
         apiKey: String,
@@ -564,6 +563,34 @@ object DebridCredentialValidator {
         val normalized = apiKey.trim()
         if (normalized.isBlank()) return false
         return DebridProviderApis.apiFor(providerId)?.validateApiKey(normalized) == true
+    }
+}
+
+internal suspend fun fetchTorboxCloudPages(
+    fetchPage: suspend (offset: Int, limit: Int) -> DebridApiResponse<TorboxEnvelopeDto<List<TorboxCloudItemDto>>>,
+): DebridApiResponse<TorboxEnvelopeDto<List<TorboxCloudItemDto>>> {
+    val items = mutableListOf<TorboxCloudItemDto>()
+    var previousPage: List<TorboxCloudItemDto>? = null
+    var offset = 0
+    var limit = 100
+    while (true) {
+        val response = fetchPage(offset, limit)
+        // Retry only a locally truncated response, never an API or decoding error.
+        if (response.isSuccessful && response.rawBody.endsWith(RAW_HTTP_TRUNCATION_MARKER)) {
+            check(limit > 1) { "Torbox cloud item exceeds the response size limit." }
+            limit = (limit / 2).coerceAtLeast(1)
+            continue
+        }
+        val envelope = response.body
+        if (!response.isSuccessful || envelope == null || envelope.success == false) return response
+        val page = envelope.data.orEmpty()
+        check(page.isEmpty() || page != previousPage) { "Torbox cloud pagination did not advance." }
+        previousPage = page
+        items.addAll(page)
+        if (page.size < limit) {
+            return response.copy(body = envelope.copy(data = items), rawBody = "")
+        }
+        offset += page.size
     }
 }
 
