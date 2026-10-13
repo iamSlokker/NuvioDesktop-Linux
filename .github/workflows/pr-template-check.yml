@@ -120,8 +120,13 @@ jobs:
               cleanedContent("Issue or approval") || "",
               cleanedContent("Linked issues") || "",
             ].join(" ");
-            if (issueRequired && !hasIssueReference(issueText)) {
-              failedRules.push("Bug fixes, UI glitch fixes, behavior fixes, and approved changes must link an issue or approved request.");
+            // Owner-authored PRs can document explicit approval without an Issue URL.
+            // A contributor's claim of owner approval must not bypass this check.
+            const ownerAuthored = (pr.user?.login || "").toLowerCase() === context.repo.owner.toLowerCase();
+            const documentedOwnerApproval =
+              /\b(?:approved|authorized|requested)\s+by\s+(?:the\s+)?(?:repository\s+)?owner\b|\b(?:repository\s+)?owner(?:'s)?\s+(?:explicit\s+)?(?:approval|authorization|request)\b/i.test(issueText);
+            if (issueRequired && !hasIssueReference(issueText) && !(ownerAuthored && documentedOwnerApproval)) {
+              failedRules.push("Bug fixes, UI glitch fixes, behavior fixes, and approved changes must link an issue or document owner approval in an owner-authored PR.");
             }
 
             const uiChanged = checkedLines(impactContent).some((line) =>
