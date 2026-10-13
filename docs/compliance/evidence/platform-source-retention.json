@@ -1,0 +1,254 @@
+{
+  "schema_version": 1,
+  "audit_date": "2026-10-13",
+  "scope": "source-only follow-up; no source closure or legal certification",
+  "appimage": {
+    "binary_input_sha256": "2fca8b443c92510f1483a883f60061ad09b46b978b2631c807cd873a47ec260d",
+    "runtime_revision": "dd6cebedcbddde9c82f89b011e8e1d40b6e43868",
+    "release_tag": "20251108",
+    "upstream_build": {
+      "url": "https://github.com/AppImage/type2-runtime/actions/runs/20037536435",
+      "head_sha": "dd6cebedcbddde9c82f89b011e8e1d40b6e43868",
+      "created_at": "2025-12-08T17:50:09Z",
+      "conclusion": "success",
+      "logs_http_status": 410,
+      "logs_checked_date": "2026-10-13"
+    },
+    "runtime_archive": {
+      "file": "build/compliance-inputs/type2-runtime-dd6cebed.tar.gz",
+      "url": "https://codeload.github.com/AppImage/type2-runtime/tar.gz/dd6cebedcbddde9c82f89b011e8e1d40b6e43868",
+      "bytes": 31069,
+      "sha256": "f5fec23be76e50e2445ed2d018bac49b367490fc483c62c4637e99ec705d27ba",
+      "verification": "retained exact-revision source archive; observed SHA-256; independently bound runtime-prefix identity in original audit",
+      "availability": "retained locally only; not uploaded"
+    },
+    "recipe_files": [
+      {
+        "path": ".github/workflows/build.yaml",
+        "sha256": "5ca17b55c2c04213d0c8b34867f41016c0ef018f3525ff2e6f323b7ccf965006",
+        "bytes": 3598
+      },
+      {
+        "path": "scripts/docker/Dockerfile",
+        "sha256": "e0a4abe81c1918516f7b6b9cdb9fdbb768f57c6fc392767537b45142aba45f74",
+        "bytes": 507
+      },
+      {
+        "path": "scripts/docker/build-with-docker.sh",
+        "sha256": "0245f6583f5d1e49de02ba7354ace061b4140cbad38ed2d9a64bbb221395757c",
+        "bytes": 298
+      },
+      {
+        "path": "scripts/common/install-dependencies.sh",
+        "sha256": "45cf79ad6570c75c1f06bcbb629e4d55fbc5c6b1d44e974bb6037b1c209ed170",
+        "bytes": 1218
+      },
+      {
+        "path": "scripts/build-runtime.sh",
+        "sha256": "97d4dde12492ad62f7345961897ba1585d62e7a856fb606c0f44767a9146677d",
+        "bytes": 1799
+      },
+      {
+        "path": "src/runtime/Makefile",
+        "sha256": "71fd92c0e6c7c10ef5a932f5007e4dc61403ed471330e5841782b4233131b053",
+        "bytes": 469
+      },
+      {
+        "path": "patches/libfuse/mount.c.diff",
+        "sha256": "1c7fd9e26717545a476b226b083a9f9d05676c180edbd71a04bbd8a73599dc44",
+        "bytes": 3060
+      },
+      {
+        "path": "LICENSE",
+        "sha256": "aa154fc9070614bbe7921f89db11efd1dba7a1f3a41685958110e2230f9c0ca1",
+        "bytes": 1678
+      }
+    ],
+    "additional_retained_sources": [
+      {
+        "file": "build/compliance-inputs/platform-sources/fuse-3.15.0.tar.xz",
+        "url": "https://github.com/libfuse/libfuse/releases/download/fuse-3.15.0/fuse-3.15.0.tar.xz",
+        "bytes": 4589124,
+        "sha256": "70589cfd5e1cff7ccd6ac91c86c01be340b227285c5e200baa284e401eea2ca0",
+        "verification": "SHA-256 matches exact upstream runtime install-dependencies.sh pin",
+        "availability": "retained locally only; not uploaded"
+      },
+      {
+        "file": "build/compliance-inputs/platform-sources/squashfuse-0.5.2.tar.gz",
+        "url": "https://github.com/vasi/squashfuse/archive/0.5.2.tar.gz",
+        "bytes": 75404,
+        "sha256": "db0238c5981dabbd80ee09ae15387f390091668ca060a7bc38047912491443d3",
+        "verification": "SHA-256 matches exact upstream runtime install-dependencies.sh pin",
+        "availability": "retained locally only; not uploaded"
+      }
+    ],
+    "retained_notice_files": {
+      "libfuse": [
+        {
+          "path": "LICENSE",
+          "sha256": "b8832d9caaa075bbbd2aef24efa09f8b7ab66a832812d88c602da0c7b4397fad",
+          "bytes": 435
+        },
+        {
+          "path": "LGPL2.txt",
+          "sha256": "dc626520dcd53a22f727af3ee42c770e56c97a64fe3adb063799d8ab032fe551",
+          "bytes": 26530
+        },
+        {
+          "path": "GPL2.txt",
+          "sha256": "8177f97513213526df2cf6184d8ff986c675afb514d4e68a404010521b880643",
+          "bytes": 18092
+        }
+      ],
+      "squashfuse": [
+        {
+          "path": "LICENSE",
+          "sha256": "9e909cc8a8ba27b1a649c964cf9eda37de911f3138c2b64e6d2f01703904ac13",
+          "bytes": 1592
+        }
+      ]
+    },
+    "fuse_patch_verification": {
+      "command": "git apply --check -; git apply - in disposable directory containing only lib/mount.c",
+      "result": "PASS",
+      "patch_sha256": "1c7fd9e26717545a476b226b083a9f9d05676c180edbd71a04bbd8a73599dc44",
+      "before_sha256": "dabd63d3e71166940aa52a06adad594bbb72508e446cf80098ef16fce78c9e1f",
+      "after_sha256": "00deae39a39491642110fcbee871023054ed8d66f25825f8c18810d5e4cdb736",
+      "warning": "One pre-existing upstream trailing-whitespace line preserved exactly; no source build"
+    },
+    "build_provenance_gap": {
+      "release_build_path": "Docker build job; upload depends on build, not build-in-chroot",
+      "image": "alpine:3.21",
+      "image_digest": null,
+      "apk_packages": [
+        "musl-dev",
+        "zstd-static",
+        "zlib-static",
+        "mimalloc-dev"
+      ],
+      "exact_revisions": null,
+      "reason": "Mutable Docker base and unversioned apk add; original build logs expired (HTTP410). Chroot ALPINE_RELEASE=3.21.0 does not pin release Docker build."
+    },
+    "status": "BLOCKED",
+    "remaining": [
+      "Exact static Alpine input/source revisions and patches/flags",
+      "Full applicable static-link/relink closure and review",
+      "Complete recipient-facing source and notices availability"
+    ]
+  },
+  "flatpak": {
+    "runtime": "org.gnome.Platform/x86_64/49",
+    "runtime_commit": "2bb946ea4ebb050f6a32f90e979feb975b08280d1ff1aac881dec3d1361ad84d",
+    "metadata_object": {
+      "file": "build/compliance-inputs/flatpak-runtime/platform.commit",
+      "url": "https://dl.flathub.org/repo/objects/2b/b946ea4ebb050f6a32f90e979feb975b08280d1ff1aac881dec3d1361ad84d.commit",
+      "bytes": 3948,
+      "sha256": "2bb946ea4ebb050f6a32f90e979feb975b08280d1ff1aac881dec3d1361ad84d",
+      "verification": "SHA-256 equals exact runtime OSTree commit recorded by packaging provenance; not an independent GPG verification",
+      "availability": "retained locally only; not uploaded"
+    },
+    "commit_subject": "Build of the GNOME Runtime from: 49.10-1-g75d7cf116",
+    "xa.from_commit": "6a1a2bbe72a60eedcab566b67febfa2513892e23945e03e26c7c6e12e831ab6c",
+    "xa.from_commit_type": "OSTree commit, not a Git source revision",
+    "gnome_build_meta_revision": "75d7cf1166db3e0e938d2c12a3195b9e8d8f34fa",
+    "source_resolution": {
+      "id": "75d7cf1166db3e0e938d2c12a3195b9e8d8f34fa",
+      "short_id": "75d7cf11",
+      "title": "Update to WebKitGTK 2.54.1",
+      "committed_date": "2026-10-02T16:05:10.000-05:00",
+      "web_url": "https://gitlab.gnome.org/GNOME/gnome-build-meta/-/commit/75d7cf1166db3e0e938d2c12a3195b9e8d8f34fa",
+      "parent_ids": [
+        "e62068f337b25700b7f5518d9faa5091f27fc58e"
+      ]
+    },
+    "source_linkage": "Exact OSTree subject names git describe; matching GNOME deploy-flatpak.sh generates that subject from git describe HEAD. Official GNOME commit API resolves prefix to full revision.",
+    "build_recipe_archives": [
+      {
+        "file": "build/compliance-inputs/platform-sources/gnome-build-meta-75d7cf1166db3e0e938d2c12a3195b9e8d8f34fa.tar.gz",
+        "url": "https://gitlab.gnome.org/GNOME/gnome-build-meta/-/archive/75d7cf1166db3e0e938d2c12a3195b9e8d8f34fa/gnome-build-meta-75d7cf1166db3e0e938d2c12a3195b9e8d8f34fa.tar.gz",
+        "bytes": 1355772,
+        "sha256": "a261e4caba2fe95e0d5e3281e6e1bc2cd0030c0eb1874f0059c269d27b96b5e8",
+        "verification": "exact-commit primary archive retained; SHA-256 observed at retrieval, not independently signed archive digest",
+        "availability": "retained locally only; not uploaded"
+      },
+      {
+        "file": "build/compliance-inputs/platform-sources/freedesktop-sdk-4535d0fa4894628fdf49999ac5c2aacd138a6035.tar.gz",
+        "url": "https://gitlab.com/freedesktop-sdk/freedesktop-sdk/-/archive/4535d0fa4894628fdf49999ac5c2aacd138a6035/freedesktop-sdk-4535d0fa4894628fdf49999ac5c2aacd138a6035.tar.gz",
+        "bytes": 770259,
+        "sha256": "dea5d9ed63b15d98c3e258fbcc9e1f23cb656957fa8491415d2ee2076bfbe02e",
+        "verification": "exact junction commit from GNOME recipe; SHA-256 observed at retrieval, not independently signed archive digest",
+        "availability": "retained locally only; not uploaded"
+      }
+    ],
+    "gnome_recipe_files": [
+      {
+        "path": ".gitlab-ci/scripts/deploy-flatpak.sh",
+        "sha256": "9a42a49c3fca278be6c2e2dc0d906ab4131788a61601a874a68ec56e7dd5a5f9",
+        "bytes": 1106
+      },
+      {
+        "path": "elements/flatpak-runtimes.bst",
+        "sha256": "36765b7c88117f38b52dbf79ee88bf5f7725a7ce2e50234cc1fefef06ff06dd3",
+        "bytes": 2868
+      },
+      {
+        "path": "elements/freedesktop-sdk.bst",
+        "sha256": "3b4a56d02b2511c31ad3cc7fc563cffff6151ff497e8ec6d8d25970e93a6a6cf",
+        "bytes": 2443
+      },
+      {
+        "path": "elements/flatpak/platform.bst",
+        "sha256": "419f28fc14b40904e1ebce34d39c7ae849fcbee596ba54bcdfad4d08a9bdcba3",
+        "bytes": 4323
+      },
+      {
+        "path": "elements/flatpak/sdk.bst",
+        "sha256": "0fa7d566834cf4087cc0f53bd73ae9f9cd7dd8a628db08e3ca04887f885eaedb",
+        "bytes": 5664
+      },
+      {
+        "path": "elements/sdk/gtk+-3.bst",
+        "sha256": "2ad92b4ab110d8ffa166685c584e6e8c86303603b454911b9ba6e39666cd9c8d",
+        "bytes": 1895
+      },
+      {
+        "path": "project.conf",
+        "sha256": "5d8605b85f2867f5b06ea63046c347bfd82d8971783ca4a88fab98c40f5a94f8",
+        "bytes": 5267
+      }
+    ],
+    "freedesktop_junction": {
+      "ref": "freedesktop-sdk-25.08.17-0-g4535d0fa4894628fdf49999ac5c2aacd138a6035",
+      "revision": "4535d0fa4894628fdf49999ac5c2aacd138a6035",
+      "graphics_branch": "25.08",
+      "extra_branch": "25.08-extra",
+      "nvidia_compat_branch": "1.4",
+      "patch_directory": "patches/freedesktop-sdk (inside retained GNOME recipe archive)"
+    },
+    "source_cache": "https://gbm.gnome.org:11003",
+    "source_cache_bytes_retained": false,
+    "sources_extension": {
+      "exact_recipe": "flatpak-runtimes.bst has no Sources target",
+      "guessed_refs_http_status": {
+        "org.gnome.Platform.Sources/x86_64/49": 404,
+        "org.gnome.Sdk.Sources/x86_64/49": 404
+      },
+      "limitation": "Guessed refs endpoint404 alone is not proof that no sources are published by any other method"
+    },
+    "status": "BLOCKED_FOR_COMPLETE_RUNTIME_SOURCE_REVIEW",
+    "remaining": [
+      "All applicable GNOME/Freedesktop upstream source bytes, patches, plugin/junction/bootstrap closure and notices",
+      "Signed/exported runtime-to-build attestation beyond subject linkage if required",
+      "Exact selected GL/codec/locale/other runtime extension revisions where conveyed",
+      "Recipient source access and legal scope of separately obtained runtime versus any mirror/bundle"
+    ]
+  },
+  "safety": {
+    "binary_downloads": false,
+    "binary_builds": false,
+    "runtime_installation": false,
+    "gui_tests": false,
+    "uploads": false,
+    "system_configuration_changes": false
+  }
+}

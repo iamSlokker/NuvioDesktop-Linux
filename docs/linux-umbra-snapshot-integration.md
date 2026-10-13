@@ -41,13 +41,15 @@ reserves uncached titles in follow order before parallel fetches, preserving the
 existing library-first deduplication rule and the new episode dates/navigation
 ID. Cache lifetime, metadata fetching and the UI are unchanged by this correction.
 
-The upstream Windows ZIP delta updater is retained without a Linux implementation.
-Its delta path validates entry CRCs and returns before the full-archive SHA256
-check used by ordinary downloads; this Windows integrity difference needs
-separate upstream review. Linux controller checks cannot enter either installer
-path. Windows HDR compensation likewise does not call its JNI entry point on
-Linux. New-install defaults and hero/profile presentation follow the snapshot;
-stored explicit user choices remain authoritative.
+At the time of this snapshot, the upstream Windows ZIP delta updater had an
+integrity gap: entry CRCs bypassed full-archive SHA256 validation. **Merged PR #3
+subsequently disabled that unauthenticated path** and requires a full ZIP digest,
+verified download receipt and pre-install reverification. The old implementation
+remains testable but has no production updater consumer. Linux cannot enter the
+Windows installer. The subsequent [readiness audit](FINAL-READINESS-REPORT.md)
+records a separate bounded stale-manifest cleanup fix and pending real Windows
+acceptance. Windows HDR compensation still does not call its JNI entry point on
+Linux. Stored explicit user choices remain authoritative.
 
 The build-script conflict combines upstream dependencies and test-data isolation
 with Linux packaging/native tasks and live-display test protections. The four
@@ -107,7 +109,10 @@ invented or copied from private configuration. CPU framing requires no CUDA;
 the pinned ONNX artifact does not provide macOS Intel natives, so that optional
 feature retains its unavailable-model fallback there.
 
-Before merging this snapshot into `linux`, use the newly built AppImage with a
+The snapshot was merged through PR #2; it must not be integrated again. The
+following was its pre-merge acceptance checklist, not a claim that every case
+passed. Current accepted/pending scope and isolated instructions are in the
+[acceptance protocol](linux-acceptance-protocol.md). For future acceptance use an approved AppImage with a
 disposable HOME/XDG profile and explicit JVM `user.home` and data-directory
 overrides. Keep the active display/audio/session connection, but never reuse the
 installed Flatpak's data or the existing Nuvio settings directory. Check:

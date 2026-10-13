@@ -1,0 +1,139 @@
+{
+  "original_artifacts": {
+    "Nuvio-Desktop-1.15.0-fce98dc1633b-x86_64.flatpak": "687dddba1e5f94b2969b1482ea450775b5f5dfe9346f7a15bf0b6cb6b1fe66d0",
+    "Nuvio-Desktop-1.15.0~nightly+git.fce98dc1633b-x86_64.AppImage": "946c8d8d04f1b691604dc324267462ddeb11743820a39422e033fff8f3ff104a",
+    "Nuvio-WebKit-source-b6e4ab22c0b2dd58-ffe768d70f20.tar.gz": "2e6b4e73731695ec59d7590fedba3567566ae1a0afbd10a329e0d294ed82bb7b",
+    "Nuvio-source-fce98dc1633b.tar.gz": "af04e1559ae2a83e5d4fdca015374df78f2a1a27750a4a9347db69d4640c8fdf",
+    "appimage-audit.json": "581bf5da7ee709f9c4964b4e8bb758fe6b02975d2b131e248acac4690acf56a2",
+    "deb-audit.json": "c919c43c3135672582f112fa1a214d6564ba601af24aad1a8f2a327f050b1fa7",
+    "flatpak-audit.json": "d038ab18f0cde3f155ad4d1cbd59c216f36f483a6cb605bf914f52b029a00b35",
+    "flatpak-metadata.ini": "ac7eed1bf4a6c69344336b944cb56dbc99bee179fc569a8cd9704a7f12b256be",
+    "flatpak-provenance.json": "c56ec5d7dad362c6f7ba61c81a596015ee5eb06d8ef8f386aa340301e544ab2d",
+    "nuvio-desktop_1.15.0~nightly+git.fce98dc1633b_amd64.deb": "997ce148d14565d775fde74ed196da9686571badb1421d220ab22c69889f67be",
+    "release-info.json": "bcbce0d1aafc674c80bd68dafe2be43d3efb88c5cea87a29f28b1ce88a83f703",
+    "runner-packages.tsv": "f1a3c799c8a25d7006960a27a0bd1dcecde91cc4a126f28450249c6990511fd7"
+  },
+  "original_inventory": {
+    "bytes": 654578,
+    "path": "docs/compliance/linux-third-party-inventory.json",
+    "sha256": "3e01d1cb3618173a284a0e3246513f56a11ed929a93806c5694f5c7b5a0d50d3"
+  },
+  "package_commit": "fce98dc1633b51f813c20965e05941c2745beb8c",
+  "packages": {
+    "appimage": {
+      "name": "Nuvio-Desktop-1.15.0~nightly+git.fce98dc1633b-x86_64.AppImage",
+      "sha256": "946c8d8d04f1b691604dc324267462ddeb11743820a39422e033fff8f3ff104a"
+    },
+    "deb": {
+      "name": "nuvio-desktop_1.15.0~nightly+git.fce98dc1633b_amd64.deb",
+      "sha256": "997ce148d14565d775fde74ed196da9686571badb1421d220ab22c69889f67be"
+    },
+    "flatpak": {
+      "name": "Nuvio-Desktop-1.15.0-fce98dc1633b-x86_64.flatpak",
+      "sha256": "687dddba1e5f94b2969b1482ea450775b5f5dfe9346f7a15bf0b6cb6b1fe66d0"
+    }
+  },
+  "publication_authorized": false,
+  "redistribution_assessment": {
+    "appimage": "BLOCKED",
+    "deb": "BLOCKED",
+    "flatpak": "BLOCKED",
+    "oci": "BLOCKED"
+  },
+  "schema_version": 1,
+  "scope": "Binds review records/scripts, not source cache completeness, binary reproducibility or legal permission. Run their separate verifiers.",
+  "source_availability": "LOCAL_RETENTION_ONLY; NO_RECIPIENT_OFFER",
+  "status": "LOCAL_REVIEW_ONLY",
+  "supplements": [
+    {
+      "bytes": 358949,
+      "path": "docs/compliance/evidence/dependency-source-retention.json",
+      "scope_limit": "Local Maven/JDK/native/model evidence; JNI/static build closure and rights/notice review remain separate.",
+      "sha256": "f1bc0d78bc399fa30d25e909f320fe90be21eb509d4a643a843b68f831a6373f"
+    },
+    {
+      "bytes": 124072,
+      "path": "docs/compliance/evidence/engine-ubuntu-provenance.json",
+      "scope_limit": "Original AppImage file owners/source versions; not complete native static dependencies.",
+      "sha256": "fed527b62ad61b3109e263c2b4f71dc093e7d667088acaf8d965186ddecbe754"
+    },
+    {
+      "bytes": 147013,
+      "path": "docs/compliance/evidence/oci-ubuntu-packages.json",
+      "scope_limit": "Separate installed-package inventory; not all OCI layers, non-dpkg tools or complete source closure.",
+      "sha256": "3550dbc4e9db9f6373379e33fe0b173d73bf6dfbdf4c588ffc2e8b09e877c7fe"
+    },
+    {
+      "bytes": 558717,
+      "path": "docs/compliance/evidence/oci-ubuntu-source-lock.json",
+      "scope_limit": "Exact source input lock for installed engine Ubuntu packages; not proof all source bytes are retained or all OCI layers/non-dpkg tools are covered.",
+      "sha256": "171beb3df8efb3e96653d802fbd8152c231d472f82c5f31cf36749c73f9de140"
+    },
+    {
+      "bytes": 11285,
+      "path": "docs/compliance/evidence/platform-source-retention.json",
+      "scope_limit": "AppImage/Flatpak source evidence; missing static dependencies/relink materials remain blockers.",
+      "sha256": "2cf5662f11bf96e534fccce60e4aa03ce903abb27b5270402c2ccb419c50baad"
+    },
+    {
+      "bytes": 3846,
+      "path": "docs/compliance/evidence/run-38397205286.json",
+      "scope_limit": "Original run/source/access evidence; authenticated expiring artifacts are not a durable complete source offer.",
+      "sha256": "9253ba6a3d8b238a718015fc8c003daacf97c1afb83af9bb31ae4911359a6837"
+    },
+    {
+      "bytes": 179129,
+      "path": "docs/compliance/evidence/ubuntu-source-lock.json",
+      "scope_limit": "Exact AppImage Ubuntu source inputs; retained bytes and dsc closure require the separate offline verifier.",
+      "sha256": "2308a5ed2f9026ca5a0e8fdf6162ffcbba8fab0b28a13ffcb86afe3c63b9dcba"
+    },
+    {
+      "bytes": 65808,
+      "path": "docs/compliance/evidence/ubuntu-source-retention.json",
+      "scope_limit": "Offline verified local Ubuntu source inputs; not complete OCI/source obligations or delivery.",
+      "sha256": "b8b5b0fd177d82b4da02525eb80a36f88b79dbfee255054b2f43764dfed8e80c"
+    },
+    {
+      "bytes": 9715,
+      "path": "docs/compliance/evidence/validation-2026-10-13.json",
+      "scope_limit": "Scoped local test results; not runtime, hardware or legal acceptance.",
+      "sha256": "3aa990814fe0d3a64b8f895a3e75f1fa7f94f9edb0f0c9a73036239cd5bf4614"
+    },
+    {
+      "bytes": 10626,
+      "path": "docs/compliance/source-delivery-plan.md",
+      "scope_limit": "Proposed delivery/retention design, not an approved offer or publication.",
+      "sha256": "75db1bb156afa46b427b1b9590dca5184d0ab62117c512ae0926e8e278d011fb"
+    },
+    {
+      "bytes": 4203,
+      "path": "tools/linux/packaging/compliance/collect_media_sources.py",
+      "scope_limit": "Strict private-media source collector; not whole-application source closure.",
+      "sha256": "000015d06be791a87f7ed749ec012ec61cc703f084508bd50ba6e385f8419e14"
+    },
+    {
+      "bytes": 7379,
+      "path": "tools/linux/packaging/compliance/dependency_sources.py",
+      "scope_limit": "Offline retained dependency input verifier; no public availability claim.",
+      "sha256": "a4546143aa7417b97d210dacc87f9e9f6e9b481a35a59f63c02226ffe2bb2ca8"
+    },
+    {
+      "bytes": 31552,
+      "path": "tools/linux/packaging/compliance/inventory.py",
+      "scope_limit": "Original package/source inventory verifier.",
+      "sha256": "15f81bd9d9ef6eb3f15c9af2439ac6f8c37617d4fb02acf34a98769015523985"
+    },
+    {
+      "bytes": 7598,
+      "path": "tools/linux/packaging/compliance/review_index.py",
+      "scope_limit": "Review-index byte bindings only; not a source cache or compliance verifier.",
+      "sha256": "45e37972dc2f0f5f5a2d3eb7db30411f77d311f8f9cf704ffc66cdea7eaf2aa5"
+    },
+    {
+      "bytes": 14515,
+      "path": "tools/linux/packaging/compliance/ubuntu_sources.py",
+      "scope_limit": "Signed Ubuntu index/input/dsc verifier; no package install or build.",
+      "sha256": "25288c047bfe4f652148075a272a33ca0debca54cc1254ab9d488edf9a6c1c80"
+    }
+  ]
+}

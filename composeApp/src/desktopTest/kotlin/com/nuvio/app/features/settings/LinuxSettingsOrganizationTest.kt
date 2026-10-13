@@ -17,6 +17,7 @@ class LinuxSettingsOrganizationTest {
     @Test fun futureIdentifiersSurviveKnownCategoryMutations() = probe("future")
     @Test fun malformedPayloadsFallBackSafely() = probe("corrupt")
     @Test fun existingInstallationDoesNotSeedFavorites() = probe("existing")
+    @Test fun emptyInstallationDirectoryStillSeedsANewAccount() = probe("empty-directory")
     @Test fun organizationSurvivesFreshProcess() = withHeadlessFixture {
         runHeadlessProbe(it, LinuxSettingsOrganizationProbe::class.java, "write")
         runHeadlessProbe(it, LinuxSettingsOrganizationProbe::class.java, "read")
@@ -34,7 +35,14 @@ internal object LinuxSettingsOrganizationProbe {
     }
     @JvmStatic fun main(args: Array<String>) {
         val scenario = args[1]
-        if (scenario == "existing") Files.createDirectories(Path.of(args[0], "config", "nuviohtpc"))
+        if (scenario == "existing" || scenario == "empty-directory") {
+            val root = Files.createDirectories(Path.of(args[0], "config", "nuviohtpc"))
+            // Defaults are account-scoped after the snapshot integration. A bare directory is
+            // still a new account; migrating a real legacy store is what marks an existing one.
+            if (scenario == "existing") {
+                Files.writeString(root.resolve("nuvio_fixture_legacy.properties"), "fixture=preserved\n")
+            }
+        }
         if (scenario == "corrupt") {
             SettingsCategoryNamesStorage.savePayload("{broken")
             SettingsCategoryOrderStorage.savePayload("{broken")
@@ -43,14 +51,15 @@ internal object LinuxSettingsOrganizationProbe {
             SettingsCollapsedSectionsStorage.savePayload("{broken")
         }
         when (scenario) {
-            "defaults", "existing", "corrupt" -> {
+            "defaults", "existing", "corrupt", "empty-directory" -> {
                 reload()
                 assertTrue(SettingsCategoryNamesRepository.names.value.isEmpty())
                 assertTrue(SettingsCategoryOrderRepository.order.value.isEmpty())
                 assertTrue(SettingsHiddenCategoriesRepository.hiddenPages.value.isEmpty())
                 assertTrue(SettingsHiddenCategoriesRepository.configureIconVisible.value)
                 assertTrue(SettingsCollapsedSectionsRepository.collapsed.value.isEmpty())
-                assertEquals(if (scenario == "defaults") 7 else 0, SettingsFavoritesRepository.favorites.value.size)
+                assertEquals(if (scenario in setOf("defaults", "empty-directory")) 7 else 0,
+                    SettingsFavoritesRepository.favorites.value.size)
                 val before = SettingsFavoritesRepository.favorites.value
                 reload()
                 assertEquals(before, SettingsFavoritesRepository.favorites.value)

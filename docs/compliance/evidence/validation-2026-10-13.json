@@ -1,0 +1,278 @@
+{
+  "audit_start_head": "ef221b72d6f759387d6542521ce3c8e0588c9128",
+  "date": "2026-10-13",
+  "jvm_suites": [
+    {
+      "classes": [
+        {
+          "errors": "0",
+          "failures": "0",
+          "name": "com.nuvio.app.core.storage.DesktopAccountSlotsTest",
+          "skipped": "0",
+          "tests": "7"
+        },
+        {
+          "errors": "0",
+          "failures": "0",
+          "name": "com.nuvio.app.features.settings.DesktopSettingsBackupTest",
+          "skipped": "0",
+          "tests": "7"
+        },
+        {
+          "errors": "0",
+          "failures": "0",
+          "name": "com.nuvio.app.features.settings.LinuxSettingsOrganizationTest",
+          "skipped": "0",
+          "tests": "11"
+        },
+        {
+          "errors": "0",
+          "failures": "0",
+          "name": "com.nuvio.app.features.updater.AuthenticatedPortableZipTest",
+          "skipped": "0",
+          "tests": "12"
+        },
+        {
+          "errors": "0",
+          "failures": "0",
+          "name": "com.nuvio.app.features.updater.InstalledNightlyMarkerTest",
+          "skipped": "0",
+          "tests": "7"
+        },
+        {
+          "errors": "0",
+          "failures": "0",
+          "name": "com.nuvio.app.features.updater.LinuxUpdaterIsolationTest",
+          "skipped": "0",
+          "tests": "2"
+        },
+        {
+          "errors": "0",
+          "failures": "0",
+          "name": "com.nuvio.app.features.updater.PortableUpdateAssetSelectionTest",
+          "skipped": "0",
+          "tests": "4"
+        },
+        {
+          "errors": "0",
+          "failures": "0",
+          "name": "com.nuvio.app.features.updater.PortableUpdateStagingTest",
+          "skipped": "0",
+          "tests": "7"
+        },
+        {
+          "errors": "0",
+          "failures": "0",
+          "name": "com.nuvio.app.features.updater.ReleaseNotesMarkdownTest",
+          "skipped": "0",
+          "tests": "6"
+        },
+        {
+          "errors": "0",
+          "failures": "0",
+          "name": "com.nuvio.app.features.updater.UpdateChannelTest",
+          "skipped": "0",
+          "tests": "16"
+        },
+        {
+          "errors": "0",
+          "failures": "0",
+          "name": "com.nuvio.app.features.updater.ZipDeltaTest",
+          "skipped": "0",
+          "tests": "7"
+        }
+      ],
+      "compileKotlinDesktop": "PASS",
+      "compileTestKotlinDesktop": "PASS",
+      "name": "updater-settings",
+      "retained_local_evidence_sha256": {
+        "actual-jar-duplicate-check.json": "0b890a94a515b624e8a94492df9c884697dd2de50d91173969ca8db1ee6ca4c8",
+        "audit-notes.txt": "a5121a41bd36eca44c91a44de2a9023df3e32159118f40235731b91edec352ca",
+        "before-fix.log": "88576ddf14d0e6915802526741b7d37e7f07132bda905a51d116df9615d6b424",
+        "commands.txt": "8c8392a8a54b49ad622970f48216c8922b5cd157844b8ac8aa6eaa00ac3c22ee",
+        "duplicate-jar-after-fix.log": "dab388adcf5b52ab785d49b9745d7388d300a7d360a2993ed7df4142d0bf25b9",
+        "duplicate-jar-before-fix.log": "32e4856074274d464b5b726e6b59d3903fad96cc6bf347d57579063b560df1d2",
+        "inventory-duplicate-guard.json": "3e01d1cb3618173a284a0e3246513f56a11ed929a93806c5694f5c7b5a0d50d3",
+        "jvm-tests.log": "0cbc0d62fe6a0a0bf2bc5351e6c551102ad991cbbbaf282b53309b879e1cb86c",
+        "results.json": "e1e48997150ec5c1b61ce3fb3cdb128316f05a4d06b681a84e1b7d0e8629620d",
+        "run-tests.py": "1c77bfe7294ff1e4e79980150e73f222aa71a518c6b761f7f6d3bd884414f462",
+        "test-classes.json": "6d014889352f6e53b4e5c83de33d211e96d4f94ad245cf4d7606d1ad04ec5f1d",
+        "validation.init.gradle": "aebb1a478eae7dbb651eb586becb6f0c622f765170174b56428c80aa16c997f6"
+      },
+      "totals": {
+        "errors": 0,
+        "failures": 0,
+        "skipped": 0,
+        "tests": 86
+      }
+    },
+    {
+      "classes": [
+        {
+          "class": "com.nuvio.app.features.calendar.CalendarSourcePersistenceTest",
+          "errors": 0,
+          "failures": 0,
+          "skipped": 0,
+          "tests": 3
+        },
+        {
+          "class": "com.nuvio.app.features.calendar.NuvioCalendarRepositoryIntegrationTest",
+          "errors": 0,
+          "failures": 0,
+          "skipped": 0,
+          "tests": 9
+        },
+        {
+          "class": "com.nuvio.app.features.home.components.LinuxHeroBackdropInferenceTest",
+          "errors": 0,
+          "failures": 0,
+          "skipped": 0,
+          "tests": 7
+        },
+        {
+          "class": "com.nuvio.app.features.player.AutomaticSubtitleSyncEndToEndTest",
+          "errors": 0,
+          "failures": 0,
+          "skipped": 0,
+          "tests": 4
+        },
+        {
+          "class": "com.nuvio.app.features.player.DesktopAnimeShaderPlanTest",
+          "errors": 0,
+          "failures": 0,
+          "skipped": 0,
+          "tests": 8
+        },
+        {
+          "class": "com.nuvio.app.features.player.autosync.AutoSyncSubtitleCueParserTest",
+          "errors": 0,
+          "failures": 0,
+          "skipped": 0,
+          "tests": 2
+        },
+        {
+          "class": "com.nuvio.app.features.player.autosync.AutoSyncSubtitleHttpTest",
+          "errors": 0,
+          "failures": 0,
+          "skipped": 0,
+          "tests": 3
+        },
+        {
+          "class": "com.nuvio.app.features.player.autosync.AutoSyncSubtitleRewriterTest",
+          "errors": 0,
+          "failures": 0,
+          "skipped": 0,
+          "tests": 3
+        },
+        {
+          "class": "com.nuvio.app.features.player.autosync.AutoSyncTimelineRetimeTest",
+          "errors": 0,
+          "failures": 0,
+          "skipped": 0,
+          "tests": 33
+        },
+        {
+          "class": "com.nuvio.app.features.player.autosync.EmbeddedSubtitleTimelineLoaderTest",
+          "errors": 0,
+          "failures": 0,
+          "skipped": 0,
+          "tests": 2
+        },
+        {
+          "class": "com.nuvio.app.features.player.desktop.LinuxHeroHostGeometryTest",
+          "errors": 0,
+          "failures": 0,
+          "skipped": 0,
+          "tests": 11
+        },
+        {
+          "class": "com.nuvio.app.features.player.desktop.LinuxHeroPlaybackEligibilityTest",
+          "errors": 0,
+          "failures": 0,
+          "skipped": 0,
+          "tests": 4
+        },
+        {
+          "class": "com.nuvio.app.features.player.desktop.LinuxPictureInPictureTransitionTest",
+          "errors": 0,
+          "failures": 0,
+          "skipped": 0,
+          "tests": 40
+        },
+        {
+          "class": "com.nuvio.app.features.player.desktop.LinuxPlayerEscapeTest",
+          "errors": 0,
+          "failures": 0,
+          "skipped": 0,
+          "tests": 10
+        },
+        {
+          "class": "com.nuvio.app.features.player.desktop.LinuxPlayerOwnershipTest",
+          "errors": 0,
+          "failures": 0,
+          "skipped": 0,
+          "tests": 16
+        },
+        {
+          "class": "com.nuvio.app.features.profiles.LinuxProfilePinTest",
+          "errors": 0,
+          "failures": 0,
+          "skipped": 0,
+          "tests": 11
+        },
+        {
+          "class": "com.nuvio.app.features.streams.LinuxStreamPresentationTest",
+          "errors": 0,
+          "failures": 0,
+          "skipped": 0,
+          "tests": 11
+        },
+        {
+          "class": "com.nuvio.app.features.streams.StreamEpisodeMatchFilterTest",
+          "errors": 0,
+          "failures": 0,
+          "skipped": 0,
+          "tests": 11
+        }
+      ],
+      "compileKotlinDesktop": "PASS",
+      "compileTestKotlinDesktop": "PASS",
+      "name": "snapshot-player-policies",
+      "retained_local_evidence_sha256": {
+        "commands.txt": "cc3f4d0febcb347ecc13a965b91b33183f9d04a0811de9ecd326835ecd53c149",
+        "git-status-short.txt": "b6f382d88bdb5fbc0ad422a82bace3ced09834b4c9aedc382e025f9f48ca6e1a",
+        "jvm-tests.log": "0165c0995a73ee74a209c3051e51312285dfe5e9cff413851d7998ef0ef6d4f2",
+        "new-compliance-review.txt": "218214db577eb622e8f2936273826464291d57ec84aa78ebd94d5239539da948",
+        "results.json": "69b3d5448127aa17d372f4c1c5905ec686a61f8dd33c5776d31fcf5baca45f79",
+        "run-tests.py": "92e152a4329923a933cac030fca0ba1154ada0ecdc8b867d572cf8d33b865d85",
+        "test-classes.json": "4ceee031ca7411103305a0e8aa20e9a0eaeb27242d6b1e68ca0c0e1e988f1be4",
+        "validation.init.gradle": "8547b8199852a7bd9f831dcdb05444b2b30acde5e06d79214b7697ea1e15cf93"
+      },
+      "totals": {
+        "errors": 0,
+        "failures": 0,
+        "skipped": 0,
+        "tests": 188
+      }
+    }
+  ],
+  "packaging": {
+    "command": "JAVA_HOME=<Temurin17> PYTHONDONTWRITEBYTECODE=1 python3 -m unittest discover -s tools/linux/packaging/tests -v",
+    "errors": 0,
+    "failures": 0,
+    "isolation": "DISPLAY/WAYLAND_DISPLAY/NUVIO_RUN_LIVE_DISPLAY_TESTS unset; disposable HOME/XDG; external networking unavailable",
+    "log_sha256": "cc3761048fcaa2afd19b97fca9c505e284644a4babb4fe0bd77fe59dfaa1adfd",
+    "skipped": 0,
+    "tests": 135
+  },
+  "protected_linux": "a96ce242f084a41ecf433c206958f1cbffa53345",
+  "schema_version": 1,
+  "scope": "Headless local verification with disposable profiles and network namespace; no GUI, real Windows runtime, external services, distribution build or hardware acceptance. Updater/settings run included the exact subsequently separated PR5 fix and current settings fixture; snapshot run used PR4 baseline plus audit changes. Full raw logs/XML retained locally, not published.",
+  "scope_exclusions": [
+    "No Nuvio/GUI/live-display launch",
+    "No Windows helper execution",
+    "No package or WebKit rebuild",
+    "No personal data or installed application access"
+  ],
+  "updater_fix_commit": "91f7abd1944d85990fed63e7493780dff72bd53a"
+}

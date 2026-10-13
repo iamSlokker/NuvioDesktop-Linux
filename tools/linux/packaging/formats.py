@@ -67,11 +67,58 @@ Description: {CONFIG['display_name']}
 ''')
     run('dpkg-deb', '--root-owner-group', '--build', deb, artifacts / f'nuvio-desktop_{version}_amd64.deb')
     shutil.copy2(image / 'release-info.json', artifacts / 'release-info.json')
-    # Inputs/recipes for corresponding-source review. Never copies host config.
+    archive_application_source(work, artifacts, info)
+    run('python3', HERE / 'verify.py', 'artifacts', work, '--formats', 'deb')
+    if not deb_only:
+        build_appimage(work)
+
+
+
+SOURCE_README = """Nuvio application source snapshot — scope and rebuilding
+
+application/ contains the recorded application inputs, Linux bridge sources,
+interfaces, recipes and patches. source-files.json records their SHA256 values;
+source-info.json binds the snapshot to its Git revision and build identity.
+
+This is NOT a complete third-party Corresponding Source distribution. Media,
+JDK, JVM/native dependencies and embedded AppImage runtime need their own exact
+source inputs, notices and any required build/relink/install materials. The
+separate WebKit source artifact covers its pinned WebKit/GTK inputs and patches,
+not every Ubuntu library copied into AppImage. See the compliance report when
+present under application/docs/compliance/ and tools/linux/packaging/README.md.
+
+Work only in a disposable copy. Use the pinned Temurin JDK and public client
+properties, never a developer local.properties. Gradle wrapper and dependency
+artifacts must be retained separately for offline rebuilding. The top-level
+packaging orchestrator currently requires Git metadata omitted from this tar:
+check out the recorded Git commit and compare every recorded source byte before
+using its packaging commands. A fully offline snapshot-only packaging bootstrap
+is not supplied; do not represent this archive as a complete offline rebuild kit.
+
+Application-image build (after providing the documented verified dependencies):
+  cd application
+  cp tools/linux/packaging/public-client.properties local.properties
+  env -u DISPLAY -u WAYLAND_DISPLAY -u NUVIO_RUN_LIVE_DISPLAY_TESTS \
+    ./gradlew :composeApp:createDistributable -Pnuvio.desktop.channel=nightly
+Linux native/media build and installation layout are described in
+application/tools/linux/media-runtime/README.md and
+application/tools/linux/packaging/README.md. Preserve the sandbox when rebuilding
+or installing modified versions. No release or legal certification is implied.
+"""
+
+
+def archive_application_source(work, artifacts, info, source=pathlib.Path('/source')):
+    """Retain application inputs with an explicit, honest corresponding-source scope."""
     sources = work / 'corresponding-source'
     shutil.rmtree(sources, ignore_errors=True)
     for name, expected in json.loads((work / 'source-files.json').read_text()):
-        src = pathlib.Path('/source') / name
+        relative = pathlib.PurePosixPath(name)
+        if (relative.is_absolute() or '..' in relative.parts or name in {'', '.'} or '\\' in name
+                or relative.name == 'local.properties' or relative.parts[0] in {'.git', '.aws', '.codex', '.agents'}):
+            raise ValueError('Unsafe source inventory path: ' + name)
+        src = source / name
+        if src.is_symlink() or not src.is_file() or not src.resolve().is_relative_to(source.resolve()):
+            raise ValueError('Missing/nonregular source input: ' + name)
         if hashlib.sha256(src.read_bytes()).hexdigest() != expected:
             raise ValueError('Source changed during packaging: ' + name)
         dst = sources / 'application' / name
@@ -79,10 +126,8 @@ Description: {CONFIG['display_name']}
         shutil.copy2(src, dst)
     shutil.copy2(work / 'source-files.json', sources / 'source-files.json')
     shutil.copy2(work / 'source-info.json', sources / 'source-info.json')
+    (sources / 'SOURCE-README.txt').write_text(SOURCE_README)
     shutil.make_archive(str(artifacts / ('Nuvio-source-' + info['git_commit'][:12])), 'gztar', sources)
-    run('python3', HERE / 'verify.py', 'artifacts', work, '--formats', 'deb')
-    if not deb_only:
-        build_appimage(work)
 
 
 def build_appimage(work, engine=None):
