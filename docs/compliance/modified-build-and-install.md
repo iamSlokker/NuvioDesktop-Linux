@@ -135,17 +135,18 @@ publisher URLs/checksums and exact dataset byte identity are in `PROVENANCE.json
 The publisher's ODbL text includes trailing spaces. A `.gitattributes` rule
 limited to that one file preserves its exact bytes without treating those
 publisher spaces as patch errors; other whitespace checks remain enabled.
-This closes the missing-full-text gap, **not** the missing dataset revision and
-generation-record gap. These additions will ship in future builds only; they do
+The artwork/data follow-up pins the unchanged dump to its exact Fribb import.
+This closes the missing-full-text/import-identity gaps, **not** the original
+generation-record and merged-data rights gaps. These additions ship in future builds only; they do
 not change historical CI artifacts.
 
 Remaining blockers requiring specific evidence or a separate decision include:
 
-- The seven SVG Repo assets listed in `platform-source-evidence.md` still lack
-  exact origin/author/license grants. Provider/award marks, setup artwork and the
-  IMDb permission claim need their own applicable rights evidence. No grant was
-  inferred, and no approved artwork was silently replaced.
-- Resolve the anime mapping's exact input revision/derivation record and the
+- The seven SVG Repo UI imports have original MIT replacements, documented in
+  `artwork-data-closure.md`. Remaining provider/award/quality marks, setup artwork
+  and the IMDb permission claim still need applicable rights evidence. No
+  historical grant was inferred and approved branding remains unchanged.
+- Resolve the anime mapping's original generation input/derivation record and the
   model preferred-form/rights questions to the applicable reviewed standard.
 - Complete required prebuilt JNI/static-library source/build/relink closure;
   AppImage-runtime's unpinned Alpine build inputs remain specifically unresolved.

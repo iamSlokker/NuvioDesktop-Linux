@@ -1,0 +1,191 @@
+{
+  "schema_version": 1,
+  "scope": "Seven replacement UI vectors only; not permission for historical imports or other bundled artwork/data",
+  "baseline_commit": "805797ed42103f931f3723c4f83547c249057687",
+  "license": "MIT",
+  "license_file": "LICENSE.txt",
+  "notice_file": "NOTICE.txt",
+  "asset_specific_grant_investigation": {
+    "import_commit": "a33ad982dec56f275f2203e69d46cda7fd0b81b3",
+    "import_metadata": "SVG Repo generator comments only, no source asset identifiers or grants",
+    "primary_candidates": {
+      "repository": "https://github.com/480-Design/Solar-Icon-Set",
+      "inspected_commit": "44017167688b49109d88ae6a98979b23d8950db0",
+      "license_issue": "https://github.com/480-Design/Solar-Icon-Set/issues/5",
+      "assessment": "Speaker/Pause/Play paths compared to primary files; publisher tree has no LICENSE and an unresolved license request. Third-party license labels are not substituted for a publisher grant."
+    },
+    "other_icons": "No authoritative asset-specific grant established from import history or bounded source search; replacement selected rather than inferring permission"
+  },
+  "assets": [
+    {
+      "resource": "composeApp/src/commonMain/composeResources/drawable/library_add_plus.svg",
+      "status": "REPLACED",
+      "use": "AppIconResource.LibraryAddPlus / DetailActionButtons",
+      "original": {
+        "application_commit": "805797ed42103f931f3723c4f83547c249057687",
+        "introduced_commit": "a33ad982dec56f275f2203e69d46cda7fd0b81b3",
+        "sha256": "6152fbe0b72b64ec0b4d049b45738fe29cad17728bbdadd0c86a50a43b4167b7",
+        "git_blob": "f79533f3d83d5b3617d3b968058c87c401a7d882",
+        "grant_status": "NO_ESTABLISHED_ASSET_SPECIFIC_GRANT"
+      },
+      "replacement": {
+        "sha256": "919bf1be88b702720074752966c57c277201eaf3d6667c523139c7244516213d",
+        "source": "Original elementary vector geometry authored for this correction; not traced from imported paths",
+        "copyright": "Copyright (c) 2026 NuvioDesktop-Linux contributors",
+        "license": "MIT",
+        "modifications": "New geometry; resource name, intrinsic size, viewBox and tint palette retained"
+      },
+      "dimensions": {
+        "width": "800px",
+        "height": "800px",
+        "viewBox": "0 0 24 24"
+      }
+    },
+    {
+      "resource": "composeApp/src/commonMain/composeResources/drawable/ic_player_aspect_ratio.svg",
+      "status": "REPLACED",
+      "use": "AppIconResource.PlayerAspectRatio / PlayerControls",
+      "original": {
+        "application_commit": "805797ed42103f931f3723c4f83547c249057687",
+        "introduced_commit": "a33ad982dec56f275f2203e69d46cda7fd0b81b3",
+        "sha256": "43051875005dd3bbab3ef91288c0fd7af9c73719524261ed0881566ff5adace4",
+        "git_blob": "a79457c841013473c63b0375660d947cdf7b3266",
+        "grant_status": "NO_ESTABLISHED_ASSET_SPECIFIC_GRANT"
+      },
+      "replacement": {
+        "sha256": "d65a77e96a568de9a0ecc98f7e20ef84307401d4e4158ef7105a72d1b4671eea",
+        "source": "Original elementary vector geometry authored for this correction; not traced from imported paths",
+        "copyright": "Copyright (c) 2026 NuvioDesktop-Linux contributors",
+        "license": "MIT",
+        "modifications": "New geometry; resource name, intrinsic size, viewBox and tint palette retained"
+      },
+      "dimensions": {
+        "width": "800px",
+        "height": "800px",
+        "viewBox": "0 0 24 24"
+      }
+    },
+    {
+      "resource": "composeApp/src/commonMain/composeResources/drawable/ic_player_audio_filled.svg",
+      "status": "REPLACED",
+      "use": "AppIconResource.PlayerAudioFilled / PlayerControls",
+      "original": {
+        "application_commit": "805797ed42103f931f3723c4f83547c249057687",
+        "introduced_commit": "a33ad982dec56f275f2203e69d46cda7fd0b81b3",
+        "sha256": "42f2935b7446ab43c0fe1f62579251a88fe16d7ad65b57ecf152603942be1bc7",
+        "git_blob": "3c6d8a625ee2fbfe6bd6bdd0c3d064a01527f6b2",
+        "grant_status": "NO_ESTABLISHED_ASSET_SPECIFIC_GRANT"
+      },
+      "replacement": {
+        "sha256": "3751f74597d79945f72fda0dcc7ebf9f4c55d0817a0bcf89498af7f48f5066b1",
+        "source": "Original elementary vector geometry authored for this correction; not traced from imported paths",
+        "copyright": "Copyright (c) 2026 NuvioDesktop-Linux contributors",
+        "license": "MIT",
+        "modifications": "New geometry; resource name, intrinsic size, viewBox and tint palette retained"
+      },
+      "dimensions": {
+        "width": "800px",
+        "height": "800px",
+        "viewBox": "0 0 24 24"
+      }
+    },
+    {
+      "resource": "composeApp/src/commonMain/composeResources/drawable/ic_player_pause.svg",
+      "status": "REPLACED",
+      "use": "AppIconResource.PlayerPause / PlayPauseButton",
+      "original": {
+        "application_commit": "805797ed42103f931f3723c4f83547c249057687",
+        "introduced_commit": "a33ad982dec56f275f2203e69d46cda7fd0b81b3",
+        "sha256": "7ccce810774f12ae506a8f2c0f2e9342eb444e62f7a9100994246e9da20efd79",
+        "git_blob": "bc61a66bb2bd6b948652a49df529933a6a3aed1d",
+        "grant_status": "NO_ESTABLISHED_ASSET_SPECIFIC_GRANT"
+      },
+      "replacement": {
+        "sha256": "a9394aa56b90d676c2833c3779acdfb83da4ae9a57a1483b884927d8a5f63bf7",
+        "source": "Original elementary vector geometry authored for this correction; not traced from imported paths",
+        "copyright": "Copyright (c) 2026 NuvioDesktop-Linux contributors",
+        "license": "MIT",
+        "modifications": "New geometry; resource name, intrinsic size, viewBox and tint palette retained"
+      },
+      "dimensions": {
+        "width": "800px",
+        "height": "800px",
+        "viewBox": "0 0 24 24"
+      }
+    },
+    {
+      "resource": "composeApp/src/commonMain/composeResources/drawable/ic_player_play.svg",
+      "status": "REPLACED",
+      "use": "AppIconResource.PlayerPlay / PlayPauseButton",
+      "original": {
+        "application_commit": "805797ed42103f931f3723c4f83547c249057687",
+        "introduced_commit": "a33ad982dec56f275f2203e69d46cda7fd0b81b3",
+        "sha256": "9e1c3e15a350fdb734c15fa721c6f4754bd436c323954155d6a312c2d96fb466",
+        "git_blob": "934941ca7eb6c10f8d927c48a23cfce940622afa",
+        "grant_status": "NO_ESTABLISHED_ASSET_SPECIFIC_GRANT"
+      },
+      "replacement": {
+        "sha256": "92c46c5da7da62828ca02992ce37ab5c3b353b3c2a3ac57966965fa2533559f9",
+        "source": "Original elementary vector geometry authored for this correction; not traced from imported paths",
+        "copyright": "Copyright (c) 2026 NuvioDesktop-Linux contributors",
+        "license": "MIT",
+        "modifications": "New geometry; resource name, intrinsic size, viewBox and tint palette retained"
+      },
+      "dimensions": {
+        "width": "800px",
+        "height": "800px",
+        "viewBox": "0 0 24 24"
+      }
+    },
+    {
+      "resource": "composeApp/src/commonMain/composeResources/drawable/ic_player_subtitles.svg",
+      "status": "REPLACED",
+      "use": "AppIconResource.PlayerSubtitles / PlayerControls",
+      "original": {
+        "application_commit": "805797ed42103f931f3723c4f83547c249057687",
+        "introduced_commit": "a33ad982dec56f275f2203e69d46cda7fd0b81b3",
+        "sha256": "c9ee4cb501cbd9cdd5e718429adfd8c81e0e1cf2d6a132e4f273636fef748945",
+        "git_blob": "bd7cdf2267fa394d80547926b3b67b0fe58fc961",
+        "grant_status": "NO_ESTABLISHED_ASSET_SPECIFIC_GRANT"
+      },
+      "replacement": {
+        "sha256": "759608295ed781b9bc52a9f136a01890d1f608c8089bd09e37cec2fadc7cac67",
+        "source": "Original elementary vector geometry authored for this correction; not traced from imported paths",
+        "copyright": "Copyright (c) 2026 NuvioDesktop-Linux contributors",
+        "license": "MIT",
+        "modifications": "New geometry; resource name, intrinsic size, viewBox and tint palette retained"
+      },
+      "dimensions": {
+        "width": "800px",
+        "height": "800px",
+        "viewBox": "0 0 24 24"
+      }
+    },
+    {
+      "resource": "composeApp/src/commonMain/composeResources/drawable/trailer_play_button.svg",
+      "status": "REPLACED",
+      "use": "Packaged Compose drawable; no current Kotlin call site (retained name for compatibility)",
+      "original": {
+        "application_commit": "805797ed42103f931f3723c4f83547c249057687",
+        "introduced_commit": "a33ad982dec56f275f2203e69d46cda7fd0b81b3",
+        "sha256": "d79ed4c3c880d9fd9b7dd8aadf05d1eeb95bb9dda83c7251a3e653a43dd2670b",
+        "git_blob": "84750110cd8dba68b81aa4042f4223171a874e0c",
+        "grant_status": "NO_ESTABLISHED_ASSET_SPECIFIC_GRANT"
+      },
+      "replacement": {
+        "sha256": "f5e7da8d9111019ab4fd98395ccc006be670619f288c1589b009525fe17f5d97",
+        "source": "Original elementary vector geometry authored for this correction; not traced from imported paths",
+        "copyright": "Copyright (c) 2026 NuvioDesktop-Linux contributors",
+        "license": "MIT",
+        "modifications": "New geometry; resource name, intrinsic size, viewBox and tint palette retained"
+      },
+      "dimensions": {
+        "width": "800px",
+        "height": "800px",
+        "viewBox": "0 0 566.828 566.828"
+      }
+    }
+  ],
+  "license_sha256": "2e2f8ffd6a26df5690dc327a6f667d60cf12122461b2572ec568552eebabb88b",
+  "notice_sha256": "dfd0f038df8e0f5005b4594b6d7a8ba3acca4476dbd06d1128f24aacc64b69b5"
+}
