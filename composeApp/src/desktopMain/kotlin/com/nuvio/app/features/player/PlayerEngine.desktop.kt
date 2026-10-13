@@ -336,6 +336,14 @@ private fun NativePlayerSurface(
         // The screensaver's "during playback" switch keys off the same fact.
         DesktopScreensaver.playerActive = true
         val dispatcher = KeyEventDispatcher { event ->
+            if (DesktopHostOs.current == DesktopHostOs.LINUX &&
+                (event.keyCode == KeyEvent.VK_ESCAPE ||
+                    event.keyCode == AppShortcutsRepository.keyCode(AppShortcutAction.DismissOverlay))
+            ) {
+                // A dialog's Escape must reach that dialog, not fall through to a HUD panel
+                // behind it. The controller also consumes key-up/repeat for our own window.
+                return@KeyEventDispatcher controller.dispatchLinuxEscapeKey(event)
+            }
             if (event.id != KeyEvent.KEY_PRESSED) return@KeyEventDispatcher false
             if (event.isMetaDown || event.isControlDown || event.isAltDown || event.isShiftDown) {
                 return@KeyEventDispatcher false

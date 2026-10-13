@@ -1,9 +1,12 @@
 package com.nuvio.app.features.home.components
 
+import com.nuvio.app.features.tmdb.fullSizeTmdbBackdrop
 import coil3.SingletonImageLoader
 import coil3.compose.LocalPlatformContext
 import coil3.request.ImageRequest
 import coil3.size.Scale
+import com.nuvio.app.core.ui.nuvioDitheredVerticalGradient
+import com.nuvio.app.core.ui.HdrFadeCorrected
 import com.nuvio.app.core.ui.RecompositionProbe
 import com.nuvio.app.core.ui.nuvioArtworkRequestSize
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -80,6 +83,7 @@ import androidx.compose.ui.BiasAlignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.clipToBounds
+import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.Brush
@@ -95,6 +99,7 @@ import androidx.compose.ui.input.pointer.onPointerEvent
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.input.pointer.util.VelocityTracker
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.layout.layout
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
@@ -153,6 +158,8 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.async
+import kotlinx.coroutines.withTimeoutOrNull
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -299,6 +306,20 @@ fun HomeHeroSection(
      */
     immersiveFullBackdrop: Boolean = false,
     adaptiveHeroMode: Boolean = false,
+    /**
+     * Basic's hero: a carousel the user pages through, never following focus. Its slides carry their
+     * own fade, so backdrops don't crossfade on top of it, and its content scales with
+     * [heightOverride] like Adaptive's does.
+     */
+    pagedHero: Boolean = false,
+    /**
+     * Ambient background: the hero fades its backdrop out to transparency instead of to the theme
+     * background, so it ends on the wash that the rows below sit on. [ambientUnderlay], when given,
+     * is that wash drawn again inside the hero (lined up with the screen through [viewportHeight]),
+     * for a hero that overlays scrolling rows and so cannot simply be see-through.
+     */
+    ambientBackground: Boolean = false,
+    ambientUnderlay: (@Composable () -> Unit)? = null,
     heroEnabled: Boolean = true,
     heroInfoLines: Int = 2,
     heroInfoPriority: String = "wins,gg_wins,festival,pic_noms,gg_noms,emmy_noms,studio,director,trending,cult,foreign,new_release,metacritic,true_story,stinger,short_film,mini_series,binge_ready,release_status",
@@ -353,7 +374,7 @@ fun HomeHeroSection(
             // relative to the natural base height so the logo and content placement scale with it.
             // Only the Adaptive (non-immersive) hero should scale — TV Mode / full-screen trailer
             // overrides blow the hero up to the whole viewport and must not drag the logo along.
-            val scale = if (adaptiveHeroMode && !immersiveMode && baseLayout.heroHeight > 0.dp) {
+            val scale = if ((adaptiveHeroMode || pagedHero) && !immersiveMode && baseLayout.heroHeight > 0.dp) {
                 (override / baseLayout.heroHeight).coerceIn(0.5f, 2.5f)
             } else {
                 baseLayout.heroHeightScale
@@ -568,6 +589,10 @@ fun HomeHeroSection(
                     immersiveMode = immersiveMode,
                     immersiveFullBackdrop = immersiveFullBackdrop,
                     adaptiveHeroMode = adaptiveHeroMode,
+                    pagedHero = pagedHero && focusedItem == null,
+                    ambientBackground = ambientBackground,
+                    ambientUnderlay = ambientUnderlay,
+                    viewportHeight = viewportHeight,
                     heroEnabled = heroEnabled,
                     heroInfoLines = heroInfoLines,
                     heroInfoPriority = heroInfoPriority,
@@ -613,6 +638,21 @@ private data class HeroPageLayer(
     val visibility: Float,
     val offset: Float,
 )
+
+/**
+ * A paged hero keys its layers by page, so a slide never hands one title's slot (and whatever that
+ * slot is animating) to the next title as the layers re-sort by visibility. A focus-following hero
+ * shows a single unkeyed layer, so a focus change crossfades in place.
+ */
+@Composable
+private inline fun List<HeroPageLayer>.forEachPage(
+    keyedByPage: Boolean,
+    content: @Composable (HeroPageLayer) -> Unit,
+) {
+    forEach { layer ->
+        if (keyedByPage) key(layer.page) { content(layer) } else content(layer)
+    }
+}
 
 @Composable
 private fun DefaultHomeHeroFrame(
@@ -755,16 +795,20 @@ private fun HeroBackdropImage(
     alignment: Alignment,
     contentScale: ContentScale,
     onImageLoaded: ((coil3.Image) -> Unit)? = null,
+    framingPriorBias: Float? = null,
+    crossfade: Boolean = true,
 ) {
     // Addons that don't supply a backdrop (only a poster) would otherwise render a blank/black
     // hero — fall back to the poster like the rest of the hero pipeline (e.g. the ambient
     // background wash) already does.
-    val model = item.banner?.takeIf(String::isNotBlank)
+    // A TMDB backdrop is asked for at full size whatever size the addon supplied (see
+    // fullSizeTmdbBackdrop); the poster fallback is left alone.
+    val model = fullSizeTmdbBackdrop(item.banner?.takeIf(String::isNotBlank))
         ?: item.poster?.takeIf(String::isNotBlank)
 
     val homeCatalogSettings by HomeCatalogSettingsRepository.uiState.collectAsStateWithLifecycle()
     val crossfadeMillis = homeCatalogSettings.heroBackdropCrossfadeMillis
-    if (crossfadeMillis > 0) {
+    if (crossfade && crossfadeMillis > 0) {
         HeroBackdropCrossfade(
             model = model,
             durationMillis = crossfadeMillis,
@@ -778,11 +822,21 @@ private fun HeroBackdropImage(
                 contentScale = contentScale,
                 onImageLoaded = onImageLoaded,
                 onResolved = onResolved,
+                framingPriorBias = framingPriorBias,
+                heldUntilResolved = true,
             )
         }
         return
     }
-    HeroBackdropImageLayer(model, contentDescription, modifier, alignment, contentScale, onImageLoaded)
+    HeroBackdropImageLayer(
+        model = model,
+        contentDescription = contentDescription,
+        modifier = modifier,
+        alignment = alignment,
+        contentScale = contentScale,
+        onImageLoaded = onImageLoaded,
+        framingPriorBias = framingPriorBias,
+    )
 }
 
 /**
@@ -931,11 +985,28 @@ private fun HeroBackdropImageLayer(
     contentScale: ContentScale,
     onImageLoaded: ((coil3.Image) -> Unit)?,
     onResolved: (hasArtwork: Boolean) -> Unit = {},
+    /** Non-null turns on automatic framing, falling back to (and pulled gently toward) this bias. */
+    framingPriorBias: Float? = null,
+    /** True under [HeroBackdropCrossfade], which keeps the layer invisible until [onResolved]. */
+    heldUntilResolved: Boolean = false,
 ) {
     // A backdrop with no url draws nothing and will never report, so it resolves the moment it is
     // asked for - otherwise the fade would wait on a load that is never going to run.
     LaunchedEffect(model) {
         if (model == null) onResolved(false)
+    }
+    if (framingPriorBias != null && model != null) {
+        FramedHeroBackdropImageLayer(
+            model = model,
+            contentDescription = contentDescription,
+            modifier = modifier,
+            priorBias = framingPriorBias,
+            contentScale = contentScale,
+            onImageLoaded = onImageLoaded,
+            onResolved = onResolved,
+            heldUntilResolved = heldUntilResolved,
+        )
+        return
     }
     AsyncImage(
         model = model,
@@ -959,6 +1030,104 @@ private fun HeroBackdropImageLayer(
     )
 }
 
+/**
+ * [HeroBackdropImageLayer] with automatic framing: the crop follows this backdrop's own
+ * [HeroBackdropFramingProfile] instead of one bias for every backdrop.
+ *
+ * A backdrop seen before is framed from the first frame (memory, else the disk cache). A new one
+ * is analysed once its artwork loads, and its fade-in is held for up to
+ * [FramingResolveWaitMillis] so it usually arrives already framed; an analysis that outlasts that
+ * eases the crop into place instead of cutting.
+ */
+@Composable
+private fun FramedHeroBackdropImageLayer(
+    model: String,
+    contentDescription: String?,
+    modifier: Modifier,
+    priorBias: Float,
+    contentScale: ContentScale,
+    onImageLoaded: ((coil3.Image) -> Unit)?,
+    onResolved: (hasArtwork: Boolean) -> Unit,
+    heldUntilResolved: Boolean,
+) {
+    val scope = rememberCoroutineScope()
+    var profile by remember(model) { mutableStateOf(HeroBackdropFramer.peek(model)) }
+    // Whether the picture is on screen yet. Until it is, a crop change is a snap nobody sees.
+    var displayed by remember(model) { mutableStateOf(false) }
+    LaunchedEffect(model) {
+        if (profile == null) HeroBackdropFramer.profile(model, image = null)?.let { profile = it }
+    }
+    // Constraints rather than onSizeChanged: the hero's aspect is known in the first composition,
+    // so a cached backdrop never starts at the fallback and slides.
+    BoxWithConstraints(modifier) {
+        val heroAspect = if (constraints.hasBoundedHeight && constraints.maxHeight > 0) {
+            constraints.maxWidth.toFloat() / constraints.maxHeight
+        } else {
+            0f
+        }
+        val currentProfile = profile
+        val targetBias = remember(currentProfile, heroAspect, priorBias) {
+            currentProfile?.let { heroBackdropFramingBias(it, heroAspect, priorBias) } ?: priorBias
+        }
+        val bias = remember(model) { Animatable(targetBias) }
+        var framedProfile by remember(model) { mutableStateOf(currentProfile) }
+        LaunchedEffect(targetBias) {
+            val analysisLanded = framedProfile !== currentProfile
+            framedProfile = currentProfile
+            if (analysisLanded && displayed) {
+                // The analysis finished after the picture was up: ease into the new crop.
+                bias.animateTo(targetBias, tween(FramingSettleMillis))
+            } else {
+                // Not shown yet, or the hero itself changed size (window resize, Hero height):
+                // follow exactly.
+                bias.snapTo(targetBias)
+            }
+        }
+        AsyncImage(
+            model = model,
+            contentDescription = contentDescription,
+            modifier = Modifier.fillMaxSize(),
+            alignment = BiasAlignment(horizontalBias = 0f, verticalBias = bias.value),
+            contentScale = contentScale,
+            desktopImageScaling = NuvioDesktopImageScaling.Disabled,
+            onError = {
+                heroImageLog.w { "Hero artwork failed: ${model.safeImageUrlForLog()}" }
+                onResolved(false)
+            },
+            onSuccess = { state ->
+                val image = state.result.image
+                onImageLoaded?.invoke(image)
+                // Without the crossfade nothing waits on onResolved: the picture is up already.
+                if (!heldUntilResolved) displayed = true
+                if (profile != null) {
+                    displayed = true
+                    onResolved(true)
+                } else {
+                    scope.launch {
+                        val analysis = async { HeroBackdropFramer.profile(model, image) }
+                        withTimeoutOrNull(FramingResolveWaitMillis) { analysis.await() }?.let { landed ->
+                            profile = landed
+                            // Frame it before it shows, rather than letting the effect below see
+                            // a displayed picture and ease toward a crop nobody saw it leave.
+                            bias.snapTo(heroBackdropFramingBias(landed, heroAspect, priorBias))
+                        }
+                        displayed = true
+                        onResolved(true)
+                        analysis.await()?.let { profile = it }
+                    }
+                }
+            },
+        )
+    }
+}
+
+/**
+ * How long a new backdrop's fade-in may wait for its analysis (~100-200ms on a desktop CPU).
+ * Past this it fades in at the fallback crop and eases over when the analysis finishes.
+ */
+private const val FramingResolveWaitMillis = 450L
+private const val FramingSettleMillis = 350
+
 @Composable
 private fun DesktopHomeHeroFrame(
     items: List<MetaPreview>,
@@ -975,6 +1144,10 @@ private fun DesktopHomeHeroFrame(
     immersiveMode: Boolean,
     immersiveFullBackdrop: Boolean = false,
     adaptiveHeroMode: Boolean = false,
+    pagedHero: Boolean = false,
+    ambientBackground: Boolean = false,
+    ambientUnderlay: (@Composable () -> Unit)? = null,
+    viewportHeight: Dp? = null,
     heroEnabled: Boolean,
     heroInfoLines: Int,
     heroInfoPriority: String,
@@ -997,6 +1170,9 @@ private fun DesktopHomeHeroFrame(
     onHeroTrailerSurfaceDisposed: () -> Unit = {},
 ) {
     val backgroundColor = if (immersiveMode) Color.Black else MaterialTheme.colorScheme.background
+    // Ambient: the hero stays the opaque dark hero above, and its lower part dissolves into the
+    // ambient wash the rows sit on, so the two meet without an edge.
+    val ambientFade = ambientBackground && !immersiveMode
 
     val playerSettings by PlayerSettingsRepository.uiState.collectAsState()
     // TV-mode hero trailer (desktop only; mirrors Nuvio TV). The feature applies to the
@@ -1018,11 +1194,12 @@ private fun DesktopHomeHeroFrame(
     var heroTrailerErrorToken by remember { mutableIntStateOf(0) }
     var heroTrailerRetriedKey by remember { mutableStateOf<String?>(null) }
     var peoplePanelTab by remember { mutableStateOf(HeroPeoplePanelTab.Starring) }
-    // Manual override: automatic saliency-based crop detection was removed (unreliable across a
-    // wide enough variety of backdrops that it wasn't worth the complexity) in favor of a single
-    // user-tunable vertical bias applied to every adaptive-hero backdrop. See Homescreen settings.
+    // Adaptive-hero crop: automatic framing per backdrop (HeroBackdropFraming.kt) by default,
+    // or one user-set vertical bias for every backdrop. The manual bias is also automatic
+    // framing's fallback while a backdrop is being analysed, and the position it leans toward.
     val homeCatalogSettings by HomeCatalogSettingsRepository.uiState.collectAsState()
     val adaptiveHeroVerticalBias = homeCatalogSettings.adaptiveHeroVerticalBias
+    val adaptiveHeroAutoFraming = homeCatalogSettings.adaptiveHeroAutoFraming
     val peoplePanelToggleToken by HomeHeroPeoplePanelToggleTrigger.tokens.collectAsState(initial = 0)
     LaunchedEffect(peoplePanelToggleToken) {
         if (peoplePanelToggleToken == 0) return@LaunchedEffect
@@ -1132,6 +1309,7 @@ private fun DesktopHomeHeroFrame(
         // Toggle: if a trailer is already showing, the same input dismisses it (an explicit way
         // out in addition to simply moving focus to another item).
         if (heroTrailerPlaybackRequested && heroTrailerSource != null && !heroTrailerFinished) {
+            heroTrailerLog.i { "trailer dismissed by toggle for $heroTrailerFocusKey" }
             heroTrailerSurfaceReady = false
             heroTrailerPlaybackRequested = false
             heroTrailerFinished = true
@@ -1220,71 +1398,143 @@ private fun DesktopHomeHeroFrame(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(backgroundColor),
+            .then(if (ambientFade) Modifier.clipToBounds() else Modifier.background(backgroundColor)),
     ) {
-        Box(
+        if (ambientFade && ambientUnderlay != null && viewportHeight != null) {
+            // The screen's wash at full viewport height from the hero's top edge (the screen's
+            // top), so it lines up pixel for pixel with the one behind the rows.
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .wrapContentHeight(Alignment.Top, unbounded = true)
+                    .height(viewportHeight),
+            ) {
+                ambientUnderlay()
+            }
+        }
+        // The backdrop and every fade over it, composited first and then corrected as one for
+        // Windows HDR (a no-op on SDR); see nuvioHdrFadeCorrection. The bottom fade sits in here
+        // rather than after the trailer because the correction is not linear: applied to the
+        // artwork and the fade separately, the fade's dark tail would still be lifted. The trailer
+        // is a heavyweight native surface, so nothing in Compose draws over or under it anyway.
+        HdrFadeCorrected(
+            background = backgroundColor,
             modifier = Modifier
-                .align(if (immersiveMode) Alignment.TopEnd else Alignment.CenterEnd)
+                .matchParentSize()
                 .then(
-                    if (immersiveMode) {
-                        Modifier.height(heroArtworkHeight)
-                    } else {
-                        Modifier.fillMaxHeight()
-                    },
-                )
-                .fillMaxWidth(heroBackdropWidthFraction)
-                // Clip the backdrop region: during a transition the layers are parallax-shifted
-                // and scaled, and without this they paint a cropped sliver outside the box (over
-                // the content panel, where the fade mask doesn't reach) — a stray vertical band.
-                .clipToBounds()
-                // The left-hand fade stays in both layouts: it is what keeps the logo and metadata
-                // legible over the artwork. The immersive extra mask does not — its vertical half
-                // fades the picture out to solid black before the bottom of its own box, which is
-                // precisely the band full backdrop exists to remove.
-                .heroBackdropFadeMask(backgroundColor, immersiveFullBackdropActive)
-                .then(
-                    if (immersiveMode && !immersiveFullBackdropActive) {
-                        Modifier.immersiveHeroExtraMask(backgroundColor)
+                    if (ambientFade) {
+                        // Own layer, so the dissolve cuts the hero rather than what is under it.
+                        Modifier
+                            .graphicsLayer { compositingStrategy = CompositingStrategy.Offscreen }
+                            .heroAmbientDissolve()
                     } else {
                         Modifier
                     },
-                )
-                .clickable(
-                    interactionSource = remember { MutableInteractionSource() },
-                    indication = null,
-                    enabled = onItemClick != null,
-                ) {
-                    onItemClick?.invoke(currentItem)
-                },
+                ),
         ) {
-            visiblePages.forEach { layer ->
-                Box(
-                    modifier = Modifier
-                        .matchParentSize()
-                        .graphicsLayer {
-                            // Hide the static backdrop once the trailer has a frame so the
-                            // video blends into the background instead of seaming against it.
-                            alpha = if (heroTrailerReady) 0f else layer.visibility
-                            translationX = -layer.offset * heroWidthPx * HERO_BACKGROUND_PARALLAX
-                            translationY = heroScrollTranslationY
-                            scaleX = heroScrollScale
-                            scaleY = heroScrollScale
-                            transformOrigin = TransformOrigin(0.5f, 0f)
+            if (ambientFade) {
+                // The hero's own background, inside the layer so it dissolves with the artwork.
+                Box(modifier = Modifier.matchParentSize().background(backgroundColor))
+            }
+            Box(
+                modifier = Modifier
+                    .align(if (immersiveMode) Alignment.TopEnd else Alignment.CenterEnd)
+                    .then(
+                        if (immersiveMode) {
+                            Modifier.height(heroArtworkHeight)
+                        } else {
+                            Modifier.fillMaxHeight()
                         },
-                ) {
-                    HeroBackdropImage(
-                        item = items[layer.page],
-                        contentDescription = items[layer.page].name,
-                        modifier = Modifier.fillMaxSize(),
-                        alignment = when {
-                            immersiveMode -> ImmersiveHeroBackdropAlignment
-                            adaptiveHeroMode -> BiasAlignment(horizontalBias = 0f, verticalBias = adaptiveHeroVerticalBias)
-                            else -> DesktopHeroBackdropAlignment
-                        },
-                        contentScale = ContentScale.Crop,
                     )
+                    .fillMaxWidth(heroBackdropWidthFraction)
+                    // Clip the backdrop region: during a transition the layers are parallax-shifted
+                    // and scaled, and without this they paint a cropped sliver outside the box (over
+                    // the content panel, where the fade mask doesn't reach) — a stray vertical band.
+                    .clipToBounds()
+                    // The left-hand fade stays in both layouts: it is what keeps the logo and metadata
+                    // legible over the artwork. The immersive extra mask does not — its vertical half
+                    // fades the picture out to solid black before the bottom of its own box, which is
+                    // precisely the band full backdrop exists to remove.
+                    .heroBackdropFadeMask(
+                        backgroundColor = backgroundColor,
+                        fullWidth = immersiveFullBackdropActive,
+                        longFade = !immersiveMode,
+                    )
+                    .then(
+                        // Basic and Adaptive take TV Mode's vignette as well: without it the text
+                        // column's right half sits on artwork at near full brightness.
+                        if (!immersiveFullBackdropActive) {
+                            // Ambient drops the vignette's bottom band: darkening there before the
+                            // dissolve would leave a dark stripe between the artwork and the wash.
+                            Modifier.immersiveHeroExtraMask(backgroundColor, bottomBand = !ambientFade)
+                        } else {
+                            Modifier
+                        },
+                    )
+                    .clickable(
+                        interactionSource = remember { MutableInteractionSource() },
+                        indication = null,
+                        enabled = onItemClick != null,
+                    ) {
+                        onItemClick?.invoke(currentItem)
+                    },
+            ) {
+                visiblePages.forEachPage(keyedByPage = pagedHero) { layer ->
+                    Box(
+                        modifier = Modifier
+                            .matchParentSize()
+                            .graphicsLayer {
+                                // Hide the static backdrop once the trailer has a frame so the
+                                // video blends into the background instead of seaming against it.
+                                alpha = if (heroTrailerReady) 0f else layer.visibility
+                                translationX = -layer.offset * heroWidthPx * HERO_BACKGROUND_PARALLAX
+                                translationY = heroScrollTranslationY
+                                scaleX = heroScrollScale
+                                scaleY = heroScrollScale
+                                transformOrigin = TransformOrigin(0.5f, 0f)
+                            },
+                    ) {
+                        HeroBackdropImage(
+                            item = items[layer.page],
+                            contentDescription = items[layer.page].name,
+                            modifier = Modifier.fillMaxSize(),
+                            crossfade = !pagedHero,
+                            alignment = when {
+                                immersiveMode -> ImmersiveHeroBackdropAlignment
+                                adaptiveHeroMode -> BiasAlignment(horizontalBias = 0f, verticalBias = adaptiveHeroVerticalBias)
+                                else -> DesktopHeroBackdropAlignment
+                            },
+                            contentScale = ContentScale.Crop,
+                            framingPriorBias = adaptiveHeroVerticalBias.takeIf {
+                                adaptiveHeroMode && !immersiveMode && adaptiveHeroAutoFraming
+                            },
+                        )
+                    }
                 }
             }
+
+            // Ambient's dissolve takes the place of the bottom fade.
+            if (!ambientFade) Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(if (immersiveMode) layout.heroHeight * 0.52f else layout.bottomFadeHeight)
+                    .align(Alignment.BottomCenter)
+                    .background(
+                        nuvioDitheredVerticalGradient(
+                            if (immersiveMode) {
+                                immersiveHeroBottomFadeStops(
+                                    backgroundColor = backgroundColor,
+                                    fullBackdrop = immersiveFullBackdropActive,
+                                )
+                            } else {
+                                arrayOf(
+                                    0f to backgroundColor.copy(alpha = 0f),
+                                    1f to backgroundColor,
+                                )
+                            },
+                        ),
+                    ),
+            )
         }
 
         if (heroTrailerMounted) {
@@ -1322,6 +1572,7 @@ private fun DesktopHomeHeroFrame(
                     navDismissBandFraction = heroTrailerNavDismissBandFraction,
                     onReady = { heroTrailerSurfaceReady = true },
                     onEnded = {
+                        heroTrailerLog.i { "trailer ended for $heroTrailerFocusKey" }
                         heroTrailerSurfaceReady = false
                         heroTrailerPlaybackRequested = false
                         heroTrailerFinished = true
@@ -1329,11 +1580,13 @@ private fun DesktopHomeHeroFrame(
                     // Pointer reached the navbar edge: stop the trailer so the navbar is usable.
                     // Stays stopped (heroTrailerFinished) until focus moves to another hero item.
                     onNavChromeDismiss = {
+                        heroTrailerLog.i { "trailer dismissed from the nav edge for $heroTrailerFocusKey" }
                         heroTrailerSurfaceReady = false
                         heroTrailerPlaybackRequested = false
                         heroTrailerFinished = true
                     },
                     onError = {
+                        heroTrailerLog.i { "trailer playback error for $heroTrailerFocusKey" }
                         heroTrailerSurfaceReady = false
                         heroTrailerPlaybackRequested = false
                         heroTrailerFinished = true
@@ -1346,28 +1599,6 @@ private fun DesktopHomeHeroFrame(
                 )
             }
         }
-
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(if (immersiveMode) layout.heroHeight * 0.52f else layout.bottomFadeHeight)
-                .align(Alignment.BottomCenter)
-                .background(
-                    Brush.verticalGradient(
-                        colorStops = if (immersiveMode) {
-                            immersiveHeroBottomFadeStops(
-                                backgroundColor = backgroundColor,
-                                fullBackdrop = immersiveFullBackdropActive,
-                            )
-                        } else {
-                            arrayOf(
-                                0f to backgroundColor.copy(alpha = 0f),
-                                1f to backgroundColor,
-                            )
-                        },
-                    ),
-                ),
-        )
 
         // Where the metadata column's box ends and how tall it would naturally be; the people
         // panel above it decides how much of that it actually gets.
@@ -1409,7 +1640,7 @@ private fun DesktopHomeHeroFrame(
                     .widthIn(max = 600.dp),
                 contentAlignment = Alignment.TopStart,
             ) {
-                visiblePages.forEach { layer ->
+                visiblePages.forEachPage(keyedByPage = pagedHero) { layer ->
                     val item = items[layer.page]
                     val cast = heroDisplayCast(item, maxCount = immersivePeopleMaxCount)
                     val production = productionCache["${item.type}:${item.id}"].orEmpty()
@@ -1454,23 +1685,21 @@ private fun DesktopHomeHeroFrame(
                             Modifier.padding(top = adaptiveHeroContentTopBaseline(layout.heroHeight))
                         },
                     )
-                    .fillMaxWidth(
+                    .then(
                         when {
-                            immersiveMode -> 0.32f
-                            adaptiveHeroMode -> 0.38f
-                            else -> layout.contentWidthFraction
-                        },
-                    )
-                    .widthIn(
-                        max = when {
-                            immersiveMode -> 600.dp
-                            adaptiveHeroMode -> 480.dp
-                            else -> layout.contentMaxWidth
+                            // TV Mode keeps fillMaxWidth().widthIn(), whose cap is nominal (widthIn
+                            // cannot narrow a width the fraction already fixed); its look was tuned
+                            // that way.
+                            immersiveMode -> Modifier.fillMaxWidth(0.32f).widthIn(max = 600.dp)
+                            // Adaptive and Basic share one column: the cap has to bite, or a wide
+                            // window runs the synopsis and the logo (a fraction of this width)
+                            // across the screen.
+                            else -> Modifier.fractionalWidthAtMost(layout.contentWidthFraction, layout.contentMaxWidth)
                         },
                     ),
                 contentAlignment = Alignment.TopStart,
             ) {
-                visiblePages.forEach { layer ->
+                visiblePages.forEachPage(keyedByPage = pagedHero) { layer ->
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -1522,7 +1751,7 @@ private fun DesktopHomeHeroFrame(
                 ),
                 contentAlignment = heroBadgePlacement.heroDiscoveryMedalAlignment(),
             ) {
-                visiblePages.forEach { layer ->
+                visiblePages.forEachPage(keyedByPage = pagedHero) { layer ->
                     val itemKey = "${items[layer.page].type}:${items[layer.page].id}"
                     val discoveryKey = "$itemKey:heroDiscoveryV${HeroDiscoveryMetadataService.CACHE_VERSION}"
                     val facts = discoveryCache[discoveryKey].orEmpty()
@@ -1575,6 +1804,12 @@ private fun DesktopHomeHeroFrame(
 private fun Modifier.heroBackdropFadeMask(
     backgroundColor: Color,
     fullWidth: Boolean = false,
+    /**
+     * Basic and Adaptive: an eased ramp that runs further into the artwork, so the whole metadata
+     * column sits on darkened backdrop rather than its right half on near-full artwork. TV Mode's
+     * own text sits lower and narrower, under its vignette, and keeps the short ramp.
+     */
+    longFade: Boolean = false,
 ): Modifier =
     drawWithContent {
         drawContent()
@@ -1582,6 +1817,15 @@ private fun Modifier.heroBackdropFadeMask(
             brush = Brush.horizontalGradient(
                 colorStops = if (fullWidth) {
                     immersiveHeroSideScrimStops(backgroundColor)
+                } else if (longFade) {
+                    arrayOf(
+                        0f to backgroundColor,
+                        0.12f to backgroundColor.copy(alpha = 0.9f),
+                        0.28f to backgroundColor.copy(alpha = 0.6f),
+                        0.42f to backgroundColor.copy(alpha = 0.25f),
+                        0.55f to Color.Transparent,
+                        1f to Color.Transparent,
+                    )
                 } else {
                     arrayOf(
                         0f to backgroundColor,
@@ -1593,18 +1837,23 @@ private fun Modifier.heroBackdropFadeMask(
         )
     }
 
-private fun Modifier.immersiveHeroExtraMask(backgroundColor: Color): Modifier =
+private fun Modifier.immersiveHeroExtraMask(
+    backgroundColor: Color,
+    bottomBand: Boolean = true,
+): Modifier =
     drawWithContent {
         drawContent()
-        drawRect(
-            brush = Brush.verticalGradient(
-                colorStops = arrayOf(
-                    0f to Color.Transparent,
-                    0.82f to Color.Transparent,
-                    1f to backgroundColor,
+        if (bottomBand) {
+            drawRect(
+                brush = Brush.verticalGradient(
+                    colorStops = arrayOf(
+                        0f to Color.Transparent,
+                        0.82f to Color.Transparent,
+                        1f to backgroundColor,
+                    ),
                 ),
-            ),
-        )
+            )
+        }
         drawRect(
             brush = Brush.radialGradient(
                 colorStops = arrayOf(
@@ -1617,6 +1866,31 @@ private fun Modifier.immersiveHeroExtraMask(backgroundColor: Color): Modifier =
             ),
         )
     }
+
+/**
+ * Dissolves the lower part of the hero to transparency, eased at both ends so neither the start nor
+ * the end of the ramp reads as a line. Cuts with DstOut, so it needs an offscreen layer.
+ */
+private fun Modifier.heroAmbientDissolve(): Modifier =
+    drawWithContent {
+        drawContent()
+        drawRect(
+            brush = Brush.verticalGradient(
+                colorStops = arrayOf(
+                    0f to Color.Transparent,
+                    HERO_AMBIENT_DISSOLVE_START to Color.Transparent,
+                    0.64f to Color.Black.copy(alpha = 0.12f),
+                    0.78f to Color.Black.copy(alpha = 0.45f),
+                    0.9f to Color.Black.copy(alpha = 0.82f),
+                    1f to Color.Black,
+                ),
+            ),
+            blendMode = BlendMode.DstOut,
+        )
+    }
+
+/** Fraction of the hero's height where the ambient dissolve begins. */
+private const val HERO_AMBIENT_DISSOLVE_START = 0.5f
 
 internal fun immersiveHeroContentHeight(heroHeight: Dp): Dp =
     (heroHeight * 0.38f).coerceIn(
@@ -1656,6 +1930,19 @@ internal fun immersiveHeroBackdropHeight(
     }
 }
 
+/** [fraction] of the incoming width, but never wider than [max]. */
+private fun Modifier.fractionalWidthAtMost(fraction: Float, max: Dp): Modifier =
+    layout { measurable, constraints ->
+        val fractional = if (constraints.hasBoundedWidth) {
+            (constraints.maxWidth * fraction).roundToInt()
+        } else {
+            max.roundToPx()
+        }
+        val width = minOf(fractional, max.roundToPx()).coerceIn(constraints.minWidth, constraints.maxWidth)
+        val placeable = measurable.measure(constraints.copy(minWidth = width, maxWidth = width))
+        layout(placeable.width, placeable.height) { placeable.place(0, 0) }
+    }
+
 // Fixed top offset for the adaptive hero's metadata column so it sits in a consistent spot
 // without drifting as content height changes between items. Kept fairly high since this mode's
 // hero is short and the content otherwise leaves a lot of empty space below.
@@ -1663,7 +1950,18 @@ private fun adaptiveHeroContentTopBaseline(heroHeight: Dp): Dp =
     // heroHeight already carries the Hero-height slider multiplier, so this baseline naturally
     // drifts down as the hero grows — keeping the content block visually placed within the taller
     // backdrop rather than clustered at the top. Raised cap lets that continue at large sizes.
-    (heroHeight * 0.12f).coerceIn(36.dp, 140.dp)
+    // 0.09 rather than 0.12: the logo sits at the bottom of its slot, so the slot's own headroom
+    // already spaces it from the top, and the room saved goes to the larger cast portraits.
+    (heroHeight * 0.09f).coerceIn(32.dp, 110.dp)
+
+/** Cast portrait size at the natural hero height. */
+private val HeroCastPortraitSize = 34.dp
+
+/** Portraits grow a little faster than the hero; at 34dp they read as specks on a tall one. */
+private const val HeroCastPortraitGrowth = 1.15f
+
+/** Past this the names (bodyLarge from 48dp) start truncating in the capped content column. */
+private val HeroCastPortraitMaxSize = 46.dp
 
 @Composable
 private fun HeroPageIndicatorRow(
@@ -1924,7 +2222,13 @@ private fun DesktopHeroContentBlock(
         } else {
             null
         }
-        val synopsisMaxLines = immersiveBudget?.synopsisMaxLines ?: HeroSynopsisMaxLines
+        // Adaptive and Basic grow the hero with its height (the Hero-height slider, Basic's
+        // upstream-height hero); the gaps and the synopsis window grow with it, so the column fills
+        // a taller hero in proportion instead of the same fixed rows floating in more space. TV
+        // Mode budgets its own column above, so it stays at the nominal sizes.
+        val sizeScale = if (showExtendedMetadata) 1f else layout.heroHeightScale.coerceIn(1f, 1.5f)
+        val synopsisMaxLines = immersiveBudget?.synopsisMaxLines
+            ?: (HeroSynopsisMaxLines * sizeScale).toInt().coerceIn(HeroSynopsisMaxLines, HeroSynopsisMaxLines + 2)
         Column(
             modifier = Modifier
                 .fillMaxWidth()
@@ -1971,7 +2275,7 @@ private fun DesktopHeroContentBlock(
             if (logoUrl != null) {
                 Box(
                     modifier = logoSlotModifier,
-                    contentAlignment = if (showExtendedMetadata) Alignment.BottomStart else Alignment.CenterStart,
+                    contentAlignment = Alignment.BottomStart,
                 ) {
                     AsyncImage(
                         model = logoUrl,
@@ -1979,7 +2283,7 @@ private fun DesktopHeroContentBlock(
                         modifier = Modifier
                             .fillMaxWidth(desktopHeroLogoWidthFraction(layout))
                             .fillMaxHeight(),
-                        alignment = if (showExtendedMetadata) Alignment.BottomStart else Alignment.CenterStart,
+                        alignment = Alignment.BottomStart,
                         contentScale = ContentScale.Fit,
                         clipToBounds = false,
                         onError = { state ->
@@ -1991,13 +2295,13 @@ private fun DesktopHeroContentBlock(
                     )
                 }
             } else {
-                // Same fixed-height slot and alignment as the logo branch above (including the
-                // showExtendedMetadata-based alignment switch) — otherwise the title's vertical
+                // Same fixed-height slot and bottom alignment as the logo branch above (bottom, so
+                // a short logo sits on the cast row rather than floating mid-slot) — otherwise the title's vertical
                 // position shifts depending on whether this item has a logo, dragging everything
                 // below it (cast, genre line, description) along with it.
                 Box(
                     modifier = logoSlotModifier,
-                    contentAlignment = if (showExtendedMetadata) Alignment.BottomStart else Alignment.CenterStart,
+                    contentAlignment = Alignment.BottomStart,
                 ) {
                     // Third state: the item is a pre-enrichment copy whose logo has not been decided
                     // yet, so the title would only be painted for the moment it takes the logo to
@@ -2028,7 +2332,7 @@ private fun DesktopHeroContentBlock(
                 !showExtendedMetadata &&
                 (cast.isNotEmpty() || production.isNotEmpty())
             ) {
-                Spacer(modifier = Modifier.height(14.dp))
+                Spacer(modifier = Modifier.height(14.dp * sizeScale))
                 if (
                     allowProductionHotkeySwap &&
                     peoplePanelTab == HeroPeoplePanelTab.Production &&
@@ -2036,7 +2340,13 @@ private fun DesktopHeroContentBlock(
                 ) {
                     HeroProductionRow(production)
                 } else {
-                    HeroCastRow(cast, onCastClick = onCastClick)
+                    HeroCastRow(
+                        cast,
+                        onCastClick = onCastClick,
+                        // Portraits grow with the hero too, into the room the raised content leaves.
+                        imageSize = (HeroCastPortraitSize * sizeScale * HeroCastPortraitGrowth)
+                            .coerceIn(HeroCastPortraitSize, HeroCastPortraitMaxSize),
+                    )
                 }
                 Spacer(modifier = Modifier.height(2.dp))
             }
@@ -2055,7 +2365,7 @@ private fun DesktopHeroContentBlock(
                 includeAgeRating = false,
             )
             if (!item.heroMetadataPending && (genreParts.isNotEmpty() || ageRating != null)) {
-                Spacer(modifier = Modifier.height(14.dp))
+                Spacer(modifier = Modifier.height(14.dp * sizeScale))
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(10.dp),
@@ -2080,7 +2390,7 @@ private fun DesktopHeroContentBlock(
                     ?.trim()
                     ?.takeIf { it.isNotBlank() }
                     ?.let { description ->
-                        Spacer(modifier = Modifier.height(16.dp))
+                        Spacer(modifier = Modifier.height(16.dp * sizeScale))
                         HeroSynopsis(
                             text = description,
                             resetKey = "${item.type}:${item.id}",
@@ -2576,6 +2886,7 @@ private fun HeroCastPortraitPreloader(cast: List<HeroCastMember>) {
 private fun HeroCastRow(
     cast: List<HeroCastMember>,
     onCastClick: ((HeroCastMember) -> Unit)?,
+    imageSize: Dp = HeroCastPortraitSize,
 ) {
     Row(
         modifier = Modifier.fillMaxWidth(),
@@ -2586,7 +2897,7 @@ private fun HeroCastRow(
             HeroCastChip(
                 person = person,
                 modifier = Modifier.weight(1f, fill = false),
-                imageSize = 34.dp,
+                imageSize = imageSize,
                 onCastClick = onCastClick,
             )
         }
@@ -2979,6 +3290,13 @@ private fun HeroMetaText(text: String) {
         overflow = TextOverflow.Ellipsis,
     )
 }
+
+/**
+ * Basic's desktop hero height: upstream NuvioDesktop's desktop hero baseline (`desktopHeroHeight`,
+ * without its ultrawide stretch). Basic doesn't follow focus, so it can afford upstream's taller
+ * hero rather than the 360-440dp band Adaptive scales from.
+ */
+internal fun basicDesktopHeroHeight(maxWidthDp: Float): Dp = (maxWidthDp * 0.56f).dp.coerceIn(460.dp, 640.dp)
 
 internal fun homeHeroLayout(
     maxWidthDp: Float,

@@ -6450,6 +6450,29 @@ document.addEventListener("mousedown", event => {
   send("back", 0);
 });
 
+// AWT owns ordinary Linux keyboard focus, so it calls this policy through the bridge.
+// Keep the existing focused-WebView order for Windows/macOS; Linux must dismiss an
+// open panel even if a playback error arrived underneath it.
+function handlePlayerEscape(linux = false) {
+  if (subtitleHexField) { closeSubtitleHexPrompt(); return; }
+  if (contextMenuOpen) { closeContextMenu(); return; }
+  if (actionOverflowOpen) { setActionOverflowOpen(false); return; }
+  if (colorGradePanelOpen) { setColorGradePanelOpen(false); return; }
+  if (!linux && playbackErrorText()) { send("back", 0); return; }
+  if (activeModal) {
+    closePlayerModal(true);
+    focusShortcutRoot();
+    return;
+  }
+  // The shared Back action also checks this authoritatively if controls state is in flight.
+  send(linux && state.skipSubmitToastDismissible ? "skipSubmitDismiss" : "back", 0);
+}
+
+window.nuvioHandleLinuxEscape = () => {
+  if (isHeroTrailerSurface || state.heroTrailerMode) return;
+  handlePlayerEscape(true);
+};
+
 document.addEventListener("keydown", event => {
   // The hero-trailer surface is passive: it never holds OS keyboard focus (the native container
   // refuses mouse activation and the WebView2 bounces any focus it grabs back to the Compose UI),
@@ -6461,44 +6484,12 @@ document.addEventListener("keydown", event => {
   }
   // The hex prompt is its own layer rather than an activeModal, so the modal branches below would
   // otherwise close the panel underneath it and leave the prompt stranded.
-  if (subtitleHexField) {
-    if (event.key === "Escape") {
-      event.preventDefault();
-      closeSubtitleHexPrompt();
-    }
-    return;
-  }
-  if (event.key === "Escape" && contextMenuOpen) {
-    event.preventDefault();
-    closeContextMenu();
-    return;
-  }
-  if (event.key === "Escape" && actionOverflowOpen) {
-    event.preventDefault();
-    setActionOverflowOpen(false);
-    return;
-  }
-  if (event.key === "Escape" && colorGradePanelOpen) {
-    event.preventDefault();
-    setColorGradePanelOpen(false);
-    return;
-  }
-  if (event.key === "Escape" && playbackErrorText()) {
-    event.preventDefault();
-    send("back", 0);
-    return;
-  }
-  if (event.key === "Escape" && activeModal) {
-    event.preventDefault();
-    closePlayerModal(true);
-    focusShortcutRoot();
-    return;
-  }
   if (event.key === "Escape") {
     event.preventDefault();
-    send("back", 0);
+    handlePlayerEscape();
     return;
   }
+  if (subtitleHexField) return;
   if (playbackErrorText()) return;
   const isMacFullscreenShortcut = event.code === "KeyF" && event.metaKey && event.ctrlKey && !event.altKey;
   const configuredFullscreenKey = Math.max(0, Number(state.appFullscreenKeyCode) || 0);

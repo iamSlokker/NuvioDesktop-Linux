@@ -36,6 +36,7 @@ concurrency:
 
 jobs:
   packages:
+    if: github.ref == 'refs/heads/linux' || github.ref == 'refs/heads/fix/linux-cloud-player-2026-10-12' || github.ref == 'refs/heads/integration/umbra-linux-snapshot-2026-10-13' || startsWith(github.ref, 'refs/tags/')
     runs-on: ubuntu-22.04
     timeout-minutes: 360
     env:
@@ -62,6 +63,14 @@ jobs:
           else
             [[ -z "$ENGINE_SHA$SEED_RUN$SEED_SHA" ]]
           fi
+          # This snapshot consumes the accepted HUD correction, never another
+          # candidate or an implicit WebKit rebuild. Other build modes retain
+          # their existing normal/tag/bootstrap behavior.
+          if [[ "${GITHUB_REF:-}" == refs/heads/integration/umbra-linux-snapshot-2026-10-13 ]]; then
+            [[ "$ENGINE_RUN" == 38327066209 && "$SEED_RUN" == 38265810825 ]]
+            [[ "$ENGINE_SHA" == 3709311586e9fc58dcd460e712f03accc8e9d8170787ef8db530c9224a9ef288 ]]
+            [[ "$SEED_SHA" == 848a8fadf6957bb04d5702ae63639904c0e4f7977f54eb6aea8a14dce29fd311 ]]
+          fi
       - name: Builder prerequisites (runner only)
         shell: bash
         run: |
@@ -86,8 +95,14 @@ jobs:
           gh api "repos/$GITHUB_REPOSITORY/actions/runs/$ENGINE_RUN" > "$RUNNER_TEMP/engine-run.json"
           jq -e --arg ref "$GITHUB_REF" --arg sha "$GITHUB_SHA" \
             '.path == ".github/workflows/linux-webkit.yml" and .conclusion == "success" and .event == "workflow_dispatch" and
-             (.head_branch == "linux" or
-              ($ref == "refs/heads/fix/linux-cloud-player-2026-10-12" and .head_branch == "fix/linux-cloud-player-2026-10-12" and .head_sha == $sha))' \
+             (if $ref == "refs/heads/integration/umbra-linux-snapshot-2026-10-13" then
+                .id == 38327066209 and .run_attempt == 1 and
+                .head_branch == "fix/linux-cloud-player-2026-10-12" and
+                .head_sha == "a5568593562ba18dac4b7d7efe294081801ae74e"
+              else
+                .head_branch == "linux" or
+                ($ref == "refs/heads/fix/linux-cloud-player-2026-10-12" and .head_branch == "fix/linux-cloud-player-2026-10-12" and .head_sha == $sha)
+              end)' \
             "$RUNNER_TEMP/engine-run.json"
           attempt=$(jq -er .run_attempt "$RUNNER_TEMP/engine-run.json")
           gh run download "$ENGINE_RUN" --repo "$GITHUB_REPOSITORY" --name "webkit-candidate-$ENGINE_RUN-$attempt" --dir build/webkit-candidate

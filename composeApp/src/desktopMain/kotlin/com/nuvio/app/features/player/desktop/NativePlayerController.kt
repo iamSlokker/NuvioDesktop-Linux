@@ -100,7 +100,7 @@ internal class NativePlayerController(
 
     private companion object {
         val json = Json { ignoreUnknownKeys = true }
-        const val CONTROLS_PAGE_REVISION = "20260926-thumb-settle-1"
+        const val CONTROLS_PAGE_REVISION = "20261013-linux-escape-1"
         const val MPV_STARTUP_ERROR_EVENT_PREFIX = "mpvStartupError:"
         const val MPV_PLAYBACK_ERROR_EVENT_PREFIX = "mpvPlaybackError:"
 
@@ -138,8 +138,10 @@ internal class NativePlayerController(
     private val linuxHeroGeometry = LinuxHeroHostGeometry.install(DesktopHostOs.current, linuxHeroSurface, host) {
         attachPending()
     }
+    private val linuxEscape = LinuxPlayerEscape(DesktopHostOs.current)
     private val linuxWindowFocus = if (DesktopHostOs.current == DesktopHostOs.LINUX) {
         LinuxPlayerWindowFocus(host) { focused ->
+            if (!focused) linuxEscape.reset()
             handle.takeIf { !disposed && it != 0L }?.let {
                 LinuxPlayerControlsBridge.setWindowFocused(it, focused)
             }
@@ -765,6 +767,22 @@ internal class NativePlayerController(
             showVolumePillFromNative()
         }
         // Speed events pill themselves inside handlePlayerEvent, since the HUD sends them too.
+    }
+
+    fun dispatchLinuxEscapeKey(event: java.awt.event.KeyEvent): Boolean {
+        if (disposed || linuxHeroSurface || DesktopHostOs.current != DesktopHostOs.LINUX) return false
+        val window = SwingUtilities.getWindowAncestor(host)
+        return linuxEscape.dispatch(
+            event,
+            ownsWindow = window != null && linuxWindowFocus?.focused == true &&
+                (event.component as? java.awt.Window ?: SwingUtilities.getWindowAncestor(event.component)) === window,
+            dismissKey = AppShortcutsRepository.keyCode(AppShortcutAction.DismissOverlay),
+        ) {
+            deliverLinuxPlayerEscape(handle, desktopPictureInPictureState.value, NativePlayerBridge::runJavaScript) {
+                // Retain the shared toast/progress-flush/guarded-navigation/cleanup path.
+                dispatchKeyboardShortcut("back")
+            }
+        }
     }
 
     private fun showPlaybackSpeedPillFromNative() {
