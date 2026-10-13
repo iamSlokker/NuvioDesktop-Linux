@@ -15,6 +15,9 @@ import java.util.zip.CRC32
 import java.util.zip.Inflater
 
 /*
+ * Disabled in AppUpdaterPlatform: CRC32 does not authenticate remote entries. Do not reconnect
+ * this parser to installation without an independently authenticated per-entry manifest.
+ *
  * Delta updates: download only the files of the release zip that differ from the installed build.
  *
  * Nothing extra is published for this. The release zip's own central directory (the index at the
