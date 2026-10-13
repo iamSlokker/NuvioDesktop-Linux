@@ -1,6 +1,5 @@
 package com.nuvio.app.features.updater
 
-import co.touchlab.kermit.Logger
 import com.nuvio.app.core.build.AppVersionPolicy
 import com.nuvio.app.core.storage.DesktopStorage
 import kotlinx.coroutines.Dispatchers
@@ -130,10 +129,9 @@ actual object AppUpdaterPlatform {
             // Fail closed. The update is unpacked and run automatically, so an asset with no
             // published digest cannot be checked at all; GitHub has published one for every asset
             // uploaded since mid-2025, so a missing one is itself a sign something is off.
-            requireNotNull(expectedSha256?.takeIf { it.isNotBlank() }) {
-                "Update refused: GitHub published no SHA-256 checksum for this download, so it cannot be verified."
-            }
-            tryDeltaDownload(assetUrl, onProgress)?.let { marker -> return@runCatching marker.absolutePath }
+            // Partial ZIP ranges have no per-entry authenticated digest. Only a full-archive
+            // download can be checked against GitHub's published SHA-256 before use.
+            val verifiedSha256 = requireExpectedArchiveSha256(expectedSha256)
 
             val safeName = assetName.replace(Regex("[^a-zA-Z0-9._-]"), "_")
             val updateDirectory = portableUpdatesDirectory().apply { mkdirs() }
@@ -178,7 +176,7 @@ actual object AppUpdaterPlatform {
             // it to the ready-to-install location.
             run {
                 val actualSha256 = digest.digest().toHexString()
-                if (!actualSha256.equals(expectedSha256, ignoreCase = true)) {
+                if (!actualSha256.equals(verifiedSha256, ignoreCase = true)) {
                     partial.delete()
                     error(
                         "Update verification failed: the download's SHA-256 did not match the " +
@@ -210,18 +208,8 @@ actual object AppUpdaterPlatform {
         val archive = File(path)
         check(archive.isFile) { "The downloaded update archive is missing." }
 
-        if (archive.name == deltaMarkerName) {
-            // Only the changed files were downloaded, so there is no archive to reveal: a delta is
-            // either swapped in or abandoned, and the retry downloads the whole zip.
-            val applied = runCatching { applyDeltaUpdateInPlace(archive) }.getOrElse { error ->
-                updaterLog.w(error) { "Delta update could not be applied" }
-                false
-            }
-            if (applied) return@runCatching UpdateInstallOutcome.RESTARTING
-            deltaDisabledThisSession = true
-            archive.delete()
-            error("The update could not be applied. Try again to download the full update.")
-        }
+        // A legacy delta marker is not a complete SHA-256-verified update archive.
+        requireCompleteZipForInstall(archive)
 
         if (isInPlaceUpdateEnabled()) {
             val applied = runCatching { applyPortableUpdateInPlace(archive) }.getOrElse { error ->
@@ -238,6 +226,27 @@ actual object AppUpdaterPlatform {
 }
 
 private const val launcherExeName = "Nuvio.exe"
+
+private val expectedArchiveSha256Pattern = Regex("[0-9a-fA-F]{64}")
+
+/**
+ * A downloaded portable update must carry GitHub's full-asset SHA-256.
+ * CRC32 values in a ZIP index are error checks, not an authenticated substitute.
+ */
+internal fun requireExpectedArchiveSha256(expectedSha256: String?): String =
+    requireNotNull(expectedSha256?.takeIf { expectedArchiveSha256Pattern.matches(it) }) {
+        "Update refused: GitHub published no valid SHA-256 checksum for this download, so it cannot be verified."
+    }
+
+/**
+ * Older versions staged an unverified partial update as delta-update.txt. Never accept that marker
+ * (or any other non-ZIP path) for installation; users must re-download the whole verified ZIP.
+ */
+internal fun requireCompleteZipForInstall(archive: File) {
+    check(archive.extension.equals("zip", ignoreCase = true)) {
+        "Update refused: a legacy partial update is not a verified full ZIP archive. Download the complete update again."
+    }
+}
 
 /**
  * Stages the verified archive and launches a detached [cmd] + [robocopy] helper that swaps the
@@ -310,68 +319,6 @@ private fun launchSwap(target: InPlaceTarget, sourceRoot: File, stagingDir: File
         .start()
 
     scheduleExit()
-}
-
-private val updaterLog = Logger.withTag("AppUpdater")
-
-/** Name of the file [AppUpdaterPlatform.downloadApk] returns for a staged delta. */
-private const val deltaMarkerName = "delta-update.txt"
-private const val deltaStagingName = "staged-delta"
-
-/** Above this share of the archive, a delta saves too little to give up the whole-zip SHA-256. */
-private const val deltaMaxShare = 0.75
-
-/** Set after a delta fails to apply, so the retry downloads the whole zip. */
-@Volatile
-private var deltaDisabledThisSession = false
-
-/**
- * Downloads only the files that differ from the installed build (see DeltaUpdate.desktop.kt) and
- * returns a marker listing the new build's files, or null to have the caller download the whole
- * zip. Null whenever the in-place swap couldn't run anyway: the manual fallback needs a full zip.
- */
-private fun tryDeltaDownload(
-    assetUrl: String,
-    onProgress: (downloadedBytes: Long, totalBytes: Long?) -> Unit,
-): File? {
-    if (deltaDisabledThisSession || !AppUpdaterPlatform.isInPlaceUpdateEnabled()) return null
-    val target = inPlaceTarget() ?: return null
-    val stagingDir = File(target.updatesDir, deltaStagingName)
-    return runCatching {
-        val source = HttpZipRangeSource(updaterHttpClient, assetUrl)
-        val index = ZipDelta.readIndex(source)
-        val plan = checkNotNull(ZipDelta.plan(index.entries, target.installRoot, launcherExeName)) {
-            "No app image in the archive"
-        }
-        updaterLog.i {
-            "Delta update: ${plan.changed.size} of ${plan.newFiles.size} files changed, " +
-                "${plan.changedCompressedBytes} of ${source.length} bytes"
-        }
-        if (plan.changedCompressedBytes > source.length * deltaMaxShare) return null
-
-        deleteRecursively(stagingDir)
-        stagingDir.mkdirs()
-        ZipDelta.fetchChanged(source, index, plan, stagingDir) { downloaded, total ->
-            onProgress(downloaded, total.takeIf { it > 0L })
-        }
-        File(target.updatesDir, deltaMarkerName).apply {
-            writeText(plan.newFiles.joinToString("\r\n"), Charsets.UTF_8)
-        }
-    }.onFailure { error ->
-        updaterLog.w(error) { "Delta update unavailable; downloading the full archive" }
-        deleteRecursively(stagingDir)
-    }.getOrNull()
-}
-
-private fun applyDeltaUpdateInPlace(marker: File): Boolean {
-    val target = inPlaceTarget() ?: return false
-    val stagingDir = File(target.updatesDir, deltaStagingName)
-    if (!stagingDir.isDirectory) return false
-    val newFiles = marker.readLines(Charsets.UTF_8).map(String::trim).filter(String::isNotEmpty)
-    if (newFiles.none { it.equals(launcherExeName, ignoreCase = true) }) return false
-    marker.delete()
-    launchSwap(target, sourceRoot = stagingDir, stagingDir = stagingDir, newFiles = newFiles)
-    return true
 }
 
 private const val installManifestName = "install-manifest.txt"
