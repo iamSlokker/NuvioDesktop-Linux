@@ -5,9 +5,9 @@ export LC_ALL=C TZ=UTC PYTHONDONTWRITEBYTECODE=1
 mkdir -p "$HOME"
 cd /source
 [[ ! -e local.properties ]] || { echo 'Refusing developer configuration'; exit 1; }
-# Upstream's configuration-generation task requires this input file. Supply no
-# developer values; this file exists only in the disposable source snapshot.
-: > local.properties
+# Feed upstream's existing generator reviewed public defaults, never developer
+# configuration. This file exists only in the disposable source snapshot.
+cp tools/linux/packaging/public-client.properties local.properties
 offline=()
 [[ ${NUVIO_GRADLE_OFFLINE:-0} != 1 ]] || offline=(--offline)
 # Explicit channel avoids resolveDesktopChannel's local-user preference fallback.

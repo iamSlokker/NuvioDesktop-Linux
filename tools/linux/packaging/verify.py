@@ -12,6 +12,7 @@ import tempfile
 import zipfile
 from formats import PLATFORM
 from webkit.stage import linked_paths
+from client_config import verify_packaged_backend
 
 FORBIDDEN = [b'/home/hmacedo', b'/var/home/hmacedo', b'/home/linuxbrew', b'/opt/homebrew',
              b'/source/', b'/work/prefix', b'/recipes/']
@@ -92,6 +93,7 @@ def check_image(root):
             raise ValueError('Non-executable launcher: ' + rel)
     if not list((root / 'lib/app').glob('*.jar')):
         raise ValueError('No application jars')
+    verify_packaged_backend(root)
     info = json.loads((root / 'release-info.json').read_text())
     if not re.fullmatch('[a-f0-9]{40}', info['git_commit']):
         raise ValueError('Missing full source revision')
@@ -213,6 +215,15 @@ def artifacts(work, formats):
                 metadata = subprocess.check_output(['ostree', '--repo=' + tmp, 'cat', ref, '/metadata'])
                 if metadata != (work / 'flatpak-build/metadata').read_bytes():
                     raise ValueError('Flatpak exported metadata differs from inspected sandbox')
+                # Inspect exported JAR bytes, not just the canonical input or
+                # release stamp: empty/inadvertently overridden defaults fail.
+                image = pathlib.Path(tmp) / 'client-audit'
+                (image / 'lib/app').mkdir(parents=True)
+                for jar in (work / 'flatpak-build/files/lib/nuvio-desktop/lib/app').glob('*.jar'):
+                    payload = subprocess.check_output(['ostree', '--repo=' + tmp, 'cat', ref,
+                        '/files/lib/nuvio-desktop/lib/app/' + jar.name])
+                    (image / 'lib/app' / jar.name).write_bytes(payload)
+                verify_packaged_backend(image)
                 (dest / 'flatpak-audit.json').write_text(json.dumps(
                     dict(source=info, ref=ref, metadata=metadata.decode()), indent=2) + '\n')
             if not (work / 'flatpak-build/metadata').is_file():

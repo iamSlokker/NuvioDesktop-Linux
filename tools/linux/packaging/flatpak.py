@@ -15,6 +15,7 @@ import subprocess
 import sys
 
 from fetch import CONFIG
+from client_config import verify_packaged_backend
 
 HERE = pathlib.Path(__file__).resolve().parent
 
@@ -36,6 +37,7 @@ def build(work):
     if any(os.environ.get(k) for k in ['DISPLAY', 'WAYLAND_DISPLAY', 'NUVIO_RUN_LIVE_DISPLAY_TESTS']):
         raise ValueError('Unset display/live-test environment')
     canonical = work / 'canonical'
+    verify_packaged_backend(canonical)
     info = json.loads((canonical / 'release-info.json').read_text())
     expected = json.loads((work / 'source-info.json').read_text())
     if any(info[key] != expected[key] for key in ['git_commit', 'source_sha256', 'channel']):

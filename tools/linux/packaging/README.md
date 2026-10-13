@@ -35,13 +35,16 @@ if necessary. Neither AppImage-only command rebuilds media or modifies an existi
 DEB/Flatpak artifact. An optional `--webkit-generation PATH` must pass the engine
 recipe, provenance, policy and file-inventory checks before assembly. `--gradle-cache DIR --offline` optionally
 seeds verified Gradle module/wrapper inputs. Project build output, configuration
-cache, Gradle initialization scripts and local.properties are not copied;
-the disposable snapshot receives an empty local.properties required by upstream.
-Consequently the generated official backend URL/publishable key and optional
-service defaults are empty. These development packages do not certify official
-account/service operation. A reviewed public release configuration (or explicit
-self-hosted distribution policy) is needed before publishing stable builds;
-never recover those values by copying a developer's private configuration.
+cache, Gradle initialization scripts and local.properties are not copied.
+The disposable snapshot supplies the reviewed
+[public client properties](public-client.properties) to upstream's existing
+`GenerateRuntimeConfigsTask`: `https://api.nuvio.tv` and the official publishable
+key documented in the pinned Nuvio self-host example. DEB, Flatpak and AppImage
+verification reads the generated `SupabaseConfig` fields from the actual packaged
+JARs and rejects missing, empty or different defaults. Runtime custom/self-hosted
+server selection remains unchanged. No developer properties or private/service-role
+credentials are inputs. Account/login acceptance against the service is separate;
+optional service defaults described below remain unavailable.
 Gradle build-cache reuse is disabled. A git-file source snapshot prevents
 accidentally packaging the developer checkout, personal data or native caches.
 
@@ -237,16 +240,17 @@ The measured local full WebKit compile/link pass took 3h09m42s and peaked at
 rebuilt in 3m56s through the compiler cache. These measurements do not establish
 that the complete cold pipeline fits a standard GitHub runner.
 
-### Public service configuration release blocker
+### Public service configuration and remaining release blockers
 
 `GenerateRuntimeConfigsTask` in `composeApp/build.gradle.kts` reads the following
-six values from local.properties. All are empty in the isolated packaging build;
-no environment/CI injection for approved release defaults exists yet.
+six values from local.properties. Packaging provides only the two reviewed public
+cloud values through its disposable build input; the four optional values remain
+empty. The client URL/key are pinned in source rather than downloaded at build time.
 
 | Build property | Missing behavior / release decision |
 | --- | --- |
-| `SUPABASE_URL` | Official backend endpoint for account/authentication and server-backed data. An operator-approved public URL or an explicit self-hosted distribution policy is required. |
-| `SUPABASE_ANON_KEY` | Official backend public client key. Supply only an approved publishable/legacy anon key compatible with the current client/backend, never a secret or service-role key. Backend access controls must be reviewed separately. |
+| `SUPABASE_URL` | `https://api.nuvio.tv`, the official Nuvio Cloud endpoint. |
+| `SUPABASE_ANON_KEY` | Official `sb_publishable_…` public client key from the pinned Nuvio self-host example; never a secret/service-role key. Backend access controls remain the service's responsibility. |
 | `INTRODB_API_URL` | Optional skip-intro service endpoint; `SkipIntroRepository.isAvailable` is false when blank. |
 | `IMDB_RATINGS_API_BASE_URL` | Optional season-ratings endpoint; this service returns no ratings when blank. The separate IMDb GraphQL/TMDB fallback paths still exist. |
 | `IMDB_TAPFRAME_API_BASE_URL` | Optional alternate season-ratings endpoint; likewise unavailable when blank. |
@@ -255,17 +259,16 @@ no environment/CI injection for approved release defaults exists yet.
 Service URLs without embedded credentials and OAuth client IDs are public
 configuration, subject to their operator's distribution policy. Supabase
 [publishable/anon keys are client-facing; secret/service-role keys bypass access controls](https://supabase.com/docs/guides/getting-started/api-keys)
-and must never be shipped. No actual release values have been supplied or
-inferred from a developer machine.
+and must never be shipped. The official values come from public upstream
+documentation, never a developer machine.
 
-Desktop custom-server configuration exists, but it does not establish a working
-fresh-install experience with these empty defaults. `AuthRepository.initialize`
-starts the Supabase session collector even on initial startup; default
-account/session initialization and backend services are therefore unaccepted
-release blockers, not merely optional untested integrations. Anonymous local
-sign-in exists; it is not evidence that fresh packaged startup is accepted.
-Settle the approved public defaults or self-hosted onboarding policy and test
-fresh startup before publication. This task does not add an injection mechanism.
+Desktop custom-server configuration is preserved. `AuthRepository.initialize`
+starts the Supabase session collector even on initial startup; correcting the
+packaged constants does not establish live account/session acceptance. Fresh
+packaged startup/login and backend services still require manual validation.
+Anonymous local sign-in is not evidence of that acceptance.
+Test fresh startup/login with the public defaults before publication; optional
+service configuration and redistribution approval remain separate decisions.
 
 Generated `TraktConfig` credentials are always blank and are not read by current
 Trakt consumers: `TraktSettingsRepository` uses user-configured credentials.
