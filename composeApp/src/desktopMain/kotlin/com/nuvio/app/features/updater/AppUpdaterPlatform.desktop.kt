@@ -137,6 +137,9 @@ actual object AppUpdaterPlatform {
             val updateDirectory = portableUpdatesDirectory().apply { mkdirs() }
             val destination = File(updateDirectory, safeName)
             val partial = File(updateDirectory, "$safeName.part")
+            // Only the most recent completed download may be installed. A failed retry must
+            // not leave an old receipt authorizing a replacement at the same path.
+            verifiedPortableArchive = null
             destination.delete()
             partial.delete()
 
@@ -146,8 +149,9 @@ actual object AppUpdaterPlatform {
                 .GET()
                 .build()
             val response = updaterHttpClient.send(request, HttpResponse.BodyHandlers.ofInputStream())
-            check(response.statusCode() in 200..299) {
-                "Update download failed with HTTP ${response.statusCode()}."
+            if (response.statusCode() !in 200..299) {
+                response.body().close()
+                error("Update download failed with HTTP ${response.statusCode()}.")
             }
 
             val totalBytes = response.headers().firstValue("Content-Length").orElse(null)
@@ -189,6 +193,7 @@ actual object AppUpdaterPlatform {
                 partial.copyTo(destination, overwrite = true)
                 partial.delete()
             }
+            verifiedPortableArchive = VerifiedPortableArchive(destination.canonicalFile, verifiedSha256)
             destination.absolutePath
         }
     }
@@ -227,6 +232,12 @@ actual object AppUpdaterPlatform {
 
 private const val launcherExeName = "Nuvio.exe"
 
+private data class VerifiedPortableArchive(val file: File, val sha256: String)
+
+// No persisted sidecar/marker can grant trust. The download path alone publishes this receipt.
+@Volatile
+private var verifiedPortableArchive: VerifiedPortableArchive? = null
+
 private val expectedArchiveSha256Pattern = Regex("[0-9a-fA-F]{64}")
 
 /**
@@ -241,10 +252,28 @@ internal fun requireExpectedArchiveSha256(expectedSha256: String?): String =
 /**
  * Older versions staged an unverified partial update as delta-update.txt. Never accept that marker
  * (or any other non-ZIP path) for installation; users must re-download the whole verified ZIP.
+ * Bind installation to this session's verified download and recheck its bytes before staging
+ * or revealing it, since a filename alone cannot prove that its contents are still verified.
  */
 internal fun requireCompleteZipForInstall(archive: File) {
     check(archive.extension.equals("zip", ignoreCase = true)) {
         "Update refused: a legacy partial update is not a verified full ZIP archive. Download the complete update again."
+    }
+    val verified = verifiedPortableArchive
+    check(verified != null && archive.canonicalFile == verified.file) {
+        "Update refused: this archive is not the verified download from this session. Download the complete update again."
+    }
+    val digest = MessageDigest.getInstance("SHA-256")
+    archive.inputStream().use { input ->
+        val buffer = ByteArray(DEFAULT_BUFFER_SIZE)
+        while (true) {
+            val read = input.read(buffer)
+            if (read < 0) break
+            digest.update(buffer, 0, read)
+        }
+    }
+    check(digest.digest().toHexString().equals(verified.sha256, ignoreCase = true)) {
+        "Update verification failed: the archive's SHA-256 changed after download. Download the complete update again."
     }
 }
 
@@ -288,10 +317,9 @@ private fun inPlaceTarget(): InPlaceTarget? {
 }
 
 /**
- * Writes the manifest and helper for [sourceRoot] (a staged app image — complete for a zip, only
- * the changed files for a delta), starts the helper and schedules this process's exit. [newFiles]
- * is every file of the new build, which the stale-file computation needs even when the staged
- * tree is partial.
+ * Writes the manifest and helper for [sourceRoot] (the complete staged app image), starts the
+ * helper and schedules this process's exit. [newFiles] lists every file of the new build for the
+ * stale-file computation.
  */
 private fun launchSwap(target: InPlaceTarget, sourceRoot: File, stagingDir: File, newFiles: List<String>) {
     val staleFiles = writeInstallManifest(sourceRoot = sourceRoot, installRoot = target.installRoot, newFiles = newFiles)

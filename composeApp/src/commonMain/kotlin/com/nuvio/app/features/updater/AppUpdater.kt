@@ -87,7 +87,7 @@ data class AppUpdate(
     val assetUrl: String,
     val assetSizeBytes: Long?,
     // Expected SHA-256 (lowercase hex) of the asset, from the GitHub API's `digest` field. Null
-    // for assets uploaded before GitHub started publishing digests — verification is then skipped.
+    // when GitHub provides no usable digest; the desktop portable updater refuses that download.
     val assetSha256: String? = null,
     // When this build was published, for display. GitHub's own timestamp, so nightlies uploaded
     // under one unchanging tag still have something to name them by.
