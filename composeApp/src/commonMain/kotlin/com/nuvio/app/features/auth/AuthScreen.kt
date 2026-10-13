@@ -4,7 +4,6 @@ import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.togetherWith
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.awaitEachGesture
@@ -48,7 +47,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.LayoutCoordinates
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInRoot
 import androidx.compose.ui.platform.LocalFocusManager
@@ -65,7 +63,6 @@ import com.nuvio.app.core.ui.NuvioPrimaryButton
 import com.nuvio.app.core.ui.NuvioSurfaceCard
 import kotlinx.coroutines.launch
 import nuvio.composeapp.generated.resources.Res
-import nuvio.composeapp.generated.resources.app_logo_wordmark_htpc
 import nuvio.composeapp.generated.resources.compose_auth_already_have_account
 import nuvio.composeapp.generated.resources.compose_auth_continue_without_account
 import nuvio.composeapp.generated.resources.compose_auth_create_account
@@ -80,7 +77,6 @@ import nuvio.composeapp.generated.resources.compose_auth_sign_up_subtitle
 import nuvio.composeapp.generated.resources.compose_auth_store_locally
 import nuvio.composeapp.generated.resources.compose_auth_tagline
 import nuvio.composeapp.generated.resources.compose_auth_welcome_back
-import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
 import com.nuvio.app.core.ui.NuvioTextField
 import com.nuvio.app.core.ui.accentBrush
@@ -148,14 +144,7 @@ fun AuthScreen(
                     .fillMaxWidth(),
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
-            Image(
-                painter = painterResource(Res.drawable.app_logo_wordmark_htpc),
-                contentDescription = null,
-                modifier = Modifier
-                    .fillMaxWidth(0.6f)
-                    .height(48.dp),
-                contentScale = ContentScale.Fit,
-            )
+            AuthWordmark()
             Spacer(modifier = Modifier.height(8.dp))
             Text(
                 text = stringResource(Res.string.compose_auth_tagline),
