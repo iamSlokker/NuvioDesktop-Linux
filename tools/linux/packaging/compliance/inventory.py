@@ -401,6 +401,11 @@ def build_inventory(repo, inputs, cache, package_rows, owner_rows, runtime=None,
             {'name':'libfuse', 'version':'3.15.0', 'source_url':'https://github.com/libfuse/libfuse/releases/download/fuse-3.15.0/fuse-3.15.0.tar.xz', 'source_sha256':'70589cfd5e1cff7ccd6ac91c86c01be340b227285c5e200baa284e401eea2ca0', 'modification':'runtime patch patches/libfuse/mount.c.diff', 'source_retained':False},
             {'name':'squashfuse', 'version':'0.5.2', 'source_url':'https://github.com/vasi/squashfuse/archive/0.5.2.tar.gz', 'source_sha256':'db0238c5981dabbd80ee09ae15387f390091668ca060a7bc38047912491443d3', 'source_retained':False},
             *[{'name':name, 'version':None, 'source_sha256':None, 'gap':'exact Alpine build dependency version/input not established'} for name in ['musl','zstd','zlib','mimalloc']]]
+    if evidence.get('temurin_source'):
+        jdk_source = evidence['temurin_source']
+        if not jdk_source['resolved_revision'].startswith(components['temurin']['source']['revision'].rsplit(':', 1)[-1]):
+            raise ValueError('Resolved JDK revision differs from packaged source prefix')
+        components['temurin']['source'].update(jdk_source)
     source_evidence['supplemental_local_sources'] = evidence.get('media_source_collection')
     for font in components['application'].get('font_assets', []):
         font['metadata'] = evidence.get('font_metadata', {}).get(Path(font['path']).name)

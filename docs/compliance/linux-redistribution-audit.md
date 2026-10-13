@@ -120,11 +120,12 @@ All formats bundle a jlink-selected runtime and jpackage launcher from Temurin
 `3808d1d15e3ec6bd5b84057fb5d84c33d8a1536a258146bcea2e603fc726e08e`.
 Per-module GPLv2/ClassPath-exception and third-party legal files are retained.
 The packaged release metadata identifies `adoptium/jdk17u` revision
-`79597447bd94` and Temurin build scripts revision
+`79597447bd94` (resolved through the official commit API to
+`79597447bd94ff9f8216e2e3a573d5261ee49f2e`) and Temurin build scripts revision
 `e6ba7dec3d07654074559310376a3ae89da5f4ac`.
 
 No complete, hash-locked JDK/HotSpot/native third-party corresponding-source
-bundle, full source revision resolution, Temurin build inputs or independently
+bundle, Temurin build inputs or independently
 verified source-to-prebuilt-binary attestation is offered in this run. A Java
 `src.zip` alone would not establish coverage of JVM/native components. Determine
 license/exception applicability and required materials with review; do not infer

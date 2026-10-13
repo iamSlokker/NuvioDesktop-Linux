@@ -10806,7 +10806,12 @@
       ],
       "source": {
         "archive_sha256": null,
-        "repository": "https://github.com/adoptium/jdk17u.git",
+        "candidate_archive_url": "https://codeload.github.com/adoptium/jdk17u/tar.gz/79597447bd94ff9f8216e2e3a573d5261ee49f2e",
+        "commit_url": "https://github.com/adoptium/jdk17u/commit/79597447bd94ff9f8216e2e3a573d5261ee49f2e",
+        "evidence": "official GitHub commit API resolves packaged revision prefix; full corresponding source not retained",
+        "packaged_revision_prefix": "79597447bd94",
+        "repository": "https://github.com/adoptium/jdk17u",
+        "resolved_revision": "79597447bd94ff9f8216e2e3a573d5261ee49f2e",
         "revision": ".:git:79597447bd94"
       },
       "version": "17.0.20.1+1"
