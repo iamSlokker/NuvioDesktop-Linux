@@ -86,6 +86,9 @@ class LinuxHeroBackdropInferenceTest {
     private fun probe(root: Path, scenario: String, missingNatives: Boolean = false, invalidModel: String? = null) {
         val builder = headlessProbeBuilder(root, LinuxHeroBackdropInferenceProbe::class.java, scenario)
         val command = builder.command()
+        // Model loading now goes through PackagedResources. Exercise its real packaged
+        // Linux fallback to the classpath, with development source-tree lookup disabled.
+        command.add(1, "-Djpackage.app-path=${root.resolve("installed/bin/nuvio")}")
         val resources = root.resolve("override-resources")
         Files.createDirectories(resources.resolve("backdrop-framing"))
         if (invalidModel != null) Files.writeString(resources.resolve("backdrop-framing/$invalidModel"), "invalid ONNX fixture")

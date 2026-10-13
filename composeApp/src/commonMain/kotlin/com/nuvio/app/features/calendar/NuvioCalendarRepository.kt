@@ -114,7 +114,11 @@ internal object NuvioCalendarRepository {
         log.d { "Local calendar: following=${follows.size} cached=${items.size} fetching=${toFetch.size}" }
 
         // Titles no longer followed drop out now; the rest keep their entries while being re-read.
-        items = follows.mapNotNull { follow -> items[follow.key]?.let { follow.key to it.copy(follow = follow) } }.toMap()
+        // Reserve uncached titles in follow order too: replacing them after parallel fetches must
+        // not put a history alias ahead of the preferred library id in publish's deduplication.
+        items = follows.associate { follow ->
+            follow.key to (items[follow.key]?.copy(follow = follow) ?: NuvioCalendarCachedItem(follow = follow))
+        }
 
         if (toFetch.isNotEmpty()) {
             AddonRepository.initialize()

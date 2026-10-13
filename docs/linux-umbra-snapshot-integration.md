@@ -1,8 +1,12 @@
 # Umbra Linux snapshot integration
 
 This integration imports the authorized WIP snapshot
-`UmbraProjects/NuvioDesktop@6f155d267a478b3cebd8320de5a8bedc8e5de52a`
+`UmbraProjects/NuvioDesktop@18537e3c85d7f365487abb6f7e7edb8a4432a081`
 (`wip/linux-snapshot`) with its history. It is not a production release.
+This explicitly authorized pin follows the initial `6f155d26` snapshot integrated
+in `e2812f68`. Later upstream commits are outside this integration's scope and
+require a separate decision. The previous integration and its verified packages
+remain available as a reference; their GUI acceptance is not assumed.
 The Linux reference is the Bazzite-accepted cloud/player correction
 `a5568593562ba18dac4b7d7efe294081801ae74e`, followed by the inherited workflow
 guard `d9bfcdad8f5e99d2ef4345c435ae32434aecd096`. The tested correction remains
@@ -17,6 +21,33 @@ and import, cast/search improvements, mouse-operated OSK and intelligent hero
 framing. Shared implementations remain the source of truth. The native Linux
 player, controller backend, MPRIS, Discord, PiP and WebKit sandbox are retained.
 No speculative aspect-ratio, colour-profile or mpv rendering changes are made.
+
+The second snapshot adds the Nuvio Calendar source/cache, revised hero and profile
+presentation, dithered scrims, setup resources and optional Windows UI HDR
+compensation/ZIP delta updates. Windows-only native calls and update installation
+remain behind their platform guards. Linux retains its existing package/update
+boundary. Resource loading must work from the packaged application without a
+checkout or development fallback; the Linux model/license payload checks remain
+mandatory.
+Upstream's loose-resource exclusion/staging is Windows-only. Linux deliberately
+keeps both ONNX models, their notices, setup images and anime mapping data in the
+application JAR; the shared `PackagedResources` loader uses its classpath fallback.
+No separate Linux resource layout or source-tree dependency is introduced.
+
+A deterministic loopback regression exposed one shared Calendar ordering defect:
+an already-cached watched-history alias could take precedence over a newly
+followed library entry after that entry's metadata arrived. The integration
+reserves uncached titles in follow order before parallel fetches, preserving the
+existing library-first deduplication rule and the new episode dates/navigation
+ID. Cache lifetime, metadata fetching and the UI are unchanged by this correction.
+
+The upstream Windows ZIP delta updater is retained without a Linux implementation.
+Its delta path validates entry CRCs and returns before the full-archive SHA256
+check used by ordinary downloads; this Windows integrity difference needs
+separate upstream review. Linux controller checks cannot enter either installer
+path. Windows HDR compensation likewise does not call its JNI entry point on
+Linux. New-install defaults and hero/profile presentation follow the snapshot;
+stored explicit user choices remain authoritative.
 
 The build-script conflict combines upstream dependencies and test-data isolation
 with Linux packaging/native tasks and live-display test protections. The four

@@ -38,6 +38,27 @@ class NuvioCalendarCacheTest {
     }
 
     @Test
+    fun `failed finished titles use the failure TTL instead of thirty days`() {
+        assertFalse(nuvioCalendarRefreshDue(cached(6 * hour - 1, failed = true, finished = true), now))
+        assertTrue(nuvioCalendarRefreshDue(cached(6 * hour, failed = true, finished = true), now))
+    }
+
+    @Test
+    fun `clock rollback and missing fetch timestamp cannot freeze refresh`() {
+        assertTrue(nuvioCalendarRefreshDue(NuvioCalendarCachedItem(fetchedAtEpochMs = now + 1), now))
+        assertTrue(nuvioCalendarRefreshDue(NuvioCalendarCachedItem(fetchedAtEpochMs = 0, finished = true), now))
+    }
+
+    @Test
+    fun `invalid dates and exact inactivity boundaries do not prematurely finish a title`() {
+        assertFalse(nuvioCalendarIsFinished(listOf("not-a-date"), "Ended", "2026-10-13"))
+        assertFalse(nuvioCalendarIsFinished(listOf("2026-08-14"), "Ended", "2026-10-13"))
+        assertTrue(nuvioCalendarIsFinished(listOf("2026-08-13"), "Ended", "2026-10-13"))
+        assertFalse(nuvioCalendarIsFinished(listOf("2025-10-13"), "Returning Series", "2026-10-13"))
+        assertTrue(nuvioCalendarIsFinished(listOf("2025-10-12"), "Returning Series", "2026-10-13"))
+    }
+
+    @Test
     fun `an ended show with nothing recent is finished`() {
         assertTrue(nuvioCalendarIsFinished(listOf("2024-01-01", "2024-03-01"), "Ended", "2026-10-13"))
     }
