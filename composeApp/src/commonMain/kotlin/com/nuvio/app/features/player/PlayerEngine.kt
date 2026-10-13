@@ -258,7 +258,7 @@ data class PlayerControlsState(
     val uiScalePercent: Int = 0,
     // Extra scale for the bottom control row's buttons only, on top of uiScalePercent.
     val controlIconScalePercent: Int = 0,
-    // The app font, as a CSS family name. "" leaves the HUD on the bundled JetBrains Sans.
+    // The app font, as a CSS family name. "" leaves the HUD on the bundled Inter.
     val uiFontFamily: String = "",
     val sourceNotchPosition: String = "right",
     val sourceNotchHoverEnabled: Boolean = true,

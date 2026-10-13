@@ -1,7 +1,16 @@
 # Bundled GLSL shaders — attribution & license
 
 The `Anime4K_*.glsl` files in this directory are from the **Anime4K** project by bloc97,
-release v4.0.1 (https://github.com/bloc97/Anime4K), used unmodified under the MIT License.
+release v4.0.1 (https://github.com/bloc97/Anime4K), used unmodified.
+
+The fourteen shaders other than the two files listed below carry the MIT License
+and bloc97 copyright notice reproduced here. Their original file-level notices
+are retained.
+
+`Anime4K_AutoDownscalePre_x2.glsl` and `Anime4K_AutoDownscalePre_x4.glsl` instead
+carry the Unlicense/public-domain dedication. Their complete original dedication
+and warranty disclaimer remain at the start of each file; the MIT notice below
+does not replace those terms.
 
 The anime enhancement presets that chain these shaders (Optimized / Fast / HQ) follow the
 shader selection used by **Stremio-Kai** by Allecsc (https://github.com/allecsc/Stremio-Kai),
@@ -11,7 +20,7 @@ whose developer encouraged porting Kai's anime pipeline into Nuvio Desktop.
 
 MIT License
 
-Copyright (c) 2019 bloc97
+Copyright (c) 2019-2021 bloc97
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal

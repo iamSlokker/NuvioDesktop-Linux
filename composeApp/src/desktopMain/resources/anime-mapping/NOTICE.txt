@@ -1,0 +1,16 @@
+Bundled anime ID mapping
+
+Nuvio bundles anime-list-mini.json from Fribb/anime-lists, built from
+anime-offline-database (cedya77, continuing the work of manami-project) and
+Anime-Lists/anime-lists. The existing application attribution identifies the
+database under the Open Database License 1.0 and its contents under the
+Database Contents License 1.0. It identifies the bundled mapping as a
+derivative database available under the same license. Nuvio is not affiliated
+with or endorsed by these projects.
+
+Full, unchanged license texts are included here as ODBL-1.0.txt and DBCL-1.0.txt.
+Their authoritative URLs, hashes, the exact bundled JSON identity, and unresolved
+upstream revision/generation evidence are recorded in PROVENANCE.json. The
+JSON itself remains at the desktop resource root as anime-list-mini.json; it is
+not encrypted or changed by this notice addition. This notice does not claim
+that the missing provenance or recipient-source-delivery work is complete.

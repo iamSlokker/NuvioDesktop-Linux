@@ -103,7 +103,11 @@ Application-image build (after providing the documented verified dependencies):
 Linux native/media build and installation layout are described in
 application/tools/linux/media-runtime/README.md and
 application/tools/linux/packaging/README.md. Preserve the sandbox when rebuilding
-or installing modified versions. No release or legal certification is implied.
+or installing modified versions. When present, consult
+application/docs/compliance/modified-build-and-install.md for the exact shared
+media replacement/repack paths, format-specific installation boundaries and
+remaining untested/static-link source gaps. No release or legal certification
+is implied.
 """
 
 
