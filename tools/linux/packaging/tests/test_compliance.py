@@ -6,6 +6,7 @@ import sys
 import tarfile
 import tempfile
 import unittest
+import warnings
 import zipfile
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
@@ -96,6 +97,26 @@ class ComplianceInventoryTest(unittest.TestCase):
         jar(after, {'new': b'a'})
         with self.assertRaises(ValueError): inv.subset_modification(before, after)
 
+    def test_repacking_rejects_duplicate_members_in_either_archive(self):
+        before, after = self.root / 'before.jar', self.root / 'after.jar'
+        for duplicate_archive in [before, after]:
+            for entry in ['X.class', 'META-INF/LICENSE', 'native/libfixture.so', 'directory/']:
+                with self.subTest(archive=duplicate_archive.name, entry=entry):
+                    entries = {'X.class': b'original', entry: b'original'}
+                    jar(before, entries)
+                    jar(after, entries)
+                    # Named ZIP lookups return the last duplicate. The prior subset proof
+                    # discarded the first entry, allowing changed content to hide behind it.
+                    with warnings.catch_warnings():
+                        warnings.simplefilter('ignore', UserWarning)
+                        with zipfile.ZipFile(duplicate_archive, 'w') as z:
+                            if entry != 'X.class':
+                                z.writestr('X.class', b'original')
+                            z.writestr(entry, b'different content')
+                            z.writestr(entry, b'original')
+                    with self.assertRaisesRegex(ValueError, 'Duplicate JAR member'):
+                        inv.subset_modification(before, after)
+
 
 class ApplicationSourceArchiveTest(unittest.TestCase):
     def setUp(self):
@@ -176,6 +197,12 @@ class MediaSourceCollectionTest(unittest.TestCase):
         with self.assertRaises(ValueError): media.required_inputs({'sources': [self.spec, self.spec]})
         for key, value in [('name', '../secret'), ('url', 'http://example.test'), ('sha256', 'bad')]:
             with self.subTest(key=key), self.assertRaises(ValueError): media.required_inputs({'sources': [dict(self.spec, **{key: value})]})
+
+    def test_ca_bootstrap_binary_is_not_claimed_as_corresponding_source(self):
+        package = dict(self.spec, name='ca-certificates', url='https://example.test/ca-certificates.deb')
+        rows = media.required_inputs({'sources': [self.spec, package]})
+        self.assertEqual(rows[0]['kind'], 'source')
+        self.assertEqual(rows[1]['kind'], 'bootstrap-data-package')
 
 
 class CommonLicenseTextsTest(unittest.TestCase):

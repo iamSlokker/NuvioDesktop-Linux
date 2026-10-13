@@ -4,6 +4,17 @@
 source/provenance and licensing-evidence review, not legal certification or
 permission to publish. No distribution binaries were rebuilt or redistributed for this audit.
 
+**Follow-up:** the final engineering mission retained additional verified JVM,
+JDK/native, Ubuntu and platform source evidence, reviewed every JAR notice flag,
+and found authoritative Sans restriction evidence. See the
+[source-delivery plan](source-delivery-plan.md),
+[dependency supplement](dependency-source-retention.md),
+[platform supplement](platform-source-evidence.md) and
+[final readiness report](../FINAL-READINESS-REPORT.md). Findings below about
+missing materials in the **original CI artifact** remain true; later local
+retention did not modify that artifact or create a recipient source offer.
+All four redistribution assessments remain BLOCKED.
+
 ## Evidence boundary
 
 - Reviewed repository baseline: `a96ce242f084a41ecf433c206958f1cbffa53345` (`linux`).

@@ -6,6 +6,15 @@ are independent wrappers of that application image; Flatpak consumes the same
 source-built image, never either final native package. Windows/macOS distribution
 settings and player behavior are unchanged.
 
+Current development and release gates are in the
+[final readiness report](../../../docs/FINAL-READINESS-REPORT.md). The latest
+inspected three-format run is 38397205286 at `fce98dc1633b51f813c20965e05941c2745beb8c`;
+it is not a package of the later `linux`/compliance commits. Owner acceptance of
+the final login SVG in AppImage/Flatpak, account switching and selected playback
+does not establish full desktop QA. Historical observations below retain their
+original scope. Source/rights/recipient-availability blockers apply before any
+new binary-producing workflow or publication is authorized.
+
 ## Build without a desktop
 
 Requirements: rootless Podman, Python 3.10+, Bash, curl, jq, GNU coreutils,
@@ -263,12 +272,11 @@ and must never be shipped. The official values come from public upstream
 documentation, never a developer machine.
 
 Desktop custom-server configuration is preserved. `AuthRepository.initialize`
-starts the Supabase session collector even on initial startup; correcting the
-packaged constants does not establish live account/session acceptance. Fresh
-packaged startup/login and backend services still require manual validation.
-Anonymous local sign-in is not evidence of that acceptance.
-Test fresh startup/login with the public defaults before publication; optional
-service configuration and redistribution approval remain separate decisions.
+starts the Supabase session collector even on initial startup. The owner has
+since accepted official login/account switching within the tested Bazzite flows;
+correct constants or anonymous local sign-in alone would not establish that.
+Broader account/session/provider acceptance remains separate. Optional service
+configuration and redistribution approval remain explicit decisions.
 
 Generated `TraktConfig` credentials are always blank and are not read by current
 Trakt consumers: `TraktSettingsRepository` uses a user-configured public client ID,

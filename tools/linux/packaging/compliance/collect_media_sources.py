@@ -22,7 +22,10 @@ def sha(path):
 def required_inputs(manifest):
     result = []
     for source in manifest['sources']:
-        result.append(dict(name=source['name'], version=source['version'], kind='source',
+        # The manifest also contains a data-only CA bootstrap .deb. Retain it as
+        # an exact build input without mislabelling a binary package as source.
+        kind = 'bootstrap-data-package' if source['url'].endswith('.deb') else 'source'
+        result.append(dict(name=source['name'], version=source['version'], kind=kind,
                            url=source['url'], sha256=source['sha256']))
         if source.get('signature'):
             sig = source['signature']

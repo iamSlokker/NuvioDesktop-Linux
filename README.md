@@ -16,6 +16,14 @@
 
 This fork is unaffiliated with the Nuvio team. Don't worry about the commit disparity, Nuvio's team makes many small commits while I bundle everything into a single release commit for simplicity as this is mostly a solo focused project.
 
+Linux development status and redistribution gates are documented in the
+[final readiness report](docs/FINAL-READINESS-REPORT.md). See
+[Linux support and recovery](docs/linux-support-and-recovery.md) for actual
+X11/XWayland, hardware, package and service boundaries. The inherited feature
+overview below includes Windows-specific features; it is not a Linux parity or
+native HDR guarantee. DEB, Flatpak and AppImage development artifacts exist, but
+redistribution remains blocked by the documented source/rights/availability review.
+
 # Home Theatre features
 
 * Mouse, keyboard or controller friendly TV Mode with full-screen navigation, adaptive hero, row-jump navigation, cast and award information. This applies across all panels, not just home.

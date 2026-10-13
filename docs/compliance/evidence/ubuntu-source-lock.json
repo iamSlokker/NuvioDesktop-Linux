@@ -1,0 +1,4560 @@
+{
+  "authenticated_indexes": [
+    {
+      "indexes": [
+        {
+          "path": "jammy-main.Sources",
+          "sha256": "467f4bfda3f14c5652282bf9a91b39a18a9e2b017963a40595e41ef7fcc4f2e6",
+          "size": 5525682
+        },
+        {
+          "path": "jammy-universe.Sources",
+          "sha256": "d6bdaaf3c739aaf8fd8fa7ca78f7363a30f71955d27710a2ea8e7614ad28a499",
+          "size": 70572575
+        }
+      ],
+      "inrelease_sha256": "c14060cd8c6d625874dfcb9523a35a395bf4865c28b6b6a82569ef326fe92dc6",
+      "signer": "F6ECB3762474EDA9D21B7022871920D1991BC93C",
+      "suite": "jammy"
+    },
+    {
+      "indexes": [
+        {
+          "path": "jammy-updates-main.Sources",
+          "sha256": "dc0bd4e86d0a72b84b89f8a3179b7ef2218b5f0ec85b54163c4330836b332154",
+          "size": 2913462
+        },
+        {
+          "path": "jammy-updates-universe.Sources",
+          "sha256": "5e8ef49f12a5e765a275de80304df665975acabde0bcb2038a37408d50a30ef9",
+          "size": 2410397
+        }
+      ],
+      "inrelease_sha256": "5d154c58ef3090c747267371cf34daf0e832e239460cb0a71babfd4a3150c512",
+      "signer": "F6ECB3762474EDA9D21B7022871920D1991BC93C",
+      "suite": "jammy-updates"
+    },
+    {
+      "indexes": [
+        {
+          "path": "jammy-security-main.Sources",
+          "sha256": "b6f05e1aa504959f0bb46c10adda69599e0cfc2999792659a9aa606a48788df2",
+          "size": 1854257
+        },
+        {
+          "path": "jammy-security-universe.Sources",
+          "sha256": "1ce2caec083ca5982fb0ede396f7a52e5a073b4d6684f08bc45056d5179fc194",
+          "size": 1754109
+        }
+      ],
+      "inrelease_sha256": "28175ead7a6928571d75102fb607937cf902a4ec4bc420e36982734af06f1f67",
+      "signer": "F6ECB3762474EDA9D21B7022871920D1991BC93C",
+      "suite": "jammy-security"
+    }
+  ],
+  "availability": "local retention only; no recipient offer or legal certification",
+  "builder_image_id": "a465827efdede9029b1560ce793085a115508500bad83889f167530efcd81ed2",
+  "schema_version": 1,
+  "scope": "exact Ubuntu source inputs for supplied package inventory; not full OCI/native static closure",
+  "snapshot": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/",
+  "source_packages": [
+    {
+      "binaries": [
+        {
+          "package": "libaa1",
+          "version": "1.4p5-50build1"
+        }
+      ],
+      "inputs": [
+        {
+          "filename": "aalib_1.4p5-50build1.debian.tar.xz",
+          "sha256": "cdf4f411977964b8a3e294a7805bf9a94385672167f726a1ab6f0fbab38a3dfe",
+          "size": 16436,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/a/aalib/aalib_1.4p5-50build1.debian.tar.xz"
+        },
+        {
+          "filename": "aalib_1.4p5-50build1.dsc",
+          "sha256": "352d64870bc3406b7ee37ce1f3631b8d370a5d1e0a0da46fb5acbd03f3d97f37",
+          "size": 1691,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/a/aalib/aalib_1.4p5-50build1.dsc"
+        },
+        {
+          "filename": "aalib_1.4p5.orig.tar.gz",
+          "sha256": "fbddda9230cf6ee2a4f5706b4b11e2190ae45f5eda1f0409dc4f99b35e0a70ee",
+          "size": 391028,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/a/aalib/aalib_1.4p5.orig.tar.gz"
+        }
+      ],
+      "package": "aalib",
+      "version": "1.4p5-50build1"
+    },
+    {
+      "binaries": [
+        {
+          "package": "libabsl20210324",
+          "version": "0~20210324.2-2ubuntu0.3"
+        }
+      ],
+      "inputs": [
+        {
+          "filename": "abseil_0~20210324.2-2ubuntu0.3.debian.tar.xz",
+          "sha256": "f14598ffba96f63624316e997a51c2e374118005bd275e0de57c9ccfea6abf42",
+          "size": 40120,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/a/abseil/abseil_0~20210324.2-2ubuntu0.3.debian.tar.xz"
+        },
+        {
+          "filename": "abseil_0~20210324.2-2ubuntu0.3.dsc",
+          "sha256": "92a0713597d23eb2fb5071452596bce3012771d3a57a2dedcf3996a234699fe9",
+          "size": 2614,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/a/abseil/abseil_0~20210324.2-2ubuntu0.3.dsc"
+        },
+        {
+          "filename": "abseil_0~20210324.2.orig.tar.gz",
+          "sha256": "1680eeea723a4164259dc8660bc06aafb4e73374b9f15a6891afab9c029d4825",
+          "size": 1774104,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/a/abseil/abseil_0~20210324.2.orig.tar.gz"
+        }
+      ],
+      "package": "abseil",
+      "version": "0~20210324.2-2ubuntu0.3"
+    },
+    {
+      "binaries": [
+        {
+          "package": "adwaita-icon-theme",
+          "version": "41.0-1ubuntu1"
+        }
+      ],
+      "inputs": [
+        {
+          "filename": "adwaita-icon-theme_41.0-1ubuntu1.debian.tar.xz",
+          "sha256": "edee14d6020196ae22c5c27d259e9dda5e19038e5e6ff3cf30a39077fea73fe0",
+          "size": 36476,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/a/adwaita-icon-theme/adwaita-icon-theme_41.0-1ubuntu1.debian.tar.xz"
+        },
+        {
+          "filename": "adwaita-icon-theme_41.0-1ubuntu1.dsc",
+          "sha256": "2e44d528984ecc66eae8d1cfc835532d03012d00c74288773281e10c5837cfe5",
+          "size": 1930,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/a/adwaita-icon-theme/adwaita-icon-theme_41.0-1ubuntu1.dsc"
+        },
+        {
+          "filename": "adwaita-icon-theme_41.0.orig.tar.xz",
+          "sha256": "ef5339d8c35fcad5d10481b70480803f0fa20b3d3cbc339238fcaceeaee01eba",
+          "size": 17086916,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/a/adwaita-icon-theme/adwaita-icon-theme_41.0.orig.tar.xz"
+        }
+      ],
+      "package": "adwaita-icon-theme",
+      "version": "41.0-1ubuntu1"
+    },
+    {
+      "binaries": [
+        {
+          "package": "libasound2",
+          "version": "1.2.6.1-1ubuntu1.2"
+        }
+      ],
+      "inputs": [
+        {
+          "filename": "alsa-lib_1.2.6.1-1ubuntu1.2.debian.tar.xz",
+          "sha256": "fd30152719525f094a951c63811bfcb7410f5d6b8d63987e9f71a95deb2a95e7",
+          "size": 34256,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/a/alsa-lib/alsa-lib_1.2.6.1-1ubuntu1.2.debian.tar.xz"
+        },
+        {
+          "filename": "alsa-lib_1.2.6.1-1ubuntu1.2.dsc",
+          "sha256": "e333bd3c3c60b8617dbc956f06f5b7dad0d862288542d272a267d360fd5c3b55",
+          "size": 3010,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/a/alsa-lib/alsa-lib_1.2.6.1-1ubuntu1.2.dsc"
+        },
+        {
+          "filename": "alsa-lib_1.2.6.1.orig.tar.bz2",
+          "sha256": "ad582993d52cdb5fb159a0beab60a6ac57eab0cc1bdf85dc4db6d6197f02333f",
+          "size": 1079670,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/a/alsa-lib/alsa-lib_1.2.6.1.orig.tar.bz2"
+        },
+        {
+          "filename": "alsa-lib_1.2.6.1.orig.tar.bz2.asc",
+          "sha256": "6a1f4df007b3e1804c57162e9fef8f2b99c4d7ea48bd4def27d0b9b7dab7350c",
+          "size": 833,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/a/alsa-lib/alsa-lib_1.2.6.1.orig.tar.bz2.asc"
+        }
+      ],
+      "package": "alsa-lib",
+      "version": "1.2.6.1-1ubuntu1.2"
+    },
+    {
+      "binaries": [
+        {
+          "package": "libaom3",
+          "version": "3.3.0-1ubuntu0.1"
+        }
+      ],
+      "inputs": [
+        {
+          "filename": "aom_3.3.0-1ubuntu0.1.debian.tar.xz",
+          "sha256": "59895e30f07c22e9784102b2244219a03c29d529334ebace61e634232c02a53f",
+          "size": 14276,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/universe/a/aom/aom_3.3.0-1ubuntu0.1.debian.tar.xz"
+        },
+        {
+          "filename": "aom_3.3.0-1ubuntu0.1.dsc",
+          "sha256": "b62109a6c1f94ecd07527cafaf288eac6a2bf1f25a7247bbc74d6407c3c30d75",
+          "size": 2175,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/universe/a/aom/aom_3.3.0-1ubuntu0.1.dsc"
+        },
+        {
+          "filename": "aom_3.3.0.orig.tar.gz",
+          "sha256": "298ced1f5aeed8f7c4e21138eeb646b19486e9c6e2d711640f4ae5822ad330c1",
+          "size": 4768166,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/universe/a/aom/aom_3.3.0.orig.tar.gz"
+        }
+      ],
+      "package": "aom",
+      "version": "3.3.0-1ubuntu0.1"
+    },
+    {
+      "binaries": [
+        {
+          "package": "libapparmor1",
+          "version": "3.0.4-2ubuntu2.5"
+        }
+      ],
+      "inputs": [
+        {
+          "filename": "apparmor_3.0.4-2ubuntu2.5.debian.tar.xz",
+          "sha256": "358eac264f0a12b879af79a20b9c542341f494f26c566eea2a2a4a69d09d954a",
+          "size": 138884,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/a/apparmor/apparmor_3.0.4-2ubuntu2.5.debian.tar.xz"
+        },
+        {
+          "filename": "apparmor_3.0.4-2ubuntu2.5.dsc",
+          "sha256": "c46390e4ce1dbe9341c92714c8b289d4c3055714ed11a529cf0cf82e09dc1f4a",
+          "size": 3320,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/a/apparmor/apparmor_3.0.4-2ubuntu2.5.dsc"
+        },
+        {
+          "filename": "apparmor_3.0.4.orig.tar.gz",
+          "sha256": "09bf48d7a171f9790c39a1404bad105a788934cfe77b7490c7f5c63c2576b725",
+          "size": 7796852,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/a/apparmor/apparmor_3.0.4.orig.tar.gz"
+        }
+      ],
+      "package": "apparmor",
+      "version": "3.0.4-2ubuntu2.5"
+    },
+    {
+      "binaries": [
+        {
+          "package": "libatk-bridge2.0-0",
+          "version": "2.38.0-3"
+        }
+      ],
+      "inputs": [
+        {
+          "filename": "at-spi2-atk_2.38.0-3.debian.tar.xz",
+          "sha256": "4209f16cfb970c97320fb9842604edf4c3ea362de29ba0b00e22543b023838f2",
+          "size": 10740,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/a/at-spi2-atk/at-spi2-atk_2.38.0-3.debian.tar.xz"
+        },
+        {
+          "filename": "at-spi2-atk_2.38.0-3.dsc",
+          "sha256": "10decc2dc684dd907314f79e231c796408c91910c6b63f8accd516cb09a79b9b",
+          "size": 2632,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/a/at-spi2-atk/at-spi2-atk_2.38.0-3.dsc"
+        },
+        {
+          "filename": "at-spi2-atk_2.38.0.orig.tar.xz",
+          "sha256": "cfa008a5af822b36ae6287f18182c40c91dd699c55faa38605881ed175ca464f",
+          "size": 97464,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/a/at-spi2-atk/at-spi2-atk_2.38.0.orig.tar.xz"
+        }
+      ],
+      "package": "at-spi2-atk",
+      "version": "2.38.0-3"
+    },
+    {
+      "binaries": [
+        {
+          "package": "libatspi2.0-0",
+          "version": "2.44.0-3"
+        }
+      ],
+      "inputs": [
+        {
+          "filename": "at-spi2-core_2.44.0-3.debian.tar.xz",
+          "sha256": "60c996f063bb9722c729aa191b9e7a0ef51e479872544cf008d613ddb6a22c6d",
+          "size": 11896,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/a/at-spi2-core/at-spi2-core_2.44.0-3.debian.tar.xz"
+        },
+        {
+          "filename": "at-spi2-core_2.44.0-3.dsc",
+          "sha256": "a1fc91ef1d34305678f7a2223810c8631ab65b87b77b767d1a1352f48a9df02b",
+          "size": 2743,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/a/at-spi2-core/at-spi2-core_2.44.0-3.dsc"
+        },
+        {
+          "filename": "at-spi2-core_2.44.0.orig.tar.xz",
+          "sha256": "7eee3cf285b089060fd6b6e51b3eb2cacf752cca3a082c7f4c2c5ab841e51353",
+          "size": 209692,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/a/at-spi2-core/at-spi2-core_2.44.0.orig.tar.xz"
+        }
+      ],
+      "package": "at-spi2-core",
+      "version": "2.44.0-3"
+    },
+    {
+      "binaries": [
+        {
+          "package": "libatk1.0-0",
+          "version": "2.36.0-3build1"
+        }
+      ],
+      "inputs": [
+        {
+          "filename": "atk1.0_2.36.0-3build1.debian.tar.xz",
+          "sha256": "2122335c9ac1e98a959766838fbb4b0dfefdcda8b89ddb6a34286655e33ac646",
+          "size": 12228,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/a/atk1.0/atk1.0_2.36.0-3build1.debian.tar.xz"
+        },
+        {
+          "filename": "atk1.0_2.36.0-3build1.dsc",
+          "sha256": "8ccdb950635739c256f7f986845a44fb839a70120fbc5f267d9ea785b348b73a",
+          "size": 2310,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/a/atk1.0/atk1.0_2.36.0-3build1.dsc"
+        },
+        {
+          "filename": "atk1.0_2.36.0.orig.tar.xz",
+          "sha256": "fb76247e369402be23f1f5c65d38a9639c1164d934e40f6a9cf3c9e96b652788",
+          "size": 299100,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/a/atk1.0/atk1.0_2.36.0.orig.tar.xz"
+        }
+      ],
+      "package": "atk1.0",
+      "version": "2.36.0-3build1"
+    },
+    {
+      "binaries": [
+        {
+          "package": "libbrotli1",
+          "version": "1.0.9-2build6"
+        }
+      ],
+      "inputs": [
+        {
+          "filename": "brotli_1.0.9-2build6.debian.tar.xz",
+          "sha256": "18bade39edd19e24c6a115b0053f84ebb909a9386c9a657ee6768b49a2af9974",
+          "size": 5812,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/b/brotli/brotli_1.0.9-2build6.debian.tar.xz"
+        },
+        {
+          "filename": "brotli_1.0.9-2build6.dsc",
+          "sha256": "acd215cccf71c8d077d03b9550d7a23c1963c31c42f3062076cdb5f69ac86c6f",
+          "size": 1940,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/b/brotli/brotli_1.0.9-2build6.dsc"
+        },
+        {
+          "filename": "brotli_1.0.9.orig.tar.gz",
+          "sha256": "f9e8d81d0405ba66d181529af42a3354f838c939095ff99930da6aa9cdf6fe46",
+          "size": 486984,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/b/brotli/brotli_1.0.9.orig.tar.gz"
+        }
+      ],
+      "package": "brotli",
+      "version": "1.0.9-2build6"
+    },
+    {
+      "binaries": [
+        {
+          "package": "bubblewrap",
+          "version": "0.6.1-1ubuntu0.3"
+        }
+      ],
+      "inputs": [
+        {
+          "filename": "bubblewrap_0.6.1-1ubuntu0.3.debian.tar.xz",
+          "sha256": "463b0376becac1bb6c0e3068e5a4f5e129715cd29a7d0f585e86d5fa047b81cd",
+          "size": 13500,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/b/bubblewrap/bubblewrap_0.6.1-1ubuntu0.3.debian.tar.xz"
+        },
+        {
+          "filename": "bubblewrap_0.6.1-1ubuntu0.3.dsc",
+          "sha256": "5859fe8b6214d4fe4315641ad72d6ee6c3e714a45f509e5223f7ff0811f80522",
+          "size": 2280,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/b/bubblewrap/bubblewrap_0.6.1-1ubuntu0.3.dsc"
+        },
+        {
+          "filename": "bubblewrap_0.6.1.orig.tar.xz",
+          "sha256": "9609c7dc162bc68abc29abfab566934fdca37520a15ed01b675adcf3a4303282",
+          "size": 145500,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/b/bubblewrap/bubblewrap_0.6.1.orig.tar.xz"
+        }
+      ],
+      "package": "bubblewrap",
+      "version": "0.6.1-1ubuntu0.3"
+    },
+    {
+      "binaries": [
+        {
+          "package": "libcairo-gobject2",
+          "version": "1.16.0-5ubuntu2.1"
+        },
+        {
+          "package": "libcairo2",
+          "version": "1.16.0-5ubuntu2.1"
+        }
+      ],
+      "inputs": [
+        {
+          "filename": "cairo_1.16.0-5ubuntu2.1.debian.tar.xz",
+          "sha256": "bf29ca80c54f34affeffc7d356934c407e492304d42a5426ce144adc45083398",
+          "size": 35940,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/c/cairo/cairo_1.16.0-5ubuntu2.1.debian.tar.xz"
+        },
+        {
+          "filename": "cairo_1.16.0-5ubuntu2.1.dsc",
+          "sha256": "695111fafc7dd5f2a8012efb628ed71c4aeae6b112ba4e7995aeafe7e4a609f8",
+          "size": 2838,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/c/cairo/cairo_1.16.0-5ubuntu2.1.dsc"
+        },
+        {
+          "filename": "cairo_1.16.0.orig.tar.xz",
+          "sha256": "5e7b29b3f113ef870d1e3ecf8adf21f923396401604bda16d44be45e66052331",
+          "size": 41997432,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/c/cairo/cairo_1.16.0.orig.tar.xz"
+        }
+      ],
+      "package": "cairo",
+      "version": "1.16.0-5ubuntu2.1"
+    },
+    {
+      "binaries": [
+        {
+          "package": "libcdparanoia0",
+          "version": "3.10.2+debian-14build2"
+        }
+      ],
+      "inputs": [
+        {
+          "filename": "cdparanoia_3.10.2+debian-14build2.debian.tar.xz",
+          "sha256": "c621bfc07340dabe07c5af052314ad720d361a29003e96c8a25447f854cf96d4",
+          "size": 61704,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/c/cdparanoia/cdparanoia_3.10.2+debian-14build2.debian.tar.xz"
+        },
+        {
+          "filename": "cdparanoia_3.10.2+debian-14build2.dsc",
+          "sha256": "df35753ad505b99566ad2c9251c2f14267ae8ae5a05aa3f6ceb2b9e85d63ba5a",
+          "size": 1881,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/c/cdparanoia/cdparanoia_3.10.2+debian-14build2.dsc"
+        },
+        {
+          "filename": "cdparanoia_3.10.2+debian.orig.tar.gz",
+          "sha256": "402f8b8b4370dbdc276dfd624f768956d212893542a91ecbaa6b4206b2afef03",
+          "size": 178436,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/c/cdparanoia/cdparanoia_3.10.2+debian.orig.tar.gz"
+        }
+      ],
+      "package": "cdparanoia",
+      "version": "3.10.2+debian-14build2"
+    },
+    {
+      "binaries": [
+        {
+          "package": "libdav1d5",
+          "version": "0.9.2-1"
+        }
+      ],
+      "inputs": [
+        {
+          "filename": "dav1d_0.9.2-1.debian.tar.xz",
+          "sha256": "e0f958cda906b439c12633aa7c35e718803e3a2103f8f1d82333ef2acaed3b6b",
+          "size": 7896,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/universe/d/dav1d/dav1d_0.9.2-1.debian.tar.xz"
+        },
+        {
+          "filename": "dav1d_0.9.2-1.dsc",
+          "sha256": "c368585f17b1d1b598b4f5cfedbaefe740fa721033a567b61435caf4adcb6fbb",
+          "size": 2332,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/universe/d/dav1d/dav1d_0.9.2-1.dsc"
+        },
+        {
+          "filename": "dav1d_0.9.2.orig.tar.xz",
+          "sha256": "e3235ab6c43c0135b0db1d131e1923fad4c84db9d85683e30b91b33a52d61c71",
+          "size": 713352,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/universe/d/dav1d/dav1d_0.9.2.orig.tar.xz"
+        },
+        {
+          "filename": "dav1d_0.9.2.orig.tar.xz.asc",
+          "sha256": "4eb1d0dfa39bef5634005064d44939be9e5278bf606eb67a06be33a47998b019",
+          "size": 195,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/universe/d/dav1d/dav1d_0.9.2.orig.tar.xz.asc"
+        }
+      ],
+      "package": "dav1d",
+      "version": "0.9.2-1"
+    },
+    {
+      "binaries": [
+        {
+          "package": "libdb5.3",
+          "version": "5.3.28+dfsg1-0.8ubuntu3"
+        }
+      ],
+      "inputs": [
+        {
+          "filename": "db5.3_5.3.28+dfsg1-0.8ubuntu3.debian.tar.xz",
+          "sha256": "b141784b0395dcd4b9c2e3bf4eb1e7948d938a6f8643fac5285ca43e643bf63b",
+          "size": 32028,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/d/db5.3/db5.3_5.3.28+dfsg1-0.8ubuntu3.debian.tar.xz"
+        },
+        {
+          "filename": "db5.3_5.3.28+dfsg1-0.8ubuntu3.dsc",
+          "sha256": "b183b38fb1e90510dd962c30f8c652a1e55b03a4c1d99dbac9f0a128abe52d0e",
+          "size": 2875,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/d/db5.3/db5.3_5.3.28+dfsg1-0.8ubuntu3.dsc"
+        },
+        {
+          "filename": "db5.3_5.3.28+dfsg1.orig.tar.xz",
+          "sha256": "b19bf3dd8ce74b95a7b215be9a7c8489e8e8f18da60d64d6340a06e75f497749",
+          "size": 19723860,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/d/db5.3/db5.3_5.3.28+dfsg1.orig.tar.xz"
+        }
+      ],
+      "package": "db5.3",
+      "version": "5.3.28+dfsg1-0.8ubuntu3"
+    },
+    {
+      "binaries": [
+        {
+          "package": "libdbus-1-3",
+          "version": "1.12.20-2ubuntu4.1"
+        }
+      ],
+      "inputs": [
+        {
+          "filename": "dbus_1.12.20-2ubuntu4.1.debian.tar.xz",
+          "sha256": "c1f655920ef22949145c7b2287a057012c71ae39b3998b8bc260ce0609c30585",
+          "size": 65220,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/d/dbus/dbus_1.12.20-2ubuntu4.1.debian.tar.xz"
+        },
+        {
+          "filename": "dbus_1.12.20-2ubuntu4.1.dsc",
+          "sha256": "9eb0861266c097572ae79ced86c85fda3401c6544f1d08151213683e036f8be9",
+          "size": 3271,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/d/dbus/dbus_1.12.20-2ubuntu4.1.dsc"
+        },
+        {
+          "filename": "dbus_1.12.20.orig.tar.gz",
+          "sha256": "f77620140ecb4cdc67f37fb444f8a6bea70b5b6461f12f1cbe2cec60fa7de5fe",
+          "size": 2095511,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/d/dbus/dbus_1.12.20.orig.tar.gz"
+        }
+      ],
+      "package": "dbus",
+      "version": "1.12.20-2ubuntu4.1"
+    },
+    {
+      "binaries": [
+        {
+          "package": "dconf-gsettings-backend",
+          "version": "0.40.0-3ubuntu0.1"
+        }
+      ],
+      "inputs": [
+        {
+          "filename": "dconf_0.40.0-3ubuntu0.1.debian.tar.xz",
+          "sha256": "a213354ab6b170723af2e2b6d9ccccdf877c74983b38a1cbfbc62ffd42e6308b",
+          "size": 11972,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/d/dconf/dconf_0.40.0-3ubuntu0.1.debian.tar.xz"
+        },
+        {
+          "filename": "dconf_0.40.0-3ubuntu0.1.dsc",
+          "sha256": "196dd73182ed593e11bdc84a903db57c0a53cbf43272cc762b4124b856ac087a",
+          "size": 2791,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/d/dconf/dconf_0.40.0-3ubuntu0.1.dsc"
+        },
+        {
+          "filename": "dconf_0.40.0.orig.tar.xz",
+          "sha256": "cf7f22a4c9200421d8d3325c5c1b8b93a36843650c9f95d6451e20f0bcb24533",
+          "size": 117764,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/d/dconf/dconf_0.40.0.orig.tar.xz"
+        }
+      ],
+      "package": "dconf",
+      "version": "0.40.0-3ubuntu0.1"
+    },
+    {
+      "binaries": [
+        {
+          "package": "libcom-err2",
+          "version": "1.46.5-2ubuntu1.2"
+        }
+      ],
+      "inputs": [
+        {
+          "filename": "e2fsprogs_1.46.5-2ubuntu1.2.debian.tar.xz",
+          "sha256": "b04fad2b12787628497127e6fab76de11c54229e08a406eba126df13f5224fdf",
+          "size": 86604,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/e/e2fsprogs/e2fsprogs_1.46.5-2ubuntu1.2.debian.tar.xz"
+        },
+        {
+          "filename": "e2fsprogs_1.46.5-2ubuntu1.2.dsc",
+          "sha256": "6f41e832d3e69bff96374f20e886a286f6dd8cfff68c1f0fc902281ed365560a",
+          "size": 3190,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/e/e2fsprogs/e2fsprogs_1.46.5-2ubuntu1.2.dsc"
+        },
+        {
+          "filename": "e2fsprogs_1.46.5.orig.tar.gz",
+          "sha256": "b7430d1e6b7b5817ce8e36d7c8c7c3249b3051d0808a96ffd6e5c398e4e2fbb9",
+          "size": 9530158,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/e/e2fsprogs/e2fsprogs_1.46.5.orig.tar.gz"
+        },
+        {
+          "filename": "e2fsprogs_1.46.5.orig.tar.gz.asc",
+          "sha256": "b1e248ed73d4d67ac0cf7760e780e0a5cd2db85bbb9a5dcc235538b596128916",
+          "size": 488,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/e/e2fsprogs/e2fsprogs_1.46.5.orig.tar.gz.asc"
+        }
+      ],
+      "package": "e2fsprogs",
+      "version": "1.46.5-2ubuntu1.2"
+    },
+    {
+      "binaries": [
+        {
+          "package": "libdw1",
+          "version": "0.186-1ubuntu0.1"
+        },
+        {
+          "package": "libelf1",
+          "version": "0.186-1ubuntu0.1"
+        }
+      ],
+      "inputs": [
+        {
+          "filename": "elfutils_0.186-1ubuntu0.1.debian.tar.xz",
+          "sha256": "01eae51a051c8fae1d2acc3a70dc6b06282448e9d5dc45adedf902f8e381d9f6",
+          "size": 39200,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/e/elfutils/elfutils_0.186-1ubuntu0.1.debian.tar.xz"
+        },
+        {
+          "filename": "elfutils_0.186-1ubuntu0.1.dsc",
+          "sha256": "d43ad325a63e52375fe807ce2c78b29a8bdfc6ae1a1879628fd13b461696824a",
+          "size": 3349,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/e/elfutils/elfutils_0.186-1ubuntu0.1.dsc"
+        },
+        {
+          "filename": "elfutils_0.186.orig.tar.bz2",
+          "sha256": "7f6fb9149b1673d38d9178a0d3e0fb8a1ec4f53a9f4c2ff89469609879641177",
+          "size": 9230491,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/e/elfutils/elfutils_0.186.orig.tar.bz2"
+        }
+      ],
+      "package": "elfutils",
+      "version": "0.186-1ubuntu0.1"
+    },
+    {
+      "binaries": [
+        {
+          "package": "libenchant-2-2",
+          "version": "2.3.2-1ubuntu2"
+        }
+      ],
+      "inputs": [
+        {
+          "filename": "enchant-2_2.3.2-1ubuntu2.debian.tar.xz",
+          "sha256": "287c1430672737ab4f351d6745951ae1eb16bf2f520154ad0fd0ec2e5b388c83",
+          "size": 10372,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/e/enchant-2/enchant-2_2.3.2-1ubuntu2.debian.tar.xz"
+        },
+        {
+          "filename": "enchant-2_2.3.2-1ubuntu2.dsc",
+          "sha256": "f8f3551eba7809da052861743cc99f3184554f527e794b619cc2ff2752f5412a",
+          "size": 1843,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/e/enchant-2/enchant-2_2.3.2-1ubuntu2.dsc"
+        },
+        {
+          "filename": "enchant-2_2.3.2.orig.tar.gz",
+          "sha256": "ce9ba47fd4d34031bd69445598a698a6611602b2b0e91d705e91a6f5099ead6e",
+          "size": 991782,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/e/enchant-2/enchant-2_2.3.2.orig.tar.gz"
+        }
+      ],
+      "package": "enchant-2",
+      "version": "2.3.2-1ubuntu2"
+    },
+    {
+      "binaries": [
+        {
+          "package": "libexpat1",
+          "version": "2.4.7-1ubuntu0.9"
+        }
+      ],
+      "inputs": [
+        {
+          "filename": "expat_2.4.7-1ubuntu0.9.debian.tar.xz",
+          "sha256": "769abc2ab3b3a911160cc9d6fdab8d3f48de7ffa6ad969a8a8e6c08b0fcb64ce",
+          "size": 59156,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/e/expat/expat_2.4.7-1ubuntu0.9.debian.tar.xz"
+        },
+        {
+          "filename": "expat_2.4.7-1ubuntu0.9.dsc",
+          "sha256": "9ff52aea8b3e05014959059d9455f94cb3850d942fb1b0e058e0630bcc8e78bc",
+          "size": 1491,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/e/expat/expat_2.4.7-1ubuntu0.9.dsc"
+        },
+        {
+          "filename": "expat_2.4.7.orig.tar.gz",
+          "sha256": "ddc1111651cdd4095b67c9d9ed46babfb8fb64843d89ff785399f5739b84867b",
+          "size": 8316374,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/e/expat/expat_2.4.7.orig.tar.gz"
+        }
+      ],
+      "package": "expat",
+      "version": "2.4.7-1ubuntu0.9"
+    },
+    {
+      "binaries": [
+        {
+          "package": "libflac8",
+          "version": "1.3.3-2ubuntu0.2"
+        }
+      ],
+      "inputs": [
+        {
+          "filename": "flac_1.3.3-2ubuntu0.2.debian.tar.xz",
+          "sha256": "31b31b70a6081b92fdc422b87483c50ddc8adcbd468c9783e6c8d6165d0cffc4",
+          "size": 19988,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/f/flac/flac_1.3.3-2ubuntu0.2.debian.tar.xz"
+        },
+        {
+          "filename": "flac_1.3.3-2ubuntu0.2.dsc",
+          "sha256": "31024ace7d30aaaf5ce06f2520a20fa46f8f1610febb5b4eac62662fc2d4eb9e",
+          "size": 2356,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/f/flac/flac_1.3.3-2ubuntu0.2.dsc"
+        },
+        {
+          "filename": "flac_1.3.3.orig.tar.xz",
+          "sha256": "213e82bd716c9de6db2f98bcadbc4c24c7e2efe8c75939a1a84e28539c4e1748",
+          "size": 1044472,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/f/flac/flac_1.3.3.orig.tar.xz"
+        }
+      ],
+      "package": "flac",
+      "version": "1.3.3-2ubuntu0.2"
+    },
+    {
+      "binaries": [
+        {
+          "package": "libflite1",
+          "version": "2.2-3"
+        }
+      ],
+      "inputs": [
+        {
+          "filename": "flite_2.2-3.debian.tar.xz",
+          "sha256": "c6dcda734998686acb0ef0ce23f95c076ac1378f87456bdaee1f8a9491deac20",
+          "size": 48452,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/universe/f/flite/flite_2.2-3.debian.tar.xz"
+        },
+        {
+          "filename": "flite_2.2-3.dsc",
+          "sha256": "6e8c38c60723e51084f77c9280c8a528d93299b9146e4ac8c6c984eac39d5aba",
+          "size": 2197,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/universe/f/flite/flite_2.2-3.dsc"
+        },
+        {
+          "filename": "flite_2.2.orig.tar.gz",
+          "sha256": "ab1555fe5adc3f99f1d4a1a0eb1596d329fd6d74f1464a0097c81f53c0cf9e5c",
+          "size": 20233792,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/universe/f/flite/flite_2.2.orig.tar.gz"
+        }
+      ],
+      "package": "flite",
+      "version": "2.2-3"
+    },
+    {
+      "binaries": [
+        {
+          "package": "libfontconfig1",
+          "version": "2.13.1-4.2ubuntu5"
+        }
+      ],
+      "inputs": [
+        {
+          "filename": "fontconfig_2.13.1-4.2ubuntu5.debian.tar.xz",
+          "sha256": "15ade6954950577f355a55abcebe59f58e13df3dc616419af34ca0c19bbae0bd",
+          "size": 28084,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/f/fontconfig/fontconfig_2.13.1-4.2ubuntu5.debian.tar.xz"
+        },
+        {
+          "filename": "fontconfig_2.13.1-4.2ubuntu5.dsc",
+          "sha256": "c5c3098474374f20d79e3a8c00dd849f75388af0c99b6f7ec3dfc724886c4cdd",
+          "size": 2449,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/f/fontconfig/fontconfig_2.13.1-4.2ubuntu5.dsc"
+        },
+        {
+          "filename": "fontconfig_2.13.1.orig.tar.bz2",
+          "sha256": "f655dd2a986d7aa97e052261b36aa67b0a64989496361eca8d604e6414006741",
+          "size": 1723639,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/f/fontconfig/fontconfig_2.13.1.orig.tar.bz2"
+        }
+      ],
+      "package": "fontconfig",
+      "version": "2.13.1-4.2ubuntu5"
+    },
+    {
+      "binaries": [
+        {
+          "package": "libfreetype6",
+          "version": "2.11.1+dfsg-1ubuntu0.3"
+        }
+      ],
+      "inputs": [
+        {
+          "filename": "freetype_2.11.1+dfsg-1ubuntu0.3.debian.tar.xz",
+          "sha256": "06de0e18b9ba09bbe576c2941784fe2c08cee498fdcc6d15b0e42eea92637e83",
+          "size": 42292,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/f/freetype/freetype_2.11.1+dfsg-1ubuntu0.3.debian.tar.xz"
+        },
+        {
+          "filename": "freetype_2.11.1+dfsg-1ubuntu0.3.dsc",
+          "sha256": "6048c3a9985b597d1964ca07e38deaaed6fdf743d39cf88d17887604e480dab8",
+          "size": 3791,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/f/freetype/freetype_2.11.1+dfsg-1ubuntu0.3.dsc"
+        },
+        {
+          "filename": "freetype_2.11.1+dfsg.orig-ft2demos.tar.xz",
+          "sha256": "c60620d49d0f16d95586eb868c01b129569409e6cfdcb87a78e0482a12604672",
+          "size": 257240,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/f/freetype/freetype_2.11.1+dfsg.orig-ft2demos.tar.xz"
+        },
+        {
+          "filename": "freetype_2.11.1+dfsg.orig-ft2demos.tar.xz.asc",
+          "sha256": "d911a95830c50efcf60398e51db4ec307bbf4d24168377b515aded0611e977c0",
+          "size": 195,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/f/freetype/freetype_2.11.1+dfsg.orig-ft2demos.tar.xz.asc"
+        },
+        {
+          "filename": "freetype_2.11.1+dfsg.orig-ft2docs.tar.xz",
+          "sha256": "755e29908093c19138a38775784b0accf7e838ffa28a25b8722b3dfe651d80fa",
+          "size": 2038348,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/f/freetype/freetype_2.11.1+dfsg.orig-ft2docs.tar.xz"
+        },
+        {
+          "filename": "freetype_2.11.1+dfsg.orig-ft2docs.tar.xz.asc",
+          "sha256": "67cbc2f192460dc4d46129e7debe55b40a9fa6e224ffeed70b4cf397ebaccab5",
+          "size": 195,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/f/freetype/freetype_2.11.1+dfsg.orig-ft2docs.tar.xz.asc"
+        },
+        {
+          "filename": "freetype_2.11.1+dfsg.orig.tar.xz",
+          "sha256": "ef93541237834445eb7ff355e7d4139d48844f9c977a485dea1316df54994473",
+          "size": 1988020,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/f/freetype/freetype_2.11.1+dfsg.orig.tar.xz"
+        }
+      ],
+      "package": "freetype",
+      "version": "2.11.1+dfsg-1ubuntu0.3"
+    },
+    {
+      "binaries": [
+        {
+          "package": "libfribidi0",
+          "version": "1.0.8-2ubuntu3.1"
+        }
+      ],
+      "inputs": [
+        {
+          "filename": "fribidi_1.0.8-2ubuntu3.1.debian.tar.xz",
+          "sha256": "c4a0185e8b55a2520eb98575acdfbb7d42b36a1ad2b22f1c2f308a20ee3466f9",
+          "size": 10888,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/f/fribidi/fribidi_1.0.8-2ubuntu3.1.debian.tar.xz"
+        },
+        {
+          "filename": "fribidi_1.0.8-2ubuntu3.1.dsc",
+          "sha256": "585c32773194a19ab4e64e37e86c2d9627ba1235c496fe07544f8b8f80233160",
+          "size": 2442,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/f/fribidi/fribidi_1.0.8-2ubuntu3.1.dsc"
+        },
+        {
+          "filename": "fribidi_1.0.8.orig.tar.bz2",
+          "sha256": "94c7b68d86ad2a9613b4dcffe7bbeb03523d63b5b37918bdf2e4ef34195c1e6c",
+          "size": 2077095,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/f/fribidi/fribidi_1.0.8.orig.tar.bz2"
+        }
+      ],
+      "package": "fribidi",
+      "version": "1.0.8-2ubuntu3.1"
+    },
+    {
+      "binaries": [
+        {
+          "package": "libatomic1",
+          "version": "12.3.0-1ubuntu1~22.04.3"
+        }
+      ],
+      "inputs": [
+        {
+          "filename": "gcc-12_12.3.0-1ubuntu1~22.04.3.debian.tar.xz",
+          "sha256": "44074c3d5e7d97365f1f7b45291ade2ee40ed6300176530d912e7cc0ceba77ab",
+          "size": 587456,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/g/gcc-12/gcc-12_12.3.0-1ubuntu1~22.04.3.debian.tar.xz"
+        },
+        {
+          "filename": "gcc-12_12.3.0-1ubuntu1~22.04.3.dsc",
+          "sha256": "ec040a1fa94186bd53535f7156e086e67863bb55836ae7fd7fef64f1ab66b04d",
+          "size": 27845,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/g/gcc-12/gcc-12_12.3.0-1ubuntu1~22.04.3.dsc"
+        },
+        {
+          "filename": "gcc-12_12.3.0.orig.tar.gz",
+          "sha256": "62b0fc89b6d41f9df2470d0fb4995f6ff5885f910518a2c6a44a6888ea5a9ea1",
+          "size": 91555468,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/g/gcc-12/gcc-12_12.3.0.orig.tar.gz"
+        }
+      ],
+      "package": "gcc-12",
+      "version": "12.3.0-1ubuntu1~22.04.3"
+    },
+    {
+      "binaries": [
+        {
+          "package": "libgdk-pixbuf-2.0-0",
+          "version": "2.42.8+dfsg-1ubuntu0.5"
+        }
+      ],
+      "inputs": [
+        {
+          "filename": "gdk-pixbuf_2.42.8+dfsg-1ubuntu0.5.debian.tar.xz",
+          "sha256": "43353cee25c5bbc00cdd1e7b0b850166e14bc8997c4d1338d182db783226713c",
+          "size": 30172,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/g/gdk-pixbuf/gdk-pixbuf_2.42.8+dfsg-1ubuntu0.5.debian.tar.xz"
+        },
+        {
+          "filename": "gdk-pixbuf_2.42.8+dfsg-1ubuntu0.5.dsc",
+          "sha256": "87b6107536b3cf76d413abca072619814db2e2e9249ea6152a1f4ff4860b23d3",
+          "size": 3238,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/g/gdk-pixbuf/gdk-pixbuf_2.42.8+dfsg-1ubuntu0.5.dsc"
+        },
+        {
+          "filename": "gdk-pixbuf_2.42.8+dfsg.orig.tar.xz",
+          "sha256": "c1f00d4419e164d160c9d9b49a90890e516c1624bcd0c2a120eb7f529835b5d3",
+          "size": 6439548,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/g/gdk-pixbuf/gdk-pixbuf_2.42.8+dfsg.orig.tar.xz"
+        }
+      ],
+      "package": "gdk-pixbuf",
+      "version": "2.42.8+dfsg-1ubuntu0.5"
+    },
+    {
+      "binaries": [
+        {
+          "package": "glib-networking",
+          "version": "2.72.0-1"
+        }
+      ],
+      "inputs": [
+        {
+          "filename": "glib-networking_2.72.0-1.debian.tar.xz",
+          "sha256": "10f2ec2a1273e77510171bed2d8509edb3d7e640e1e9bcec492e7670eed63a54",
+          "size": 11808,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/g/glib-networking/glib-networking_2.72.0-1.debian.tar.xz"
+        },
+        {
+          "filename": "glib-networking_2.72.0-1.dsc",
+          "sha256": "a63d5475a85e8c9508eeeeda13af23ba603324a80f4b100c3e8291b6674a1afc",
+          "size": 2464,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/g/glib-networking/glib-networking_2.72.0-1.dsc"
+        },
+        {
+          "filename": "glib-networking_2.72.0.orig.tar.xz",
+          "sha256": "100aaebb369285041de52da422b6b716789d5e4d7549a3a71ba587b932e0823b",
+          "size": 265060,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/g/glib-networking/glib-networking_2.72.0.orig.tar.xz"
+        }
+      ],
+      "package": "glib-networking",
+      "version": "2.72.0-1"
+    },
+    {
+      "binaries": [
+        {
+          "package": "libglib2.0-0",
+          "version": "2.72.4-0ubuntu2.10"
+        },
+        {
+          "package": "libglib2.0-bin",
+          "version": "2.72.4-0ubuntu2.10"
+        },
+        {
+          "package": "libglib2.0-dev",
+          "version": "2.72.4-0ubuntu2.10"
+        }
+      ],
+      "inputs": [
+        {
+          "filename": "glib2.0_2.72.4-0ubuntu2.10.debian.tar.xz",
+          "sha256": "e81d6f72522eb2092ddec06760753d5fe7866eab553237a4c237b613e592df69",
+          "size": 170208,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/g/glib2.0/glib2.0_2.72.4-0ubuntu2.10.debian.tar.xz"
+        },
+        {
+          "filename": "glib2.0_2.72.4-0ubuntu2.10.dsc",
+          "sha256": "29ad099fa2f59d77424dfc8bccb474df79e4c79f2d603228aef02a679a292ca9",
+          "size": 3674,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/g/glib2.0/glib2.0_2.72.4-0ubuntu2.10.dsc"
+        },
+        {
+          "filename": "glib2.0_2.72.4.orig.tar.xz",
+          "sha256": "8848aba518ba2f4217d144307a1d6cb9afcc92b54e5c13ac1f8c4d4608e96f0e",
+          "size": 4884256,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/g/glib2.0/glib2.0_2.72.4.orig.tar.xz"
+        }
+      ],
+      "package": "glib2.0",
+      "version": "2.72.4-0ubuntu2.10"
+    },
+    {
+      "binaries": [
+        {
+          "package": "libgmp10",
+          "version": "2:6.2.1+dfsg-3ubuntu1"
+        }
+      ],
+      "inputs": [
+        {
+          "filename": "gmp_6.2.1+dfsg-3ubuntu1.debian.tar.xz",
+          "sha256": "371f81cd30902da41fb4cd084fa2d4e5e353c1f812e79184158479cc96aedd76",
+          "size": 40996,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/g/gmp/gmp_6.2.1+dfsg-3ubuntu1.debian.tar.xz"
+        },
+        {
+          "filename": "gmp_6.2.1+dfsg-3ubuntu1.dsc",
+          "sha256": "aad30e80591b3a3bea84ef1c3d1c46657dcdd639a10f093b6a4a231461e015e6",
+          "size": 2355,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/g/gmp/gmp_6.2.1+dfsg-3ubuntu1.dsc"
+        },
+        {
+          "filename": "gmp_6.2.1+dfsg.orig.tar.xz",
+          "sha256": "c6ba08e3f079260ab90ff44ab8801eae134cd62cd78f4aa56317c0e70daa40cb",
+          "size": 1853476,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/g/gmp/gmp_6.2.1+dfsg.orig.tar.xz"
+        }
+      ],
+      "package": "gmp",
+      "version": "2:6.2.1+dfsg-3ubuntu1"
+    },
+    {
+      "binaries": [
+        {
+          "package": "libgnutls30",
+          "version": "3.7.3-4ubuntu1.9"
+        }
+      ],
+      "inputs": [
+        {
+          "filename": "gnutls28_3.7.3-4ubuntu1.9.debian.tar.xz",
+          "sha256": "dab5939b10476b56358262432f40191a5ecee941d1cda16f9ec1dd3e3ceb6314",
+          "size": 127136,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/g/gnutls28/gnutls28_3.7.3-4ubuntu1.9.debian.tar.xz"
+        },
+        {
+          "filename": "gnutls28_3.7.3-4ubuntu1.9.dsc",
+          "sha256": "dcf44b5f38fb5044aaea929fc0a89744f3e86ceee8733f6781f86fd0c35e56c8",
+          "size": 3575,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/g/gnutls28/gnutls28_3.7.3-4ubuntu1.9.dsc"
+        },
+        {
+          "filename": "gnutls28_3.7.3.orig.tar.xz",
+          "sha256": "fc59c43bc31ab20a6977ff083029277a31935b8355ce387b634fa433f8f6c49a",
+          "size": 6119292,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/g/gnutls28/gnutls28_3.7.3.orig.tar.xz"
+        },
+        {
+          "filename": "gnutls28_3.7.3.orig.tar.xz.asc",
+          "sha256": "a2f95ac5d7dd951bddef01ec9930616dd1a5226173b3dc7896b3bed411c91d9a",
+          "size": 833,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/g/gnutls28/gnutls28_3.7.3.orig.tar.xz.asc"
+        }
+      ],
+      "package": "gnutls28",
+      "version": "3.7.3-4ubuntu1.9"
+    },
+    {
+      "binaries": [
+        {
+          "package": "libgpm2",
+          "version": "1.20.7-10build1"
+        }
+      ],
+      "inputs": [
+        {
+          "filename": "gpm_1.20.7-10build1.debian.tar.xz",
+          "sha256": "54604b1d2a58bd4de2db714901df10cd556fabb6be350fd17279b8fcaa303684",
+          "size": 84844,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/g/gpm/gpm_1.20.7-10build1.debian.tar.xz"
+        },
+        {
+          "filename": "gpm_1.20.7-10build1.dsc",
+          "sha256": "f3c79832981ad036a78280ba70f631741e6f113dcc7227b64c9296f1f25e74b3",
+          "size": 2019,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/g/gpm/gpm_1.20.7-10build1.dsc"
+        },
+        {
+          "filename": "gpm_1.20.7.orig.tar.gz",
+          "sha256": "c7e4661c24e05ae13547176b649bac8e3a0db2575f7dd57559f9e0b509f90f49",
+          "size": 855027,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/g/gpm/gpm_1.20.7.orig.tar.gz"
+        }
+      ],
+      "package": "gpm",
+      "version": "1.20.7-10build1"
+    },
+    {
+      "binaries": [
+        {
+          "package": "libgraphite2-3",
+          "version": "1.3.14-1ubuntu0.1"
+        }
+      ],
+      "inputs": [
+        {
+          "filename": "graphite2_1.3.14-1ubuntu0.1.debian.tar.xz",
+          "sha256": "2a573bb291d53438aae7db6655e68f8544f885dc3530a1cbee8a4f7313515407",
+          "size": 12932,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/g/graphite2/graphite2_1.3.14-1ubuntu0.1.debian.tar.xz"
+        },
+        {
+          "filename": "graphite2_1.3.14-1ubuntu0.1.dsc",
+          "sha256": "fa3ded8974494bcfcec90b83cf581de1341100b83f20217f30a819e522f7c199",
+          "size": 2698,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/g/graphite2/graphite2_1.3.14-1ubuntu0.1.dsc"
+        },
+        {
+          "filename": "graphite2_1.3.14.orig.tar.gz",
+          "sha256": "7a3b342c5681921ce2e0c2496509d30b5b078399d5a7bd2358f95166d57d91df",
+          "size": 6629829,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/g/graphite2/graphite2_1.3.14.orig.tar.gz"
+        }
+      ],
+      "package": "graphite2",
+      "version": "1.3.14-1ubuntu0.1"
+    },
+    {
+      "binaries": [
+        {
+          "package": "gsettings-desktop-schemas",
+          "version": "42.0-1ubuntu1"
+        }
+      ],
+      "inputs": [
+        {
+          "filename": "gsettings-desktop-schemas_42.0-1ubuntu1.debian.tar.xz",
+          "sha256": "7ec2878245ae850302bd18fd5c940e883ff56b761c35e1931e37604421488449",
+          "size": 8700,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/g/gsettings-desktop-schemas/gsettings-desktop-schemas_42.0-1ubuntu1.debian.tar.xz"
+        },
+        {
+          "filename": "gsettings-desktop-schemas_42.0-1ubuntu1.dsc",
+          "sha256": "3656517fb32d3605624f5ea9127ccf63688c803661f699dd4d67cd30ac56bd53",
+          "size": 2825,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/g/gsettings-desktop-schemas/gsettings-desktop-schemas_42.0-1ubuntu1.dsc"
+        },
+        {
+          "filename": "gsettings-desktop-schemas_42.0.orig.tar.xz",
+          "sha256": "6686335a9ed623f7ae2276fefa50a410d4e71d4231880824714070cb317323d2",
+          "size": 709372,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/g/gsettings-desktop-schemas/gsettings-desktop-schemas_42.0.orig.tar.xz"
+        }
+      ],
+      "package": "gsettings-desktop-schemas",
+      "version": "42.0-1ubuntu1"
+    },
+    {
+      "binaries": [
+        {
+          "package": "gstreamer1.0-plugins-base",
+          "version": "1.20.1-1ubuntu0.7"
+        },
+        {
+          "package": "libgstreamer-gl1.0-0",
+          "version": "1.20.1-1ubuntu0.7"
+        },
+        {
+          "package": "libgstreamer-plugins-base1.0-0",
+          "version": "1.20.1-1ubuntu0.7"
+        }
+      ],
+      "inputs": [
+        {
+          "filename": "gst-plugins-base1.0_1.20.1-1ubuntu0.7.debian.tar.xz",
+          "sha256": "dd328807f89c582ab74d86538e0d77f3c8eee4370f9943f28b400077e367e96f",
+          "size": 52888,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/g/gst-plugins-base1.0/gst-plugins-base1.0_1.20.1-1ubuntu0.7.debian.tar.xz"
+        },
+        {
+          "filename": "gst-plugins-base1.0_1.20.1-1ubuntu0.7.dsc",
+          "sha256": "eb092857203f1fbb154f14581052886fa4e57ba8e7a9e1624f4c774ec9ded255",
+          "size": 3833,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/g/gst-plugins-base1.0/gst-plugins-base1.0_1.20.1-1ubuntu0.7.dsc"
+        },
+        {
+          "filename": "gst-plugins-base1.0_1.20.1.orig.tar.xz",
+          "sha256": "96d8a6413ba9394fbec1217aeef63741a729d476a505a797c1d5337d8fa7c204",
+          "size": 3290068,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/g/gst-plugins-base1.0/gst-plugins-base1.0_1.20.1.orig.tar.xz"
+        }
+      ],
+      "package": "gst-plugins-base1.0",
+      "version": "1.20.1-1ubuntu0.7"
+    },
+    {
+      "binaries": [
+        {
+          "package": "gstreamer1.0-plugins-good",
+          "version": "1.20.3-0ubuntu1.9"
+        },
+        {
+          "package": "libgstreamer-plugins-good1.0-0",
+          "version": "1.20.3-0ubuntu1.9"
+        }
+      ],
+      "inputs": [
+        {
+          "filename": "gst-plugins-good1.0_1.20.3-0ubuntu1.9.debian.tar.xz",
+          "sha256": "ec1da616f5d311ad34488c0c7672c5f7623719c84bf4e820906c7cbf22aa72d7",
+          "size": 140844,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/g/gst-plugins-good1.0/gst-plugins-good1.0_1.20.3-0ubuntu1.9.debian.tar.xz"
+        },
+        {
+          "filename": "gst-plugins-good1.0_1.20.3-0ubuntu1.9.dsc",
+          "sha256": "dc752f603222af6b5ea4947a9ead2dac0d26d8c74f6cef5892e112609ab59953",
+          "size": 3963,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/g/gst-plugins-good1.0/gst-plugins-good1.0_1.20.3-0ubuntu1.9.dsc"
+        },
+        {
+          "filename": "gst-plugins-good1.0_1.20.3.orig.tar.xz",
+          "sha256": "f8f3c206bf5cdabc00953920b47b3575af0ef15e9f871c0b6966f6d0aa5868b7",
+          "size": 3417252,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/g/gst-plugins-good1.0/gst-plugins-good1.0_1.20.3.orig.tar.xz"
+        }
+      ],
+      "package": "gst-plugins-good1.0",
+      "version": "1.20.3-0ubuntu1.9"
+    },
+    {
+      "binaries": [
+        {
+          "package": "libgstreamer1.0-0",
+          "version": "1.20.3-0ubuntu1.1"
+        }
+      ],
+      "inputs": [
+        {
+          "filename": "gstreamer1.0_1.20.3-0ubuntu1.1.debian.tar.xz",
+          "sha256": "0ee631a2e31ff72d4011c7a620fdfb2cc937157d88d93128cfce646a542a32c1",
+          "size": 45248,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/g/gstreamer1.0/gstreamer1.0_1.20.3-0ubuntu1.1.debian.tar.xz"
+        },
+        {
+          "filename": "gstreamer1.0_1.20.3-0ubuntu1.1.dsc",
+          "sha256": "bfa22278b17f2816ae13dd56710784326786c65aaf4b8c3403d1d730a97ae689",
+          "size": 2968,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/g/gstreamer1.0/gstreamer1.0_1.20.3-0ubuntu1.1.dsc"
+        },
+        {
+          "filename": "gstreamer1.0_1.20.3.orig.tar.xz",
+          "sha256": "607daf64bbbd5fb18af9d17e21c0d22c4d702fffe83b23cb22d1b1af2ca23a2a",
+          "size": 2681088,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/g/gstreamer1.0/gstreamer1.0_1.20.3.orig.tar.xz"
+        }
+      ],
+      "package": "gstreamer1.0",
+      "version": "1.20.3-0ubuntu1.1"
+    },
+    {
+      "binaries": [
+        {
+          "package": "gtk-update-icon-cache",
+          "version": "3.24.33-1ubuntu2.2"
+        }
+      ],
+      "inputs": [
+        {
+          "filename": "gtk+3.0_3.24.33-1ubuntu2.2.debian.tar.xz",
+          "sha256": "842fe4b2590378b3e57890fc4455e2b9674ca2d31697d2ecd64459f5f29f5295",
+          "size": 431240,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/g/gtk+3.0/gtk+3.0_3.24.33-1ubuntu2.2.debian.tar.xz"
+        },
+        {
+          "filename": "gtk+3.0_3.24.33-1ubuntu2.2.dsc",
+          "sha256": "0abcce1e1db4494ff9e07ec8dcda39503ad8d31ebfded46ee09b13ec2e147ada",
+          "size": 4492,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/g/gtk+3.0/gtk+3.0_3.24.33-1ubuntu2.2.dsc"
+        },
+        {
+          "filename": "gtk+3.0_3.24.33.orig.tar.xz",
+          "sha256": "588b06522e25d1579e989b6f9d8a1bdbf2fe13cde01a04e904ff346a225e7801",
+          "size": 22449472,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/g/gtk+3.0/gtk+3.0_3.24.33.orig.tar.xz"
+        }
+      ],
+      "package": "gtk+3.0",
+      "version": "3.24.33-1ubuntu2.2"
+    },
+    {
+      "binaries": [
+        {
+          "package": "libharfbuzz-icu0",
+          "version": "2.7.4-1ubuntu3.2"
+        },
+        {
+          "package": "libharfbuzz0b",
+          "version": "2.7.4-1ubuntu3.2"
+        }
+      ],
+      "inputs": [
+        {
+          "filename": "harfbuzz_2.7.4-1ubuntu3.2.debian.tar.xz",
+          "sha256": "39c75dcef97ae5b6d60fbdf2228ee040f5f7dd6fad4e18c06901cf708a1ca1cd",
+          "size": 15000,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/h/harfbuzz/harfbuzz_2.7.4-1ubuntu3.2.debian.tar.xz"
+        },
+        {
+          "filename": "harfbuzz_2.7.4-1ubuntu3.2.dsc",
+          "sha256": "6c75d24d8abd1fd901b9ffe8d4943c0837d96badd67c7c7672d5e619fc758d79",
+          "size": 2855,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/h/harfbuzz/harfbuzz_2.7.4-1ubuntu3.2.dsc"
+        },
+        {
+          "filename": "harfbuzz_2.7.4.orig.tar.xz",
+          "sha256": "6ad11d653347bd25d8317589df4e431a2de372c0cf9be3543368e07ec23bb8e7",
+          "size": 9532468,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/h/harfbuzz/harfbuzz_2.7.4.orig.tar.xz"
+        }
+      ],
+      "package": "harfbuzz",
+      "version": "2.7.4-1ubuntu3.2"
+    },
+    {
+      "binaries": [
+        {
+          "package": "hicolor-icon-theme",
+          "version": "0.17-2"
+        }
+      ],
+      "inputs": [
+        {
+          "filename": "hicolor-icon-theme_0.17-2.debian.tar.xz",
+          "sha256": "97eec9852a2923b95bd13fc59c30fb1b9063ffd1f8a04748544d4975a84e98f2",
+          "size": 3536,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/h/hicolor-icon-theme/hicolor-icon-theme_0.17-2.debian.tar.xz"
+        },
+        {
+          "filename": "hicolor-icon-theme_0.17-2.dsc",
+          "sha256": "9df02b466f82cd6fa13930bc197d001ed8ddac1abc7f8dde3db45ed1708336bd",
+          "size": 2053,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/h/hicolor-icon-theme/hicolor-icon-theme_0.17-2.dsc"
+        },
+        {
+          "filename": "hicolor-icon-theme_0.17.orig.tar.xz",
+          "sha256": "317484352271d18cbbcfac3868eab798d67fff1b8402e740baa6ff41d588a9d8",
+          "size": 53016,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/h/hicolor-icon-theme/hicolor-icon-theme_0.17.orig.tar.xz"
+        }
+      ],
+      "package": "hicolor-icon-theme",
+      "version": "0.17-2"
+    },
+    {
+      "binaries": [
+        {
+          "package": "libhyphen0",
+          "version": "2.8.8-7build2"
+        }
+      ],
+      "inputs": [
+        {
+          "filename": "hyphen_2.8.8-7build2.debian.tar.xz",
+          "sha256": "83831e828522cb905deadf3acfe36e4d5133ea1f59a72e0df865d47bae24f043",
+          "size": 12692,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/h/hyphen/hyphen_2.8.8-7build2.debian.tar.xz"
+        },
+        {
+          "filename": "hyphen_2.8.8-7build2.dsc",
+          "sha256": "c040943f214f2b0ba00b7459d18389b84a57dd65886895fe1579fe4eae4275b5",
+          "size": 1765,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/h/hyphen/hyphen_2.8.8-7build2.dsc"
+        },
+        {
+          "filename": "hyphen_2.8.8.orig.tar.gz",
+          "sha256": "304636d4eccd81a14b6914d07b84c79ebb815288c76fe027b9ebff6ff24d5705",
+          "size": 638369,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/h/hyphen/hyphen_2.8.8.orig.tar.gz"
+        }
+      ],
+      "package": "hyphen",
+      "version": "2.8.8-7build2"
+    },
+    {
+      "binaries": [
+        {
+          "package": "libicu70",
+          "version": "70.1-2"
+        }
+      ],
+      "inputs": [
+        {
+          "filename": "icu_70.1-2.debian.tar.xz",
+          "sha256": "7e0847c3775ddb8d7d3f3762d15ec171d437119c6cdb074b346cfe8502419b37",
+          "size": 62440,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/i/icu/icu_70.1-2.debian.tar.xz"
+        },
+        {
+          "filename": "icu_70.1-2.dsc",
+          "sha256": "271f3a8913677c61ea2e0423fbd9656d218cc131c8c344df075e46e60eeac548",
+          "size": 2252,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/i/icu/icu_70.1-2.dsc"
+        },
+        {
+          "filename": "icu_70.1.orig.tar.gz",
+          "sha256": "8d205428c17bf13bb535300669ed28b338a157b1c01ae66d31d0d3e2d47c3fd5",
+          "size": 25449582,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/i/icu/icu_70.1.orig.tar.gz"
+        },
+        {
+          "filename": "icu_70.1.orig.tar.gz.asc",
+          "sha256": "12c17203c3fcee4f4577f8927cbf7f7eea8ab9feddd878cc84f9c4cc0741faee",
+          "size": 659,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/i/icu/icu_70.1.orig.tar.gz.asc"
+        }
+      ],
+      "package": "icu",
+      "version": "70.1-2"
+    },
+    {
+      "binaries": [
+        {
+          "package": "libjack-jackd2-0",
+          "version": "1.9.20~dfsg-1"
+        }
+      ],
+      "inputs": [
+        {
+          "filename": "jackd2_1.9.20~dfsg-1.debian.tar.xz",
+          "sha256": "f3680739d718667fbdb13bb3e6edecbaf98a5ccd8533ae9d978bc2843d21975f",
+          "size": 33080,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/j/jackd2/jackd2_1.9.20~dfsg-1.debian.tar.xz"
+        },
+        {
+          "filename": "jackd2_1.9.20~dfsg-1.dsc",
+          "sha256": "79a4b3db1e84703e9d8ef0d4ecb64095496a42d4d61fc4974c50d2a5dad97332",
+          "size": 2547,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/j/jackd2/jackd2_1.9.20~dfsg-1.dsc"
+        },
+        {
+          "filename": "jackd2_1.9.20~dfsg.orig.tar.gz",
+          "sha256": "f87cd57838e258eec97d7de77cab68ac2a4c75907cccd9d2792354011007fe8a",
+          "size": 1027184,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/j/jackd2/jackd2_1.9.20~dfsg.orig.tar.gz"
+        }
+      ],
+      "package": "jackd2",
+      "version": "1.9.20~dfsg-1"
+    },
+    {
+      "binaries": [
+        {
+          "package": "libjbig0",
+          "version": "2.1-3.1ubuntu0.22.04.1"
+        }
+      ],
+      "inputs": [
+        {
+          "filename": "jbigkit_2.1-3.1ubuntu0.22.04.1.debian.tar.xz",
+          "sha256": "309d2750aa4b5e7181b0c903453ea1f4eb216b960641b6654d986eb3bfa40455",
+          "size": 9912,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/j/jbigkit/jbigkit_2.1-3.1ubuntu0.22.04.1.debian.tar.xz"
+        },
+        {
+          "filename": "jbigkit_2.1-3.1ubuntu0.22.04.1.dsc",
+          "sha256": "7fa31f1bba94260e4e61655ef030127c5bb4b8e7f4e7a2946f20952936753d03",
+          "size": 1796,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/j/jbigkit/jbigkit_2.1-3.1ubuntu0.22.04.1.dsc"
+        },
+        {
+          "filename": "jbigkit_2.1.orig.tar.gz",
+          "sha256": "de7106b6bfaf495d6865c7dd7ac6ca1381bd12e0d81405ea81e7f2167263d932",
+          "size": 438710,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/j/jbigkit/jbigkit_2.1.orig.tar.gz"
+        }
+      ],
+      "package": "jbigkit",
+      "version": "2.1-3.1ubuntu0.22.04.1"
+    },
+    {
+      "binaries": [
+        {
+          "package": "libkeyutils1",
+          "version": "1.6.1-2ubuntu3"
+        }
+      ],
+      "inputs": [
+        {
+          "filename": "keyutils_1.6.1-2ubuntu3.debian.tar.xz",
+          "sha256": "e9e8992edcc28599fb59ca1dc9ecbfb6b35175fb712f86b13bf4dc35397631f9",
+          "size": 18936,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/k/keyutils/keyutils_1.6.1-2ubuntu3.debian.tar.xz"
+        },
+        {
+          "filename": "keyutils_1.6.1-2ubuntu3.dsc",
+          "sha256": "6ce03824add78e1dc385723ce354a5513eb1ab4b83643e91e9b2c64f81112f9d",
+          "size": 2203,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/k/keyutils/keyutils_1.6.1-2ubuntu3.dsc"
+        },
+        {
+          "filename": "keyutils_1.6.1.orig.tar.bz2",
+          "sha256": "c8b15722ae51d95b9ad76cc6d49a4c2cc19b0c60f72f61fb9bf43eea7cbd64ce",
+          "size": 97232,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/k/keyutils/keyutils_1.6.1.orig.tar.bz2"
+        }
+      ],
+      "package": "keyutils",
+      "version": "1.6.1-2ubuntu3"
+    },
+    {
+      "binaries": [
+        {
+          "package": "libgssapi-krb5-2",
+          "version": "1.19.2-2ubuntu0.10"
+        },
+        {
+          "package": "libk5crypto3",
+          "version": "1.19.2-2ubuntu0.10"
+        },
+        {
+          "package": "libkrb5-3",
+          "version": "1.19.2-2ubuntu0.10"
+        },
+        {
+          "package": "libkrb5support0",
+          "version": "1.19.2-2ubuntu0.10"
+        }
+      ],
+      "inputs": [
+        {
+          "filename": "krb5_1.19.2-2ubuntu0.10.debian.tar.xz",
+          "sha256": "d0598b76e607cff3733b8858db4bc63547a536b762fdbbc865683c2fdcc99d84",
+          "size": 128576,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/k/krb5/krb5_1.19.2-2ubuntu0.10.debian.tar.xz"
+        },
+        {
+          "filename": "krb5_1.19.2-2ubuntu0.10.dsc",
+          "sha256": "8c0af704dea8312f715c750c9f97e257f3c50c969de20818e1eab1e8175bcad1",
+          "size": 3700,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/k/krb5/krb5_1.19.2-2ubuntu0.10.dsc"
+        },
+        {
+          "filename": "krb5_1.19.2.orig.tar.gz",
+          "sha256": "10453fee4e3a8f8ce6129059e5c050b8a65dab1c257df68b99b3112eaa0cdf6a",
+          "size": 8741053,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/k/krb5/krb5_1.19.2.orig.tar.gz"
+        }
+      ],
+      "package": "krb5",
+      "version": "1.19.2-2ubuntu0.10"
+    },
+    {
+      "binaries": [
+        {
+          "package": "libmp3lame0",
+          "version": "3.100-3build2"
+        }
+      ],
+      "inputs": [
+        {
+          "filename": "lame_3.100-3build2.debian.tar.xz",
+          "sha256": "c184802d60a1181ad548f4b419af8e411b11a5ba18ac9afea4a3299631ad89cf",
+          "size": 12400,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/l/lame/lame_3.100-3build2.debian.tar.xz"
+        },
+        {
+          "filename": "lame_3.100-3build2.dsc",
+          "sha256": "e862d5d94c3e852bf71c9bc30e9ebc8db90791faff1bf66888391cc180f4d9dc",
+          "size": 2275,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/l/lame/lame_3.100-3build2.dsc"
+        },
+        {
+          "filename": "lame_3.100.orig.tar.gz",
+          "sha256": "ddfe36cab873794038ae2c1210557ad34857a4b6bdc515785d1da9e175b1da1e",
+          "size": 1524133,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/l/lame/lame_3.100.orig.tar.gz"
+        }
+      ],
+      "package": "lame",
+      "version": "3.100-3build2"
+    },
+    {
+      "binaries": [
+        {
+          "package": "liblcms2-2",
+          "version": "2.12~rc1-2ubuntu0.1"
+        }
+      ],
+      "inputs": [
+        {
+          "filename": "lcms2_2.12~rc1-2ubuntu0.1.debian.tar.xz",
+          "sha256": "6d1c214d18a0ef5213277fe7dd887c2c6db5c89fb2f480151648b61a1b760a6a",
+          "size": 11732,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/l/lcms2/lcms2_2.12~rc1-2ubuntu0.1.debian.tar.xz"
+        },
+        {
+          "filename": "lcms2_2.12~rc1-2ubuntu0.1.dsc",
+          "sha256": "7076698c17bfa4b03aa76b35032d69130d54c83edb86d1f02f5391417c2dad31",
+          "size": 2103,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/l/lcms2/lcms2_2.12~rc1-2ubuntu0.1.dsc"
+        },
+        {
+          "filename": "lcms2_2.12~rc1.orig.tar.gz",
+          "sha256": "3300ddd8c51d60ebcc206d20d185b1b19939c4cec1576d1f5b95297b0fbdfe19",
+          "size": 7417767,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/l/lcms2/lcms2_2.12~rc1.orig.tar.gz"
+        }
+      ],
+      "package": "lcms2",
+      "version": "2.12~rc1-2ubuntu0.1"
+    },
+    {
+      "binaries": [
+        {
+          "package": "libasyncns0",
+          "version": "0.8-6build2"
+        }
+      ],
+      "inputs": [
+        {
+          "filename": "libasyncns_0.8-6build2.debian.tar.xz",
+          "sha256": "a7dd311a4942ebb989eaadb1fbd8f0291b05c15e3e816ae7cd14dafbdab4dbc2",
+          "size": 4744,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/liba/libasyncns/libasyncns_0.8-6build2.debian.tar.xz"
+        },
+        {
+          "filename": "libasyncns_0.8-6build2.dsc",
+          "sha256": "cff2b53b8f38577f4accf11085d5a06a4a754621bfce14232a80b69f66dbf449",
+          "size": 2067,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/liba/libasyncns/libasyncns_0.8-6build2.dsc"
+        },
+        {
+          "filename": "libasyncns_0.8.orig.tar.gz",
+          "sha256": "4f1a66e746cbe54ff3c2fbada5843df4fbbbe7481d80be003e8d11161935ab74",
+          "size": 341591,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/liba/libasyncns/libasyncns_0.8.orig.tar.gz"
+        }
+      ],
+      "package": "libasyncns",
+      "version": "0.8-6build2"
+    },
+    {
+      "binaries": [
+        {
+          "package": "libavc1394-0",
+          "version": "0.5.4-5build2"
+        }
+      ],
+      "inputs": [
+        {
+          "filename": "libavc1394_0.5.4-5build2.debian.tar.xz",
+          "sha256": "2c27ad60857c03397f03062af6e00987d2e92c5b286e98c9afb1b103ae3fd7c2",
+          "size": 6788,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/liba/libavc1394/libavc1394_0.5.4-5build2.debian.tar.xz"
+        },
+        {
+          "filename": "libavc1394_0.5.4-5build2.dsc",
+          "sha256": "07d29604d8d93eea9018cb2f290221361510116c3cc44fe239fa4d93353fcc51",
+          "size": 2254,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/liba/libavc1394/libavc1394_0.5.4-5build2.dsc"
+        },
+        {
+          "filename": "libavc1394_0.5.4.orig.tar.gz",
+          "sha256": "7cb1ff09506ae911ca9860bef4af08c2403f3e131f6c913a2cbd6ddca4215b53",
+          "size": 341679,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/liba/libavc1394/libavc1394_0.5.4.orig.tar.gz"
+        }
+      ],
+      "package": "libavc1394",
+      "version": "0.5.4-5build2"
+    },
+    {
+      "binaries": [
+        {
+          "package": "libavif13",
+          "version": "0.9.3-3"
+        }
+      ],
+      "inputs": [
+        {
+          "filename": "libavif_0.9.3-3.debian.tar.xz",
+          "sha256": "590a850be97e9b5be9952b8f0bdf534676b0ae8c2804ed8ce3cad24505822bc6",
+          "size": 5900,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/universe/liba/libavif/libavif_0.9.3-3.debian.tar.xz"
+        },
+        {
+          "filename": "libavif_0.9.3-3.dsc",
+          "sha256": "293016c1703381275984b5da8bbcea83b7ce581a137a6804736c63c11f529862",
+          "size": 2330,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/universe/liba/libavif/libavif_0.9.3-3.dsc"
+        },
+        {
+          "filename": "libavif_0.9.3.orig.tar.gz",
+          "sha256": "bcd9a1f57f982a9615eb7e2faf87236dc88eb1d0c886f3471c7440ead605060d",
+          "size": 2000521,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/universe/liba/libavif/libavif_0.9.3.orig.tar.gz"
+        }
+      ],
+      "package": "libavif",
+      "version": "0.9.3-3"
+    },
+    {
+      "binaries": [
+        {
+          "package": "libbsd0",
+          "version": "0.11.5-1"
+        }
+      ],
+      "inputs": [
+        {
+          "filename": "libbsd_0.11.5-1.debian.tar.xz",
+          "sha256": "83d6f3205c8e0119de85763831f3e09a8152a695d2cebc5a55069472e97e6d0c",
+          "size": 17604,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/libb/libbsd/libbsd_0.11.5-1.debian.tar.xz"
+        },
+        {
+          "filename": "libbsd_0.11.5-1.dsc",
+          "sha256": "51479863a91fc2293da337d926862465e460bf4afdc3c0b362939749bfee6c53",
+          "size": 2292,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/libb/libbsd/libbsd_0.11.5-1.dsc"
+        },
+        {
+          "filename": "libbsd_0.11.5.orig.tar.xz",
+          "sha256": "1a9c952525635c1bb6770cb22e969b938d8e6a9d7912362b98ee8370599b0efd",
+          "size": 409972,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/libb/libbsd/libbsd_0.11.5.orig.tar.xz"
+        },
+        {
+          "filename": "libbsd_0.11.5.orig.tar.xz.asc",
+          "sha256": "95e418668c1d3f16a63dca24b9149119bdaf5095a3e1f3f84673be1a108a0916",
+          "size": 833,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/libb/libbsd/libbsd_0.11.5.orig.tar.xz.asc"
+        }
+      ],
+      "package": "libbsd",
+      "version": "0.11.5-1"
+    },
+    {
+      "binaries": [
+        {
+          "package": "libcaca0",
+          "version": "0.99.beta19-2.2ubuntu4.2"
+        }
+      ],
+      "inputs": [
+        {
+          "filename": "libcaca_0.99.beta19-2.2ubuntu4.2.debian.tar.xz",
+          "sha256": "a67e603602863748fa0bdff15b82405f72cb0d86540d341a2974be598431ab58",
+          "size": 17152,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/libc/libcaca/libcaca_0.99.beta19-2.2ubuntu4.2.debian.tar.xz"
+        },
+        {
+          "filename": "libcaca_0.99.beta19-2.2ubuntu4.2.dsc",
+          "sha256": "b4b2fbbcafe9a5a62e882816699e37e35b9a5975eaf984384c815b8db08d3b08",
+          "size": 2339,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/libc/libcaca/libcaca_0.99.beta19-2.2ubuntu4.2.dsc"
+        },
+        {
+          "filename": "libcaca_0.99.beta19.orig.tar.gz",
+          "sha256": "128b467c4ed03264c187405172a4e83049342cc8cc2f655f53a2d0ee9d3772f4",
+          "size": 1203495,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/libc/libcaca/libcaca_0.99.beta19.orig.tar.gz"
+        }
+      ],
+      "package": "libcaca",
+      "version": "0.99.beta19-2.2ubuntu4.2"
+    },
+    {
+      "binaries": [
+        {
+          "package": "libcap2",
+          "version": "1:2.44-1ubuntu0.22.04.3"
+        }
+      ],
+      "inputs": [
+        {
+          "filename": "libcap2_2.44-1ubuntu0.22.04.3.debian.tar.xz",
+          "sha256": "6a6435b74e9b2ec65eb1ee2b7958c37777fe005312feac37d84f4167521d135a",
+          "size": 24880,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/libc/libcap2/libcap2_2.44-1ubuntu0.22.04.3.debian.tar.xz"
+        },
+        {
+          "filename": "libcap2_2.44-1ubuntu0.22.04.3.dsc",
+          "sha256": "67523116f07081f3a8066f737b9c84f92f5e854f13f38487c1ce485a43d85bd7",
+          "size": 2318,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/libc/libcap2/libcap2_2.44-1ubuntu0.22.04.3.dsc"
+        },
+        {
+          "filename": "libcap2_2.44.orig.tar.xz",
+          "sha256": "92188359cd5be86e8e5bd3f6483ac6ce582264f912398937ef763def2205c8e1",
+          "size": 125568,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/libc/libcap2/libcap2_2.44.orig.tar.xz"
+        }
+      ],
+      "package": "libcap2",
+      "version": "1:2.44-1ubuntu0.22.04.3"
+    },
+    {
+      "binaries": [
+        {
+          "package": "libdatrie1",
+          "version": "0.2.13-2"
+        }
+      ],
+      "inputs": [
+        {
+          "filename": "libdatrie_0.2.13-2.debian.tar.xz",
+          "sha256": "3f341eb067c5365345e0a416a3c835a8e785c3220aca27c8fb2a01499d0214e9",
+          "size": 9604,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/libd/libdatrie/libdatrie_0.2.13-2.debian.tar.xz"
+        },
+        {
+          "filename": "libdatrie_0.2.13-2.dsc",
+          "sha256": "d359689deccfa654ab844d6e955fff5e826d9a5dc9a74408d1b6a095f78ab0e5",
+          "size": 2239,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/libd/libdatrie/libdatrie_0.2.13-2.dsc"
+        },
+        {
+          "filename": "libdatrie_0.2.13.orig.tar.xz",
+          "sha256": "12231bb2be2581a7f0fb9904092d24b0ed2a271a16835071ed97bed65267f4be",
+          "size": 314072,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/libd/libdatrie/libdatrie_0.2.13.orig.tar.xz"
+        }
+      ],
+      "package": "libdatrie",
+      "version": "0.2.13-2"
+    },
+    {
+      "binaries": [
+        {
+          "package": "libdeflate0",
+          "version": "1.10-2"
+        }
+      ],
+      "inputs": [
+        {
+          "filename": "libdeflate_1.10-2.debian.tar.xz",
+          "sha256": "8d82ef22c43bb846893fb305b56a1ddd67d79db30b28d928f9f7304a144f664a",
+          "size": 4584,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/libd/libdeflate/libdeflate_1.10-2.debian.tar.xz"
+        },
+        {
+          "filename": "libdeflate_1.10-2.dsc",
+          "sha256": "6a95997089f007d7ef3aabc77f3fa9cbe7123fcc375f4d6f7c678b3c4fa6c9ca",
+          "size": 2206,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/libd/libdeflate/libdeflate_1.10-2.dsc"
+        },
+        {
+          "filename": "libdeflate_1.10.orig.tar.gz",
+          "sha256": "5c1f75c285cd87202226f4de49985dcb75732f527eefba2b3ddd70a8865f2533",
+          "size": 158379,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/libd/libdeflate/libdeflate_1.10.orig.tar.gz"
+        }
+      ],
+      "package": "libdeflate",
+      "version": "1.10-2"
+    },
+    {
+      "binaries": [
+        {
+          "package": "libdv4",
+          "version": "1.0.0-14build1"
+        }
+      ],
+      "inputs": [
+        {
+          "filename": "libdv_1.0.0-14build1.debian.tar.xz",
+          "sha256": "5e46f14a0132e763d1212ee76419bab6628b2766903972671fc8ae36adaa5b6c",
+          "size": 14164,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/libd/libdv/libdv_1.0.0-14build1.debian.tar.xz"
+        },
+        {
+          "filename": "libdv_1.0.0-14build1.dsc",
+          "sha256": "1f9bc43eae462cd9a78ea8b533da0fd4d5f99f7da0863886d9d980e4f004ef94",
+          "size": 2179,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/libd/libdv/libdv_1.0.0-14build1.dsc"
+        },
+        {
+          "filename": "libdv_1.0.0.orig.tar.gz",
+          "sha256": "a305734033a9c25541a59e8dd1c254409953269ea7c710c39e540bd8853389ba",
+          "size": 574565,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/libd/libdv/libdv_1.0.0.orig.tar.gz"
+        }
+      ],
+      "package": "libdv",
+      "version": "1.0.0-14build1"
+    },
+    {
+      "binaries": [
+        {
+          "package": "libepoxy0",
+          "version": "1.5.10-1"
+        }
+      ],
+      "inputs": [
+        {
+          "filename": "libepoxy_1.5.10-1.debian.tar.xz",
+          "sha256": "1bf5529ecd4fe6d6fa56836154b659d1d84c5f171a9b38fae1ff873271c54efe",
+          "size": 17484,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/libe/libepoxy/libepoxy_1.5.10-1.debian.tar.xz"
+        },
+        {
+          "filename": "libepoxy_1.5.10-1.dsc",
+          "sha256": "4cb85aae6a878860f181bb1e657dc1cd6f5147c2638de532bae0a3c62d2d9971",
+          "size": 2095,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/libe/libepoxy/libepoxy_1.5.10-1.dsc"
+        },
+        {
+          "filename": "libepoxy_1.5.10.orig.tar.gz",
+          "sha256": "a7ced37f4102b745ac86d6a70a9da399cc139ff168ba6b8002b4d8d43c900c15",
+          "size": 332078,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/libe/libepoxy/libepoxy_1.5.10.orig.tar.gz"
+        }
+      ],
+      "package": "libepoxy",
+      "version": "1.5.10-1"
+    },
+    {
+      "binaries": [
+        {
+          "package": "libevdev2",
+          "version": "1.12.1+dfsg-1"
+        }
+      ],
+      "inputs": [
+        {
+          "filename": "libevdev_1.12.1+dfsg-1.debian.tar.xz",
+          "sha256": "35029e0bbd0f0fe9d7b5e865dc2b81da9b42a69e3779e3f3f8d7f1624294cfe1",
+          "size": 9152,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/libe/libevdev/libevdev_1.12.1+dfsg-1.debian.tar.xz"
+        },
+        {
+          "filename": "libevdev_1.12.1+dfsg-1.dsc",
+          "sha256": "a1a4d9d9894da151d69fec38806ec5196c37b79396d394517d7117e6845a33c9",
+          "size": 2263,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/libe/libevdev/libevdev_1.12.1+dfsg-1.dsc"
+        },
+        {
+          "filename": "libevdev_1.12.1+dfsg.orig.tar.xz",
+          "sha256": "a9aadd9c1ac64e47ca88776555ea6d0030d678b518f593082a13354e0d8016db",
+          "size": 342804,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/libe/libevdev/libevdev_1.12.1+dfsg.orig.tar.xz"
+        }
+      ],
+      "package": "libevdev",
+      "version": "1.12.1+dfsg-1"
+    },
+    {
+      "binaries": [
+        {
+          "package": "libffi8",
+          "version": "3.4.2-4"
+        }
+      ],
+      "inputs": [
+        {
+          "filename": "libffi_3.4.2-4.debian.tar.xz",
+          "sha256": "06d936d00d43e7999d0bce0aa2e0f1550109295b8093de77e6453acb9eacfd19",
+          "size": 8164,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/libf/libffi/libffi_3.4.2-4.debian.tar.xz"
+        },
+        {
+          "filename": "libffi_3.4.2-4.dsc",
+          "sha256": "c7c4890a434795e41a77bddbca949fb904b022a70d8446c5a005ec0f9ed4c554",
+          "size": 1948,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/libf/libffi/libffi_3.4.2-4.dsc"
+        },
+        {
+          "filename": "libffi_3.4.2.orig.tar.gz",
+          "sha256": "540fb721619a6aba3bdeef7d940d8e9e0e6d2c193595bc243241b77ff9e93620",
+          "size": 1351355,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/libf/libffi/libffi_3.4.2.orig.tar.gz"
+        }
+      ],
+      "package": "libffi",
+      "version": "3.4.2-4"
+    },
+    {
+      "binaries": [
+        {
+          "package": "libgav1-0",
+          "version": "0.17.0-1build1"
+        }
+      ],
+      "inputs": [
+        {
+          "filename": "libgav1_0.17.0-1build1.debian.tar.xz",
+          "sha256": "0d15e39f85db524e1856c6b835f2c1efde5e29a48176ef4defeba20b981f2ac5",
+          "size": 5492,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/universe/libg/libgav1/libgav1_0.17.0-1build1.debian.tar.xz"
+        },
+        {
+          "filename": "libgav1_0.17.0-1build1.dsc",
+          "sha256": "53e283488278dc6948a768b883e1ffd9ac03ac67c6b27e1c77854d798fb6d2a9",
+          "size": 2096,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/universe/libg/libgav1/libgav1_0.17.0-1build1.dsc"
+        },
+        {
+          "filename": "libgav1_0.17.0.orig.tar.xz",
+          "sha256": "afae228446b364cf100ce253f6793e0104d1ad86b5072d2dfab86ccea75b7bb5",
+          "size": 729588,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/universe/libg/libgav1/libgav1_0.17.0.orig.tar.xz"
+        }
+      ],
+      "package": "libgav1",
+      "version": "0.17.0-1build1"
+    },
+    {
+      "binaries": [
+        {
+          "package": "libgcrypt20",
+          "version": "1.9.4-3ubuntu3.3"
+        }
+      ],
+      "inputs": [
+        {
+          "filename": "libgcrypt20_1.9.4-3ubuntu3.3.debian.tar.xz",
+          "sha256": "184bf9126ee3a38c70bcdd584bcf363c564848ef3329546b18082ded62bf68d7",
+          "size": 74408,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/libg/libgcrypt20/libgcrypt20_1.9.4-3ubuntu3.3.debian.tar.xz"
+        },
+        {
+          "filename": "libgcrypt20_1.9.4-3ubuntu3.3.dsc",
+          "sha256": "d5f3d4082c4c6ab97d500dd299d0b45644dde808709a030502158831eacd76c2",
+          "size": 2915,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/libg/libgcrypt20/libgcrypt20_1.9.4-3ubuntu3.3.dsc"
+        },
+        {
+          "filename": "libgcrypt20_1.9.4.orig.tar.bz2",
+          "sha256": "ea849c83a72454e3ed4267697e8ca03390aee972ab421e7df69dfe42b65caaf7",
+          "size": 3239704,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/libg/libgcrypt20/libgcrypt20_1.9.4.orig.tar.bz2"
+        },
+        {
+          "filename": "libgcrypt20_1.9.4.orig.tar.bz2.asc",
+          "sha256": "aa44cb00b779b4e75f3e63abeedd4112b10b4b92914dad8f23438fd0217a9fec",
+          "size": 228,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/libg/libgcrypt20/libgcrypt20_1.9.4.orig.tar.bz2.asc"
+        }
+      ],
+      "package": "libgcrypt20",
+      "version": "1.9.4-3ubuntu3.3"
+    },
+    {
+      "binaries": [
+        {
+          "package": "libgpg-error0",
+          "version": "1.43-3"
+        }
+      ],
+      "inputs": [
+        {
+          "filename": "libgpg-error_1.43-3.debian.tar.xz",
+          "sha256": "d9d4efa45fc8d58152cbfa3bbaa68ed1977d8c56b7d59a579ef4feb4ffe7ec83",
+          "size": 19264,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/libg/libgpg-error/libgpg-error_1.43-3.debian.tar.xz"
+        },
+        {
+          "filename": "libgpg-error_1.43-3.dsc",
+          "sha256": "4cebb44aa01a2dfc75eae5b5758ac73f353778e1391e55726264fabf06944a23",
+          "size": 2270,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/libg/libgpg-error/libgpg-error_1.43-3.dsc"
+        },
+        {
+          "filename": "libgpg-error_1.43.orig.tar.bz2",
+          "sha256": "a9ab83ca7acc442a5bd846a75b920285ff79bdb4e3d34aa382be88ed2c3aebaf",
+          "size": 999006,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/libg/libgpg-error/libgpg-error_1.43.orig.tar.bz2"
+        },
+        {
+          "filename": "libgpg-error_1.43.orig.tar.bz2.asc",
+          "sha256": "6f1f0354aee0abc946d7f0e604fa69d5826a312baabcc0bb4fad4f97899cfa80",
+          "size": 238,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/libg/libgpg-error/libgpg-error_1.43.orig.tar.bz2.asc"
+        }
+      ],
+      "package": "libgpg-error",
+      "version": "1.43-3"
+    },
+    {
+      "binaries": [
+        {
+          "package": "libgudev-1.0-0",
+          "version": "1:237-2build1"
+        }
+      ],
+      "inputs": [
+        {
+          "filename": "libgudev_237-2build1.debian.tar.xz",
+          "sha256": "81317375fdf9c166e0caf9068f54d16a1ea6ce318805d889f2899f9e264a0b12",
+          "size": 4400,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/libg/libgudev/libgudev_237-2build1.debian.tar.xz"
+        },
+        {
+          "filename": "libgudev_237-2build1.dsc",
+          "sha256": "4cedbff36a27a0fba0c4817b331cae830af9de5794e896361ec4d5552d9c2b35",
+          "size": 2499,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/libg/libgudev/libgudev_237-2build1.dsc"
+        },
+        {
+          "filename": "libgudev_237.orig.tar.xz",
+          "sha256": "0d06b21170d20c93e4f0534dbb9b0a8b4f1119ffb00b4031aaeb5b9148b686aa",
+          "size": 29060,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/libg/libgudev/libgudev_237.orig.tar.xz"
+        }
+      ],
+      "package": "libgudev",
+      "version": "237-2build1"
+    },
+    {
+      "binaries": [
+        {
+          "package": "libidn2-0",
+          "version": "2.3.2-2build1"
+        }
+      ],
+      "inputs": [
+        {
+          "filename": "libidn2_2.3.2-2build1.debian.tar.xz",
+          "sha256": "4111fae48e55185111ea05a70618114aa6c76f440d384f5985008c0cab3a9132",
+          "size": 15972,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/libi/libidn2/libidn2_2.3.2-2build1.debian.tar.xz"
+        },
+        {
+          "filename": "libidn2_2.3.2-2build1.dsc",
+          "sha256": "b163760eee669b374571286b920e90a9647b436af745192b7d7ac9c87f9c3f47",
+          "size": 2655,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/libi/libidn2/libidn2_2.3.2-2build1.dsc"
+        },
+        {
+          "filename": "libidn2_2.3.2.orig.tar.gz",
+          "sha256": "76940cd4e778e8093579a9d195b25fff5e936e9dc6242068528b437a76764f91",
+          "size": 2169556,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/libi/libidn2/libidn2_2.3.2.orig.tar.gz"
+        },
+        {
+          "filename": "libidn2_2.3.2.orig.tar.gz.asc",
+          "sha256": "3d533d0b18e031e90fbee0e552e1a034ef0b5bb11298019f0b99c0c85132ff9a",
+          "size": 488,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/libi/libidn2/libidn2_2.3.2.orig.tar.gz.asc"
+        }
+      ],
+      "package": "libidn2",
+      "version": "2.3.2-2build1"
+    },
+    {
+      "binaries": [
+        {
+          "package": "libiec61883-0",
+          "version": "1.2.0-4build3"
+        }
+      ],
+      "inputs": [
+        {
+          "filename": "libiec61883_1.2.0-4build3.debian.tar.xz",
+          "sha256": "8f1cb863dfdae32513a642575cc2bbb6230f1e543ce779c54060446ffe39c8b4",
+          "size": 7828,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/libi/libiec61883/libiec61883_1.2.0-4build3.debian.tar.xz"
+        },
+        {
+          "filename": "libiec61883_1.2.0-4build3.dsc",
+          "sha256": "da2d9b31ca17de76080bd7fb861d8b85950405e3657b687c651b8422c7d80707",
+          "size": 2119,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/libi/libiec61883/libiec61883_1.2.0-4build3.dsc"
+        },
+        {
+          "filename": "libiec61883_1.2.0.orig.tar.gz",
+          "sha256": "7c7879c6b9add3148baea697dfbfdcefffbc8ac74e8e6bcf46125ec1d21b373a",
+          "size": 339064,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/libi/libiec61883/libiec61883_1.2.0.orig.tar.gz"
+        }
+      ],
+      "package": "libiec61883",
+      "version": "1.2.0-4build3"
+    },
+    {
+      "binaries": [
+        {
+          "package": "libjpeg-turbo8",
+          "version": "2.1.2-0ubuntu1"
+        }
+      ],
+      "inputs": [
+        {
+          "filename": "libjpeg-turbo_2.1.2-0ubuntu1.debian.tar.xz",
+          "sha256": "1cdfbd71818526459bf73ffe42bd0e4927f75681384c87ec01569fdcb1bf2529",
+          "size": 17240,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/libj/libjpeg-turbo/libjpeg-turbo_2.1.2-0ubuntu1.debian.tar.xz"
+        },
+        {
+          "filename": "libjpeg-turbo_2.1.2-0ubuntu1.dsc",
+          "sha256": "c351c2dbc18346c95ad473d58452cd73ae1e8401c5e8f627e0ab3611bd89bf3c",
+          "size": 1690,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/libj/libjpeg-turbo/libjpeg-turbo_2.1.2-0ubuntu1.dsc"
+        },
+        {
+          "filename": "libjpeg-turbo_2.1.2.orig.tar.gz",
+          "sha256": "e7fdc8a255c45bc8fbd9aa11c1a49c23092fcd7379296aeaeb14d3343a3d1bed",
+          "size": 2257645,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/libj/libjpeg-turbo/libjpeg-turbo_2.1.2.orig.tar.gz"
+        }
+      ],
+      "package": "libjpeg-turbo",
+      "version": "2.1.2-0ubuntu1"
+    },
+    {
+      "binaries": [
+        {
+          "package": "libmanette-0.2-0",
+          "version": "0.2.6-3build1"
+        }
+      ],
+      "inputs": [
+        {
+          "filename": "libmanette_0.2.6-3build1.debian.tar.xz",
+          "sha256": "03ef48b1af440fc57c849f8a22ce55cccae465f6e9360569819fed1d2265bc11",
+          "size": 3724,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/libm/libmanette/libmanette_0.2.6-3build1.debian.tar.xz"
+        },
+        {
+          "filename": "libmanette_0.2.6-3build1.dsc",
+          "sha256": "ff7ffde0f5a2109978042eb1800ae475c8b44461084d068f38b60aaa52f859b8",
+          "size": 2554,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/libm/libmanette/libmanette_0.2.6-3build1.dsc"
+        },
+        {
+          "filename": "libmanette_0.2.6.orig.tar.xz",
+          "sha256": "63653259a821ec7d90d681e52e757e2219d462828c9d74b056a5f53267636bac",
+          "size": 43236,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/libm/libmanette/libmanette_0.2.6.orig.tar.xz"
+        }
+      ],
+      "package": "libmanette",
+      "version": "0.2.6-3build1"
+    },
+    {
+      "binaries": [
+        {
+          "package": "libmd0",
+          "version": "1.0.4-1build1"
+        }
+      ],
+      "inputs": [
+        {
+          "filename": "libmd_1.0.4-1build1.debian.tar.xz",
+          "sha256": "ea7327ee6adee8ddd1f3b1d6c1780f05acff01666199cecf4342a2a05a7a443e",
+          "size": 10264,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/libm/libmd/libmd_1.0.4-1build1.debian.tar.xz"
+        },
+        {
+          "filename": "libmd_1.0.4-1build1.dsc",
+          "sha256": "0f282b79cd8eac2910677fd1f38a5baa5740df50b4e1da0922d35a6726e88e74",
+          "size": 2380,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/libm/libmd/libmd_1.0.4-1build1.dsc"
+        },
+        {
+          "filename": "libmd_1.0.4.orig.tar.xz",
+          "sha256": "f51c921042e34beddeded4b75557656559cf5b1f2448033b4c1eec11c07e530f",
+          "size": 264472,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/libm/libmd/libmd_1.0.4.orig.tar.xz"
+        },
+        {
+          "filename": "libmd_1.0.4.orig.tar.xz.asc",
+          "sha256": "32deebe1cfab127ee69a3e8c8caf439e459b7cdcdd7535fe021cb485adc14057",
+          "size": 833,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/libm/libmd/libmd_1.0.4.orig.tar.xz.asc"
+        }
+      ],
+      "package": "libmd",
+      "version": "1.0.4-1build1"
+    },
+    {
+      "binaries": [
+        {
+          "package": "libogg0",
+          "version": "1.3.5-0ubuntu3"
+        }
+      ],
+      "inputs": [
+        {
+          "filename": "libogg_1.3.5-0ubuntu3.diff.gz",
+          "sha256": "4699dc7646379c51f858b3bab4a165bf2a8b3c1d2eae00a205411816332a2978",
+          "size": 7196,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/libo/libogg/libogg_1.3.5-0ubuntu3.diff.gz"
+        },
+        {
+          "filename": "libogg_1.3.5-0ubuntu3.dsc",
+          "sha256": "5f3cedec5fd160cf7fc4b373652b2fbba2302bd79eb78285eaf907516af49675",
+          "size": 2007,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/libo/libogg/libogg_1.3.5-0ubuntu3.dsc"
+        },
+        {
+          "filename": "libogg_1.3.5.orig.tar.gz",
+          "sha256": "0eb4b4b9420a0f51db142ba3f9c64b333f826532dc0f48c6410ae51f4799b664",
+          "size": 593071,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/libo/libogg/libogg_1.3.5.orig.tar.gz"
+        }
+      ],
+      "package": "libogg",
+      "version": "1.3.5-0ubuntu3"
+    },
+    {
+      "binaries": [
+        {
+          "package": "libpng16-16",
+          "version": "1.6.37-3ubuntu0.6"
+        }
+      ],
+      "inputs": [
+        {
+          "filename": "libpng1.6_1.6.37-3ubuntu0.6.debian.tar.xz",
+          "sha256": "2a0e440d4d14c7b8aa3050b4ff84e7a1381c80ac2e841ac6853bbdd2baec94bc",
+          "size": 51756,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/libp/libpng1.6/libpng1.6_1.6.37-3ubuntu0.6.debian.tar.xz"
+        },
+        {
+          "filename": "libpng1.6_1.6.37-3ubuntu0.6.dsc",
+          "sha256": "254954c9a6bb5afa76b4bdf34cc61888f77b3fafe3b960de48a7b0a75bf91921",
+          "size": 2377,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/libp/libpng1.6/libpng1.6_1.6.37-3ubuntu0.6.dsc"
+        },
+        {
+          "filename": "libpng1.6_1.6.37.orig.tar.gz",
+          "sha256": "ca74a0dace179a8422187671aee97dd3892b53e168627145271cad5b5ac81307",
+          "size": 1508805,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/libp/libpng1.6/libpng1.6_1.6.37.orig.tar.gz"
+        }
+      ],
+      "package": "libpng1.6",
+      "version": "1.6.37-3ubuntu0.6"
+    },
+    {
+      "binaries": [
+        {
+          "package": "libproxy1v5",
+          "version": "0.4.17-2"
+        }
+      ],
+      "inputs": [
+        {
+          "filename": "libproxy_0.4.17-2.debian.tar.xz",
+          "sha256": "9c6272e672d675ee8ca71ed95147956a9db125914671658910a629811aeee611",
+          "size": 13652,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/libp/libproxy/libproxy_0.4.17-2.debian.tar.xz"
+        },
+        {
+          "filename": "libproxy_0.4.17-2.dsc",
+          "sha256": "44f8a24182340f157e266702984604331f0643c38d16e632e218fb6f38af157a",
+          "size": 2990,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/libp/libproxy/libproxy_0.4.17-2.dsc"
+        },
+        {
+          "filename": "libproxy_0.4.17.orig.tar.gz",
+          "sha256": "88c624711412665515e2800a7e564aabb5b3ee781b9820eca9168035b0de60a9",
+          "size": 95542,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/libp/libproxy/libproxy_0.4.17.orig.tar.gz"
+        }
+      ],
+      "package": "libproxy",
+      "version": "0.4.17-2"
+    },
+    {
+      "binaries": [
+        {
+          "package": "libpsl5",
+          "version": "0.21.0-1.2build2"
+        }
+      ],
+      "inputs": [
+        {
+          "filename": "libpsl_0.21.0-1.2build2.debian.tar.xz",
+          "sha256": "4ab5fc2819b8592be9822a13dab8fd5fb8b3fa862c11f6e15d576679589a8e36",
+          "size": 12896,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/libp/libpsl/libpsl_0.21.0-1.2build2.debian.tar.xz"
+        },
+        {
+          "filename": "libpsl_0.21.0-1.2build2.dsc",
+          "sha256": "0de922e6df3590f35b00512eb5cce0205bc5e2993897955cd8cff6c1a4252103",
+          "size": 2348,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/libp/libpsl/libpsl_0.21.0-1.2build2.dsc"
+        },
+        {
+          "filename": "libpsl_0.21.0.orig.tar.gz",
+          "sha256": "055aa87ec166c7afb985d0816c07ff440e1eb899881a318c51c69a0aeea8e279",
+          "size": 8598583,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/libp/libpsl/libpsl_0.21.0.orig.tar.gz"
+        }
+      ],
+      "package": "libpsl",
+      "version": "0.21.0-1.2build2"
+    },
+    {
+      "binaries": [
+        {
+          "package": "libraw1394-11",
+          "version": "2.1.2-2build2"
+        }
+      ],
+      "inputs": [
+        {
+          "filename": "libraw1394_2.1.2-2build2.debian.tar.xz",
+          "sha256": "ba11a3befe57c0e5e8e5761d8884a6c1add601d4ef2c6ca014a935db0d44f1fd",
+          "size": 6920,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/libr/libraw1394/libraw1394_2.1.2-2build2.debian.tar.xz"
+        },
+        {
+          "filename": "libraw1394_2.1.2-2build2.dsc",
+          "sha256": "1d110adb5bf52733de5febfc25bb179566c2e8aaa3158bf9e96a50deb5e83f2f",
+          "size": 2126,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/libr/libraw1394/libraw1394_2.1.2-2build2.dsc"
+        },
+        {
+          "filename": "libraw1394_2.1.2.orig.tar.gz",
+          "sha256": "ddc4e32721cdfe680d964aaede68ac606a20cd17dd2ba70e2d7e0692086ab57c",
+          "size": 458134,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/libr/libraw1394/libraw1394_2.1.2.orig.tar.gz"
+        }
+      ],
+      "package": "libraw1394",
+      "version": "2.1.2-2build2"
+    },
+    {
+      "binaries": [
+        {
+          "package": "librsvg2-2",
+          "version": "2.52.5+dfsg-3ubuntu0.2"
+        },
+        {
+          "package": "librsvg2-common",
+          "version": "2.52.5+dfsg-3ubuntu0.2"
+        }
+      ],
+      "inputs": [
+        {
+          "filename": "librsvg_2.52.5+dfsg-3ubuntu0.2.debian.tar.xz",
+          "sha256": "b997f1bb479d2bb45e19fefe1c60b2da0629dac21797040206fe9e32dc5077b6",
+          "size": 37684,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/libr/librsvg/librsvg_2.52.5+dfsg-3ubuntu0.2.debian.tar.xz"
+        },
+        {
+          "filename": "librsvg_2.52.5+dfsg-3ubuntu0.2.dsc",
+          "sha256": "dca942d1851a69f4df53f9e43bd60bed8ba8af189eeb71543a25218881aabd6f",
+          "size": 3126,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/libr/librsvg/librsvg_2.52.5+dfsg-3ubuntu0.2.dsc"
+        },
+        {
+          "filename": "librsvg_2.52.5+dfsg.orig.tar.xz",
+          "sha256": "66d01957678559bec1c23404aa5eab90d68f034ba0826a2bd48dd5fd106d86a4",
+          "size": 20813024,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/libr/librsvg/librsvg_2.52.5+dfsg.orig.tar.xz"
+        }
+      ],
+      "package": "librsvg",
+      "version": "2.52.5+dfsg-3ubuntu0.2"
+    },
+    {
+      "binaries": [
+        {
+          "package": "libseccomp2",
+          "version": "2.5.3-2ubuntu3~22.04.1"
+        }
+      ],
+      "inputs": [
+        {
+          "filename": "libseccomp_2.5.3-2ubuntu3~22.04.1.debian.tar.xz",
+          "sha256": "cd582c847ced99c97f487b3f4a851bc1f2bed9065f90729d90dc8721b6dc483e",
+          "size": 24328,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/libs/libseccomp/libseccomp_2.5.3-2ubuntu3~22.04.1.debian.tar.xz"
+        },
+        {
+          "filename": "libseccomp_2.5.3-2ubuntu3~22.04.1.dsc",
+          "sha256": "e7f514056a28794c6a7067cd0881b5bf03e918578df3418eea6752cbfa83fd13",
+          "size": 2860,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/libs/libseccomp/libseccomp_2.5.3-2ubuntu3~22.04.1.dsc"
+        },
+        {
+          "filename": "libseccomp_2.5.3.orig.tar.gz",
+          "sha256": "59065c8733364725e9721ba48c3a99bbc52af921daf48df4b1e012fbc7b10a76",
+          "size": 637572,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/libs/libseccomp/libseccomp_2.5.3.orig.tar.gz"
+        },
+        {
+          "filename": "libseccomp_2.5.3.orig.tar.gz.asc",
+          "sha256": "cc1cbe9d9eb6a67b78de107eb37b2bc8d7599e3c1d36699ae2528db489cb5d44",
+          "size": 833,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/libs/libseccomp/libseccomp_2.5.3.orig.tar.gz.asc"
+        }
+      ],
+      "package": "libseccomp",
+      "version": "2.5.3-2ubuntu3~22.04.1"
+    },
+    {
+      "binaries": [
+        {
+          "package": "libsecret-1-0",
+          "version": "0.20.5-2"
+        }
+      ],
+      "inputs": [
+        {
+          "filename": "libsecret_0.20.5-2.debian.tar.xz",
+          "sha256": "5968b551febbfcf2700e3b9f1c9a61d1c142fdd1540fee985b5b47f40c8138fd",
+          "size": 10864,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/libs/libsecret/libsecret_0.20.5-2.debian.tar.xz"
+        },
+        {
+          "filename": "libsecret_0.20.5-2.dsc",
+          "sha256": "96564b5c71f235e41ec4e6ef655159a271e1b4a1cfd3dc28cecff72728ea1671",
+          "size": 2730,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/libs/libsecret/libsecret_0.20.5-2.dsc"
+        },
+        {
+          "filename": "libsecret_0.20.5.orig.tar.xz",
+          "sha256": "56cfc341137da870cf9e24e297d5c0b3c3e403493581609311a88d2149d7d0c3",
+          "size": 187220,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/libs/libsecret/libsecret_0.20.5.orig.tar.xz"
+        }
+      ],
+      "package": "libsecret",
+      "version": "0.20.5-2"
+    },
+    {
+      "binaries": [
+        {
+          "package": "libselinux1",
+          "version": "3.3-1build2"
+        }
+      ],
+      "inputs": [
+        {
+          "filename": "libselinux_3.3-1build2.debian.tar.xz",
+          "sha256": "ccb8550d4cbb6ec9be4febdba0cc7f7d2d82f92eeffe0606e198f560cebd71e6",
+          "size": 24052,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/libs/libselinux/libselinux_3.3-1build2.debian.tar.xz"
+        },
+        {
+          "filename": "libselinux_3.3-1build2.dsc",
+          "sha256": "a96392937f548874b80115e444e857f72257dedc6b6d66aa16657d301e9a621a",
+          "size": 2644,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/libs/libselinux/libselinux_3.3-1build2.dsc"
+        },
+        {
+          "filename": "libselinux_3.3.orig.tar.gz",
+          "sha256": "acfdee27633d2496508c28727c3d41d3748076f66d42fccde2e6b9f3463a7057",
+          "size": 206826,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/libs/libselinux/libselinux_3.3.orig.tar.gz"
+        }
+      ],
+      "package": "libselinux",
+      "version": "3.3-1build2"
+    },
+    {
+      "binaries": [
+        {
+          "package": "libshout3",
+          "version": "2.4.5-1build3"
+        }
+      ],
+      "inputs": [
+        {
+          "filename": "libshout_2.4.5-1build3.debian.tar.xz",
+          "sha256": "9bbbda7549f32e196ddad0f2fc802c9f9aa5f70e89c0e4c6ea614d428e4d9272",
+          "size": 12464,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/libs/libshout/libshout_2.4.5-1build3.debian.tar.xz"
+        },
+        {
+          "filename": "libshout_2.4.5-1build3.dsc",
+          "sha256": "4fd890da688ab245d5e958f5e0aeeb6966fed22b7ed44a19fcb90fde03d0fad2",
+          "size": 2415,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/libs/libshout/libshout_2.4.5-1build3.dsc"
+        },
+        {
+          "filename": "libshout_2.4.5.orig.tar.gz",
+          "sha256": "d9e568668a673994ebe3f1eb5f2bee06e3236a5db92b8d0c487e1c0f886a6890",
+          "size": 543991,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/libs/libshout/libshout_2.4.5.orig.tar.gz"
+        }
+      ],
+      "package": "libshout",
+      "version": "2.4.5-1build3"
+    },
+    {
+      "binaries": [
+        {
+          "package": "libsndfile1",
+          "version": "1.0.31-2ubuntu0.2"
+        }
+      ],
+      "inputs": [
+        {
+          "filename": "libsndfile_1.0.31-2ubuntu0.2.debian.tar.xz",
+          "sha256": "5ea08b6307ba862ebb2b99a304d5491809533e802ae2f051bdbad94ce58012f4",
+          "size": 25092,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/libs/libsndfile/libsndfile_1.0.31-2ubuntu0.2.debian.tar.xz"
+        },
+        {
+          "filename": "libsndfile_1.0.31-2ubuntu0.2.dsc",
+          "sha256": "3aa214beb1a56ee44d2c3426d6563c287a0572666435b4e6c1179a9c59068221",
+          "size": 2277,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/libs/libsndfile/libsndfile_1.0.31-2ubuntu0.2.dsc"
+        },
+        {
+          "filename": "libsndfile_1.0.31.orig.tar.gz",
+          "sha256": "8cdee0acb06bb0a3c1a6ca524575643df8b1f3a55a0893b4dd9f829d08263785",
+          "size": 662584,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/libs/libsndfile/libsndfile_1.0.31.orig.tar.gz"
+        }
+      ],
+      "package": "libsndfile",
+      "version": "1.0.31-2ubuntu0.2"
+    },
+    {
+      "binaries": [
+        {
+          "package": "libsoup-3.0-0",
+          "version": "3.0.7-0ubuntu1"
+        }
+      ],
+      "inputs": [
+        {
+          "filename": "libsoup3_3.0.7-0ubuntu1.debian.tar.xz",
+          "sha256": "41f8224a492af1f917cdf7d9284154ed2b921031b4b6f331925447fcc35410d2",
+          "size": 25536,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/universe/libs/libsoup3/libsoup3_3.0.7-0ubuntu1.debian.tar.xz"
+        },
+        {
+          "filename": "libsoup3_3.0.7-0ubuntu1.dsc",
+          "sha256": "a8b0f88971724fcb3f186605d9d0eb77af284596dda07bad3152cf28e44df9bf",
+          "size": 3335,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/universe/libs/libsoup3/libsoup3_3.0.7-0ubuntu1.dsc"
+        },
+        {
+          "filename": "libsoup3_3.0.7.orig.tar.xz",
+          "sha256": "ebdf90cf3599c11acbb6818a9d9e3fc9d2c68e56eb829b93962972683e1bf7c8",
+          "size": 1525104,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/universe/libs/libsoup3/libsoup3_3.0.7.orig.tar.xz"
+        }
+      ],
+      "package": "libsoup3",
+      "version": "3.0.7-0ubuntu1"
+    },
+    {
+      "binaries": [
+        {
+          "package": "libtasn1-6",
+          "version": "4.18.0-4ubuntu0.2"
+        }
+      ],
+      "inputs": [
+        {
+          "filename": "libtasn1-6_4.18.0-4ubuntu0.2.debian.tar.xz",
+          "sha256": "450340a2e588e4fcbfcbf2eece3c516a3fc25f6606e0fa341155326ab72137a0",
+          "size": 25324,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/libt/libtasn1-6/libtasn1-6_4.18.0-4ubuntu0.2.debian.tar.xz"
+        },
+        {
+          "filename": "libtasn1-6_4.18.0-4ubuntu0.2.dsc",
+          "sha256": "959cc5799f608a5ddc7aba7fcc765588b5dc82c7d987bd17a4274222a5171d41",
+          "size": 2777,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/libt/libtasn1-6/libtasn1-6_4.18.0-4ubuntu0.2.dsc"
+        },
+        {
+          "filename": "libtasn1-6_4.18.0.orig.tar.gz",
+          "sha256": "4365c154953563d64c67a024b607d1ee75c6db76e0d0f65709ea80a334cd1898",
+          "size": 1724441,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/libt/libtasn1-6/libtasn1-6_4.18.0.orig.tar.gz"
+        },
+        {
+          "filename": "libtasn1-6_4.18.0.orig.tar.gz.asc",
+          "sha256": "68edccaf988071e0c0154495e82be0b783553a49762381435accc79f2fdb463d",
+          "size": 228,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/libt/libtasn1-6/libtasn1-6_4.18.0.orig.tar.gz.asc"
+        }
+      ],
+      "package": "libtasn1-6",
+      "version": "4.18.0-4ubuntu0.2"
+    },
+    {
+      "binaries": [
+        {
+          "package": "libthai0",
+          "version": "0.1.29-1build1"
+        }
+      ],
+      "inputs": [
+        {
+          "filename": "libthai_0.1.29-1build1.debian.tar.xz",
+          "sha256": "6aede1220d716f4291b8e9ee60383b4ff3c09c2abe17982443d977c557426866",
+          "size": 12676,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/libt/libthai/libthai_0.1.29-1build1.debian.tar.xz"
+        },
+        {
+          "filename": "libthai_0.1.29-1build1.dsc",
+          "sha256": "1f021fa685c211d68aa2dc8b568d045480ebb40b5ca5b52181ab50000c01cfe3",
+          "size": 2457,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/libt/libthai/libthai_0.1.29-1build1.dsc"
+        },
+        {
+          "filename": "libthai_0.1.29.orig.tar.xz",
+          "sha256": "fc80cc7dcb50e11302b417cebd24f2d30a8b987292e77e003267b9100d0f4bcd",
+          "size": 417728,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/libt/libthai/libthai_0.1.29.orig.tar.xz"
+        }
+      ],
+      "package": "libthai",
+      "version": "0.1.29-1build1"
+    },
+    {
+      "binaries": [
+        {
+          "package": "libtheora0",
+          "version": "1.1.1+dfsg.1-15ubuntu4"
+        }
+      ],
+      "inputs": [
+        {
+          "filename": "libtheora_1.1.1+dfsg.1-15ubuntu4.debian.tar.xz",
+          "sha256": "4716bf3bf98e8972450cb885f52980c4af3b515420ac504fe3daf175ee86040e",
+          "size": 11080,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/libt/libtheora/libtheora_1.1.1+dfsg.1-15ubuntu4.debian.tar.xz"
+        },
+        {
+          "filename": "libtheora_1.1.1+dfsg.1-15ubuntu4.dsc",
+          "sha256": "fc79f86163765c2101b3c46e8215f60a860dd65286cfc109116c8a6cd4b3ede3",
+          "size": 2739,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/libt/libtheora/libtheora_1.1.1+dfsg.1-15ubuntu4.dsc"
+        },
+        {
+          "filename": "libtheora_1.1.1+dfsg.1.orig.tar.gz",
+          "sha256": "c59b0f07a7314dfe2ade15c41bc9f637f8a450fc6b340af61b81760629f28f90",
+          "size": 2100495,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/libt/libtheora/libtheora_1.1.1+dfsg.1.orig.tar.gz"
+        }
+      ],
+      "package": "libtheora",
+      "version": "1.1.1+dfsg.1-15ubuntu4"
+    },
+    {
+      "binaries": [
+        {
+          "package": "libunistring2",
+          "version": "1.0-1"
+        }
+      ],
+      "inputs": [
+        {
+          "filename": "libunistring_1.0-1.debian.tar.xz",
+          "sha256": "7cf35dfd1de973ee3944930d215750c7de27ececd91616ad129ac5a238b1538f",
+          "size": 42004,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/libu/libunistring/libunistring_1.0-1.debian.tar.xz"
+        },
+        {
+          "filename": "libunistring_1.0-1.dsc",
+          "sha256": "d93859cde749a30f55404ea1ef0ed4f02e58d2475a7c7e088b264d4df0626061",
+          "size": 1928,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/libu/libunistring/libunistring_1.0-1.dsc"
+        },
+        {
+          "filename": "libunistring_1.0.orig.tar.xz",
+          "sha256": "5bab55b49f75d77ed26b257997e919b693f29fd4a1bc22e0e6e024c246c72741",
+          "size": 2367800,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/libu/libunistring/libunistring_1.0.orig.tar.xz"
+        }
+      ],
+      "package": "libunistring",
+      "version": "1.0-1"
+    },
+    {
+      "binaries": [
+        {
+          "package": "libunwind8",
+          "version": "1.3.2-2build2.1"
+        }
+      ],
+      "inputs": [
+        {
+          "filename": "libunwind_1.3.2-2build2.1.debian.tar.xz",
+          "sha256": "fd9de87fb8d2a45c4f55c390db5bd57e58fc963d7ca14e4aae854a917f239dc3",
+          "size": 20156,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/libu/libunwind/libunwind_1.3.2-2build2.1.debian.tar.xz"
+        },
+        {
+          "filename": "libunwind_1.3.2-2build2.1.dsc",
+          "sha256": "8da13052cdf57f1c4d4efb4b4acad7019066273f99849910db2af3cd3c75d290",
+          "size": 2929,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/libu/libunwind/libunwind_1.3.2-2build2.1.dsc"
+        },
+        {
+          "filename": "libunwind_1.3.2.orig.tar.gz",
+          "sha256": "0a4b5a78d8c0418dfa610245f75fa03ad45d8e5e4cc091915d2dbed34c01178e",
+          "size": 854114,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/libu/libunwind/libunwind_1.3.2.orig.tar.gz"
+        },
+        {
+          "filename": "libunwind_1.3.2.orig.tar.gz.asc",
+          "sha256": "5c1ffad1980acc92536a35643afba3f0e395b2a953fb898fda3403dae8fbd6ef",
+          "size": 659,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/libu/libunwind/libunwind_1.3.2.orig.tar.gz.asc"
+        }
+      ],
+      "package": "libunwind",
+      "version": "1.3.2-2build2.1"
+    },
+    {
+      "binaries": [
+        {
+          "package": "libvisual-0.4-0",
+          "version": "0.4.0-17build2"
+        }
+      ],
+      "inputs": [
+        {
+          "filename": "libvisual_0.4.0-17build2.debian.tar.xz",
+          "sha256": "8275ae8d75b67a98cf242c02d2eb62685458b056eb1b4526d57df999e91515ed",
+          "size": 20148,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/libv/libvisual/libvisual_0.4.0-17build2.debian.tar.xz"
+        },
+        {
+          "filename": "libvisual_0.4.0-17build2.dsc",
+          "sha256": "5b14ba4e287f8a861d5e36317af76d660ca990fa9cfdfc91c034bb3b6951509b",
+          "size": 2127,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/libv/libvisual/libvisual_0.4.0-17build2.dsc"
+        },
+        {
+          "filename": "libvisual_0.4.0.orig.tar.gz",
+          "sha256": "0b4dfdb87125e129567752089e3c8b54cefed601eef169d2533d8659da8dc1d7",
+          "size": 583386,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/libv/libvisual/libvisual_0.4.0.orig.tar.gz"
+        }
+      ],
+      "package": "libvisual",
+      "version": "0.4.0-17build2"
+    },
+    {
+      "binaries": [
+        {
+          "package": "libvorbis0a",
+          "version": "1.3.7-1build2"
+        },
+        {
+          "package": "libvorbisenc2",
+          "version": "1.3.7-1build2"
+        }
+      ],
+      "inputs": [
+        {
+          "filename": "libvorbis_1.3.7-1build2.debian.tar.xz",
+          "sha256": "87600a7c3ad4af1e76200b77a700969d6ec88497882f6a7e5cf189c4de12d4dc",
+          "size": 11748,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/libv/libvorbis/libvorbis_1.3.7-1build2.debian.tar.xz"
+        },
+        {
+          "filename": "libvorbis_1.3.7-1build2.dsc",
+          "sha256": "ff0243847742d635eab7d3919948c5a3e2863e77f7676247f8bfee5b4de6a106",
+          "size": 2494,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/libv/libvorbis/libvorbis_1.3.7-1build2.dsc"
+        },
+        {
+          "filename": "libvorbis_1.3.7.orig.tar.gz",
+          "sha256": "0e982409a9c3fc82ee06e08205b1355e5c6aa4c36bca58146ef399621b0ce5ab",
+          "size": 1658963,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/libv/libvorbis/libvorbis_1.3.7.orig.tar.gz"
+        }
+      ],
+      "package": "libvorbis",
+      "version": "1.3.7-1build2"
+    },
+    {
+      "binaries": [
+        {
+          "package": "libvpx7",
+          "version": "1.11.0-2ubuntu2.5"
+        }
+      ],
+      "inputs": [
+        {
+          "filename": "libvpx_1.11.0-2ubuntu2.5.debian.tar.xz",
+          "sha256": "a27f69f2d396b4856e57fd564ccb7826fbb0cf9f051141628f1c2ea2becad270",
+          "size": 20012,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/libv/libvpx/libvpx_1.11.0-2ubuntu2.5.debian.tar.xz"
+        },
+        {
+          "filename": "libvpx_1.11.0-2ubuntu2.5.dsc",
+          "sha256": "6cf8855d16441d7db19a1e7fbb1bca9ed478ebf369655fcce5558f515b514656",
+          "size": 2360,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/libv/libvpx/libvpx_1.11.0-2ubuntu2.5.dsc"
+        },
+        {
+          "filename": "libvpx_1.11.0.orig.tar.gz",
+          "sha256": "965e51c91ad9851e2337aebcc0f517440c637c506f3a03948062e3d5ea129a83",
+          "size": 5347256,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/libv/libvpx/libvpx_1.11.0.orig.tar.gz"
+        }
+      ],
+      "package": "libvpx",
+      "version": "1.11.0-2ubuntu2.5"
+    },
+    {
+      "binaries": [
+        {
+          "package": "libwebp7",
+          "version": "1.2.2-2ubuntu0.22.04.2"
+        },
+        {
+          "package": "libwebpdemux2",
+          "version": "1.2.2-2ubuntu0.22.04.2"
+        },
+        {
+          "package": "libwebpmux3",
+          "version": "1.2.2-2ubuntu0.22.04.2"
+        }
+      ],
+      "inputs": [
+        {
+          "filename": "libwebp_1.2.2-2ubuntu0.22.04.2.debian.tar.xz",
+          "sha256": "b6d9d43c6eaa96cb3a0720819add82664d37cca2fe4fcd3245db533919e4d779",
+          "size": 10468,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/libw/libwebp/libwebp_1.2.2-2ubuntu0.22.04.2.debian.tar.xz"
+        },
+        {
+          "filename": "libwebp_1.2.2-2ubuntu0.22.04.2.dsc",
+          "sha256": "4870b586cae8beb49c8ec15fa090ce37e2ad73a599de55b05dac4476e201b99b",
+          "size": 2186,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/libw/libwebp/libwebp_1.2.2-2ubuntu0.22.04.2.dsc"
+        },
+        {
+          "filename": "libwebp_1.2.2.orig.tar.gz",
+          "sha256": "7656532f837af5f4cec3ff6bafe552c044dc39bf453587bd5b77450802f4aee6",
+          "size": 4117468,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/libw/libwebp/libwebp_1.2.2.orig.tar.gz"
+        }
+      ],
+      "package": "libwebp",
+      "version": "1.2.2-2ubuntu0.22.04.2"
+    },
+    {
+      "binaries": [
+        {
+          "package": "libx11-6",
+          "version": "2:1.7.5-1ubuntu0.3"
+        },
+        {
+          "package": "libx11-xcb1",
+          "version": "2:1.7.5-1ubuntu0.3"
+        }
+      ],
+      "inputs": [
+        {
+          "filename": "libx11_1.7.5-1ubuntu0.3.diff.gz",
+          "sha256": "cb704ffd480c5b895fa2eeed05dde55029d0f255d1da129a1c9208945743120f",
+          "size": 98716,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/libx/libx11/libx11_1.7.5-1ubuntu0.3.diff.gz"
+        },
+        {
+          "filename": "libx11_1.7.5-1ubuntu0.3.dsc",
+          "sha256": "0dd283f309406a9b771d494de14edf87409e7afcbdbffb58a4f97d8ddd44c574",
+          "size": 2654,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/libx/libx11/libx11_1.7.5-1ubuntu0.3.dsc"
+        },
+        {
+          "filename": "libx11_1.7.5.orig.tar.gz",
+          "sha256": "78992abcd2bfdebe657699203ad8914e7ae77025175460e04a1045387192a978",
+          "size": 3170022,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/libx/libx11/libx11_1.7.5.orig.tar.gz"
+        },
+        {
+          "filename": "libx11_1.7.5.orig.tar.gz.asc",
+          "sha256": "8332442d1675118c43e341630bf62aeb93972254d139bb865cc047006ca7e8d6",
+          "size": 358,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/libx/libx11/libx11_1.7.5.orig.tar.gz.asc"
+        }
+      ],
+      "package": "libx11",
+      "version": "2:1.7.5-1ubuntu0.3"
+    },
+    {
+      "binaries": [
+        {
+          "package": "libxau6",
+          "version": "1:1.0.9-1build5"
+        }
+      ],
+      "inputs": [
+        {
+          "filename": "libxau_1.0.9-1build5.diff.gz",
+          "sha256": "ba43fc817c512c7105865233f31d8ab08a95e71ce3b2b8a5c2568fc0129ab6de",
+          "size": 10579,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/libx/libxau/libxau_1.0.9-1build5.diff.gz"
+        },
+        {
+          "filename": "libxau_1.0.9-1build5.dsc",
+          "sha256": "1e6f3b420f37e6ed492c009741f784c35ef1c19f11f8c83b4777b2590382b721",
+          "size": 2315,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/libx/libxau/libxau_1.0.9-1build5.dsc"
+        },
+        {
+          "filename": "libxau_1.0.9.orig.tar.gz",
+          "sha256": "1f123d8304b082ad63a9e89376400a3b1d4c29e67e3ea07b3f659cccca690eea",
+          "size": 394068,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/libx/libxau/libxau_1.0.9.orig.tar.gz"
+        },
+        {
+          "filename": "libxau_1.0.9.orig.tar.gz.asc",
+          "sha256": "af6104aaf3c5ede529e381237dd60f49640ec96593a84502fa493b86582b2f04",
+          "size": 801,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/libx/libxau/libxau_1.0.9.orig.tar.gz.asc"
+        }
+      ],
+      "package": "libxau",
+      "version": "1:1.0.9-1build5"
+    },
+    {
+      "binaries": [
+        {
+          "package": "libxcb-randr0",
+          "version": "1.14-3ubuntu3"
+        },
+        {
+          "package": "libxcb-render0",
+          "version": "1.14-3ubuntu3"
+        },
+        {
+          "package": "libxcb-shm0",
+          "version": "1.14-3ubuntu3"
+        },
+        {
+          "package": "libxcb1",
+          "version": "1.14-3ubuntu3"
+        }
+      ],
+      "inputs": [
+        {
+          "filename": "libxcb_1.14-3ubuntu3.diff.gz",
+          "sha256": "f5940b0b91c3fef855b959eadbe5111dc812f59af96adcaa70141ea6b58860d0",
+          "size": 27588,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/libx/libxcb/libxcb_1.14-3ubuntu3.diff.gz"
+        },
+        {
+          "filename": "libxcb_1.14-3ubuntu3.dsc",
+          "sha256": "538fe3e3534dd129de3c980a675eb25ae3b7575d6e2a3606ef3944f73fa477ba",
+          "size": 5480,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/libx/libxcb/libxcb_1.14-3ubuntu3.dsc"
+        },
+        {
+          "filename": "libxcb_1.14.orig.tar.gz",
+          "sha256": "2c7fcddd1da34d9b238c9caeda20d3bd7486456fc50b3cc6567185dbd5b0ad02",
+          "size": 640322,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/libx/libxcb/libxcb_1.14.orig.tar.gz"
+        }
+      ],
+      "package": "libxcb",
+      "version": "1.14-3ubuntu3"
+    },
+    {
+      "binaries": [
+        {
+          "package": "libxcomposite1",
+          "version": "1:0.4.5-1build2"
+        }
+      ],
+      "inputs": [
+        {
+          "filename": "libxcomposite_0.4.5-1build2.diff.gz",
+          "sha256": "c3a90d54f1ae62644620f4ca627d2eff8aae873a742fc03703b23cbdcc72b11f",
+          "size": 7794,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/libx/libxcomposite/libxcomposite_0.4.5-1build2.diff.gz"
+        },
+        {
+          "filename": "libxcomposite_0.4.5-1build2.dsc",
+          "sha256": "3aa647834419c277fd6ed4f147bd7d45dd27d5792cc873d7e3e24e001c6bc454",
+          "size": 2199,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/libx/libxcomposite/libxcomposite_0.4.5-1build2.dsc"
+        },
+        {
+          "filename": "libxcomposite_0.4.5.orig.tar.gz",
+          "sha256": "581c7fc0f41a99af38b1c36b9be64bc13ef3f60091cd3f01105bbc7c01617d6c",
+          "size": 386513,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/libx/libxcomposite/libxcomposite_0.4.5.orig.tar.gz"
+        }
+      ],
+      "package": "libxcomposite",
+      "version": "1:0.4.5-1build2"
+    },
+    {
+      "binaries": [
+        {
+          "package": "libxcursor1",
+          "version": "1:1.2.0-2build4"
+        }
+      ],
+      "inputs": [
+        {
+          "filename": "libxcursor_1.2.0-2build4.debian.tar.xz",
+          "sha256": "43324de8c31d3171dddff36d9851ed98a6855207edd3a42669db0c3222c6cb39",
+          "size": 9232,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/libx/libxcursor/libxcursor_1.2.0-2build4.debian.tar.xz"
+        },
+        {
+          "filename": "libxcursor_1.2.0-2build4.dsc",
+          "sha256": "7b6034e80109880f1b9e4cd8f2500b896362ef9e7dfc42a4bd79888e5a73628a",
+          "size": 2392,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/libx/libxcursor/libxcursor_1.2.0-2build4.dsc"
+        },
+        {
+          "filename": "libxcursor_1.2.0.orig.tar.gz",
+          "sha256": "ad5b2574fccaa4c3fa67b9874fbed863d29ad230c784e9a08b20692418f6a1f8",
+          "size": 408135,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/libx/libxcursor/libxcursor_1.2.0.orig.tar.gz"
+        }
+      ],
+      "package": "libxcursor",
+      "version": "1:1.2.0-2build4"
+    },
+    {
+      "binaries": [
+        {
+          "package": "libxdamage1",
+          "version": "1:1.1.5-2build2"
+        }
+      ],
+      "inputs": [
+        {
+          "filename": "libxdamage_1.1.5-2build2.debian.tar.xz",
+          "sha256": "0f4579b386bb5a4f7a06ac5fad32ca1542d5dc064af2fedc666c21aa5a2a7b83",
+          "size": 6144,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/libx/libxdamage/libxdamage_1.1.5-2build2.debian.tar.xz"
+        },
+        {
+          "filename": "libxdamage_1.1.5-2build2.dsc",
+          "sha256": "ad5237d02bbec58be007d1a9b4f771bec5694ccbdf8801941299c05d9ab9d2f5",
+          "size": 2256,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/libx/libxdamage/libxdamage_1.1.5-2build2.dsc"
+        },
+        {
+          "filename": "libxdamage_1.1.5.orig.tar.gz",
+          "sha256": "630ec53abb8c2d6dac5cd9f06c1f73ffb4a3167f8118fdebd77afd639dbc2019",
+          "size": 370586,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/libx/libxdamage/libxdamage_1.1.5.orig.tar.gz"
+        }
+      ],
+      "package": "libxdamage",
+      "version": "1:1.1.5-2build2"
+    },
+    {
+      "binaries": [
+        {
+          "package": "libxdmcp6",
+          "version": "1:1.1.3-0ubuntu5"
+        }
+      ],
+      "inputs": [
+        {
+          "filename": "libxdmcp_1.1.3-0ubuntu5.diff.gz",
+          "sha256": "5848aea7f2f5abbb50d9841557b07d5fde4500238cf3e316142259656dd1bd7b",
+          "size": 18395,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/libx/libxdmcp/libxdmcp_1.1.3-0ubuntu5.diff.gz"
+        },
+        {
+          "filename": "libxdmcp_1.1.3-0ubuntu5.dsc",
+          "sha256": "205a1610391cf9e2985e5e2080dab36a5471e585eb91970ec1d8c09008e1e5e5",
+          "size": 2252,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/libx/libxdmcp/libxdmcp_1.1.3-0ubuntu5.dsc"
+        },
+        {
+          "filename": "libxdmcp_1.1.3.orig.tar.gz",
+          "sha256": "2ef9653d32e09d1bf1b837d0e0311024979653fe755ad3aaada8db1aa6ea180c",
+          "size": 429668,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/libx/libxdmcp/libxdmcp_1.1.3.orig.tar.gz"
+        }
+      ],
+      "package": "libxdmcp",
+      "version": "1:1.1.3-0ubuntu5"
+    },
+    {
+      "binaries": [
+        {
+          "package": "libxext6",
+          "version": "2:1.3.4-1build1"
+        }
+      ],
+      "inputs": [
+        {
+          "filename": "libxext_1.3.4-1build1.diff.gz",
+          "sha256": "0efc1abad5202351c44a469fc91cc0eea3836e302884d9f6b2a29436f94d7498",
+          "size": 12588,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/libx/libxext/libxext_1.3.4-1build1.diff.gz"
+        },
+        {
+          "filename": "libxext_1.3.4-1build1.dsc",
+          "sha256": "0b0d4395cbcbbdb5aa60677524b9dea7fbcbb9b32d03a892095a1c666fd65f4a",
+          "size": 2250,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/libx/libxext/libxext_1.3.4-1build1.dsc"
+        },
+        {
+          "filename": "libxext_1.3.4.orig.tar.gz",
+          "sha256": "8ef0789f282826661ff40a8eef22430378516ac580167da35cc948be9041aac1",
+          "size": 494434,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/libx/libxext/libxext_1.3.4.orig.tar.gz"
+        }
+      ],
+      "package": "libxext",
+      "version": "2:1.3.4-1build1"
+    },
+    {
+      "binaries": [
+        {
+          "package": "libxfixes3",
+          "version": "1:6.0.0-1"
+        }
+      ],
+      "inputs": [
+        {
+          "filename": "libxfixes_6.0.0-1.diff.gz",
+          "sha256": "55ea9197ba72c33de59a396437f24b8ccdf387832fad200768931f6276dccb93",
+          "size": 16999,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/libx/libxfixes/libxfixes_6.0.0-1.diff.gz"
+        },
+        {
+          "filename": "libxfixes_6.0.0-1.dsc",
+          "sha256": "b202607cf98f13ed33c7c5e23f9b82aa010527114a70488e283710b875741edf",
+          "size": 2264,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/libx/libxfixes/libxfixes_6.0.0-1.dsc"
+        },
+        {
+          "filename": "libxfixes_6.0.0.orig.tar.gz",
+          "sha256": "82045da5625350838390c9440598b90d69c882c324ca92f73af9f0e992cb57c7",
+          "size": 387810,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/libx/libxfixes/libxfixes_6.0.0.orig.tar.gz"
+        },
+        {
+          "filename": "libxfixes_6.0.0.orig.tar.gz.asc",
+          "sha256": "e5598f42aa32140936c7772ab4d99ba35ecb859c29adc1703bb51440e7a54928",
+          "size": 195,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/libx/libxfixes/libxfixes_6.0.0.orig.tar.gz.asc"
+        }
+      ],
+      "package": "libxfixes",
+      "version": "1:6.0.0-1"
+    },
+    {
+      "binaries": [
+        {
+          "package": "libxi6",
+          "version": "2:1.8-1build1"
+        }
+      ],
+      "inputs": [
+        {
+          "filename": "libxi_1.8-1build1.diff.gz",
+          "sha256": "6708c98f19156f763bdd99e73364a12aa414d7b1477272ed7033841b3551e554",
+          "size": 24823,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/libx/libxi/libxi_1.8-1build1.diff.gz"
+        },
+        {
+          "filename": "libxi_1.8-1build1.dsc",
+          "sha256": "cbb116fd7fda21a2d4db06403676bbf88947d5be309399f7cf088e76621b10b4",
+          "size": 2242,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/libx/libxi/libxi_1.8-1build1.dsc"
+        },
+        {
+          "filename": "libxi_1.8.orig.tar.gz",
+          "sha256": "c80fd200a1190e4406bb4cc6958839d9651638cb47fa546a595d4bebcd3b9e2d",
+          "size": 616977,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/libx/libxi/libxi_1.8.orig.tar.gz"
+        }
+      ],
+      "package": "libxi",
+      "version": "2:1.8-1build1"
+    },
+    {
+      "binaries": [
+        {
+          "package": "libxinerama1",
+          "version": "2:1.1.4-3"
+        }
+      ],
+      "inputs": [
+        {
+          "filename": "libxinerama_1.1.4-3.diff.gz",
+          "sha256": "127f99cde4e62d8ed0c11acda9491926df693b31bed4f56fc1cba39c461444d9",
+          "size": 8436,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/libx/libxinerama/libxinerama_1.1.4-3.diff.gz"
+        },
+        {
+          "filename": "libxinerama_1.1.4-3.dsc",
+          "sha256": "5fe68b94d4cbc4be1ba37bbf676fbece3920b2c59a33cc94c4e4c7a140958edd",
+          "size": 2088,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/libx/libxinerama/libxinerama_1.1.4-3.dsc"
+        },
+        {
+          "filename": "libxinerama_1.1.4.orig.tar.gz",
+          "sha256": "64de45e18cc76b8e703cb09b3c9d28bd16e3d05d5cd99f2d630de2d62c3acc18",
+          "size": 380740,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/libx/libxinerama/libxinerama_1.1.4.orig.tar.gz"
+        }
+      ],
+      "package": "libxinerama",
+      "version": "2:1.1.4-3"
+    },
+    {
+      "binaries": [
+        {
+          "package": "libxml2",
+          "version": "2.9.13+dfsg-1ubuntu0.13"
+        }
+      ],
+      "inputs": [
+        {
+          "filename": "libxml2_2.9.13+dfsg-1ubuntu0.13.debian.tar.xz",
+          "sha256": "f99e0127af8155c364aadb007275d06e87eed012aafecd647fdc95530e25c79d",
+          "size": 60852,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/libx/libxml2/libxml2_2.9.13+dfsg-1ubuntu0.13.debian.tar.xz"
+        },
+        {
+          "filename": "libxml2_2.9.13+dfsg-1ubuntu0.13.dsc",
+          "sha256": "968ee2498ec8ad3106ce6ab28a5d4e867cb5c68dc267be5e9f4215eafcc35a6b",
+          "size": 3034,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/libx/libxml2/libxml2_2.9.13+dfsg-1ubuntu0.13.dsc"
+        },
+        {
+          "filename": "libxml2_2.9.13+dfsg.orig.tar.xz",
+          "sha256": "13cf2e55e603c34143486f4082cbf202859ac1eec5130b8d8e5e3c06a9902d8a",
+          "size": 2351356,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/libx/libxml2/libxml2_2.9.13+dfsg.orig.tar.xz"
+        }
+      ],
+      "package": "libxml2",
+      "version": "2.9.13+dfsg-1ubuntu0.13"
+    },
+    {
+      "binaries": [
+        {
+          "package": "libxrandr2",
+          "version": "2:1.5.2-1build1"
+        }
+      ],
+      "inputs": [
+        {
+          "filename": "libxrandr_1.5.2-1build1.diff.gz",
+          "sha256": "4f25a8166fd07cba3ff4af6b6f65f7afedaa45ab926bbd7319044e4d5cd7a791",
+          "size": 17189,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/libx/libxrandr/libxrandr_1.5.2-1build1.diff.gz"
+        },
+        {
+          "filename": "libxrandr_1.5.2-1build1.dsc",
+          "sha256": "835d990e0f8adbdcf4ec8850133fb6c863e5123c91f90b9bcb1e266c8f0ed1a0",
+          "size": 2148,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/libx/libxrandr/libxrandr_1.5.2-1build1.dsc"
+        },
+        {
+          "filename": "libxrandr_1.5.2.orig.tar.gz",
+          "sha256": "3f10813ab355e7a09f17e147d61b0ce090d898a5ea5b5519acd0ef68675dcf8e",
+          "size": 411714,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/libx/libxrandr/libxrandr_1.5.2.orig.tar.gz"
+        }
+      ],
+      "package": "libxrandr",
+      "version": "2:1.5.2-1build1"
+    },
+    {
+      "binaries": [
+        {
+          "package": "libxrender1",
+          "version": "1:0.9.10-1build4"
+        }
+      ],
+      "inputs": [
+        {
+          "filename": "libxrender_0.9.10-1build4.diff.gz",
+          "sha256": "b56ff0a20ca53f321a4f574d71efae04ff6be4efdf593af763b0872ac1ce3c85",
+          "size": 15809,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/libx/libxrender/libxrender_0.9.10-1build4.diff.gz"
+        },
+        {
+          "filename": "libxrender_0.9.10-1build4.dsc",
+          "sha256": "e93b6a2977502b02f6b616784dd9d4acb3686cfd2a2dbc54ad6545e0f1ffe152",
+          "size": 2196,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/libx/libxrender/libxrender_0.9.10-1build4.dsc"
+        },
+        {
+          "filename": "libxrender_0.9.10.orig.tar.gz",
+          "sha256": "770527cce42500790433df84ec3521e8bf095dfe5079454a92236494ab296adf",
+          "size": 373717,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/libx/libxrender/libxrender_0.9.10.orig.tar.gz"
+        }
+      ],
+      "package": "libxrender",
+      "version": "1:0.9.10-1build4"
+    },
+    {
+      "binaries": [
+        {
+          "package": "libxslt1.1",
+          "version": "1.1.34-4ubuntu0.22.04.5"
+        }
+      ],
+      "inputs": [
+        {
+          "filename": "libxslt_1.1.34-4ubuntu0.22.04.5.debian.tar.xz",
+          "sha256": "76d7caee2003cc8a22efa91f08355eb862a61e084230f3af1174a19f5d4c766a",
+          "size": 32076,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/libx/libxslt/libxslt_1.1.34-4ubuntu0.22.04.5.debian.tar.xz"
+        },
+        {
+          "filename": "libxslt_1.1.34-4ubuntu0.22.04.5.dsc",
+          "sha256": "03d304f3e4a3ea6c651054f96df1de69f7b8c77cb5f45d8b1e9204f77a80b675",
+          "size": 2559,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/libx/libxslt/libxslt_1.1.34-4ubuntu0.22.04.5.dsc"
+        },
+        {
+          "filename": "libxslt_1.1.34.orig.tar.gz",
+          "sha256": "98b1bd46d6792925ad2dfe9a87452ea2adebf69dcb9919ffd55bf926a7f93f7f",
+          "size": 3552258,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/libx/libxslt/libxslt_1.1.34.orig.tar.gz"
+        },
+        {
+          "filename": "libxslt_1.1.34.orig.tar.gz.asc",
+          "sha256": "673d1477552bdd5b0cc665704e77ca70e6be5d2f257e6a5a341c846719d747cf",
+          "size": 488,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/libx/libxslt/libxslt_1.1.34.orig.tar.gz.asc"
+        }
+      ],
+      "package": "libxslt",
+      "version": "1.1.34-4ubuntu0.22.04.5"
+    },
+    {
+      "binaries": [
+        {
+          "package": "libxss1",
+          "version": "1:1.2.3-1build2"
+        }
+      ],
+      "inputs": [
+        {
+          "filename": "libxss_1.2.3-1build2.diff.gz",
+          "sha256": "d5b50053bdd8f034666bb9778577f78ae30b639fb0b4742aecc342b3444f473e",
+          "size": 7348,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/libx/libxss/libxss_1.2.3-1build2.diff.gz"
+        },
+        {
+          "filename": "libxss_1.2.3-1build2.dsc",
+          "sha256": "3813c4b593c2d160161a3dac55417b1cff754c3ee0abacbea7a509497d5cafd5",
+          "size": 2335,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/libx/libxss/libxss_1.2.3-1build2.dsc"
+        },
+        {
+          "filename": "libxss_1.2.3.orig.tar.gz",
+          "sha256": "4f74e7e412144591d8e0616db27f433cfc9f45aae6669c6c4bb03e6bf9be809a",
+          "size": 385215,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/libx/libxss/libxss_1.2.3.orig.tar.gz"
+        },
+        {
+          "filename": "libxss_1.2.3.orig.tar.gz.asc",
+          "sha256": "4e900524d56c8e7263365267efa91bb3671110c9eb28ccab58f70e2188f0b91b",
+          "size": 705,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/libx/libxss/libxss_1.2.3.orig.tar.gz.asc"
+        }
+      ],
+      "package": "libxss",
+      "version": "1:1.2.3-1build2"
+    },
+    {
+      "binaries": [
+        {
+          "package": "libxtst6",
+          "version": "2:1.2.3-1build4"
+        }
+      ],
+      "inputs": [
+        {
+          "filename": "libxtst_1.2.3-1build4.diff.gz",
+          "sha256": "62d99aa368d2b4fe3349cad3366fe07f72cabd2746c77b623ee109c16fe86ee3",
+          "size": 10352,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/libx/libxtst/libxtst_1.2.3-1build4.diff.gz"
+        },
+        {
+          "filename": "libxtst_1.2.3-1build4.dsc",
+          "sha256": "7196e5c768d34009e622a3e5b86cb29906cb0fcc573588d9032f58775ac53dd4",
+          "size": 2375,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/libx/libxtst/libxtst_1.2.3-1build4.dsc"
+        },
+        {
+          "filename": "libxtst_1.2.3.orig.tar.gz",
+          "sha256": "a0c83acce02d4923018c744662cb28eb0dbbc33b4adc027726879ccf68fbc2c2",
+          "size": 400197,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/libx/libxtst/libxtst_1.2.3.orig.tar.gz"
+        }
+      ],
+      "package": "libxtst",
+      "version": "2:1.2.3-1build4"
+    },
+    {
+      "binaries": [
+        {
+          "package": "libyuv0",
+          "version": "0.0~git20220104.b91df1a-2"
+        }
+      ],
+      "inputs": [
+        {
+          "filename": "libyuv_0.0~git20220104.b91df1a-2.debian.tar.xz",
+          "sha256": "8fe1e5ea4a5d8ec17c20f413c89f3533e7c51179129ae84c71c3e7dc2d8960bd",
+          "size": 4076,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/universe/liby/libyuv/libyuv_0.0~git20220104.b91df1a-2.debian.tar.xz"
+        },
+        {
+          "filename": "libyuv_0.0~git20220104.b91df1a-2.dsc",
+          "sha256": "b4ad7859fbad8cd4288620379210d60ef4949c7d4c91c90eb49bfde4da39d0dd",
+          "size": 2148,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/universe/liby/libyuv/libyuv_0.0~git20220104.b91df1a-2.dsc"
+        },
+        {
+          "filename": "libyuv_0.0~git20220104.b91df1a.orig.tar.gz",
+          "sha256": "65d201fc11807aa1fc1586bc52c1853fd0a244affd39b555e8325e2f3673c153",
+          "size": 495571,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/universe/liby/libyuv/libyuv_0.0~git20220104.b91df1a.orig.tar.gz"
+        }
+      ],
+      "package": "libyuv",
+      "version": "0.0~git20220104.b91df1a-2"
+    },
+    {
+      "binaries": [
+        {
+          "package": "libzstd1",
+          "version": "1.4.8+dfsg-3build1"
+        }
+      ],
+      "inputs": [
+        {
+          "filename": "libzstd_1.4.8+dfsg-3build1.debian.tar.xz",
+          "sha256": "60d554776b4fbee2aa81eb9990cbe156636b1ec4e4213b73fd190057680241ba",
+          "size": 12316,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/libz/libzstd/libzstd_1.4.8+dfsg-3build1.debian.tar.xz"
+        },
+        {
+          "filename": "libzstd_1.4.8+dfsg-3build1.dsc",
+          "sha256": "d4f80bb9278967f55a38c50c7e2bb8102328c7d2955bdcd9b7dedc70cd4a8c9e",
+          "size": 2398,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/libz/libzstd/libzstd_1.4.8+dfsg-3build1.dsc"
+        },
+        {
+          "filename": "libzstd_1.4.8+dfsg.orig.tar.xz",
+          "sha256": "1e8ce5c4880a6d5bd8d3186e4186607dd19b64fc98a3877fc13aeefd566d67c5",
+          "size": 1331996,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/libz/libzstd/libzstd_1.4.8+dfsg.orig.tar.xz"
+        }
+      ],
+      "package": "libzstd",
+      "version": "1.4.8+dfsg-3build1"
+    },
+    {
+      "binaries": [
+        {
+          "package": "liblz4-1",
+          "version": "1.9.3-2build2"
+        }
+      ],
+      "inputs": [
+        {
+          "filename": "lz4_1.9.3-2build2.debian.tar.xz",
+          "sha256": "46e79943d637f60be3a8c1e5edaba8890599e0fdcc2a58462e4eb194f1e56352",
+          "size": 14088,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/l/lz4/lz4_1.9.3-2build2.debian.tar.xz"
+        },
+        {
+          "filename": "lz4_1.9.3-2build2.dsc",
+          "sha256": "24f317883fddecd5488241a836a951e83dbd7070b667e34eed4319d2090244a9",
+          "size": 2091,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/l/lz4/lz4_1.9.3-2build2.dsc"
+        },
+        {
+          "filename": "lz4_1.9.3.orig.tar.gz",
+          "sha256": "030644df4611007ff7dc962d981f390361e6c97a34e5cbc393ddfbe019ffe2c1",
+          "size": 320958,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/l/lz4/lz4_1.9.3.orig.tar.gz"
+        }
+      ],
+      "package": "lz4",
+      "version": "1.9.3-2build2"
+    },
+    {
+      "binaries": [
+        {
+          "package": "libmpg123-0",
+          "version": "1.29.3-1ubuntu0.1"
+        }
+      ],
+      "inputs": [
+        {
+          "filename": "mpg123_1.29.3-1ubuntu0.1.debian.tar.xz",
+          "sha256": "6bf685a9c05195d6f724623663a19d5a17d1fc2d8e8567e7b8791c521dc65ccc",
+          "size": 33676,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/m/mpg123/mpg123_1.29.3-1ubuntu0.1.debian.tar.xz"
+        },
+        {
+          "filename": "mpg123_1.29.3-1ubuntu0.1.dsc",
+          "sha256": "2fc0f75dab7c2f70d6be8a83b9e456c5315ee3fb078934d21b1cf4412045e3d2",
+          "size": 2717,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/m/mpg123/mpg123_1.29.3-1ubuntu0.1.dsc"
+        },
+        {
+          "filename": "mpg123_1.29.3.orig.tar.bz2",
+          "sha256": "963885d8cc77262f28b77187c7d189e32195e64244de2530b798ddf32183e847",
+          "size": 1069979,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/m/mpg123/mpg123_1.29.3.orig.tar.bz2"
+        },
+        {
+          "filename": "mpg123_1.29.3.orig.tar.bz2.asc",
+          "sha256": "b805d96f2affd4a43d6252f85cd1aa5cc9dd2c68fb29ff903f44fa3ccc129e53",
+          "size": 833,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/m/mpg123/mpg123_1.29.3.orig.tar.bz2.asc"
+        }
+      ],
+      "package": "mpg123",
+      "version": "1.29.3-1ubuntu0.1"
+    },
+    {
+      "binaries": [
+        {
+          "package": "libncurses6",
+          "version": "6.3-2ubuntu0.3"
+        },
+        {
+          "package": "libncursesw6",
+          "version": "6.3-2ubuntu0.3"
+        },
+        {
+          "package": "libtinfo6",
+          "version": "6.3-2ubuntu0.3"
+        }
+      ],
+      "inputs": [
+        {
+          "filename": "ncurses_6.3-2ubuntu0.3.debian.tar.xz",
+          "sha256": "05dbb05d1001c90b8cd30f608f3efd15a77a14ca675ef9e23041d6ebc26c1942",
+          "size": 57172,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/n/ncurses/ncurses_6.3-2ubuntu0.3.debian.tar.xz"
+        },
+        {
+          "filename": "ncurses_6.3-2ubuntu0.3.dsc",
+          "sha256": "a0a8bee662ca780de89b728f25d073eebb75ee2ec222698ac9c3f2c8b7c28ec5",
+          "size": 4251,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/n/ncurses/ncurses_6.3-2ubuntu0.3.dsc"
+        },
+        {
+          "filename": "ncurses_6.3.orig.tar.gz",
+          "sha256": "97fc51ac2b085d4cde31ef4d2c3122c21abc217e9090a43a30fc5ec21684e059",
+          "size": 3583550,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/n/ncurses/ncurses_6.3.orig.tar.gz"
+        },
+        {
+          "filename": "ncurses_6.3.orig.tar.gz.asc",
+          "sha256": "37b9e80c11fa02fbd8caf42ab9573427f54f2c7212eb4aeec9f455b5d79dee14",
+          "size": 729,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/n/ncurses/ncurses_6.3.orig.tar.gz.asc"
+        }
+      ],
+      "package": "ncurses",
+      "version": "6.3-2ubuntu0.3"
+    },
+    {
+      "binaries": [
+        {
+          "package": "libhogweed6",
+          "version": "3.7.3-1build2"
+        },
+        {
+          "package": "libnettle8",
+          "version": "3.7.3-1build2"
+        }
+      ],
+      "inputs": [
+        {
+          "filename": "nettle_3.7.3-1build2.debian.tar.xz",
+          "sha256": "ee9dda53e8a7c14ec91c3655fa59d685aa21873d1f279f8deaba4581880eba69",
+          "size": 22100,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/n/nettle/nettle_3.7.3-1build2.debian.tar.xz"
+        },
+        {
+          "filename": "nettle_3.7.3-1build2.dsc",
+          "sha256": "46de1c6d01561bcf67922a8398f2aba038ce89be182644eec4227d7e14d998ee",
+          "size": 2165,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/n/nettle/nettle_3.7.3-1build2.dsc"
+        },
+        {
+          "filename": "nettle_3.7.3.orig.tar.gz",
+          "sha256": "661f5eb03f048a3b924c3a8ad2515d4068e40f67e774e8a26827658007e3bcf0",
+          "size": 2383985,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/n/nettle/nettle_3.7.3.orig.tar.gz"
+        }
+      ],
+      "package": "nettle",
+      "version": "3.7.3-1build2"
+    },
+    {
+      "binaries": [
+        {
+          "package": "libnghttp2-14",
+          "version": "1.43.0-1ubuntu0.4"
+        }
+      ],
+      "inputs": [
+        {
+          "filename": "nghttp2_1.43.0-1ubuntu0.4.debian.tar.xz",
+          "sha256": "86631de02a3fc1bef08f3b259afa0e3cdeadeff015a118803292fceec8bc7a4a",
+          "size": 31752,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/n/nghttp2/nghttp2_1.43.0-1ubuntu0.4.debian.tar.xz"
+        },
+        {
+          "filename": "nghttp2_1.43.0-1ubuntu0.4.dsc",
+          "sha256": "76906a089cf0705ae700846520182441165e96157bec5c1f00888885a15e925a",
+          "size": 2638,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/n/nghttp2/nghttp2_1.43.0-1ubuntu0.4.dsc"
+        },
+        {
+          "filename": "nghttp2_1.43.0.orig.tar.bz2",
+          "sha256": "556f24653397c71ebb8270b3c5e5507f0893e6eac2c6eeda6be2ecf6e1f50f62",
+          "size": 4521786,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/n/nghttp2/nghttp2_1.43.0.orig.tar.bz2"
+        }
+      ],
+      "package": "nghttp2",
+      "version": "1.43.0-1ubuntu0.4"
+    },
+    {
+      "binaries": [
+        {
+          "package": "libssl3",
+          "version": "3.0.2-0ubuntu1.30"
+        }
+      ],
+      "inputs": [
+        {
+          "filename": "openssl_3.0.2-0ubuntu1.30.debian.tar.xz",
+          "sha256": "b2f4d75e1eba248397d8e4f4a029195ec3bb0e971b2e975594115a1c79b31c47",
+          "size": 319128,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/o/openssl/openssl_3.0.2-0ubuntu1.30.debian.tar.xz"
+        },
+        {
+          "filename": "openssl_3.0.2-0ubuntu1.30.dsc",
+          "sha256": "22b1c851fb5c229b27f497b1867e994ab2ad2f90d288d2dc3bd6eef15f6307bc",
+          "size": 2486,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/o/openssl/openssl_3.0.2-0ubuntu1.30.dsc"
+        },
+        {
+          "filename": "openssl_3.0.2.orig.tar.gz",
+          "sha256": "98e91ccead4d4756ae3c9cde5e09191a8e586d9f4d50838e7ec09d6411dfdb63",
+          "size": 15038141,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/o/openssl/openssl_3.0.2.orig.tar.gz"
+        }
+      ],
+      "package": "openssl",
+      "version": "3.0.2-0ubuntu1.30"
+    },
+    {
+      "binaries": [
+        {
+          "package": "libopus0",
+          "version": "1.3.1-0.1build2"
+        }
+      ],
+      "inputs": [
+        {
+          "filename": "opus_1.3.1-0.1build2.diff.gz",
+          "sha256": "06fad880b875515000c953ad1739be52771761cf2ac5e21595136035c2084701",
+          "size": 9154,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/o/opus/opus_1.3.1-0.1build2.diff.gz"
+        },
+        {
+          "filename": "opus_1.3.1-0.1build2.dsc",
+          "sha256": "59c924cb4311a8b397c05dd994038585b703755015d8609584006a1f51de2d2b",
+          "size": 2076,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/o/opus/opus_1.3.1-0.1build2.dsc"
+        },
+        {
+          "filename": "opus_1.3.1.orig.tar.gz",
+          "sha256": "65b58e1e25b2a114157014736a3d9dfeaad8d41be1c8179866f144a2fb44ff9d",
+          "size": 1040054,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/o/opus/opus_1.3.1.orig.tar.gz"
+        }
+      ],
+      "package": "opus",
+      "version": "1.3.1-0.1build2"
+    },
+    {
+      "binaries": [
+        {
+          "package": "liborc-0.4-0",
+          "version": "1:0.4.32-2ubuntu0.1"
+        }
+      ],
+      "inputs": [
+        {
+          "filename": "orc_0.4.32-2ubuntu0.1.debian.tar.xz",
+          "sha256": "2a829d5d01fed610a9bac455528f0d64b332ed2fc2bab77bb748c8bbdb96ed7f",
+          "size": 7180,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/o/orc/orc_0.4.32-2ubuntu0.1.debian.tar.xz"
+        },
+        {
+          "filename": "orc_0.4.32-2ubuntu0.1.dsc",
+          "sha256": "845617b5fb6b57f40b9ba28d76cb9aa2948e1b201bd424fe7151f41709ca14ce",
+          "size": 2283,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/o/orc/orc_0.4.32-2ubuntu0.1.dsc"
+        },
+        {
+          "filename": "orc_0.4.32.orig.tar.xz",
+          "sha256": "a66e3d8f2b7e65178d786a01ef61f2a0a0b4d0b8370de7ce134ba73da4af18f0",
+          "size": 180340,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/o/orc/orc_0.4.32.orig.tar.xz"
+        }
+      ],
+      "package": "orc",
+      "version": "1:0.4.32-2ubuntu0.1"
+    },
+    {
+      "binaries": [
+        {
+          "package": "libp11-kit0",
+          "version": "0.24.0-6ubuntu0.1"
+        }
+      ],
+      "inputs": [
+        {
+          "filename": "p11-kit_0.24.0-6ubuntu0.1.debian.tar.xz",
+          "sha256": "674f0e3da6b2dea75dcd9c60022f8771972c0cb42b26783df9d2f35aa61d7100",
+          "size": 26060,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/p/p11-kit/p11-kit_0.24.0-6ubuntu0.1.debian.tar.xz"
+        },
+        {
+          "filename": "p11-kit_0.24.0-6ubuntu0.1.dsc",
+          "sha256": "768512830457908290e7e22a638f967ef2ae405f665b835700c0b4b4817fc72c",
+          "size": 2616,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/p/p11-kit/p11-kit_0.24.0-6ubuntu0.1.dsc"
+        },
+        {
+          "filename": "p11-kit_0.24.0.orig.tar.xz",
+          "sha256": "81e6140584f635e4e956a1b93a32239acf3811ff5b2d3a5c6094e94e99d2c685",
+          "size": 834392,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/p/p11-kit/p11-kit_0.24.0.orig.tar.xz"
+        },
+        {
+          "filename": "p11-kit_0.24.0.orig.tar.xz.asc",
+          "sha256": "f9996976ae08e48ac652d2aad3f0528a75f87eaa6c17cf076ec00e7ce2fbaeed",
+          "size": 833,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/p/p11-kit/p11-kit_0.24.0.orig.tar.xz.asc"
+        }
+      ],
+      "package": "p11-kit",
+      "version": "0.24.0-6ubuntu0.1"
+    },
+    {
+      "binaries": [
+        {
+          "package": "libpango-1.0-0",
+          "version": "1.50.6+ds-2ubuntu1"
+        },
+        {
+          "package": "libpangocairo-1.0-0",
+          "version": "1.50.6+ds-2ubuntu1"
+        },
+        {
+          "package": "libpangoft2-1.0-0",
+          "version": "1.50.6+ds-2ubuntu1"
+        }
+      ],
+      "inputs": [
+        {
+          "filename": "pango1.0_1.50.6+ds-2ubuntu1.debian.tar.xz",
+          "sha256": "b16ad51d8b0837303fc57db029fbda8dc5d12e2fd03a1fedb647ce253a87b1f1",
+          "size": 51196,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/p/pango1.0/pango1.0_1.50.6+ds-2ubuntu1.debian.tar.xz"
+        },
+        {
+          "filename": "pango1.0_1.50.6+ds-2ubuntu1.dsc",
+          "sha256": "c757b318c7862a162830c765eb2f26ca31837ad08aa752cc2736aa05c9f4fca2",
+          "size": 3878,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/p/pango1.0/pango1.0_1.50.6+ds-2ubuntu1.dsc"
+        },
+        {
+          "filename": "pango1.0_1.50.6+ds.orig.tar.xz",
+          "sha256": "70f0323d6270ee12e8ae14a2959b7227088e3146801d09309558bebb1f2f9df7",
+          "size": 2673480,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/p/pango1.0/pango1.0_1.50.6+ds.orig.tar.xz"
+        }
+      ],
+      "package": "pango1.0",
+      "version": "1.50.6+ds-2ubuntu1"
+    },
+    {
+      "binaries": [
+        {
+          "package": "libpcre2-8-0",
+          "version": "10.39-3ubuntu0.1"
+        }
+      ],
+      "inputs": [
+        {
+          "filename": "pcre2_10.39-3ubuntu0.1.diff.gz",
+          "sha256": "cce22d08265cc8d322281242f555044a62302d4df9b0fa44c8c4536819dae47d",
+          "size": 11214,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/p/pcre2/pcre2_10.39-3ubuntu0.1.diff.gz"
+        },
+        {
+          "filename": "pcre2_10.39-3ubuntu0.1.dsc",
+          "sha256": "f78f76a3e7d1ebbe1f03df40211ffd4922337c7f7848097c399befb620a0a471",
+          "size": 2142,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/p/pcre2/pcre2_10.39-3ubuntu0.1.dsc"
+        },
+        {
+          "filename": "pcre2_10.39.orig.tar.gz",
+          "sha256": "0781bd2536ef5279b1943471fdcdbd9961a2845e1d2c9ad849b9bd98ba1a9bd4",
+          "size": 2309964,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/p/pcre2/pcre2_10.39.orig.tar.gz"
+        }
+      ],
+      "package": "pcre2",
+      "version": "10.39-3ubuntu0.1"
+    },
+    {
+      "binaries": [
+        {
+          "package": "libpcre3",
+          "version": "2:8.39-13ubuntu0.22.04.1"
+        }
+      ],
+      "inputs": [
+        {
+          "filename": "pcre3_8.39-13ubuntu0.22.04.1.debian.tar.gz",
+          "sha256": "b6542e9adae20f212637f133e892c1d6874d9a21af928ed4cbd94fb77133916e",
+          "size": 28251,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/p/pcre3/pcre3_8.39-13ubuntu0.22.04.1.debian.tar.gz"
+        },
+        {
+          "filename": "pcre3_8.39-13ubuntu0.22.04.1.dsc",
+          "sha256": "f9c1a08a5856eee3644a4f5bbffe62ff04d21940ebd7798e7b15f48463571867",
+          "size": 2101,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/p/pcre3/pcre3_8.39-13ubuntu0.22.04.1.dsc"
+        },
+        {
+          "filename": "pcre3_8.39.orig.tar.bz2",
+          "sha256": "b858099f82483031ee02092711689e7245586ada49e534a06e678b8ea9549e8b",
+          "size": 1560758,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/p/pcre3/pcre3_8.39.orig.tar.bz2"
+        }
+      ],
+      "package": "pcre3",
+      "version": "2:8.39-13ubuntu0.22.04.1"
+    },
+    {
+      "binaries": [
+        {
+          "package": "libpixman-1-0",
+          "version": "0.40.0-1ubuntu0.22.04.1"
+        }
+      ],
+      "inputs": [
+        {
+          "filename": "pixman_0.40.0-1ubuntu0.22.04.1.diff.gz",
+          "sha256": "687d499fdc3cc752d308e5dfdb38048df6a238cdd4b341b504ec6dd45a0763e7",
+          "size": 327740,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/p/pixman/pixman_0.40.0-1ubuntu0.22.04.1.diff.gz"
+        },
+        {
+          "filename": "pixman_0.40.0-1ubuntu0.22.04.1.dsc",
+          "sha256": "83b2ae547a01139e41a50a104a16186defaa2a627c632e247d45637177f1a90e",
+          "size": 2160,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/p/pixman/pixman_0.40.0-1ubuntu0.22.04.1.dsc"
+        },
+        {
+          "filename": "pixman_0.40.0.orig.tar.gz",
+          "sha256": "6d200dec3740d9ec4ec8d1180e25779c00bc749f94278c8b9021f5534db223fc",
+          "size": 913976,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/p/pixman/pixman_0.40.0.orig.tar.gz"
+        }
+      ],
+      "package": "pixman",
+      "version": "0.40.0-1ubuntu0.22.04.1"
+    },
+    {
+      "binaries": [
+        {
+          "package": "libpulse0",
+          "version": "1:15.99.1+dfsg1-1ubuntu2.2"
+        }
+      ],
+      "inputs": [
+        {
+          "filename": "pulseaudio_15.99.1+dfsg1-1ubuntu2.2.debian.tar.xz",
+          "sha256": "7a3b74d6094ea270a7da5607f83f7dcaefc2e67f05b6b98ec3f02ec9cf8066d4",
+          "size": 100192,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/p/pulseaudio/pulseaudio_15.99.1+dfsg1-1ubuntu2.2.debian.tar.xz"
+        },
+        {
+          "filename": "pulseaudio_15.99.1+dfsg1-1ubuntu2.2.dsc",
+          "sha256": "cc48890af204b6e0af061064ea0188ccec99cc28089e442ec3bff0f361f8b952",
+          "size": 4030,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/p/pulseaudio/pulseaudio_15.99.1+dfsg1-1ubuntu2.2.dsc"
+        },
+        {
+          "filename": "pulseaudio_15.99.1+dfsg1.orig.tar.xz",
+          "sha256": "f924e6dc26a63e11e83fd014662f6fdc23a3554ce90c457ae4181387d4fd29f7",
+          "size": 1439224,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/p/pulseaudio/pulseaudio_15.99.1+dfsg1.orig.tar.xz"
+        }
+      ],
+      "package": "pulseaudio",
+      "version": "1:15.99.1+dfsg1-1ubuntu2.2"
+    },
+    {
+      "binaries": [
+        {
+          "package": "shared-mime-info",
+          "version": "2.1-2"
+        }
+      ],
+      "inputs": [
+        {
+          "filename": "shared-mime-info_2.1-2.debian.tar.xz",
+          "sha256": "f40231844b47705fabb6d96153a3e5cf89a8cf4a85ef7820667747babad2a6a7",
+          "size": 11304,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/s/shared-mime-info/shared-mime-info_2.1-2.debian.tar.xz"
+        },
+        {
+          "filename": "shared-mime-info_2.1-2.dsc",
+          "sha256": "1bb331209df769f3b3e1d3842bd22caaf39e62b7c34d722b7573b5b6e023a4ef",
+          "size": 2223,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/s/shared-mime-info/shared-mime-info_2.1-2.dsc"
+        },
+        {
+          "filename": "shared-mime-info_2.1.orig.tar.xz",
+          "sha256": "b2d40cfcdd84e835d0f2c9107b3f3e77e9cf912f858171fe779946da634e8563",
+          "size": 5202496,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/s/shared-mime-info/shared-mime-info_2.1.orig.tar.xz"
+        }
+      ],
+      "package": "shared-mime-info",
+      "version": "2.1-2"
+    },
+    {
+      "binaries": [
+        {
+          "package": "libslang2",
+          "version": "2.3.2-5build4"
+        }
+      ],
+      "inputs": [
+        {
+          "filename": "slang2_2.3.2-5build4.debian.tar.xz",
+          "sha256": "4298e01065bd2e340066428a5b67b7327b216e994e8723250391a33b12490aa7",
+          "size": 22292,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/s/slang2/slang2_2.3.2-5build4.debian.tar.xz"
+        },
+        {
+          "filename": "slang2_2.3.2-5build4.dsc",
+          "sha256": "791f1c6c7bd77ab7c2a8969bd80b45418523abaf608dbfa08b45d599eb79f542",
+          "size": 2353,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/s/slang2/slang2_2.3.2-5build4.dsc"
+        },
+        {
+          "filename": "slang2_2.3.2.orig.tar.xz",
+          "sha256": "18c99f4c5ad9710eb0fcd4c82f7c32427f94c9c93a5ba04a88318e521db2cadf",
+          "size": 1309848,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/s/slang2/slang2_2.3.2.orig.tar.xz"
+        }
+      ],
+      "package": "slang2",
+      "version": "2.3.2-5build4"
+    },
+    {
+      "binaries": [
+        {
+          "package": "libspeex1",
+          "version": "1.2~rc1.2-1.1ubuntu3"
+        }
+      ],
+      "inputs": [
+        {
+          "filename": "speex_1.2~rc1.2-1.1ubuntu3.diff.gz",
+          "sha256": "0e3adcadfb73adeb92fe4b3a21eaa6153391788232f51bee2b857a5dcbcbdc65",
+          "size": 11094,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/s/speex/speex_1.2~rc1.2-1.1ubuntu3.diff.gz"
+        },
+        {
+          "filename": "speex_1.2~rc1.2-1.1ubuntu3.dsc",
+          "sha256": "cf019d5f22814adb9a1dc2bb2fcfdd92c1d8a2d8d38fe4f0ad85ce83d8cf2dd9",
+          "size": 2323,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/s/speex/speex_1.2~rc1.2-1.1ubuntu3.dsc"
+        },
+        {
+          "filename": "speex_1.2~rc1.2.orig.tar.gz",
+          "sha256": "8320fb86a024dfe1b6a78a7d57bc2388e5f8cb7f2fa10c946db2704e1e5d2805",
+          "size": 1069339,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/s/speex/speex_1.2~rc1.2.orig.tar.gz"
+        }
+      ],
+      "package": "speex",
+      "version": "1.2~rc1.2-1.1ubuntu3"
+    },
+    {
+      "binaries": [
+        {
+          "package": "libsqlite3-0",
+          "version": "3.37.2-2ubuntu0.8"
+        }
+      ],
+      "inputs": [
+        {
+          "filename": "sqlite3_3.37.2-2ubuntu0.8.debian.tar.xz",
+          "sha256": "6cf7d3db197bd5e76c81876e3a4536c75a322cdbb1c8d6cffc507de5adceb969",
+          "size": 36152,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/s/sqlite3/sqlite3_3.37.2-2ubuntu0.8.debian.tar.xz"
+        },
+        {
+          "filename": "sqlite3_3.37.2-2ubuntu0.8.dsc",
+          "sha256": "637d981e996fec129c8b902c36b87910f8b0e6303ff9e00dcb5918df5c54ca78",
+          "size": 2602,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/s/sqlite3/sqlite3_3.37.2-2ubuntu0.8.dsc"
+        },
+        {
+          "filename": "sqlite3_3.37.2.orig-www.tar.xz",
+          "sha256": "63dbd1c7abab37ec5beed22dae75bac048efead0f19aa5cad49b4bd690335ebd",
+          "size": 5694016,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/s/sqlite3/sqlite3_3.37.2.orig-www.tar.xz"
+        },
+        {
+          "filename": "sqlite3_3.37.2.orig.tar.xz",
+          "sha256": "3157723da779963f7887f29de12289a4890f0c18eb17b570aa2c8d2c96d31d6f",
+          "size": 7623768,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/s/sqlite3/sqlite3_3.37.2.orig.tar.xz"
+        }
+      ],
+      "package": "sqlite3",
+      "version": "3.37.2-2ubuntu0.8"
+    },
+    {
+      "binaries": [
+        {
+          "package": "libsystemd0",
+          "version": "249.11-0ubuntu3.22"
+        },
+        {
+          "package": "libudev1",
+          "version": "249.11-0ubuntu3.22"
+        }
+      ],
+      "inputs": [
+        {
+          "filename": "systemd_249.11-0ubuntu3.22.debian.tar.xz",
+          "sha256": "4ce334b6483e938692c7fa1a29c6c69a518053a62b2b67752d57fcadf24bce57",
+          "size": 275816,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/s/systemd/systemd_249.11-0ubuntu3.22.debian.tar.xz"
+        },
+        {
+          "filename": "systemd_249.11-0ubuntu3.22.dsc",
+          "sha256": "722f7ef054c6696d19dd0eb3228668a1807011a7ba04e5cdd22e6c93a82b17d0",
+          "size": 5907,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/s/systemd/systemd_249.11-0ubuntu3.22.dsc"
+        },
+        {
+          "filename": "systemd_249.11.orig.tar.gz",
+          "sha256": "305ba81cc33593bc2e8e9d6dc7f964b1c0a9303155fced5e6b1d236577441bf2",
+          "size": 10622702,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/s/systemd/systemd_249.11.orig.tar.gz"
+        }
+      ],
+      "package": "systemd",
+      "version": "249.11-0ubuntu3.22"
+    },
+    {
+      "binaries": [
+        {
+          "package": "libtag1v5-vanilla",
+          "version": "1.11.1+dfsg.1-3ubuntu3"
+        }
+      ],
+      "inputs": [
+        {
+          "filename": "taglib_1.11.1+dfsg.1-3ubuntu3.debian.tar.xz",
+          "sha256": "ff3aa99dfbac37a20b2900407937be30a75567506a6dfafd99bbf2c2a9edc9b7",
+          "size": 35600,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/t/taglib/taglib_1.11.1+dfsg.1-3ubuntu3.debian.tar.xz"
+        },
+        {
+          "filename": "taglib_1.11.1+dfsg.1-3ubuntu3.dsc",
+          "sha256": "ec918cbf3f787bae956606ecb8cdf3c667e378058285109e26244ea5c546144a",
+          "size": 2486,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/t/taglib/taglib_1.11.1+dfsg.1-3ubuntu3.dsc"
+        },
+        {
+          "filename": "taglib_1.11.1+dfsg.1.orig.tar.xz",
+          "sha256": "5bceb7940edf5a0674f0892e5788b119f278c5c246f3f2cf979b27faa70063c8",
+          "size": 868744,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/t/taglib/taglib_1.11.1+dfsg.1.orig.tar.xz"
+        }
+      ],
+      "package": "taglib",
+      "version": "1.11.1+dfsg.1-3ubuntu3"
+    },
+    {
+      "binaries": [
+        {
+          "package": "libtiff5",
+          "version": "4.3.0-6ubuntu0.13"
+        }
+      ],
+      "inputs": [
+        {
+          "filename": "tiff_4.3.0-6ubuntu0.13.debian.tar.xz",
+          "sha256": "5f73e950e9026c687f79294866d003810d7647ebefa0d4c9ba7bc34985cbdf07",
+          "size": 53840,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/t/tiff/tiff_4.3.0-6ubuntu0.13.debian.tar.xz"
+        },
+        {
+          "filename": "tiff_4.3.0-6ubuntu0.13.dsc",
+          "sha256": "9db6c768cc538e9ae1767fa2a49264d1f18750b32d72d89e4685c500da53580b",
+          "size": 2402,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/t/tiff/tiff_4.3.0-6ubuntu0.13.dsc"
+        },
+        {
+          "filename": "tiff_4.3.0.orig.tar.gz",
+          "sha256": "0e46e5acb087ce7d1ac53cf4f56a09b221537fc86dfc5daaad1c2e89e1b37ac8",
+          "size": 2808254,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/t/tiff/tiff_4.3.0.orig.tar.gz"
+        },
+        {
+          "filename": "tiff_4.3.0.orig.tar.gz.asc",
+          "sha256": "6e41d0a4c042d2903f28534eb696a16409ccde9aaa2d02d06b5daaabbfb94aa7",
+          "size": 488,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/t/tiff/tiff_4.3.0.orig.tar.gz.asc"
+        }
+      ],
+      "package": "tiff",
+      "version": "4.3.0-6ubuntu0.13"
+    },
+    {
+      "binaries": [
+        {
+          "package": "libtwolame0",
+          "version": "0.4.0-2build2"
+        }
+      ],
+      "inputs": [
+        {
+          "filename": "twolame_0.4.0-2build2.debian.tar.xz",
+          "sha256": "78203a77816a5b66126f0625b1c1f05aef904ce52ad8837b874c5773097a0290",
+          "size": 4944,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/t/twolame/twolame_0.4.0-2build2.debian.tar.xz"
+        },
+        {
+          "filename": "twolame_0.4.0-2build2.dsc",
+          "sha256": "1848f5fe95ae8693b70deda15487beb111d25d617353acf3784407b1c6535e19",
+          "size": 2180,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/t/twolame/twolame_0.4.0-2build2.dsc"
+        },
+        {
+          "filename": "twolame_0.4.0.orig.tar.gz",
+          "sha256": "cc35424f6019a88c6f52570b63e1baf50f62963a3eac52a03a800bb070d7c87d",
+          "size": 890908,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/t/twolame/twolame_0.4.0.orig.tar.gz"
+        }
+      ],
+      "package": "twolame",
+      "version": "0.4.0-2build2"
+    },
+    {
+      "binaries": [
+        {
+          "package": "libblkid1",
+          "version": "2.37.2-4ubuntu3.6"
+        },
+        {
+          "package": "libmount1",
+          "version": "2.37.2-4ubuntu3.6"
+        },
+        {
+          "package": "libuuid1",
+          "version": "2.37.2-4ubuntu3.6"
+        }
+      ],
+      "inputs": [
+        {
+          "filename": "util-linux_2.37.2-4ubuntu3.6.debian.tar.xz",
+          "sha256": "d556ef8fb39638a6fee023dc02d1ed4c9a15d6065f844fa885ddb5b9e755ae31",
+          "size": 120724,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/u/util-linux/util-linux_2.37.2-4ubuntu3.6.debian.tar.xz"
+        },
+        {
+          "filename": "util-linux_2.37.2-4ubuntu3.6.dsc",
+          "sha256": "e2b458d2005c328b0187ded5acac81c530cca8bf164f7c20b8370d02c4ffaebc",
+          "size": 4550,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/u/util-linux/util-linux_2.37.2-4ubuntu3.6.dsc"
+        },
+        {
+          "filename": "util-linux_2.37.2.orig.tar.xz",
+          "sha256": "6a0764c1aae7fb607ef8a6dd2c0f6c47d5e5fd27aa08820abaad9ec14e28e9d9",
+          "size": 5621624,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/u/util-linux/util-linux_2.37.2.orig.tar.xz"
+        }
+      ],
+      "package": "util-linux",
+      "version": "2.37.2-4ubuntu3.6"
+    },
+    {
+      "binaries": [
+        {
+          "package": "libv4l-0",
+          "version": "1.22.1-2build1"
+        },
+        {
+          "package": "libv4lconvert0",
+          "version": "1.22.1-2build1"
+        }
+      ],
+      "inputs": [
+        {
+          "filename": "v4l-utils_1.22.1-2build1.debian.tar.xz",
+          "sha256": "5fde906bfb3e0a2c68517afd9d02d1480fdc9c36dfd7fa2f883afb7335a85b1f",
+          "size": 20096,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/v/v4l-utils/v4l-utils_1.22.1-2build1.debian.tar.xz"
+        },
+        {
+          "filename": "v4l-utils_1.22.1-2build1.dsc",
+          "sha256": "02c929a36bb2a346e05568c93114954f5bfcf6dece62505e95e0f69aa61e0b21",
+          "size": 3281,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/v/v4l-utils/v4l-utils_1.22.1-2build1.dsc"
+        },
+        {
+          "filename": "v4l-utils_1.22.1.orig.tar.bz2",
+          "sha256": "65c6fbe830a44ca105c443b027182c1b2c9053a91d1e72ad849dfab388b94e31",
+          "size": 2086238,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/v/v4l-utils/v4l-utils_1.22.1.orig.tar.bz2"
+        },
+        {
+          "filename": "v4l-utils_1.22.1.orig.tar.bz2.asc",
+          "sha256": "eee608e914cdf5b322b53d49d48aeae003855d068ee8d9c8d706fd058cabe2af",
+          "size": 833,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/v/v4l-utils/v4l-utils_1.22.1.orig.tar.bz2.asc"
+        }
+      ],
+      "package": "v4l-utils",
+      "version": "1.22.1-2build1"
+    },
+    {
+      "binaries": [
+        {
+          "package": "libwavpack1",
+          "version": "5.4.0-1build2"
+        }
+      ],
+      "inputs": [
+        {
+          "filename": "wavpack_5.4.0-1build2.debian.tar.xz",
+          "sha256": "e0d8604163d6175a22f200b3a310e98fb65b278cf76b10d20434fe47a5fa0517",
+          "size": 6636,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/w/wavpack/wavpack_5.4.0-1build2.debian.tar.xz"
+        },
+        {
+          "filename": "wavpack_5.4.0-1build2.dsc",
+          "sha256": "14f519325eef2af80f6dc8019977db998e40969fe45772423b5dcaa2cb449453",
+          "size": 2191,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/w/wavpack/wavpack_5.4.0-1build2.dsc"
+        },
+        {
+          "filename": "wavpack_5.4.0.orig.tar.bz2",
+          "sha256": "0716a6dcf9a72d61005e1b09bbbd61aaf49837cb4e4a351992a6daed16cac034",
+          "size": 863429,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/w/wavpack/wavpack_5.4.0.orig.tar.bz2"
+        }
+      ],
+      "package": "wavpack",
+      "version": "5.4.0-1build2"
+    },
+    {
+      "binaries": [
+        {
+          "package": "libwayland-client0",
+          "version": "1.20.0-1ubuntu0.1"
+        },
+        {
+          "package": "libwayland-cursor0",
+          "version": "1.20.0-1ubuntu0.1"
+        },
+        {
+          "package": "libwayland-egl1",
+          "version": "1.20.0-1ubuntu0.1"
+        },
+        {
+          "package": "libwayland-server0",
+          "version": "1.20.0-1ubuntu0.1"
+        }
+      ],
+      "inputs": [
+        {
+          "filename": "wayland_1.20.0-1ubuntu0.1.diff.gz",
+          "sha256": "0fb2f5ac6fe54c2c9a92f31d30d613809e97e13de7d6d8ee9df130dd025ea707",
+          "size": 14532,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/w/wayland/wayland_1.20.0-1ubuntu0.1.diff.gz"
+        },
+        {
+          "filename": "wayland_1.20.0-1ubuntu0.1.dsc",
+          "sha256": "bb90c23eea89d2ff74c623f633416be96918e98346c2ec25a31a80440fa7505e",
+          "size": 2687,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/w/wayland/wayland_1.20.0-1ubuntu0.1.dsc"
+        },
+        {
+          "filename": "wayland_1.20.0.orig.tar.gz",
+          "sha256": "cb04e273c2013f44da1d3bd9e835189a9ab07aa7d4878f183a2beaa9c7b25be8",
+          "size": 349593,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/w/wayland/wayland_1.20.0.orig.tar.gz"
+        }
+      ],
+      "package": "wayland",
+      "version": "1.20.0-1ubuntu0.1"
+    },
+    {
+      "binaries": [
+        {
+          "package": "libwoff1",
+          "version": "1.0.2-1build4"
+        }
+      ],
+      "inputs": [
+        {
+          "filename": "woff2_1.0.2-1build4.debian.tar.xz",
+          "sha256": "65b957fe47cb701f5493cbaf40b50abce85cb18f2f7893ab8bffbf050c34ddf9",
+          "size": 3472,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/w/woff2/woff2_1.0.2-1build4.debian.tar.xz"
+        },
+        {
+          "filename": "woff2_1.0.2-1build4.dsc",
+          "sha256": "aaaf2b4198cbef21677bd9625aac26f5d04d1ff4b259179977ad7cb17b0f19d6",
+          "size": 2145,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/w/woff2/woff2_1.0.2-1build4.dsc"
+        },
+        {
+          "filename": "woff2_1.0.2.orig.tar.gz",
+          "sha256": "add272bb09e6384a4833ffca4896350fdb16e0ca22df68c0384773c67a175594",
+          "size": 38934,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/w/woff2/woff2_1.0.2.orig.tar.gz"
+        }
+      ],
+      "package": "woff2",
+      "version": "1.0.2-1build4"
+    },
+    {
+      "binaries": [
+        {
+          "package": "xdg-dbus-proxy",
+          "version": "0.1.3-1ubuntu0.1"
+        }
+      ],
+      "inputs": [
+        {
+          "filename": "xdg-dbus-proxy_0.1.3-1ubuntu0.1.debian.tar.xz",
+          "sha256": "1772f7aebc72eafc03eb1b1d78062e4c155f140bdad02ab3111e60062c0ef0f0",
+          "size": 4508,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/x/xdg-dbus-proxy/xdg-dbus-proxy_0.1.3-1ubuntu0.1.debian.tar.xz"
+        },
+        {
+          "filename": "xdg-dbus-proxy_0.1.3-1ubuntu0.1.dsc",
+          "sha256": "62ec420932f2058672290ffde527ccaf59bd76c93295c2f8b10a9483e77b52a5",
+          "size": 2319,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/x/xdg-dbus-proxy/xdg-dbus-proxy_0.1.3-1ubuntu0.1.dsc"
+        },
+        {
+          "filename": "xdg-dbus-proxy_0.1.3.orig.tar.xz",
+          "sha256": "03b5d28ca879253ddbbce31098909becca1495ea811a6377a492e28f16c09b9b",
+          "size": 119896,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/x/xdg-dbus-proxy/xdg-dbus-proxy_0.1.3.orig.tar.xz"
+        }
+      ],
+      "package": "xdg-dbus-proxy",
+      "version": "0.1.3-1ubuntu0.1"
+    },
+    {
+      "binaries": [
+        {
+          "package": "liblzma5",
+          "version": "5.2.5-2ubuntu1.1"
+        }
+      ],
+      "inputs": [
+        {
+          "filename": "xz-utils_5.2.5-2ubuntu1.1.debian.tar.xz",
+          "sha256": "30dce55bb4b07c703564f3667bfe5b11668964cb94f41c6d5ab886b27176711b",
+          "size": 36020,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/x/xz-utils/xz-utils_5.2.5-2ubuntu1.1.debian.tar.xz"
+        },
+        {
+          "filename": "xz-utils_5.2.5-2ubuntu1.1.dsc",
+          "sha256": "9334c6a33605f75ec1727f0fdb91d4a2f64b0475f95759810bbd0ceb2a8a780e",
+          "size": 2467,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/x/xz-utils/xz-utils_5.2.5-2ubuntu1.1.dsc"
+        },
+        {
+          "filename": "xz-utils_5.2.5.orig.tar.xz",
+          "sha256": "3e1e518ffc912f86608a8cb35e4bd41ad1aec210df2a47aaa1f95e7f5576ef56",
+          "size": 1148824,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/x/xz-utils/xz-utils_5.2.5.orig.tar.xz"
+        },
+        {
+          "filename": "xz-utils_5.2.5.orig.tar.xz.asc",
+          "sha256": "6efc0075a58912e640119d2b52ef7d1518b260d8720fadc73df21ab7fc727624",
+          "size": 833,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/x/xz-utils/xz-utils_5.2.5.orig.tar.xz.asc"
+        }
+      ],
+      "package": "xz-utils",
+      "version": "5.2.5-2ubuntu1.1"
+    },
+    {
+      "binaries": [
+        {
+          "package": "zlib1g",
+          "version": "1:1.2.11.dfsg-2ubuntu9.2"
+        }
+      ],
+      "inputs": [
+        {
+          "filename": "zlib_1.2.11.dfsg-2ubuntu9.2.debian.tar.xz",
+          "sha256": "5678d0b3d1e609297e5a3dedfcb3474bab1cafe82c0c29aec2cef01e49a88d39",
+          "size": 60140,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/z/zlib/zlib_1.2.11.dfsg-2ubuntu9.2.debian.tar.xz"
+        },
+        {
+          "filename": "zlib_1.2.11.dfsg-2ubuntu9.2.dsc",
+          "sha256": "ac50a5e5803c128eaef7eceda71fa13ffab3ed1e949008be244d8754d9c59e47",
+          "size": 2649,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/z/zlib/zlib_1.2.11.dfsg-2ubuntu9.2.dsc"
+        },
+        {
+          "filename": "zlib_1.2.11.dfsg.orig.tar.gz",
+          "sha256": "80c481411a4fe8463aeb8270149a0e80bb9eaf7da44132b6e16f2b5af01bc899",
+          "size": 370248,
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/pool/main/z/zlib/zlib_1.2.11.dfsg.orig.tar.gz"
+        }
+      ],
+      "package": "zlib",
+      "version": "1:1.2.11.dfsg-2ubuntu9.2"
+    }
+  ]
+}

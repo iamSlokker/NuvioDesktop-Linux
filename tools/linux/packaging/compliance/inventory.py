@@ -74,6 +74,12 @@ def jar_details(path):
 
 def subset_modification(original, packaged):
     with zipfile.ZipFile(original) as before, zipfile.ZipFile(packaged) as after:
+        # ZIP APIs can resolve duplicate names differently. A set of names plus read(name)
+        # proves only the last member's bytes, not every retained entry in that archive.
+        for archive in (before, after):
+            names = [entry.filename for entry in archive.infolist()]
+            if len(names) != len(set(names)):
+                raise ValueError('Duplicate JAR member: ' + Path(archive.filename).name)
         a = {e.filename for e in before.infolist() if not e.is_dir()}
         b = {e.filename for e in after.infolist() if not e.is_dir()}
         if not b <= a or any(before.read(n) != after.read(n) for n in b):

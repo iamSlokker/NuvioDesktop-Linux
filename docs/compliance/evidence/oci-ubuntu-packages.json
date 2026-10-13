@@ -1,0 +1,4834 @@
+{
+  "builder_image_id": "a465827efdede9029b1560ce793085a115508500bad83889f167530efcd81ed2",
+  "canonical_seed": {
+    "builder_image_id": "cb78483f3dfbab0ded1360d04afc46d612652864ca0ca2ebb61a2ac48262369e",
+    "packages": [
+      "adduser",
+      "adwaita-icon-theme",
+      "apt",
+      "autoconf",
+      "automake",
+      "autotools-dev",
+      "base-files",
+      "base-passwd",
+      "bash",
+      "binutils",
+      "binutils-common:amd64",
+      "binutils-x86-64-linux-gnu",
+      "bsdutils",
+      "bubblewrap",
+      "build-essential",
+      "bzip2",
+      "ca-certificates",
+      "cmake",
+      "cmake-data",
+      "coreutils",
+      "cpp",
+      "cpp-11",
+      "cpp-12",
+      "curl",
+      "dash",
+      "dbus",
+      "dbus-user-session",
+      "dconf-gsettings-backend:amd64",
+      "dconf-service",
+      "debconf",
+      "debianutils",
+      "desktop-file-utils",
+      "dh-elpa-helper",
+      "dictionaries-common",
+      "diffutils",
+      "dirmngr",
+      "dpkg",
+      "dpkg-dev",
+      "e2fsprogs",
+      "emacsen-common",
+      "fakeroot",
+      "file",
+      "findutils",
+      "fontconfig",
+      "fontconfig-config",
+      "fonts-dejavu-core",
+      "g++",
+      "g++-11",
+      "g++-12",
+      "gcc",
+      "gcc-11",
+      "gcc-11-base:amd64",
+      "gcc-12",
+      "gcc-12-base:amd64",
+      "gir1.2-atk-1.0:amd64",
+      "gir1.2-atspi-2.0:amd64",
+      "gir1.2-dazzle-1.0:amd64",
+      "gir1.2-freedesktop:amd64",
+      "gir1.2-gdkpixbuf-2.0:amd64",
+      "gir1.2-glib-2.0:amd64",
+      "gir1.2-gtk-3.0:amd64",
+      "gir1.2-harfbuzz-0.0:amd64",
+      "gir1.2-json-1.0:amd64",
+      "gir1.2-pango-1.0:amd64",
+      "gir1.2-polkit-1.0",
+      "gir1.2-soup-3.0:amd64",
+      "git",
+      "git-man",
+      "glib-networking-common",
+      "glib-networking-services",
+      "glib-networking:amd64",
+      "gnupg",
+      "gnupg-l10n",
+      "gnupg-utils",
+      "gpg",
+      "gpg-agent",
+      "gpg-wks-client",
+      "gpg-wks-server",
+      "gpgconf",
+      "gpgsm",
+      "gpgv",
+      "grep",
+      "gsettings-desktop-schemas",
+      "gstreamer1.0-plugins-base:amd64",
+      "gstreamer1.0-plugins-good:amd64",
+      "gtk-update-icon-cache",
+      "gzip",
+      "hicolor-icon-theme",
+      "hostname",
+      "humanity-icon-theme",
+      "hunspell-en-us",
+      "hwdata",
+      "icu-devtools",
+      "init-system-helpers",
+      "iso-codes",
+      "jq",
+      "libaa1:amd64",
+      "libacl1:amd64",
+      "libapparmor1:amd64",
+      "libapt-pkg6.0:amd64",
+      "libarchive13:amd64",
+      "libargon2-1:amd64",
+      "libasan6:amd64",
+      "libasan8:amd64",
+      "libasound2-data",
+      "libasound2-dev:amd64",
+      "libasound2:amd64",
+      "libaspell15:amd64",
+      "libassuan0:amd64",
+      "libasyncns0:amd64",
+      "libatk-bridge2.0-0:amd64",
+      "libatk-bridge2.0-dev:amd64",
+      "libatk1.0-0:amd64",
+      "libatk1.0-data",
+      "libatk1.0-dev:amd64",
+      "libatomic1:amd64",
+      "libatspi2.0-0:amd64",
+      "libatspi2.0-dev:amd64",
+      "libattr1:amd64",
+      "libaudit-common",
+      "libaudit1:amd64",
+      "libavahi-client3:amd64",
+      "libavahi-common-data:amd64",
+      "libavahi-common3:amd64",
+      "libavc1394-0:amd64",
+      "libbinutils:amd64",
+      "libblkid-dev:amd64",
+      "libblkid1:amd64",
+      "libbrotli-dev:amd64",
+      "libbrotli1:amd64",
+      "libbsd0:amd64",
+      "libbz2-1.0:amd64",
+      "libbz2-dev:amd64",
+      "libc-bin",
+      "libc-dev-bin",
+      "libc6-dev:amd64",
+      "libc6:amd64",
+      "libcaca0:amd64",
+      "libcairo-gobject2:amd64",
+      "libcairo-script-interpreter2:amd64",
+      "libcairo2-dev:amd64",
+      "libcairo2:amd64",
+      "libcap-ng0:amd64",
+      "libcap2-bin",
+      "libcap2:amd64",
+      "libcc1-0:amd64",
+      "libcdparanoia0:amd64",
+      "libcolord2:amd64",
+      "libcom-err2:amd64",
+      "libcrypt-dev:amd64",
+      "libcrypt1:amd64",
+      "libcryptsetup12:amd64",
+      "libctf-nobfd0:amd64",
+      "libctf0:amd64",
+      "libcups2:amd64",
+      "libcurl3-gnutls:amd64",
+      "libcurl4:amd64",
+      "libdatrie-dev:amd64",
+      "libdatrie1:amd64",
+      "libdazzle-1.0-0:amd64",
+      "libdazzle-1.0-dev:amd64",
+      "libdazzle-common",
+      "libdb5.3:amd64",
+      "libdbus-1-3:amd64",
+      "libdbus-1-dev:amd64",
+      "libdconf1:amd64",
+      "libdebconfclient0:amd64",
+      "libdeflate-dev:amd64",
+      "libdeflate0:amd64",
+      "libdevmapper1.02.1:amd64",
+      "libdpkg-perl",
+      "libdrm-amdgpu1:amd64",
+      "libdrm-common",
+      "libdrm-dev:amd64",
+      "libdrm-intel1:amd64",
+      "libdrm-nouveau2:amd64",
+      "libdrm-radeon1:amd64",
+      "libdrm2:amd64",
+      "libdv4:amd64",
+      "libdw1:amd64",
+      "libedit2:amd64",
+      "libegl-dev:amd64",
+      "libegl-mesa0:amd64",
+      "libegl1-mesa-dev:amd64",
+      "libegl1:amd64",
+      "libelf1:amd64",
+      "libenchant-2-2:amd64",
+      "libepoxy-dev:amd64",
+      "libepoxy0:amd64",
+      "liberror-perl",
+      "libevdev2:amd64",
+      "libexpat1-dev:amd64",
+      "libexpat1:amd64",
+      "libext2fs2:amd64",
+      "libfakeroot:amd64",
+      "libffi-dev:amd64",
+      "libffi8:amd64",
+      "libflac8:amd64",
+      "libfontconfig-dev:amd64",
+      "libfontconfig1-dev:amd64",
+      "libfontconfig1:amd64",
+      "libfreetype-dev:amd64",
+      "libfreetype6-dev:amd64",
+      "libfreetype6:amd64",
+      "libfribidi-dev:amd64",
+      "libfribidi0:amd64",
+      "libgbm1:amd64",
+      "libgcc-11-dev:amd64",
+      "libgcc-12-dev:amd64",
+      "libgcc-s1:amd64",
+      "libgcrypt20:amd64",
+      "libgdbm-compat4:amd64",
+      "libgdbm6:amd64",
+      "libgdk-pixbuf-2.0-0:amd64",
+      "libgdk-pixbuf-2.0-dev:amd64",
+      "libgdk-pixbuf2.0-bin",
+      "libgdk-pixbuf2.0-common",
+      "libgirepository-1.0-1:amd64",
+      "libgl-dev:amd64",
+      "libgl1-mesa-dri:amd64",
+      "libgl1:amd64",
+      "libglapi-mesa:amd64",
+      "libgles-dev:amd64",
+      "libgles1:amd64",
+      "libgles2:amd64",
+      "libglib2.0-0:amd64",
+      "libglib2.0-bin",
+      "libglib2.0-data",
+      "libglib2.0-dev-bin",
+      "libglib2.0-dev:amd64",
+      "libglvnd-core-dev:amd64",
+      "libglvnd-dev:amd64",
+      "libglvnd0:amd64",
+      "libglx-dev:amd64",
+      "libglx-mesa0:amd64",
+      "libglx0:amd64",
+      "libgmp10:amd64",
+      "libgnutls30:amd64",
+      "libgomp1:amd64",
+      "libgpg-error0:amd64",
+      "libgpm2:amd64",
+      "libgraphite2-3:amd64",
+      "libgraphite2-dev:amd64",
+      "libgssapi-krb5-2:amd64",
+      "libgstreamer-gl1.0-0:amd64",
+      "libgstreamer-plugins-base1.0-0:amd64",
+      "libgstreamer-plugins-good1.0-0:amd64",
+      "libgstreamer1.0-0:amd64",
+      "libgtk-3-0:amd64",
+      "libgtk-3-common",
+      "libgtk-3-dev:amd64",
+      "libgudev-1.0-0:amd64",
+      "libharfbuzz-dev:amd64",
+      "libharfbuzz-gobject0:amd64",
+      "libharfbuzz-icu0:amd64",
+      "libharfbuzz0b:amd64",
+      "libhogweed6:amd64",
+      "libhunspell-1.7-0:amd64",
+      "libhyphen0:amd64",
+      "libice-dev:amd64",
+      "libice6:amd64",
+      "libicu-dev:amd64",
+      "libicu70:amd64",
+      "libidn2-0:amd64",
+      "libiec61883-0:amd64",
+      "libip4tc2:amd64",
+      "libisl23:amd64",
+      "libitm1:amd64",
+      "libjack-jackd2-0:amd64",
+      "libjavascriptcoregtk-4.1-0:amd64",
+      "libjavascriptcoregtk-4.1-dev:amd64",
+      "libjbig-dev:amd64",
+      "libjbig0:amd64",
+      "libjpeg-dev:amd64",
+      "libjpeg-turbo8-dev:amd64",
+      "libjpeg-turbo8:amd64",
+      "libjpeg8-dev:amd64",
+      "libjpeg8:amd64",
+      "libjq1:amd64",
+      "libjson-c5:amd64",
+      "libjson-glib-1.0-0:amd64",
+      "libjson-glib-1.0-common",
+      "libjson-glib-dev:amd64",
+      "libjsoncpp25:amd64",
+      "libk5crypto3:amd64",
+      "libkeyutils1:amd64",
+      "libkmod2:amd64",
+      "libkrb5-3:amd64",
+      "libkrb5support0:amd64",
+      "libksba8:amd64",
+      "liblcms2-2:amd64",
+      "liblcms2-dev:amd64",
+      "libldap-2.5-0:amd64",
+      "libllvm15:amd64",
+      "liblsan0:amd64",
+      "liblz4-1:amd64",
+      "liblzma-dev:amd64",
+      "liblzma5:amd64",
+      "liblzo2-2:amd64",
+      "libmagic-mgc",
+      "libmagic1:amd64",
+      "libmanette-0.2-0:amd64",
+      "libmd0:amd64",
+      "libmount-dev:amd64",
+      "libmount1:amd64",
+      "libmp3lame0:amd64",
+      "libmpc3:amd64",
+      "libmpdec3:amd64",
+      "libmpfr6:amd64",
+      "libmpg123-0:amd64",
+      "libncurses6:amd64",
+      "libncursesw6:amd64",
+      "libnettle8:amd64",
+      "libnghttp2-14:amd64",
+      "libnghttp2-dev",
+      "libnpth0:amd64",
+      "libnsl-dev:amd64",
+      "libnsl2:amd64",
+      "libogg0:amd64",
+      "libonig5:amd64",
+      "libopengl-dev:amd64",
+      "libopengl0:amd64",
+      "libopus0:amd64",
+      "liborc-0.4-0:amd64",
+      "libp11-kit0:amd64",
+      "libpam-modules-bin",
+      "libpam-modules:amd64",
+      "libpam-runtime",
+      "libpam-systemd:amd64",
+      "libpam0g:amd64",
+      "libpango-1.0-0:amd64",
+      "libpango1.0-dev:amd64",
+      "libpangocairo-1.0-0:amd64",
+      "libpangoft2-1.0-0:amd64",
+      "libpangoxft-1.0-0:amd64",
+      "libpciaccess-dev:amd64",
+      "libpciaccess0:amd64",
+      "libpcre16-3:amd64",
+      "libpcre2-16-0:amd64",
+      "libpcre2-32-0:amd64",
+      "libpcre2-8-0:amd64",
+      "libpcre2-dev:amd64",
+      "libpcre2-posix3:amd64",
+      "libpcre3-dev:amd64",
+      "libpcre32-3:amd64",
+      "libpcre3:amd64",
+      "libpcrecpp0v5:amd64",
+      "libperl5.34:amd64",
+      "libpixman-1-0:amd64",
+      "libpixman-1-dev:amd64",
+      "libpng-dev:amd64",
+      "libpng16-16:amd64",
+      "libpolkit-agent-1-0:amd64",
+      "libpolkit-gobject-1-0:amd64",
+      "libpolkit-gobject-1-dev",
+      "libprocps8:amd64",
+      "libproxy1v5:amd64",
+      "libpsl-dev:amd64",
+      "libpsl5:amd64",
+      "libpthread-stubs0-dev:amd64",
+      "libpulse-dev:amd64",
+      "libpulse-mainloop-glib0:amd64",
+      "libpulse0:amd64",
+      "libpython3-stdlib:amd64",
+      "libpython3.10-minimal:amd64",
+      "libpython3.10-stdlib:amd64",
+      "libquadmath0:amd64",
+      "libraw1394-11:amd64",
+      "libreadline8:amd64",
+      "librhash0:amd64",
+      "librtmp1:amd64",
+      "libsamplerate0:amd64",
+      "libsasl2-2:amd64",
+      "libsasl2-modules-db:amd64",
+      "libseccomp2:amd64",
+      "libsecret-1-0:amd64",
+      "libsecret-common",
+      "libselinux1-dev:amd64",
+      "libselinux1:amd64",
+      "libsemanage-common",
+      "libsemanage2:amd64",
+      "libsensors-config",
+      "libsensors5:amd64",
+      "libsepol-dev:amd64",
+      "libsepol2:amd64",
+      "libset-scalar-perl",
+      "libshout3:amd64",
+      "libsigsegv2:amd64",
+      "libslang2:amd64",
+      "libsm-dev:amd64",
+      "libsm6:amd64",
+      "libsmartcols1:amd64",
+      "libsndfile1:amd64",
+      "libsoup-3.0-0:amd64",
+      "libsoup-3.0-common",
+      "libsoup-3.0-dev:amd64",
+      "libsoup2.4-1:amd64",
+      "libsoup2.4-common",
+      "libspeex1:amd64",
+      "libsqlite3-0:amd64",
+      "libsqlite3-dev:amd64",
+      "libss2:amd64",
+      "libssh-4:amd64",
+      "libssl-dev:amd64",
+      "libssl3:amd64",
+      "libstdc++-11-dev:amd64",
+      "libstdc++-12-dev:amd64",
+      "libstdc++6:amd64",
+      "libsysprof-4-dev:amd64",
+      "libsysprof-4:amd64",
+      "libsysprof-ui-4:amd64",
+      "libsystemd0:amd64",
+      "libtag1v5-vanilla:amd64",
+      "libtag1v5:amd64",
+      "libtasn1-6:amd64",
+      "libtext-iconv-perl",
+      "libthai-data",
+      "libthai-dev:amd64",
+      "libthai0:amd64",
+      "libtheora0:amd64",
+      "libtiff-dev:amd64",
+      "libtiff5:amd64",
+      "libtiffxx5:amd64",
+      "libtinfo6:amd64",
+      "libtirpc-common",
+      "libtirpc-dev:amd64",
+      "libtirpc3:amd64",
+      "libtool",
+      "libtsan0:amd64",
+      "libtsan2:amd64",
+      "libtwolame0:amd64",
+      "libubsan1:amd64",
+      "libudev-dev:amd64",
+      "libudev1:amd64",
+      "libunistring2:amd64",
+      "libunwind8:amd64",
+      "libuuid1:amd64",
+      "libuv1:amd64",
+      "libv4l-0:amd64",
+      "libv4lconvert0:amd64",
+      "libva-dev:amd64",
+      "libva-drm2:amd64",
+      "libva-glx2:amd64",
+      "libva-wayland2:amd64",
+      "libva-x11-2:amd64",
+      "libva2:amd64",
+      "libvisual-0.4-0:amd64",
+      "libvorbis0a:amd64",
+      "libvorbisenc2:amd64",
+      "libvpx7:amd64",
+      "libwavpack1:amd64",
+      "libwayland-bin",
+      "libwayland-client0:amd64",
+      "libwayland-cursor0:amd64",
+      "libwayland-dev:amd64",
+      "libwayland-egl1:amd64",
+      "libwayland-server0:amd64",
+      "libwebkit2gtk-4.1-0:amd64",
+      "libwebkit2gtk-4.1-dev",
+      "libwebp7:amd64",
+      "libwebpdemux2:amd64",
+      "libwebpmux3:amd64",
+      "libwoff1:amd64",
+      "libx11-6:amd64",
+      "libx11-data",
+      "libx11-dev:amd64",
+      "libx11-xcb1:amd64",
+      "libxau-dev:amd64",
+      "libxau6:amd64",
+      "libxcb-dri2-0:amd64",
+      "libxcb-dri3-0:amd64",
+      "libxcb-dri3-dev:amd64",
+      "libxcb-glx0:amd64",
+      "libxcb-present0:amd64",
+      "libxcb-randr0:amd64",
+      "libxcb-render0-dev:amd64",
+      "libxcb-render0:amd64",
+      "libxcb-shm0-dev:amd64",
+      "libxcb-shm0:amd64",
+      "libxcb-sync1:amd64",
+      "libxcb-xfixes0:amd64",
+      "libxcb1-dev:amd64",
+      "libxcb1:amd64",
+      "libxcomposite-dev:amd64",
+      "libxcomposite1:amd64",
+      "libxcursor-dev:amd64",
+      "libxcursor1:amd64",
+      "libxdamage-dev:amd64",
+      "libxdamage1:amd64",
+      "libxdmcp-dev:amd64",
+      "libxdmcp6:amd64",
+      "libxext-dev:amd64",
+      "libxext6:amd64",
+      "libxfixes-dev:amd64",
+      "libxfixes3:amd64",
+      "libxft-dev:amd64",
+      "libxft2:amd64",
+      "libxi-dev:amd64",
+      "libxi6:amd64",
+      "libxinerama-dev:amd64",
+      "libxinerama1:amd64",
+      "libxkbcommon-dev:amd64",
+      "libxkbcommon0:amd64",
+      "libxml2:amd64",
+      "libxpresent-dev:amd64",
+      "libxpresent1:amd64",
+      "libxrandr-dev:amd64",
+      "libxrandr2:amd64",
+      "libxrender-dev:amd64",
+      "libxrender1:amd64",
+      "libxshmfence1:amd64",
+      "libxslt1.1:amd64",
+      "libxss-dev:amd64",
+      "libxss1:amd64",
+      "libxtst-dev:amd64",
+      "libxtst6:amd64",
+      "libxxf86vm1:amd64",
+      "libxxhash0:amd64",
+      "libzstd1:amd64",
+      "linux-libc-dev:amd64",
+      "login",
+      "logsave",
+      "lsb-base",
+      "lto-disabled-list",
+      "m4",
+      "make",
+      "mawk",
+      "media-types",
+      "mount",
+      "ncurses-base",
+      "ncurses-bin",
+      "ninja-build",
+      "openssl",
+      "pango1.0-tools",
+      "passwd",
+      "patch",
+      "patchelf",
+      "pci.ids",
+      "perl",
+      "perl-base",
+      "perl-modules-5.34",
+      "pinentry-curses",
+      "pkg-config",
+      "procps",
+      "python-babel-localedata",
+      "python3",
+      "python3-babel",
+      "python3-distutils",
+      "python3-jinja2",
+      "python3-lib2to3",
+      "python3-markupsafe",
+      "python3-minimal",
+      "python3-pkg-resources",
+      "python3-tz",
+      "python3.10",
+      "python3.10-minimal",
+      "readline-common",
+      "rpcsvc-proto",
+      "sed",
+      "sensible-utils",
+      "session-migration",
+      "shared-mime-info",
+      "squashfs-tools",
+      "systemd",
+      "systemd-sysv",
+      "sysvinit-utils",
+      "tar",
+      "tzdata",
+      "ubuntu-keyring",
+      "ubuntu-mono",
+      "ucf",
+      "unzip",
+      "usb.ids",
+      "usrmerge",
+      "util-linux",
+      "uuid-dev:amd64",
+      "wayland-protocols",
+      "x11-common",
+      "x11proto-dev",
+      "xdg-dbus-proxy",
+      "xdg-utils",
+      "xkb-data",
+      "xorg-sgml-doctools",
+      "xtrans-dev",
+      "xz-utils",
+      "zlib1g-dev:amd64",
+      "zlib1g:amd64"
+    ],
+    "version_mapping": "Every canonical package/source version exactly matches the engine packages map; checked read-only from both immutable images."
+  },
+  "packages": {
+    "adduser": {
+      "binary_version": "3.118ubuntu5",
+      "source_package": "adduser",
+      "source_version": "3.118ubuntu5"
+    },
+    "adwaita-icon-theme": {
+      "binary_version": "41.0-1ubuntu1",
+      "source_package": "adwaita-icon-theme",
+      "source_version": "41.0-1ubuntu1"
+    },
+    "apt": {
+      "binary_version": "2.4.14",
+      "source_package": "apt",
+      "source_version": "2.4.14"
+    },
+    "autoconf": {
+      "binary_version": "2.71-2",
+      "source_package": "autoconf",
+      "source_version": "2.71-2"
+    },
+    "automake": {
+      "binary_version": "1:1.16.5-1.3",
+      "source_package": "automake-1.16",
+      "source_version": "1:1.16.5-1.3"
+    },
+    "autopoint": {
+      "binary_version": "0.21-4ubuntu4",
+      "source_package": "gettext",
+      "source_version": "0.21-4ubuntu4"
+    },
+    "autotools-dev": {
+      "binary_version": "20220109.1",
+      "source_package": "autotools-dev",
+      "source_version": "20220109.1"
+    },
+    "base-files": {
+      "binary_version": "12ubuntu4.7",
+      "source_package": "base-files",
+      "source_version": "12ubuntu4.7"
+    },
+    "base-passwd": {
+      "binary_version": "3.5.52build1",
+      "source_package": "base-passwd",
+      "source_version": "3.5.52build1"
+    },
+    "bash": {
+      "binary_version": "5.1-6ubuntu1.1",
+      "source_package": "bash",
+      "source_version": "5.1-6ubuntu1.1"
+    },
+    "binutils": {
+      "binary_version": "2.38-4ubuntu2.12",
+      "source_package": "binutils",
+      "source_version": "2.38-4ubuntu2.12"
+    },
+    "binutils-common:amd64": {
+      "binary_version": "2.38-4ubuntu2.12",
+      "source_package": "binutils",
+      "source_version": "2.38-4ubuntu2.12"
+    },
+    "binutils-x86-64-linux-gnu": {
+      "binary_version": "2.38-4ubuntu2.12",
+      "source_package": "binutils",
+      "source_version": "2.38-4ubuntu2.12"
+    },
+    "bison": {
+      "binary_version": "2:3.8.2+dfsg-1ubuntu0.22.04.1",
+      "source_package": "bison",
+      "source_version": "2:3.8.2+dfsg-1ubuntu0.22.04.1"
+    },
+    "bsdutils": {
+      "binary_version": "1:2.37.2-4ubuntu3.6",
+      "source_package": "util-linux",
+      "source_version": "2.37.2-4ubuntu3.6"
+    },
+    "bubblewrap": {
+      "binary_version": "0.6.1-1ubuntu0.3",
+      "source_package": "bubblewrap",
+      "source_version": "0.6.1-1ubuntu0.3"
+    },
+    "build-essential": {
+      "binary_version": "12.9ubuntu3",
+      "source_package": "build-essential",
+      "source_version": "12.9ubuntu3"
+    },
+    "bzip2": {
+      "binary_version": "1.0.8-5ubuntu0.1",
+      "source_package": "bzip2",
+      "source_version": "1.0.8-5ubuntu0.1"
+    },
+    "ca-certificates": {
+      "binary_version": "20260601~22.04.1",
+      "source_package": "ca-certificates",
+      "source_version": "20260601~22.04.1"
+    },
+    "ccache": {
+      "binary_version": "4.5.1-1",
+      "source_package": "ccache",
+      "source_version": "4.5.1-1"
+    },
+    "cmake": {
+      "binary_version": "3.22.1-1ubuntu1.22.04.2",
+      "source_package": "cmake",
+      "source_version": "3.22.1-1ubuntu1.22.04.2"
+    },
+    "cmake-data": {
+      "binary_version": "3.22.1-1ubuntu1.22.04.2",
+      "source_package": "cmake",
+      "source_version": "3.22.1-1ubuntu1.22.04.2"
+    },
+    "coreutils": {
+      "binary_version": "8.32-4.1ubuntu1.4",
+      "source_package": "coreutils",
+      "source_version": "8.32-4.1ubuntu1.4"
+    },
+    "cpp": {
+      "binary_version": "4:11.2.0-1ubuntu1",
+      "source_package": "gcc-defaults",
+      "source_version": "1.193ubuntu1"
+    },
+    "cpp-11": {
+      "binary_version": "11.4.0-1ubuntu1~22.04.3",
+      "source_package": "gcc-11",
+      "source_version": "11.4.0-1ubuntu1~22.04.3"
+    },
+    "cpp-12": {
+      "binary_version": "12.3.0-1ubuntu1~22.04.3",
+      "source_package": "gcc-12",
+      "source_version": "12.3.0-1ubuntu1~22.04.3"
+    },
+    "curl": {
+      "binary_version": "7.81.0-1ubuntu1.29",
+      "source_package": "curl",
+      "source_version": "7.81.0-1ubuntu1.29"
+    },
+    "dash": {
+      "binary_version": "0.5.11+git20210903+057cd650a4ed-3build1",
+      "source_package": "dash",
+      "source_version": "0.5.11+git20210903+057cd650a4ed-3build1"
+    },
+    "dbus": {
+      "binary_version": "1.12.20-2ubuntu4.1",
+      "source_package": "dbus",
+      "source_version": "1.12.20-2ubuntu4.1"
+    },
+    "dbus-user-session": {
+      "binary_version": "1.12.20-2ubuntu4.1",
+      "source_package": "dbus",
+      "source_version": "1.12.20-2ubuntu4.1"
+    },
+    "dconf-gsettings-backend:amd64": {
+      "binary_version": "0.40.0-3ubuntu0.1",
+      "source_package": "dconf",
+      "source_version": "0.40.0-3ubuntu0.1"
+    },
+    "dconf-service": {
+      "binary_version": "0.40.0-3ubuntu0.1",
+      "source_package": "dconf",
+      "source_version": "0.40.0-3ubuntu0.1"
+    },
+    "debconf": {
+      "binary_version": "1.5.79ubuntu1",
+      "source_package": "debconf",
+      "source_version": "1.5.79ubuntu1"
+    },
+    "debianutils": {
+      "binary_version": "5.5-1ubuntu2",
+      "source_package": "debianutils",
+      "source_version": "5.5-1ubuntu2"
+    },
+    "desktop-file-utils": {
+      "binary_version": "0.26-1ubuntu3",
+      "source_package": "desktop-file-utils",
+      "source_version": "0.26-1ubuntu3"
+    },
+    "dh-elpa-helper": {
+      "binary_version": "2.0.9ubuntu1",
+      "source_package": "dh-elpa",
+      "source_version": "2.0.9ubuntu1"
+    },
+    "dictionaries-common": {
+      "binary_version": "1.28.14",
+      "source_package": "dictionaries-common",
+      "source_version": "1.28.14"
+    },
+    "diffutils": {
+      "binary_version": "1:3.8-0ubuntu2.1",
+      "source_package": "diffutils",
+      "source_version": "1:3.8-0ubuntu2.1"
+    },
+    "dirmngr": {
+      "binary_version": "2.2.27-3ubuntu2.5",
+      "source_package": "gnupg2",
+      "source_version": "2.2.27-3ubuntu2.5"
+    },
+    "docbook": {
+      "binary_version": "4.5-9",
+      "source_package": "docbook",
+      "source_version": "4.5-9"
+    },
+    "docbook-to-man": {
+      "binary_version": "1:2.0.0-45",
+      "source_package": "docbook-to-man",
+      "source_version": "1:2.0.0-45"
+    },
+    "docbook-xml": {
+      "binary_version": "4.5-11",
+      "source_package": "docbook-xml",
+      "source_version": "4.5-11"
+    },
+    "docbook-xsl": {
+      "binary_version": "1.79.2+dfsg-1",
+      "source_package": "docbook-xsl",
+      "source_version": "1.79.2+dfsg-1"
+    },
+    "dpkg": {
+      "binary_version": "1.21.1ubuntu2.6",
+      "source_package": "dpkg",
+      "source_version": "1.21.1ubuntu2.6"
+    },
+    "dpkg-dev": {
+      "binary_version": "1.21.1ubuntu2.6",
+      "source_package": "dpkg",
+      "source_version": "1.21.1ubuntu2.6"
+    },
+    "e2fsprogs": {
+      "binary_version": "1.46.5-2ubuntu1.2",
+      "source_package": "e2fsprogs",
+      "source_version": "1.46.5-2ubuntu1.2"
+    },
+    "emacsen-common": {
+      "binary_version": "3.0.4",
+      "source_package": "emacsen-common",
+      "source_version": "3.0.4"
+    },
+    "fakeroot": {
+      "binary_version": "1.28-1ubuntu1",
+      "source_package": "fakeroot",
+      "source_version": "1.28-1ubuntu1"
+    },
+    "file": {
+      "binary_version": "1:5.41-3ubuntu0.1",
+      "source_package": "file",
+      "source_version": "1:5.41-3ubuntu0.1"
+    },
+    "findutils": {
+      "binary_version": "4.8.0-1ubuntu3",
+      "source_package": "findutils",
+      "source_version": "4.8.0-1ubuntu3"
+    },
+    "flex": {
+      "binary_version": "2.6.4-8build2",
+      "source_package": "flex",
+      "source_version": "2.6.4-8build2"
+    },
+    "flite1-dev:amd64": {
+      "binary_version": "2.2-3",
+      "source_package": "flite",
+      "source_version": "2.2-3"
+    },
+    "fontconfig": {
+      "binary_version": "2.13.1-4.2ubuntu5",
+      "source_package": "fontconfig",
+      "source_version": "2.13.1-4.2ubuntu5"
+    },
+    "fontconfig-config": {
+      "binary_version": "2.13.1-4.2ubuntu5",
+      "source_package": "fontconfig",
+      "source_version": "2.13.1-4.2ubuntu5"
+    },
+    "fonts-dejavu-core": {
+      "binary_version": "2.37-2build1",
+      "source_package": "fonts-dejavu",
+      "source_version": "2.37-2build1"
+    },
+    "g++": {
+      "binary_version": "4:11.2.0-1ubuntu1",
+      "source_package": "gcc-defaults",
+      "source_version": "1.193ubuntu1"
+    },
+    "g++-11": {
+      "binary_version": "11.4.0-1ubuntu1~22.04.3",
+      "source_package": "gcc-11",
+      "source_version": "11.4.0-1ubuntu1~22.04.3"
+    },
+    "g++-12": {
+      "binary_version": "12.3.0-1ubuntu1~22.04.3",
+      "source_package": "gcc-12",
+      "source_version": "12.3.0-1ubuntu1~22.04.3"
+    },
+    "gcc": {
+      "binary_version": "4:11.2.0-1ubuntu1",
+      "source_package": "gcc-defaults",
+      "source_version": "1.193ubuntu1"
+    },
+    "gcc-11": {
+      "binary_version": "11.4.0-1ubuntu1~22.04.3",
+      "source_package": "gcc-11",
+      "source_version": "11.4.0-1ubuntu1~22.04.3"
+    },
+    "gcc-11-base:amd64": {
+      "binary_version": "11.4.0-1ubuntu1~22.04.3",
+      "source_package": "gcc-11",
+      "source_version": "11.4.0-1ubuntu1~22.04.3"
+    },
+    "gcc-12": {
+      "binary_version": "12.3.0-1ubuntu1~22.04.3",
+      "source_package": "gcc-12",
+      "source_version": "12.3.0-1ubuntu1~22.04.3"
+    },
+    "gcc-12-base:amd64": {
+      "binary_version": "12.3.0-1ubuntu1~22.04.3",
+      "source_package": "gcc-12",
+      "source_version": "12.3.0-1ubuntu1~22.04.3"
+    },
+    "gdal-data": {
+      "binary_version": "3.4.1+dfsg-1build4",
+      "source_package": "gdal",
+      "source_version": "3.4.1+dfsg-1build4"
+    },
+    "gettext": {
+      "binary_version": "0.21-4ubuntu4",
+      "source_package": "gettext",
+      "source_version": "0.21-4ubuntu4"
+    },
+    "gettext-base": {
+      "binary_version": "0.21-4ubuntu4",
+      "source_package": "gettext",
+      "source_version": "0.21-4ubuntu4"
+    },
+    "gir1.2-atk-1.0:amd64": {
+      "binary_version": "2.36.0-3build1",
+      "source_package": "atk1.0",
+      "source_version": "2.36.0-3build1"
+    },
+    "gir1.2-atspi-2.0:amd64": {
+      "binary_version": "2.44.0-3",
+      "source_package": "at-spi2-core",
+      "source_version": "2.44.0-3"
+    },
+    "gir1.2-dazzle-1.0:amd64": {
+      "binary_version": "3.44.0-1",
+      "source_package": "libdazzle",
+      "source_version": "3.44.0-1"
+    },
+    "gir1.2-freedesktop:amd64": {
+      "binary_version": "1.72.0-1",
+      "source_package": "gobject-introspection",
+      "source_version": "1.72.0-1"
+    },
+    "gir1.2-gdkpixbuf-2.0:amd64": {
+      "binary_version": "2.42.8+dfsg-1ubuntu0.5",
+      "source_package": "gdk-pixbuf",
+      "source_version": "2.42.8+dfsg-1ubuntu0.5"
+    },
+    "gir1.2-glib-2.0:amd64": {
+      "binary_version": "1.72.0-1",
+      "source_package": "gobject-introspection",
+      "source_version": "1.72.0-1"
+    },
+    "gir1.2-gst-plugins-bad-1.0:amd64": {
+      "binary_version": "1.20.3-0ubuntu1.1",
+      "source_package": "gst-plugins-bad1.0",
+      "source_version": "1.20.3-0ubuntu1.1"
+    },
+    "gir1.2-gst-plugins-base-1.0:amd64": {
+      "binary_version": "1.20.1-1ubuntu0.7",
+      "source_package": "gst-plugins-base1.0",
+      "source_version": "1.20.1-1ubuntu0.7"
+    },
+    "gir1.2-gstreamer-1.0:amd64": {
+      "binary_version": "1.20.3-0ubuntu1.1",
+      "source_package": "gstreamer1.0",
+      "source_version": "1.20.3-0ubuntu1.1"
+    },
+    "gir1.2-gtk-3.0:amd64": {
+      "binary_version": "3.24.33-1ubuntu2.2",
+      "source_package": "gtk+3.0",
+      "source_version": "3.24.33-1ubuntu2.2"
+    },
+    "gir1.2-gudev-1.0:amd64": {
+      "binary_version": "1:237-2build1",
+      "source_package": "libgudev",
+      "source_version": "237-2build1"
+    },
+    "gir1.2-harfbuzz-0.0:amd64": {
+      "binary_version": "2.7.4-1ubuntu3.2",
+      "source_package": "harfbuzz",
+      "source_version": "2.7.4-1ubuntu3.2"
+    },
+    "gir1.2-json-1.0:amd64": {
+      "binary_version": "1.6.6-1build1",
+      "source_package": "json-glib",
+      "source_version": "1.6.6-1build1"
+    },
+    "gir1.2-manette-0.2:amd64": {
+      "binary_version": "0.2.6-3build1",
+      "source_package": "libmanette",
+      "source_version": "0.2.6-3build1"
+    },
+    "gir1.2-pango-1.0:amd64": {
+      "binary_version": "1.50.6+ds-2ubuntu1",
+      "source_package": "pango1.0",
+      "source_version": "1.50.6+ds-2ubuntu1"
+    },
+    "gir1.2-polkit-1.0": {
+      "binary_version": "0.105-33ubuntu0.2",
+      "source_package": "policykit-1",
+      "source_version": "0.105-33ubuntu0.2"
+    },
+    "gir1.2-secret-1:amd64": {
+      "binary_version": "0.20.5-2",
+      "source_package": "libsecret",
+      "source_version": "0.20.5-2"
+    },
+    "gir1.2-soup-3.0:amd64": {
+      "binary_version": "3.0.7-0ubuntu1",
+      "source_package": "libsoup3",
+      "source_version": "3.0.7-0ubuntu1"
+    },
+    "git": {
+      "binary_version": "1:2.34.1-1ubuntu1.17",
+      "source_package": "git",
+      "source_version": "1:2.34.1-1ubuntu1.17"
+    },
+    "git-man": {
+      "binary_version": "1:2.34.1-1ubuntu1.17",
+      "source_package": "git",
+      "source_version": "1:2.34.1-1ubuntu1.17"
+    },
+    "glib-networking-common": {
+      "binary_version": "2.72.0-1",
+      "source_package": "glib-networking",
+      "source_version": "2.72.0-1"
+    },
+    "glib-networking-services": {
+      "binary_version": "2.72.0-1",
+      "source_package": "glib-networking",
+      "source_version": "2.72.0-1"
+    },
+    "glib-networking:amd64": {
+      "binary_version": "2.72.0-1",
+      "source_package": "glib-networking",
+      "source_version": "2.72.0-1"
+    },
+    "gnupg": {
+      "binary_version": "2.2.27-3ubuntu2.5",
+      "source_package": "gnupg2",
+      "source_version": "2.2.27-3ubuntu2.5"
+    },
+    "gnupg-l10n": {
+      "binary_version": "2.2.27-3ubuntu2.5",
+      "source_package": "gnupg2",
+      "source_version": "2.2.27-3ubuntu2.5"
+    },
+    "gnupg-utils": {
+      "binary_version": "2.2.27-3ubuntu2.5",
+      "source_package": "gnupg2",
+      "source_version": "2.2.27-3ubuntu2.5"
+    },
+    "gobject-introspection": {
+      "binary_version": "1.72.0-1",
+      "source_package": "gobject-introspection",
+      "source_version": "1.72.0-1"
+    },
+    "gperf": {
+      "binary_version": "3.1-1build1",
+      "source_package": "gperf",
+      "source_version": "3.1-1build1"
+    },
+    "gpg": {
+      "binary_version": "2.2.27-3ubuntu2.5",
+      "source_package": "gnupg2",
+      "source_version": "2.2.27-3ubuntu2.5"
+    },
+    "gpg-agent": {
+      "binary_version": "2.2.27-3ubuntu2.5",
+      "source_package": "gnupg2",
+      "source_version": "2.2.27-3ubuntu2.5"
+    },
+    "gpg-wks-client": {
+      "binary_version": "2.2.27-3ubuntu2.5",
+      "source_package": "gnupg2",
+      "source_version": "2.2.27-3ubuntu2.5"
+    },
+    "gpg-wks-server": {
+      "binary_version": "2.2.27-3ubuntu2.5",
+      "source_package": "gnupg2",
+      "source_version": "2.2.27-3ubuntu2.5"
+    },
+    "gpgconf": {
+      "binary_version": "2.2.27-3ubuntu2.5",
+      "source_package": "gnupg2",
+      "source_version": "2.2.27-3ubuntu2.5"
+    },
+    "gpgsm": {
+      "binary_version": "2.2.27-3ubuntu2.5",
+      "source_package": "gnupg2",
+      "source_version": "2.2.27-3ubuntu2.5"
+    },
+    "gpgv": {
+      "binary_version": "2.2.27-3ubuntu2.5",
+      "source_package": "gnupg2",
+      "source_version": "2.2.27-3ubuntu2.5"
+    },
+    "grep": {
+      "binary_version": "3.7-1build1",
+      "source_package": "grep",
+      "source_version": "3.7-1build1"
+    },
+    "gsettings-desktop-schemas": {
+      "binary_version": "42.0-1ubuntu1",
+      "source_package": "gsettings-desktop-schemas",
+      "source_version": "42.0-1ubuntu1"
+    },
+    "gstreamer1.0-plugins-base:amd64": {
+      "binary_version": "1.20.1-1ubuntu0.7",
+      "source_package": "gst-plugins-base1.0",
+      "source_version": "1.20.1-1ubuntu0.7"
+    },
+    "gstreamer1.0-plugins-good:amd64": {
+      "binary_version": "1.20.3-0ubuntu1.9",
+      "source_package": "gst-plugins-good1.0",
+      "source_version": "1.20.3-0ubuntu1.9"
+    },
+    "gtk-doc-tools": {
+      "binary_version": "1.33.2-1",
+      "source_package": "gtk-doc",
+      "source_version": "1.33.2-1"
+    },
+    "gtk-update-icon-cache": {
+      "binary_version": "3.24.33-1ubuntu2.2",
+      "source_package": "gtk+3.0",
+      "source_version": "3.24.33-1ubuntu2.2"
+    },
+    "gzip": {
+      "binary_version": "1.10-4ubuntu4.2",
+      "source_package": "gzip",
+      "source_version": "1.10-4ubuntu4.2"
+    },
+    "hicolor-icon-theme": {
+      "binary_version": "0.17-2",
+      "source_package": "hicolor-icon-theme",
+      "source_version": "0.17-2"
+    },
+    "hostname": {
+      "binary_version": "3.23ubuntu2",
+      "source_package": "hostname",
+      "source_version": "3.23ubuntu2"
+    },
+    "humanity-icon-theme": {
+      "binary_version": "0.6.16",
+      "source_package": "humanity-icon-theme",
+      "source_version": "0.6.16"
+    },
+    "hunspell-en-us": {
+      "binary_version": "1:2020.12.07-2",
+      "source_package": "scowl",
+      "source_version": "2020.12.07-2"
+    },
+    "hwdata": {
+      "binary_version": "0.357-1",
+      "source_package": "hwdata",
+      "source_version": "0.357-1"
+    },
+    "ibverbs-providers:amd64": {
+      "binary_version": "39.0-1",
+      "source_package": "rdma-core",
+      "source_version": "39.0-1"
+    },
+    "icu-devtools": {
+      "binary_version": "70.1-2",
+      "source_package": "icu",
+      "source_version": "70.1-2"
+    },
+    "init-system-helpers": {
+      "binary_version": "1.62",
+      "source_package": "init-system-helpers",
+      "source_version": "1.62"
+    },
+    "iso-codes": {
+      "binary_version": "4.9.0-1",
+      "source_package": "iso-codes",
+      "source_version": "4.9.0-1"
+    },
+    "jq": {
+      "binary_version": "1.6-2.1ubuntu3.2",
+      "source_package": "jq",
+      "source_version": "1.6-2.1ubuntu3.2"
+    },
+    "libaa1:amd64": {
+      "binary_version": "1.4p5-50build1",
+      "source_package": "aalib",
+      "source_version": "1.4p5-50build1"
+    },
+    "libabsl20210324:amd64": {
+      "binary_version": "0~20210324.2-2ubuntu0.3",
+      "source_package": "abseil",
+      "source_version": "0~20210324.2-2ubuntu0.3"
+    },
+    "libacl1:amd64": {
+      "binary_version": "2.3.1-1",
+      "source_package": "acl",
+      "source_version": "2.3.1-1"
+    },
+    "libaec0:amd64": {
+      "binary_version": "1.0.6-1",
+      "source_package": "libaec",
+      "source_version": "1.0.6-1"
+    },
+    "libaom3:amd64": {
+      "binary_version": "3.3.0-1ubuntu0.1",
+      "source_package": "aom",
+      "source_version": "3.3.0-1ubuntu0.1"
+    },
+    "libapparmor1:amd64": {
+      "binary_version": "3.0.4-2ubuntu2.5",
+      "source_package": "apparmor",
+      "source_version": "3.0.4-2ubuntu2.5"
+    },
+    "libapt-pkg6.0:amd64": {
+      "binary_version": "2.4.14",
+      "source_package": "apt",
+      "source_version": "2.4.14"
+    },
+    "libarchive13:amd64": {
+      "binary_version": "3.6.0-1ubuntu1.8",
+      "source_package": "libarchive",
+      "source_version": "3.6.0-1ubuntu1.8"
+    },
+    "libargon2-1:amd64": {
+      "binary_version": "0~20171227-0.3",
+      "source_package": "argon2",
+      "source_version": "0~20171227-0.3"
+    },
+    "libarmadillo10": {
+      "binary_version": "1:10.8.2+dfsg-1",
+      "source_package": "armadillo",
+      "source_version": "1:10.8.2+dfsg-1"
+    },
+    "libarpack2:amd64": {
+      "binary_version": "3.8.0-1",
+      "source_package": "arpack",
+      "source_version": "3.8.0-1"
+    },
+    "libasan6:amd64": {
+      "binary_version": "11.4.0-1ubuntu1~22.04.3",
+      "source_package": "gcc-11",
+      "source_version": "11.4.0-1ubuntu1~22.04.3"
+    },
+    "libasan8:amd64": {
+      "binary_version": "12.3.0-1ubuntu1~22.04.3",
+      "source_package": "gcc-12",
+      "source_version": "12.3.0-1ubuntu1~22.04.3"
+    },
+    "libasound2-data": {
+      "binary_version": "1.2.6.1-1ubuntu1.2",
+      "source_package": "alsa-lib",
+      "source_version": "1.2.6.1-1ubuntu1.2"
+    },
+    "libasound2-dev:amd64": {
+      "binary_version": "1.2.6.1-1ubuntu1.2",
+      "source_package": "alsa-lib",
+      "source_version": "1.2.6.1-1ubuntu1.2"
+    },
+    "libasound2:amd64": {
+      "binary_version": "1.2.6.1-1ubuntu1.2",
+      "source_package": "alsa-lib",
+      "source_version": "1.2.6.1-1ubuntu1.2"
+    },
+    "libaspell15:amd64": {
+      "binary_version": "0.60.8-4build1",
+      "source_package": "aspell",
+      "source_version": "0.60.8-4build1"
+    },
+    "libassuan0:amd64": {
+      "binary_version": "2.5.5-1build1",
+      "source_package": "libassuan",
+      "source_version": "2.5.5-1build1"
+    },
+    "libasyncns0:amd64": {
+      "binary_version": "0.8-6build2",
+      "source_package": "libasyncns",
+      "source_version": "0.8-6build2"
+    },
+    "libatk-bridge2.0-0:amd64": {
+      "binary_version": "2.38.0-3",
+      "source_package": "at-spi2-atk",
+      "source_version": "2.38.0-3"
+    },
+    "libatk-bridge2.0-dev:amd64": {
+      "binary_version": "2.38.0-3",
+      "source_package": "at-spi2-atk",
+      "source_version": "2.38.0-3"
+    },
+    "libatk1.0-0:amd64": {
+      "binary_version": "2.36.0-3build1",
+      "source_package": "atk1.0",
+      "source_version": "2.36.0-3build1"
+    },
+    "libatk1.0-data": {
+      "binary_version": "2.36.0-3build1",
+      "source_package": "atk1.0",
+      "source_version": "2.36.0-3build1"
+    },
+    "libatk1.0-dev:amd64": {
+      "binary_version": "2.36.0-3build1",
+      "source_package": "atk1.0",
+      "source_version": "2.36.0-3build1"
+    },
+    "libatomic1:amd64": {
+      "binary_version": "12.3.0-1ubuntu1~22.04.3",
+      "source_package": "gcc-12",
+      "source_version": "12.3.0-1ubuntu1~22.04.3"
+    },
+    "libatspi2.0-0:amd64": {
+      "binary_version": "2.44.0-3",
+      "source_package": "at-spi2-core",
+      "source_version": "2.44.0-3"
+    },
+    "libatspi2.0-dev:amd64": {
+      "binary_version": "2.44.0-3",
+      "source_package": "at-spi2-core",
+      "source_version": "2.44.0-3"
+    },
+    "libattr1:amd64": {
+      "binary_version": "1:2.5.1-1ubuntu0.1",
+      "source_package": "attr",
+      "source_version": "1:2.5.1-1ubuntu0.1"
+    },
+    "libaudit-common": {
+      "binary_version": "1:3.0.7-1ubuntu0.1",
+      "source_package": "audit",
+      "source_version": "1:3.0.7-1ubuntu0.1"
+    },
+    "libaudit1:amd64": {
+      "binary_version": "1:3.0.7-1ubuntu0.1",
+      "source_package": "audit",
+      "source_version": "1:3.0.7-1ubuntu0.1"
+    },
+    "libavahi-client3:amd64": {
+      "binary_version": "0.8-5ubuntu5.5",
+      "source_package": "avahi",
+      "source_version": "0.8-5ubuntu5.5"
+    },
+    "libavahi-common-data:amd64": {
+      "binary_version": "0.8-5ubuntu5.5",
+      "source_package": "avahi",
+      "source_version": "0.8-5ubuntu5.5"
+    },
+    "libavahi-common3:amd64": {
+      "binary_version": "0.8-5ubuntu5.5",
+      "source_package": "avahi",
+      "source_version": "0.8-5ubuntu5.5"
+    },
+    "libavc1394-0:amd64": {
+      "binary_version": "0.5.4-5build2",
+      "source_package": "libavc1394",
+      "source_version": "0.5.4-5build2"
+    },
+    "libavcodec-dev:amd64": {
+      "binary_version": "7:4.4.2-0ubuntu0.22.04.1",
+      "source_package": "ffmpeg",
+      "source_version": "7:4.4.2-0ubuntu0.22.04.1"
+    },
+    "libavcodec58:amd64": {
+      "binary_version": "7:4.4.2-0ubuntu0.22.04.1",
+      "source_package": "ffmpeg",
+      "source_version": "7:4.4.2-0ubuntu0.22.04.1"
+    },
+    "libavformat-dev:amd64": {
+      "binary_version": "7:4.4.2-0ubuntu0.22.04.1",
+      "source_package": "ffmpeg",
+      "source_version": "7:4.4.2-0ubuntu0.22.04.1"
+    },
+    "libavformat58:amd64": {
+      "binary_version": "7:4.4.2-0ubuntu0.22.04.1",
+      "source_package": "ffmpeg",
+      "source_version": "7:4.4.2-0ubuntu0.22.04.1"
+    },
+    "libavif-dev:amd64": {
+      "binary_version": "0.9.3-3",
+      "source_package": "libavif",
+      "source_version": "0.9.3-3"
+    },
+    "libavif13:amd64": {
+      "binary_version": "0.9.3-3",
+      "source_package": "libavif",
+      "source_version": "0.9.3-3"
+    },
+    "libavutil-dev:amd64": {
+      "binary_version": "7:4.4.2-0ubuntu0.22.04.1",
+      "source_package": "ffmpeg",
+      "source_version": "7:4.4.2-0ubuntu0.22.04.1"
+    },
+    "libavutil56:amd64": {
+      "binary_version": "7:4.4.2-0ubuntu0.22.04.1",
+      "source_package": "ffmpeg",
+      "source_version": "7:4.4.2-0ubuntu0.22.04.1"
+    },
+    "libbinutils:amd64": {
+      "binary_version": "2.38-4ubuntu2.12",
+      "source_package": "binutils",
+      "source_version": "2.38-4ubuntu2.12"
+    },
+    "libblas3:amd64": {
+      "binary_version": "3.10.0-2ubuntu1",
+      "source_package": "lapack",
+      "source_version": "3.10.0-2ubuntu1"
+    },
+    "libblkid-dev:amd64": {
+      "binary_version": "2.37.2-4ubuntu3.6",
+      "source_package": "util-linux",
+      "source_version": "2.37.2-4ubuntu3.6"
+    },
+    "libblkid1:amd64": {
+      "binary_version": "2.37.2-4ubuntu3.6",
+      "source_package": "util-linux",
+      "source_version": "2.37.2-4ubuntu3.6"
+    },
+    "libblosc1:amd64": {
+      "binary_version": "1.21.1+ds2-2",
+      "source_package": "c-blosc",
+      "source_version": "1.21.1+ds2-2"
+    },
+    "libbluray2:amd64": {
+      "binary_version": "1:1.3.1-1",
+      "source_package": "libbluray",
+      "source_version": "1:1.3.1-1"
+    },
+    "libbrotli-dev:amd64": {
+      "binary_version": "1.0.9-2build6",
+      "source_package": "brotli",
+      "source_version": "1.0.9-2build6"
+    },
+    "libbrotli1:amd64": {
+      "binary_version": "1.0.9-2build6",
+      "source_package": "brotli",
+      "source_version": "1.0.9-2build6"
+    },
+    "libbsd0:amd64": {
+      "binary_version": "0.11.5-1",
+      "source_package": "libbsd",
+      "source_version": "0.11.5-1"
+    },
+    "libbz2-1.0:amd64": {
+      "binary_version": "1.0.8-5ubuntu0.1",
+      "source_package": "bzip2",
+      "source_version": "1.0.8-5ubuntu0.1"
+    },
+    "libbz2-dev:amd64": {
+      "binary_version": "1.0.8-5ubuntu0.1",
+      "source_package": "bzip2",
+      "source_version": "1.0.8-5ubuntu0.1"
+    },
+    "libc-bin": {
+      "binary_version": "2.35-0ubuntu3.15",
+      "source_package": "glibc",
+      "source_version": "2.35-0ubuntu3.15"
+    },
+    "libc-dev-bin": {
+      "binary_version": "2.35-0ubuntu3.15",
+      "source_package": "glibc",
+      "source_version": "2.35-0ubuntu3.15"
+    },
+    "libc6-dev:amd64": {
+      "binary_version": "2.35-0ubuntu3.15",
+      "source_package": "glibc",
+      "source_version": "2.35-0ubuntu3.15"
+    },
+    "libc6:amd64": {
+      "binary_version": "2.35-0ubuntu3.15",
+      "source_package": "glibc",
+      "source_version": "2.35-0ubuntu3.15"
+    },
+    "libcaca0:amd64": {
+      "binary_version": "0.99.beta19-2.2ubuntu4.2",
+      "source_package": "libcaca",
+      "source_version": "0.99.beta19-2.2ubuntu4.2"
+    },
+    "libcairo-gobject2:amd64": {
+      "binary_version": "1.16.0-5ubuntu2.1",
+      "source_package": "cairo",
+      "source_version": "1.16.0-5ubuntu2.1"
+    },
+    "libcairo-script-interpreter2:amd64": {
+      "binary_version": "1.16.0-5ubuntu2.1",
+      "source_package": "cairo",
+      "source_version": "1.16.0-5ubuntu2.1"
+    },
+    "libcairo2-dev:amd64": {
+      "binary_version": "1.16.0-5ubuntu2.1",
+      "source_package": "cairo",
+      "source_version": "1.16.0-5ubuntu2.1"
+    },
+    "libcairo2:amd64": {
+      "binary_version": "1.16.0-5ubuntu2.1",
+      "source_package": "cairo",
+      "source_version": "1.16.0-5ubuntu2.1"
+    },
+    "libcap-ng0:amd64": {
+      "binary_version": "0.7.9-2.2build3",
+      "source_package": "libcap-ng",
+      "source_version": "0.7.9-2.2build3"
+    },
+    "libcap2-bin": {
+      "binary_version": "1:2.44-1ubuntu0.22.04.3",
+      "source_package": "libcap2",
+      "source_version": "1:2.44-1ubuntu0.22.04.3"
+    },
+    "libcap2:amd64": {
+      "binary_version": "1:2.44-1ubuntu0.22.04.3",
+      "source_package": "libcap2",
+      "source_version": "1:2.44-1ubuntu0.22.04.3"
+    },
+    "libcc1-0:amd64": {
+      "binary_version": "12.3.0-1ubuntu1~22.04.3",
+      "source_package": "gcc-12",
+      "source_version": "12.3.0-1ubuntu1~22.04.3"
+    },
+    "libcdparanoia0:amd64": {
+      "binary_version": "3.10.2+debian-14build2",
+      "source_package": "cdparanoia",
+      "source_version": "3.10.2+debian-14build2"
+    },
+    "libcfitsio9:amd64": {
+      "binary_version": "4.0.0-1",
+      "source_package": "cfitsio",
+      "source_version": "4.0.0-1"
+    },
+    "libcharls2:amd64": {
+      "binary_version": "2.3.4-1",
+      "source_package": "charls",
+      "source_version": "2.3.4-1"
+    },
+    "libchromaprint1:amd64": {
+      "binary_version": "1.5.1-2",
+      "source_package": "chromaprint",
+      "source_version": "1.5.1-2"
+    },
+    "libcodec2-1.0:amd64": {
+      "binary_version": "1.0.1-3",
+      "source_package": "codec2",
+      "source_version": "1.0.1-3"
+    },
+    "libcolord2:amd64": {
+      "binary_version": "1.4.6-1",
+      "source_package": "colord",
+      "source_version": "1.4.6-1"
+    },
+    "libcom-err2:amd64": {
+      "binary_version": "1.46.5-2ubuntu1.2",
+      "source_package": "e2fsprogs",
+      "source_version": "1.46.5-2ubuntu1.2"
+    },
+    "libcrypt-dev:amd64": {
+      "binary_version": "1:4.4.27-1",
+      "source_package": "libxcrypt",
+      "source_version": "1:4.4.27-1"
+    },
+    "libcrypt1:amd64": {
+      "binary_version": "1:4.4.27-1",
+      "source_package": "libxcrypt",
+      "source_version": "1:4.4.27-1"
+    },
+    "libcryptsetup12:amd64": {
+      "binary_version": "2:2.4.3-1ubuntu1.3",
+      "source_package": "cryptsetup",
+      "source_version": "2:2.4.3-1ubuntu1.3"
+    },
+    "libctf-nobfd0:amd64": {
+      "binary_version": "2.38-4ubuntu2.12",
+      "source_package": "binutils",
+      "source_version": "2.38-4ubuntu2.12"
+    },
+    "libctf0:amd64": {
+      "binary_version": "2.38-4ubuntu2.12",
+      "source_package": "binutils",
+      "source_version": "2.38-4ubuntu2.12"
+    },
+    "libcups2:amd64": {
+      "binary_version": "2.4.1op1-1ubuntu4.21",
+      "source_package": "cups",
+      "source_version": "2.4.1op1-1ubuntu4.21"
+    },
+    "libcurl3-gnutls:amd64": {
+      "binary_version": "7.81.0-1ubuntu1.29",
+      "source_package": "curl",
+      "source_version": "7.81.0-1ubuntu1.29"
+    },
+    "libcurl4:amd64": {
+      "binary_version": "7.81.0-1ubuntu1.29",
+      "source_package": "curl",
+      "source_version": "7.81.0-1ubuntu1.29"
+    },
+    "libdatrie-dev:amd64": {
+      "binary_version": "0.2.13-2",
+      "source_package": "libdatrie",
+      "source_version": "0.2.13-2"
+    },
+    "libdatrie1:amd64": {
+      "binary_version": "0.2.13-2",
+      "source_package": "libdatrie",
+      "source_version": "0.2.13-2"
+    },
+    "libdav1d5:amd64": {
+      "binary_version": "0.9.2-1",
+      "source_package": "dav1d",
+      "source_version": "0.9.2-1"
+    },
+    "libdazzle-1.0-0:amd64": {
+      "binary_version": "3.44.0-1",
+      "source_package": "libdazzle",
+      "source_version": "3.44.0-1"
+    },
+    "libdazzle-1.0-dev:amd64": {
+      "binary_version": "3.44.0-1",
+      "source_package": "libdazzle",
+      "source_version": "3.44.0-1"
+    },
+    "libdazzle-common": {
+      "binary_version": "3.44.0-1",
+      "source_package": "libdazzle",
+      "source_version": "3.44.0-1"
+    },
+    "libdb5.3:amd64": {
+      "binary_version": "5.3.28+dfsg1-0.8ubuntu3",
+      "source_package": "db5.3",
+      "source_version": "5.3.28+dfsg1-0.8ubuntu3"
+    },
+    "libdbus-1-3:amd64": {
+      "binary_version": "1.12.20-2ubuntu4.1",
+      "source_package": "dbus",
+      "source_version": "1.12.20-2ubuntu4.1"
+    },
+    "libdbus-1-dev:amd64": {
+      "binary_version": "1.12.20-2ubuntu4.1",
+      "source_package": "dbus",
+      "source_version": "1.12.20-2ubuntu4.1"
+    },
+    "libdc1394-25:amd64": {
+      "binary_version": "2.2.6-4",
+      "source_package": "libdc1394",
+      "source_version": "2.2.6-4"
+    },
+    "libdc1394-dev:amd64": {
+      "binary_version": "2.2.6-4",
+      "source_package": "libdc1394",
+      "source_version": "2.2.6-4"
+    },
+    "libdconf1:amd64": {
+      "binary_version": "0.40.0-3ubuntu0.1",
+      "source_package": "dconf",
+      "source_version": "0.40.0-3ubuntu0.1"
+    },
+    "libde265-0:amd64": {
+      "binary_version": "1.0.8-1ubuntu0.3",
+      "source_package": "libde265",
+      "source_version": "1.0.8-1ubuntu0.3"
+    },
+    "libdebconfclient0:amd64": {
+      "binary_version": "0.261ubuntu1",
+      "source_package": "cdebconf",
+      "source_version": "0.261ubuntu1"
+    },
+    "libdeflate-dev:amd64": {
+      "binary_version": "1.10-2",
+      "source_package": "libdeflate",
+      "source_version": "1.10-2"
+    },
+    "libdeflate0:amd64": {
+      "binary_version": "1.10-2",
+      "source_package": "libdeflate",
+      "source_version": "1.10-2"
+    },
+    "libdevmapper1.02.1:amd64": {
+      "binary_version": "2:1.02.175-2.1ubuntu5",
+      "source_package": "lvm2",
+      "source_version": "2.03.11-2.1ubuntu5"
+    },
+    "libdouble-conversion3:amd64": {
+      "binary_version": "3.1.7-4",
+      "source_package": "double-conversion",
+      "source_version": "3.1.7-4"
+    },
+    "libdpkg-perl": {
+      "binary_version": "1.21.1ubuntu2.6",
+      "source_package": "dpkg",
+      "source_version": "1.21.1ubuntu2.6"
+    },
+    "libdrm-amdgpu1:amd64": {
+      "binary_version": "2.4.113-2~ubuntu0.22.04.1",
+      "source_package": "libdrm",
+      "source_version": "2.4.113-2~ubuntu0.22.04.1"
+    },
+    "libdrm-common": {
+      "binary_version": "2.4.113-2~ubuntu0.22.04.1",
+      "source_package": "libdrm",
+      "source_version": "2.4.113-2~ubuntu0.22.04.1"
+    },
+    "libdrm-dev:amd64": {
+      "binary_version": "2.4.113-2~ubuntu0.22.04.1",
+      "source_package": "libdrm",
+      "source_version": "2.4.113-2~ubuntu0.22.04.1"
+    },
+    "libdrm-intel1:amd64": {
+      "binary_version": "2.4.113-2~ubuntu0.22.04.1",
+      "source_package": "libdrm",
+      "source_version": "2.4.113-2~ubuntu0.22.04.1"
+    },
+    "libdrm-nouveau2:amd64": {
+      "binary_version": "2.4.113-2~ubuntu0.22.04.1",
+      "source_package": "libdrm",
+      "source_version": "2.4.113-2~ubuntu0.22.04.1"
+    },
+    "libdrm-radeon1:amd64": {
+      "binary_version": "2.4.113-2~ubuntu0.22.04.1",
+      "source_package": "libdrm",
+      "source_version": "2.4.113-2~ubuntu0.22.04.1"
+    },
+    "libdrm2:amd64": {
+      "binary_version": "2.4.113-2~ubuntu0.22.04.1",
+      "source_package": "libdrm",
+      "source_version": "2.4.113-2~ubuntu0.22.04.1"
+    },
+    "libdv4:amd64": {
+      "binary_version": "1.0.0-14build1",
+      "source_package": "libdv",
+      "source_version": "1.0.0-14build1"
+    },
+    "libdw-dev:amd64": {
+      "binary_version": "0.186-1ubuntu0.1",
+      "source_package": "elfutils",
+      "source_version": "0.186-1ubuntu0.1"
+    },
+    "libdw1:amd64": {
+      "binary_version": "0.186-1ubuntu0.1",
+      "source_package": "elfutils",
+      "source_version": "0.186-1ubuntu0.1"
+    },
+    "libedit2:amd64": {
+      "binary_version": "3.1-20210910-1build1",
+      "source_package": "libedit",
+      "source_version": "3.1-20210910-1build1"
+    },
+    "libegl-dev:amd64": {
+      "binary_version": "1.4.0-1",
+      "source_package": "libglvnd",
+      "source_version": "1.4.0-1"
+    },
+    "libegl-mesa0:amd64": {
+      "binary_version": "23.2.1-1ubuntu3.1~22.04.4",
+      "source_package": "mesa",
+      "source_version": "23.2.1-1ubuntu3.1~22.04.4"
+    },
+    "libegl1-mesa-dev:amd64": {
+      "binary_version": "23.2.1-1ubuntu3.1~22.04.4",
+      "source_package": "mesa",
+      "source_version": "23.2.1-1ubuntu3.1~22.04.4"
+    },
+    "libegl1:amd64": {
+      "binary_version": "1.4.0-1",
+      "source_package": "libglvnd",
+      "source_version": "1.4.0-1"
+    },
+    "libelf-dev:amd64": {
+      "binary_version": "0.186-1ubuntu0.1",
+      "source_package": "elfutils",
+      "source_version": "0.186-1ubuntu0.1"
+    },
+    "libelf1:amd64": {
+      "binary_version": "0.186-1ubuntu0.1",
+      "source_package": "elfutils",
+      "source_version": "0.186-1ubuntu0.1"
+    },
+    "libenchant-2-2:amd64": {
+      "binary_version": "2.3.2-1ubuntu2",
+      "source_package": "enchant-2",
+      "source_version": "2.3.2-1ubuntu2"
+    },
+    "libenchant-2-dev:amd64": {
+      "binary_version": "2.3.2-1ubuntu2",
+      "source_package": "enchant-2",
+      "source_version": "2.3.2-1ubuntu2"
+    },
+    "libepoxy-dev:amd64": {
+      "binary_version": "1.5.10-1",
+      "source_package": "libepoxy",
+      "source_version": "1.5.10-1"
+    },
+    "libepoxy0:amd64": {
+      "binary_version": "1.5.10-1",
+      "source_package": "libepoxy",
+      "source_version": "1.5.10-1"
+    },
+    "liberror-perl": {
+      "binary_version": "0.17029-1",
+      "source_package": "liberror-perl",
+      "source_version": "0.17029-1"
+    },
+    "libevdev-dev:amd64": {
+      "binary_version": "1.12.1+dfsg-1",
+      "source_package": "libevdev",
+      "source_version": "1.12.1+dfsg-1"
+    },
+    "libevdev2:amd64": {
+      "binary_version": "1.12.1+dfsg-1",
+      "source_package": "libevdev",
+      "source_version": "1.12.1+dfsg-1"
+    },
+    "libevent-2.1-7:amd64": {
+      "binary_version": "2.1.12-stable-1ubuntu0.2",
+      "source_package": "libevent",
+      "source_version": "2.1.12-stable-1ubuntu0.2"
+    },
+    "libevent-core-2.1-7:amd64": {
+      "binary_version": "2.1.12-stable-1ubuntu0.2",
+      "source_package": "libevent",
+      "source_version": "2.1.12-stable-1ubuntu0.2"
+    },
+    "libevent-dev": {
+      "binary_version": "2.1.12-stable-1ubuntu0.2",
+      "source_package": "libevent",
+      "source_version": "2.1.12-stable-1ubuntu0.2"
+    },
+    "libevent-extra-2.1-7:amd64": {
+      "binary_version": "2.1.12-stable-1ubuntu0.2",
+      "source_package": "libevent",
+      "source_version": "2.1.12-stable-1ubuntu0.2"
+    },
+    "libevent-openssl-2.1-7:amd64": {
+      "binary_version": "2.1.12-stable-1ubuntu0.2",
+      "source_package": "libevent",
+      "source_version": "2.1.12-stable-1ubuntu0.2"
+    },
+    "libevent-pthreads-2.1-7:amd64": {
+      "binary_version": "2.1.12-stable-1ubuntu0.2",
+      "source_package": "libevent",
+      "source_version": "2.1.12-stable-1ubuntu0.2"
+    },
+    "libexif-dev:amd64": {
+      "binary_version": "0.6.24-1ubuntu0.22.04.1",
+      "source_package": "libexif",
+      "source_version": "0.6.24-1ubuntu0.22.04.1"
+    },
+    "libexif12:amd64": {
+      "binary_version": "0.6.24-1ubuntu0.22.04.1",
+      "source_package": "libexif",
+      "source_version": "0.6.24-1ubuntu0.22.04.1"
+    },
+    "libexpat1-dev:amd64": {
+      "binary_version": "2.4.7-1ubuntu0.9",
+      "source_package": "expat",
+      "source_version": "2.4.7-1ubuntu0.9"
+    },
+    "libexpat1:amd64": {
+      "binary_version": "2.4.7-1ubuntu0.9",
+      "source_package": "expat",
+      "source_version": "2.4.7-1ubuntu0.9"
+    },
+    "libext2fs2:amd64": {
+      "binary_version": "1.46.5-2ubuntu1.2",
+      "source_package": "e2fsprogs",
+      "source_version": "1.46.5-2ubuntu1.2"
+    },
+    "libfabric1:amd64": {
+      "binary_version": "1.11.0-3",
+      "source_package": "libfabric",
+      "source_version": "1.11.0-3"
+    },
+    "libfakeroot:amd64": {
+      "binary_version": "1.28-1ubuntu1",
+      "source_package": "fakeroot",
+      "source_version": "1.28-1ubuntu1"
+    },
+    "libffi-dev:amd64": {
+      "binary_version": "3.4.2-4",
+      "source_package": "libffi",
+      "source_version": "3.4.2-4"
+    },
+    "libffi8:amd64": {
+      "binary_version": "3.4.2-4",
+      "source_package": "libffi",
+      "source_version": "3.4.2-4"
+    },
+    "libflac8:amd64": {
+      "binary_version": "1.3.3-2ubuntu0.2",
+      "source_package": "flac",
+      "source_version": "1.3.3-2ubuntu0.2"
+    },
+    "libflite1:amd64": {
+      "binary_version": "2.2-3",
+      "source_package": "flite",
+      "source_version": "2.2-3"
+    },
+    "libfontconfig-dev:amd64": {
+      "binary_version": "2.13.1-4.2ubuntu5",
+      "source_package": "fontconfig",
+      "source_version": "2.13.1-4.2ubuntu5"
+    },
+    "libfontconfig1-dev:amd64": {
+      "binary_version": "2.13.1-4.2ubuntu5",
+      "source_package": "fontconfig",
+      "source_version": "2.13.1-4.2ubuntu5"
+    },
+    "libfontconfig1:amd64": {
+      "binary_version": "2.13.1-4.2ubuntu5",
+      "source_package": "fontconfig",
+      "source_version": "2.13.1-4.2ubuntu5"
+    },
+    "libfreetype-dev:amd64": {
+      "binary_version": "2.11.1+dfsg-1ubuntu0.3",
+      "source_package": "freetype",
+      "source_version": "2.11.1+dfsg-1ubuntu0.3"
+    },
+    "libfreetype6-dev:amd64": {
+      "binary_version": "2.11.1+dfsg-1ubuntu0.3",
+      "source_package": "freetype",
+      "source_version": "2.11.1+dfsg-1ubuntu0.3"
+    },
+    "libfreetype6:amd64": {
+      "binary_version": "2.11.1+dfsg-1ubuntu0.3",
+      "source_package": "freetype",
+      "source_version": "2.11.1+dfsg-1ubuntu0.3"
+    },
+    "libfreexl1:amd64": {
+      "binary_version": "1.0.6-1",
+      "source_package": "freexl",
+      "source_version": "1.0.6-1"
+    },
+    "libfribidi-dev:amd64": {
+      "binary_version": "1.0.8-2ubuntu3.1",
+      "source_package": "fribidi",
+      "source_version": "1.0.8-2ubuntu3.1"
+    },
+    "libfribidi0:amd64": {
+      "binary_version": "1.0.8-2ubuntu3.1",
+      "source_package": "fribidi",
+      "source_version": "1.0.8-2ubuntu3.1"
+    },
+    "libfyba0:amd64": {
+      "binary_version": "4.1.1-7",
+      "source_package": "fyba",
+      "source_version": "4.1.1-7"
+    },
+    "libgav1-0:amd64": {
+      "binary_version": "0.17.0-1build1",
+      "source_package": "libgav1",
+      "source_version": "0.17.0-1build1"
+    },
+    "libgbm-dev:amd64": {
+      "binary_version": "23.2.1-1ubuntu3.1~22.04.4",
+      "source_package": "mesa",
+      "source_version": "23.2.1-1ubuntu3.1~22.04.4"
+    },
+    "libgbm1:amd64": {
+      "binary_version": "23.2.1-1ubuntu3.1~22.04.4",
+      "source_package": "mesa",
+      "source_version": "23.2.1-1ubuntu3.1~22.04.4"
+    },
+    "libgcc-11-dev:amd64": {
+      "binary_version": "11.4.0-1ubuntu1~22.04.3",
+      "source_package": "gcc-11",
+      "source_version": "11.4.0-1ubuntu1~22.04.3"
+    },
+    "libgcc-12-dev:amd64": {
+      "binary_version": "12.3.0-1ubuntu1~22.04.3",
+      "source_package": "gcc-12",
+      "source_version": "12.3.0-1ubuntu1~22.04.3"
+    },
+    "libgcc-s1:amd64": {
+      "binary_version": "12.3.0-1ubuntu1~22.04.3",
+      "source_package": "gcc-12",
+      "source_version": "12.3.0-1ubuntu1~22.04.3"
+    },
+    "libgcrypt20-dev": {
+      "binary_version": "1.9.4-3ubuntu3.3",
+      "source_package": "libgcrypt20",
+      "source_version": "1.9.4-3ubuntu3.3"
+    },
+    "libgcrypt20:amd64": {
+      "binary_version": "1.9.4-3ubuntu3.3",
+      "source_package": "libgcrypt20",
+      "source_version": "1.9.4-3ubuntu3.3"
+    },
+    "libgd3:amd64": {
+      "binary_version": "2.3.0-2ubuntu2.3",
+      "source_package": "libgd2",
+      "source_version": "2.3.0-2ubuntu2.3"
+    },
+    "libgdal30": {
+      "binary_version": "3.4.1+dfsg-1build4",
+      "source_package": "gdal",
+      "source_version": "3.4.1+dfsg-1build4"
+    },
+    "libgdbm-compat4:amd64": {
+      "binary_version": "1.23-1",
+      "source_package": "gdbm",
+      "source_version": "1.23-1"
+    },
+    "libgdbm6:amd64": {
+      "binary_version": "1.23-1",
+      "source_package": "gdbm",
+      "source_version": "1.23-1"
+    },
+    "libgdcm-dev": {
+      "binary_version": "3.0.10-1build2",
+      "source_package": "gdcm",
+      "source_version": "3.0.10-1build2"
+    },
+    "libgdcm3.0:amd64": {
+      "binary_version": "3.0.10-1build2",
+      "source_package": "gdcm",
+      "source_version": "3.0.10-1build2"
+    },
+    "libgdk-pixbuf-2.0-0:amd64": {
+      "binary_version": "2.42.8+dfsg-1ubuntu0.5",
+      "source_package": "gdk-pixbuf",
+      "source_version": "2.42.8+dfsg-1ubuntu0.5"
+    },
+    "libgdk-pixbuf-2.0-dev:amd64": {
+      "binary_version": "2.42.8+dfsg-1ubuntu0.5",
+      "source_package": "gdk-pixbuf",
+      "source_version": "2.42.8+dfsg-1ubuntu0.5"
+    },
+    "libgdk-pixbuf2.0-bin": {
+      "binary_version": "2.42.8+dfsg-1ubuntu0.5",
+      "source_package": "gdk-pixbuf",
+      "source_version": "2.42.8+dfsg-1ubuntu0.5"
+    },
+    "libgdk-pixbuf2.0-common": {
+      "binary_version": "2.42.8+dfsg-1ubuntu0.5",
+      "source_package": "gdk-pixbuf",
+      "source_version": "2.42.8+dfsg-1ubuntu0.5"
+    },
+    "libgeos-c1v5:amd64": {
+      "binary_version": "3.10.2-1",
+      "source_package": "geos",
+      "source_version": "3.10.2-1"
+    },
+    "libgeos3.10.2:amd64": {
+      "binary_version": "3.10.2-1",
+      "source_package": "geos",
+      "source_version": "3.10.2-1"
+    },
+    "libgeotiff5:amd64": {
+      "binary_version": "1.7.0-2build1",
+      "source_package": "libgeotiff",
+      "source_version": "1.7.0-2build1"
+    },
+    "libgfortran5:amd64": {
+      "binary_version": "12.3.0-1ubuntu1~22.04.3",
+      "source_package": "gcc-12",
+      "source_version": "12.3.0-1ubuntu1~22.04.3"
+    },
+    "libgif7:amd64": {
+      "binary_version": "5.1.9-2ubuntu0.3",
+      "source_package": "giflib",
+      "source_version": "5.1.9-2ubuntu0.3"
+    },
+    "libgirepository-1.0-1:amd64": {
+      "binary_version": "1.72.0-1",
+      "source_package": "gobject-introspection",
+      "source_version": "1.72.0-1"
+    },
+    "libgirepository1.0-dev:amd64": {
+      "binary_version": "1.72.0-1",
+      "source_package": "gobject-introspection",
+      "source_version": "1.72.0-1"
+    },
+    "libgl-dev:amd64": {
+      "binary_version": "1.4.0-1",
+      "source_package": "libglvnd",
+      "source_version": "1.4.0-1"
+    },
+    "libgl1-mesa-dri:amd64": {
+      "binary_version": "23.2.1-1ubuntu3.1~22.04.4",
+      "source_package": "mesa",
+      "source_version": "23.2.1-1ubuntu3.1~22.04.4"
+    },
+    "libgl1:amd64": {
+      "binary_version": "1.4.0-1",
+      "source_package": "libglvnd",
+      "source_version": "1.4.0-1"
+    },
+    "libgl2ps1.4": {
+      "binary_version": "1.4.2+dfsg1-2",
+      "source_package": "gl2ps",
+      "source_version": "1.4.2+dfsg1-2"
+    },
+    "libglapi-mesa:amd64": {
+      "binary_version": "23.2.1-1ubuntu3.1~22.04.4",
+      "source_package": "mesa",
+      "source_version": "23.2.1-1ubuntu3.1~22.04.4"
+    },
+    "libgles-dev:amd64": {
+      "binary_version": "1.4.0-1",
+      "source_package": "libglvnd",
+      "source_version": "1.4.0-1"
+    },
+    "libgles1:amd64": {
+      "binary_version": "1.4.0-1",
+      "source_package": "libglvnd",
+      "source_version": "1.4.0-1"
+    },
+    "libgles2:amd64": {
+      "binary_version": "1.4.0-1",
+      "source_package": "libglvnd",
+      "source_version": "1.4.0-1"
+    },
+    "libglew2.2:amd64": {
+      "binary_version": "2.2.0-4",
+      "source_package": "glew",
+      "source_version": "2.2.0-4"
+    },
+    "libglib2.0-0:amd64": {
+      "binary_version": "2.72.4-0ubuntu2.10",
+      "source_package": "glib2.0",
+      "source_version": "2.72.4-0ubuntu2.10"
+    },
+    "libglib2.0-bin": {
+      "binary_version": "2.72.4-0ubuntu2.10",
+      "source_package": "glib2.0",
+      "source_version": "2.72.4-0ubuntu2.10"
+    },
+    "libglib2.0-data": {
+      "binary_version": "2.72.4-0ubuntu2.10",
+      "source_package": "glib2.0",
+      "source_version": "2.72.4-0ubuntu2.10"
+    },
+    "libglib2.0-dev-bin": {
+      "binary_version": "2.72.4-0ubuntu2.10",
+      "source_package": "glib2.0",
+      "source_version": "2.72.4-0ubuntu2.10"
+    },
+    "libglib2.0-dev:amd64": {
+      "binary_version": "2.72.4-0ubuntu2.10",
+      "source_package": "glib2.0",
+      "source_version": "2.72.4-0ubuntu2.10"
+    },
+    "libglvnd-core-dev:amd64": {
+      "binary_version": "1.4.0-1",
+      "source_package": "libglvnd",
+      "source_version": "1.4.0-1"
+    },
+    "libglvnd-dev:amd64": {
+      "binary_version": "1.4.0-1",
+      "source_package": "libglvnd",
+      "source_version": "1.4.0-1"
+    },
+    "libglvnd0:amd64": {
+      "binary_version": "1.4.0-1",
+      "source_package": "libglvnd",
+      "source_version": "1.4.0-1"
+    },
+    "libglx-dev:amd64": {
+      "binary_version": "1.4.0-1",
+      "source_package": "libglvnd",
+      "source_version": "1.4.0-1"
+    },
+    "libglx-mesa0:amd64": {
+      "binary_version": "23.2.1-1ubuntu3.1~22.04.4",
+      "source_package": "mesa",
+      "source_version": "23.2.1-1ubuntu3.1~22.04.4"
+    },
+    "libglx0:amd64": {
+      "binary_version": "1.4.0-1",
+      "source_package": "libglvnd",
+      "source_version": "1.4.0-1"
+    },
+    "libgme0:amd64": {
+      "binary_version": "0.6.3-2",
+      "source_package": "game-music-emu",
+      "source_version": "0.6.3-2"
+    },
+    "libgmp10:amd64": {
+      "binary_version": "2:6.2.1+dfsg-3ubuntu1",
+      "source_package": "gmp",
+      "source_version": "2:6.2.1+dfsg-3ubuntu1"
+    },
+    "libgnutls30:amd64": {
+      "binary_version": "3.7.3-4ubuntu1.9",
+      "source_package": "gnutls28",
+      "source_version": "3.7.3-4ubuntu1.9"
+    },
+    "libgomp1:amd64": {
+      "binary_version": "12.3.0-1ubuntu1~22.04.3",
+      "source_package": "gcc-12",
+      "source_version": "12.3.0-1ubuntu1~22.04.3"
+    },
+    "libgpg-error-dev": {
+      "binary_version": "1.43-3",
+      "source_package": "libgpg-error",
+      "source_version": "1.43-3"
+    },
+    "libgpg-error0:amd64": {
+      "binary_version": "1.43-3",
+      "source_package": "libgpg-error",
+      "source_version": "1.43-3"
+    },
+    "libgphoto2-6:amd64": {
+      "binary_version": "2.5.27-1ubuntu0.1",
+      "source_package": "libgphoto2",
+      "source_version": "2.5.27-1ubuntu0.1"
+    },
+    "libgphoto2-dev:amd64": {
+      "binary_version": "2.5.27-1ubuntu0.1",
+      "source_package": "libgphoto2",
+      "source_version": "2.5.27-1ubuntu0.1"
+    },
+    "libgphoto2-port12:amd64": {
+      "binary_version": "2.5.27-1ubuntu0.1",
+      "source_package": "libgphoto2",
+      "source_version": "2.5.27-1ubuntu0.1"
+    },
+    "libgpm2:amd64": {
+      "binary_version": "1.20.7-10build1",
+      "source_package": "gpm",
+      "source_version": "1.20.7-10build1"
+    },
+    "libgraphite2-3:amd64": {
+      "binary_version": "1.3.14-1ubuntu0.1",
+      "source_package": "graphite2",
+      "source_version": "1.3.14-1ubuntu0.1"
+    },
+    "libgraphite2-dev:amd64": {
+      "binary_version": "1.3.14-1ubuntu0.1",
+      "source_package": "graphite2",
+      "source_version": "1.3.14-1ubuntu0.1"
+    },
+    "libgsm1:amd64": {
+      "binary_version": "1.0.19-1",
+      "source_package": "libgsm",
+      "source_version": "1.0.19-1"
+    },
+    "libgssapi-krb5-2:amd64": {
+      "binary_version": "1.19.2-2ubuntu0.10",
+      "source_package": "krb5",
+      "source_version": "1.19.2-2ubuntu0.10"
+    },
+    "libgstreamer-gl1.0-0:amd64": {
+      "binary_version": "1.20.1-1ubuntu0.7",
+      "source_package": "gst-plugins-base1.0",
+      "source_version": "1.20.1-1ubuntu0.7"
+    },
+    "libgstreamer-opencv1.0-0:amd64": {
+      "binary_version": "1.20.3-0ubuntu1.1",
+      "source_package": "gst-plugins-bad1.0",
+      "source_version": "1.20.3-0ubuntu1.1"
+    },
+    "libgstreamer-plugins-bad1.0-0:amd64": {
+      "binary_version": "1.20.3-0ubuntu1.1",
+      "source_package": "gst-plugins-bad1.0",
+      "source_version": "1.20.3-0ubuntu1.1"
+    },
+    "libgstreamer-plugins-bad1.0-dev:amd64": {
+      "binary_version": "1.20.3-0ubuntu1.1",
+      "source_package": "gst-plugins-bad1.0",
+      "source_version": "1.20.3-0ubuntu1.1"
+    },
+    "libgstreamer-plugins-base1.0-0:amd64": {
+      "binary_version": "1.20.1-1ubuntu0.7",
+      "source_package": "gst-plugins-base1.0",
+      "source_version": "1.20.1-1ubuntu0.7"
+    },
+    "libgstreamer-plugins-base1.0-dev:amd64": {
+      "binary_version": "1.20.1-1ubuntu0.7",
+      "source_package": "gst-plugins-base1.0",
+      "source_version": "1.20.1-1ubuntu0.7"
+    },
+    "libgstreamer-plugins-good1.0-0:amd64": {
+      "binary_version": "1.20.3-0ubuntu1.9",
+      "source_package": "gst-plugins-good1.0",
+      "source_version": "1.20.3-0ubuntu1.9"
+    },
+    "libgstreamer-plugins-good1.0-dev": {
+      "binary_version": "1.20.3-0ubuntu1.9",
+      "source_package": "gst-plugins-good1.0",
+      "source_version": "1.20.3-0ubuntu1.9"
+    },
+    "libgstreamer1.0-0:amd64": {
+      "binary_version": "1.20.3-0ubuntu1.1",
+      "source_package": "gstreamer1.0",
+      "source_version": "1.20.3-0ubuntu1.1"
+    },
+    "libgstreamer1.0-dev:amd64": {
+      "binary_version": "1.20.3-0ubuntu1.1",
+      "source_package": "gstreamer1.0",
+      "source_version": "1.20.3-0ubuntu1.1"
+    },
+    "libgtk-3-0:amd64": {
+      "binary_version": "3.24.33-1ubuntu2.2",
+      "source_package": "gtk+3.0",
+      "source_version": "3.24.33-1ubuntu2.2"
+    },
+    "libgtk-3-common": {
+      "binary_version": "3.24.33-1ubuntu2.2",
+      "source_package": "gtk+3.0",
+      "source_version": "3.24.33-1ubuntu2.2"
+    },
+    "libgtk-3-dev:amd64": {
+      "binary_version": "3.24.33-1ubuntu2.2",
+      "source_package": "gtk+3.0",
+      "source_version": "3.24.33-1ubuntu2.2"
+    },
+    "libgudev-1.0-0:amd64": {
+      "binary_version": "1:237-2build1",
+      "source_package": "libgudev",
+      "source_version": "237-2build1"
+    },
+    "libgudev-1.0-dev:amd64": {
+      "binary_version": "1:237-2build1",
+      "source_package": "libgudev",
+      "source_version": "237-2build1"
+    },
+    "libharfbuzz-dev:amd64": {
+      "binary_version": "2.7.4-1ubuntu3.2",
+      "source_package": "harfbuzz",
+      "source_version": "2.7.4-1ubuntu3.2"
+    },
+    "libharfbuzz-gobject0:amd64": {
+      "binary_version": "2.7.4-1ubuntu3.2",
+      "source_package": "harfbuzz",
+      "source_version": "2.7.4-1ubuntu3.2"
+    },
+    "libharfbuzz-icu0:amd64": {
+      "binary_version": "2.7.4-1ubuntu3.2",
+      "source_package": "harfbuzz",
+      "source_version": "2.7.4-1ubuntu3.2"
+    },
+    "libharfbuzz0b:amd64": {
+      "binary_version": "2.7.4-1ubuntu3.2",
+      "source_package": "harfbuzz",
+      "source_version": "2.7.4-1ubuntu3.2"
+    },
+    "libhdf4-0-alt": {
+      "binary_version": "4.2.15-4",
+      "source_package": "libhdf4",
+      "source_version": "4.2.15-4"
+    },
+    "libhdf5-103-1:amd64": {
+      "binary_version": "1.10.7+repack-4ubuntu2",
+      "source_package": "hdf5",
+      "source_version": "1.10.7+repack-4ubuntu2"
+    },
+    "libhdf5-hl-100:amd64": {
+      "binary_version": "1.10.7+repack-4ubuntu2",
+      "source_package": "hdf5",
+      "source_version": "1.10.7+repack-4ubuntu2"
+    },
+    "libheif1:amd64": {
+      "binary_version": "1.12.0-2build1",
+      "source_package": "libheif",
+      "source_version": "1.12.0-2build1"
+    },
+    "libhiredis0.14:amd64": {
+      "binary_version": "0.14.1-2",
+      "source_package": "hiredis",
+      "source_version": "0.14.1-2"
+    },
+    "libhogweed6:amd64": {
+      "binary_version": "3.7.3-1build2",
+      "source_package": "nettle",
+      "source_version": "3.7.3-1build2"
+    },
+    "libhunspell-1.7-0:amd64": {
+      "binary_version": "1.7.0-4build1",
+      "source_package": "hunspell",
+      "source_version": "1.7.0-4build1"
+    },
+    "libhwloc-plugins:amd64": {
+      "binary_version": "2.7.0-2ubuntu1",
+      "source_package": "hwloc",
+      "source_version": "2.7.0-2ubuntu1"
+    },
+    "libhwloc15:amd64": {
+      "binary_version": "2.7.0-2ubuntu1",
+      "source_package": "hwloc",
+      "source_version": "2.7.0-2ubuntu1"
+    },
+    "libhyphen-dev:amd64": {
+      "binary_version": "2.8.8-7build2",
+      "source_package": "hyphen",
+      "source_version": "2.8.8-7build2"
+    },
+    "libhyphen0:amd64": {
+      "binary_version": "2.8.8-7build2",
+      "source_package": "hyphen",
+      "source_version": "2.8.8-7build2"
+    },
+    "libibverbs1:amd64": {
+      "binary_version": "39.0-1",
+      "source_package": "rdma-core",
+      "source_version": "39.0-1"
+    },
+    "libice-dev:amd64": {
+      "binary_version": "2:1.0.10-1build2",
+      "source_package": "libice",
+      "source_version": "2:1.0.10-1build2"
+    },
+    "libice6:amd64": {
+      "binary_version": "2:1.0.10-1build2",
+      "source_package": "libice",
+      "source_version": "2:1.0.10-1build2"
+    },
+    "libicu-dev:amd64": {
+      "binary_version": "70.1-2",
+      "source_package": "icu",
+      "source_version": "70.1-2"
+    },
+    "libicu70:amd64": {
+      "binary_version": "70.1-2",
+      "source_package": "icu",
+      "source_version": "70.1-2"
+    },
+    "libidn2-0:amd64": {
+      "binary_version": "2.3.2-2build1",
+      "source_package": "libidn2",
+      "source_version": "2.3.2-2build1"
+    },
+    "libiec61883-0:amd64": {
+      "binary_version": "1.2.0-4build3",
+      "source_package": "libiec61883",
+      "source_version": "1.2.0-4build3"
+    },
+    "libilmbase-dev:amd64": {
+      "binary_version": "2.5.7-2",
+      "source_package": "ilmbase",
+      "source_version": "2.5.7-2"
+    },
+    "libilmbase25:amd64": {
+      "binary_version": "2.5.7-2",
+      "source_package": "ilmbase",
+      "source_version": "2.5.7-2"
+    },
+    "libip4tc2:amd64": {
+      "binary_version": "1.8.7-1ubuntu5.2",
+      "source_package": "iptables",
+      "source_version": "1.8.7-1ubuntu5.2"
+    },
+    "libisl23:amd64": {
+      "binary_version": "0.24-2build1",
+      "source_package": "isl",
+      "source_version": "0.24-2build1"
+    },
+    "libitm1:amd64": {
+      "binary_version": "12.3.0-1ubuntu1~22.04.3",
+      "source_package": "gcc-12",
+      "source_version": "12.3.0-1ubuntu1~22.04.3"
+    },
+    "libjack-jackd2-0:amd64": {
+      "binary_version": "1.9.20~dfsg-1",
+      "source_package": "jackd2",
+      "source_version": "1.9.20~dfsg-1"
+    },
+    "libjavascriptcoregtk-4.1-0:amd64": {
+      "binary_version": "2.50.4-0ubuntu0.22.04.1",
+      "source_package": "webkit2gtk",
+      "source_version": "2.50.4-0ubuntu0.22.04.1"
+    },
+    "libjavascriptcoregtk-4.1-dev:amd64": {
+      "binary_version": "2.50.4-0ubuntu0.22.04.1",
+      "source_package": "webkit2gtk",
+      "source_version": "2.50.4-0ubuntu0.22.04.1"
+    },
+    "libjbig-dev:amd64": {
+      "binary_version": "2.1-3.1ubuntu0.22.04.1",
+      "source_package": "jbigkit",
+      "source_version": "2.1-3.1ubuntu0.22.04.1"
+    },
+    "libjbig0:amd64": {
+      "binary_version": "2.1-3.1ubuntu0.22.04.1",
+      "source_package": "jbigkit",
+      "source_version": "2.1-3.1ubuntu0.22.04.1"
+    },
+    "libjpeg-dev:amd64": {
+      "binary_version": "8c-2ubuntu10",
+      "source_package": "libjpeg8-empty",
+      "source_version": "8c-2ubuntu10"
+    },
+    "libjpeg-turbo8-dev:amd64": {
+      "binary_version": "2.1.2-0ubuntu1",
+      "source_package": "libjpeg-turbo",
+      "source_version": "2.1.2-0ubuntu1"
+    },
+    "libjpeg-turbo8:amd64": {
+      "binary_version": "2.1.2-0ubuntu1",
+      "source_package": "libjpeg-turbo",
+      "source_version": "2.1.2-0ubuntu1"
+    },
+    "libjpeg8-dev:amd64": {
+      "binary_version": "8c-2ubuntu10",
+      "source_package": "libjpeg8-empty",
+      "source_version": "8c-2ubuntu10"
+    },
+    "libjpeg8:amd64": {
+      "binary_version": "8c-2ubuntu10",
+      "source_package": "libjpeg8-empty",
+      "source_version": "8c-2ubuntu10"
+    },
+    "libjq1:amd64": {
+      "binary_version": "1.6-2.1ubuntu3.2",
+      "source_package": "jq",
+      "source_version": "1.6-2.1ubuntu3.2"
+    },
+    "libjson-c5:amd64": {
+      "binary_version": "0.15-3~ubuntu1.22.04.2",
+      "source_package": "json-c",
+      "source_version": "0.15-3~ubuntu1.22.04.2"
+    },
+    "libjson-glib-1.0-0:amd64": {
+      "binary_version": "1.6.6-1build1",
+      "source_package": "json-glib",
+      "source_version": "1.6.6-1build1"
+    },
+    "libjson-glib-1.0-common": {
+      "binary_version": "1.6.6-1build1",
+      "source_package": "json-glib",
+      "source_version": "1.6.6-1build1"
+    },
+    "libjson-glib-dev:amd64": {
+      "binary_version": "1.6.6-1build1",
+      "source_package": "json-glib",
+      "source_version": "1.6.6-1build1"
+    },
+    "libjsoncpp25:amd64": {
+      "binary_version": "1.9.5-3",
+      "source_package": "libjsoncpp",
+      "source_version": "1.9.5-3"
+    },
+    "libk5crypto3:amd64": {
+      "binary_version": "1.19.2-2ubuntu0.10",
+      "source_package": "krb5",
+      "source_version": "1.19.2-2ubuntu0.10"
+    },
+    "libkeyutils1:amd64": {
+      "binary_version": "1.6.1-2ubuntu3",
+      "source_package": "keyutils",
+      "source_version": "1.6.1-2ubuntu3"
+    },
+    "libkmlbase1:amd64": {
+      "binary_version": "1.3.0-9",
+      "source_package": "libkml",
+      "source_version": "1.3.0-9"
+    },
+    "libkmldom1:amd64": {
+      "binary_version": "1.3.0-9",
+      "source_package": "libkml",
+      "source_version": "1.3.0-9"
+    },
+    "libkmlengine1:amd64": {
+      "binary_version": "1.3.0-9",
+      "source_package": "libkml",
+      "source_version": "1.3.0-9"
+    },
+    "libkmod2:amd64": {
+      "binary_version": "29-1ubuntu1.1",
+      "source_package": "kmod",
+      "source_version": "29-1ubuntu1.1"
+    },
+    "libkrb5-3:amd64": {
+      "binary_version": "1.19.2-2ubuntu0.10",
+      "source_package": "krb5",
+      "source_version": "1.19.2-2ubuntu0.10"
+    },
+    "libkrb5support0:amd64": {
+      "binary_version": "1.19.2-2ubuntu0.10",
+      "source_package": "krb5",
+      "source_version": "1.19.2-2ubuntu0.10"
+    },
+    "libksba8:amd64": {
+      "binary_version": "1.6.0-2ubuntu0.2",
+      "source_package": "libksba",
+      "source_version": "1.6.0-2ubuntu0.2"
+    },
+    "liblapack3:amd64": {
+      "binary_version": "3.10.0-2ubuntu1",
+      "source_package": "lapack",
+      "source_version": "3.10.0-2ubuntu1"
+    },
+    "liblcms2-2:amd64": {
+      "binary_version": "2.12~rc1-2ubuntu0.1",
+      "source_package": "lcms2",
+      "source_version": "2.12~rc1-2ubuntu0.1"
+    },
+    "liblcms2-dev:amd64": {
+      "binary_version": "2.12~rc1-2ubuntu0.1",
+      "source_package": "lcms2",
+      "source_version": "2.12~rc1-2ubuntu0.1"
+    },
+    "libldap-2.5-0:amd64": {
+      "binary_version": "2.5.20+dfsg-0ubuntu0.22.04.1",
+      "source_package": "openldap",
+      "source_version": "2.5.20+dfsg-0ubuntu0.22.04.1"
+    },
+    "liblept5:amd64": {
+      "binary_version": "1.82.0-3build1",
+      "source_package": "leptonlib",
+      "source_version": "1.82.0-3build1"
+    },
+    "libllvm15:amd64": {
+      "binary_version": "1:15.0.7-0ubuntu0.22.04.3",
+      "source_package": "llvm-toolchain-15",
+      "source_version": "1:15.0.7-0ubuntu0.22.04.3"
+    },
+    "liblsan0:amd64": {
+      "binary_version": "12.3.0-1ubuntu1~22.04.3",
+      "source_package": "gcc-12",
+      "source_version": "12.3.0-1ubuntu1~22.04.3"
+    },
+    "libltdl7:amd64": {
+      "binary_version": "2.4.6-15build2",
+      "source_package": "libtool",
+      "source_version": "2.4.6-15build2"
+    },
+    "liblz4-1:amd64": {
+      "binary_version": "1.9.3-2build2",
+      "source_package": "lz4",
+      "source_version": "1.9.3-2build2"
+    },
+    "liblzma-dev:amd64": {
+      "binary_version": "5.2.5-2ubuntu1.1",
+      "source_package": "xz-utils",
+      "source_version": "5.2.5-2ubuntu1.1"
+    },
+    "liblzma5:amd64": {
+      "binary_version": "5.2.5-2ubuntu1.1",
+      "source_package": "xz-utils",
+      "source_version": "5.2.5-2ubuntu1.1"
+    },
+    "liblzo2-2:amd64": {
+      "binary_version": "2.10-2build3",
+      "source_package": "lzo2",
+      "source_version": "2.10-2build3"
+    },
+    "libmagic-mgc": {
+      "binary_version": "1:5.41-3ubuntu0.1",
+      "source_package": "file",
+      "source_version": "1:5.41-3ubuntu0.1"
+    },
+    "libmagic1:amd64": {
+      "binary_version": "1:5.41-3ubuntu0.1",
+      "source_package": "file",
+      "source_version": "1:5.41-3ubuntu0.1"
+    },
+    "libmanette-0.2-0:amd64": {
+      "binary_version": "0.2.6-3build1",
+      "source_package": "libmanette",
+      "source_version": "0.2.6-3build1"
+    },
+    "libmanette-0.2-dev:amd64": {
+      "binary_version": "0.2.6-3build1",
+      "source_package": "libmanette",
+      "source_version": "0.2.6-3build1"
+    },
+    "libmd0:amd64": {
+      "binary_version": "1.0.4-1build1",
+      "source_package": "libmd",
+      "source_version": "1.0.4-1build1"
+    },
+    "libmfx1:amd64": {
+      "binary_version": "22.3.0-1",
+      "source_package": "intel-mediasdk",
+      "source_version": "22.3.0-1"
+    },
+    "libminizip1:amd64": {
+      "binary_version": "1.1-8build1",
+      "source_package": "minizip",
+      "source_version": "1.1-8build1"
+    },
+    "libmount-dev:amd64": {
+      "binary_version": "2.37.2-4ubuntu3.6",
+      "source_package": "util-linux",
+      "source_version": "2.37.2-4ubuntu3.6"
+    },
+    "libmount1:amd64": {
+      "binary_version": "2.37.2-4ubuntu3.6",
+      "source_package": "util-linux",
+      "source_version": "2.37.2-4ubuntu3.6"
+    },
+    "libmp3lame0:amd64": {
+      "binary_version": "3.100-3build2",
+      "source_package": "lame",
+      "source_version": "3.100-3build2"
+    },
+    "libmpc3:amd64": {
+      "binary_version": "1.2.1-2build1",
+      "source_package": "mpclib3",
+      "source_version": "1.2.1-2build1"
+    },
+    "libmpdec3:amd64": {
+      "binary_version": "2.5.1-2build2",
+      "source_package": "mpdecimal",
+      "source_version": "2.5.1-2build2"
+    },
+    "libmpfr6:amd64": {
+      "binary_version": "4.1.0-3build3",
+      "source_package": "mpfr4",
+      "source_version": "4.1.0-3build3"
+    },
+    "libmpg123-0:amd64": {
+      "binary_version": "1.29.3-1ubuntu0.1",
+      "source_package": "mpg123",
+      "source_version": "1.29.3-1ubuntu0.1"
+    },
+    "libmysqlclient21:amd64": {
+      "binary_version": "8.0.46-0ubuntu0.22.04.4",
+      "source_package": "mysql-8.0",
+      "source_version": "8.0.46-0ubuntu0.22.04.4"
+    },
+    "libncurses6:amd64": {
+      "binary_version": "6.3-2ubuntu0.3",
+      "source_package": "ncurses",
+      "source_version": "6.3-2ubuntu0.3"
+    },
+    "libncursesw6:amd64": {
+      "binary_version": "6.3-2ubuntu0.3",
+      "source_package": "ncurses",
+      "source_version": "6.3-2ubuntu0.3"
+    },
+    "libnetcdf19:amd64": {
+      "binary_version": "1:4.8.1-1",
+      "source_package": "netcdf",
+      "source_version": "1:4.8.1-1"
+    },
+    "libnettle8:amd64": {
+      "binary_version": "3.7.3-1build2",
+      "source_package": "nettle",
+      "source_version": "3.7.3-1build2"
+    },
+    "libnghttp2-14:amd64": {
+      "binary_version": "1.43.0-1ubuntu0.4",
+      "source_package": "nghttp2",
+      "source_version": "1.43.0-1ubuntu0.4"
+    },
+    "libnghttp2-dev": {
+      "binary_version": "1.43.0-1ubuntu0.4",
+      "source_package": "nghttp2",
+      "source_version": "1.43.0-1ubuntu0.4"
+    },
+    "libnl-3-200:amd64": {
+      "binary_version": "3.5.0-0.1",
+      "source_package": "libnl3",
+      "source_version": "3.5.0-0.1"
+    },
+    "libnl-route-3-200:amd64": {
+      "binary_version": "3.5.0-0.1",
+      "source_package": "libnl3",
+      "source_version": "3.5.0-0.1"
+    },
+    "libnorm1:amd64": {
+      "binary_version": "1.5.9+dfsg-2",
+      "source_package": "norm",
+      "source_version": "1.5.9+dfsg-2"
+    },
+    "libnpth0:amd64": {
+      "binary_version": "1.6-3build2",
+      "source_package": "npth",
+      "source_version": "1.6-3build2"
+    },
+    "libnsl-dev:amd64": {
+      "binary_version": "1.3.0-2build2",
+      "source_package": "libnsl",
+      "source_version": "1.3.0-2build2"
+    },
+    "libnsl2:amd64": {
+      "binary_version": "1.3.0-2build2",
+      "source_package": "libnsl",
+      "source_version": "1.3.0-2build2"
+    },
+    "libnspr4:amd64": {
+      "binary_version": "2:4.35-0ubuntu0.22.04.1",
+      "source_package": "nspr",
+      "source_version": "2:4.35-0ubuntu0.22.04.1"
+    },
+    "libnss3:amd64": {
+      "binary_version": "2:3.98-0ubuntu0.22.04.4",
+      "source_package": "nss",
+      "source_version": "2:3.98-0ubuntu0.22.04.4"
+    },
+    "libnuma1:amd64": {
+      "binary_version": "2.0.14-3ubuntu2",
+      "source_package": "numactl",
+      "source_version": "2.0.14-3ubuntu2"
+    },
+    "libodbc2:amd64": {
+      "binary_version": "2.3.9-5ubuntu0.1",
+      "source_package": "unixodbc",
+      "source_version": "2.3.9-5ubuntu0.1"
+    },
+    "libodbcinst2:amd64": {
+      "binary_version": "2.3.9-5ubuntu0.1",
+      "source_package": "unixodbc",
+      "source_version": "2.3.9-5ubuntu0.1"
+    },
+    "libogdi4.1": {
+      "binary_version": "4.1.0+ds-5",
+      "source_package": "ogdi-dfsg",
+      "source_version": "4.1.0+ds-5"
+    },
+    "libogg0:amd64": {
+      "binary_version": "1.3.5-0ubuntu3",
+      "source_package": "libogg",
+      "source_version": "1.3.5-0ubuntu3"
+    },
+    "libonig5:amd64": {
+      "binary_version": "6.9.7.1-2build1",
+      "source_package": "libonig",
+      "source_version": "6.9.7.1-2build1"
+    },
+    "libopencv-calib3d-dev:amd64": {
+      "binary_version": "4.5.4+dfsg-9ubuntu4",
+      "source_package": "opencv",
+      "source_version": "4.5.4+dfsg-9ubuntu4"
+    },
+    "libopencv-calib3d4.5d:amd64": {
+      "binary_version": "4.5.4+dfsg-9ubuntu4",
+      "source_package": "opencv",
+      "source_version": "4.5.4+dfsg-9ubuntu4"
+    },
+    "libopencv-contrib-dev:amd64": {
+      "binary_version": "4.5.4+dfsg-9ubuntu4",
+      "source_package": "opencv",
+      "source_version": "4.5.4+dfsg-9ubuntu4"
+    },
+    "libopencv-contrib4.5d:amd64": {
+      "binary_version": "4.5.4+dfsg-9ubuntu4",
+      "source_package": "opencv",
+      "source_version": "4.5.4+dfsg-9ubuntu4"
+    },
+    "libopencv-core-dev:amd64": {
+      "binary_version": "4.5.4+dfsg-9ubuntu4",
+      "source_package": "opencv",
+      "source_version": "4.5.4+dfsg-9ubuntu4"
+    },
+    "libopencv-core4.5d:amd64": {
+      "binary_version": "4.5.4+dfsg-9ubuntu4",
+      "source_package": "opencv",
+      "source_version": "4.5.4+dfsg-9ubuntu4"
+    },
+    "libopencv-dev": {
+      "binary_version": "4.5.4+dfsg-9ubuntu4",
+      "source_package": "opencv",
+      "source_version": "4.5.4+dfsg-9ubuntu4"
+    },
+    "libopencv-dnn-dev:amd64": {
+      "binary_version": "4.5.4+dfsg-9ubuntu4",
+      "source_package": "opencv",
+      "source_version": "4.5.4+dfsg-9ubuntu4"
+    },
+    "libopencv-dnn4.5d:amd64": {
+      "binary_version": "4.5.4+dfsg-9ubuntu4",
+      "source_package": "opencv",
+      "source_version": "4.5.4+dfsg-9ubuntu4"
+    },
+    "libopencv-features2d-dev:amd64": {
+      "binary_version": "4.5.4+dfsg-9ubuntu4",
+      "source_package": "opencv",
+      "source_version": "4.5.4+dfsg-9ubuntu4"
+    },
+    "libopencv-features2d4.5d:amd64": {
+      "binary_version": "4.5.4+dfsg-9ubuntu4",
+      "source_package": "opencv",
+      "source_version": "4.5.4+dfsg-9ubuntu4"
+    },
+    "libopencv-flann-dev:amd64": {
+      "binary_version": "4.5.4+dfsg-9ubuntu4",
+      "source_package": "opencv",
+      "source_version": "4.5.4+dfsg-9ubuntu4"
+    },
+    "libopencv-flann4.5d:amd64": {
+      "binary_version": "4.5.4+dfsg-9ubuntu4",
+      "source_package": "opencv",
+      "source_version": "4.5.4+dfsg-9ubuntu4"
+    },
+    "libopencv-highgui-dev:amd64": {
+      "binary_version": "4.5.4+dfsg-9ubuntu4",
+      "source_package": "opencv",
+      "source_version": "4.5.4+dfsg-9ubuntu4"
+    },
+    "libopencv-highgui4.5d:amd64": {
+      "binary_version": "4.5.4+dfsg-9ubuntu4",
+      "source_package": "opencv",
+      "source_version": "4.5.4+dfsg-9ubuntu4"
+    },
+    "libopencv-imgcodecs-dev:amd64": {
+      "binary_version": "4.5.4+dfsg-9ubuntu4",
+      "source_package": "opencv",
+      "source_version": "4.5.4+dfsg-9ubuntu4"
+    },
+    "libopencv-imgcodecs4.5d:amd64": {
+      "binary_version": "4.5.4+dfsg-9ubuntu4",
+      "source_package": "opencv",
+      "source_version": "4.5.4+dfsg-9ubuntu4"
+    },
+    "libopencv-imgproc-dev:amd64": {
+      "binary_version": "4.5.4+dfsg-9ubuntu4",
+      "source_package": "opencv",
+      "source_version": "4.5.4+dfsg-9ubuntu4"
+    },
+    "libopencv-imgproc4.5d:amd64": {
+      "binary_version": "4.5.4+dfsg-9ubuntu4",
+      "source_package": "opencv",
+      "source_version": "4.5.4+dfsg-9ubuntu4"
+    },
+    "libopencv-ml-dev:amd64": {
+      "binary_version": "4.5.4+dfsg-9ubuntu4",
+      "source_package": "opencv",
+      "source_version": "4.5.4+dfsg-9ubuntu4"
+    },
+    "libopencv-ml4.5d:amd64": {
+      "binary_version": "4.5.4+dfsg-9ubuntu4",
+      "source_package": "opencv",
+      "source_version": "4.5.4+dfsg-9ubuntu4"
+    },
+    "libopencv-objdetect-dev:amd64": {
+      "binary_version": "4.5.4+dfsg-9ubuntu4",
+      "source_package": "opencv",
+      "source_version": "4.5.4+dfsg-9ubuntu4"
+    },
+    "libopencv-objdetect4.5d:amd64": {
+      "binary_version": "4.5.4+dfsg-9ubuntu4",
+      "source_package": "opencv",
+      "source_version": "4.5.4+dfsg-9ubuntu4"
+    },
+    "libopencv-photo-dev:amd64": {
+      "binary_version": "4.5.4+dfsg-9ubuntu4",
+      "source_package": "opencv",
+      "source_version": "4.5.4+dfsg-9ubuntu4"
+    },
+    "libopencv-photo4.5d:amd64": {
+      "binary_version": "4.5.4+dfsg-9ubuntu4",
+      "source_package": "opencv",
+      "source_version": "4.5.4+dfsg-9ubuntu4"
+    },
+    "libopencv-shape-dev:amd64": {
+      "binary_version": "4.5.4+dfsg-9ubuntu4",
+      "source_package": "opencv",
+      "source_version": "4.5.4+dfsg-9ubuntu4"
+    },
+    "libopencv-shape4.5d:amd64": {
+      "binary_version": "4.5.4+dfsg-9ubuntu4",
+      "source_package": "opencv",
+      "source_version": "4.5.4+dfsg-9ubuntu4"
+    },
+    "libopencv-stitching-dev:amd64": {
+      "binary_version": "4.5.4+dfsg-9ubuntu4",
+      "source_package": "opencv",
+      "source_version": "4.5.4+dfsg-9ubuntu4"
+    },
+    "libopencv-stitching4.5d:amd64": {
+      "binary_version": "4.5.4+dfsg-9ubuntu4",
+      "source_package": "opencv",
+      "source_version": "4.5.4+dfsg-9ubuntu4"
+    },
+    "libopencv-superres-dev:amd64": {
+      "binary_version": "4.5.4+dfsg-9ubuntu4",
+      "source_package": "opencv",
+      "source_version": "4.5.4+dfsg-9ubuntu4"
+    },
+    "libopencv-superres4.5d:amd64": {
+      "binary_version": "4.5.4+dfsg-9ubuntu4",
+      "source_package": "opencv",
+      "source_version": "4.5.4+dfsg-9ubuntu4"
+    },
+    "libopencv-video-dev:amd64": {
+      "binary_version": "4.5.4+dfsg-9ubuntu4",
+      "source_package": "opencv",
+      "source_version": "4.5.4+dfsg-9ubuntu4"
+    },
+    "libopencv-video4.5d:amd64": {
+      "binary_version": "4.5.4+dfsg-9ubuntu4",
+      "source_package": "opencv",
+      "source_version": "4.5.4+dfsg-9ubuntu4"
+    },
+    "libopencv-videoio-dev:amd64": {
+      "binary_version": "4.5.4+dfsg-9ubuntu4",
+      "source_package": "opencv",
+      "source_version": "4.5.4+dfsg-9ubuntu4"
+    },
+    "libopencv-videoio4.5d:amd64": {
+      "binary_version": "4.5.4+dfsg-9ubuntu4",
+      "source_package": "opencv",
+      "source_version": "4.5.4+dfsg-9ubuntu4"
+    },
+    "libopencv-videostab-dev:amd64": {
+      "binary_version": "4.5.4+dfsg-9ubuntu4",
+      "source_package": "opencv",
+      "source_version": "4.5.4+dfsg-9ubuntu4"
+    },
+    "libopencv-videostab4.5d:amd64": {
+      "binary_version": "4.5.4+dfsg-9ubuntu4",
+      "source_package": "opencv",
+      "source_version": "4.5.4+dfsg-9ubuntu4"
+    },
+    "libopencv-viz-dev:amd64": {
+      "binary_version": "4.5.4+dfsg-9ubuntu4",
+      "source_package": "opencv",
+      "source_version": "4.5.4+dfsg-9ubuntu4"
+    },
+    "libopencv-viz4.5d:amd64": {
+      "binary_version": "4.5.4+dfsg-9ubuntu4",
+      "source_package": "opencv",
+      "source_version": "4.5.4+dfsg-9ubuntu4"
+    },
+    "libopenexr-dev": {
+      "binary_version": "2.5.7-1",
+      "source_package": "openexr",
+      "source_version": "2.5.7-1"
+    },
+    "libopenexr25:amd64": {
+      "binary_version": "2.5.7-1",
+      "source_package": "openexr",
+      "source_version": "2.5.7-1"
+    },
+    "libopengl-dev:amd64": {
+      "binary_version": "1.4.0-1",
+      "source_package": "libglvnd",
+      "source_version": "1.4.0-1"
+    },
+    "libopengl0:amd64": {
+      "binary_version": "1.4.0-1",
+      "source_package": "libglvnd",
+      "source_version": "1.4.0-1"
+    },
+    "libopenjp2-7:amd64": {
+      "binary_version": "2.4.0-6ubuntu0.5",
+      "source_package": "openjpeg2",
+      "source_version": "2.4.0-6ubuntu0.5"
+    },
+    "libopenmpi3:amd64": {
+      "binary_version": "4.1.2-2ubuntu1",
+      "source_package": "openmpi",
+      "source_version": "4.1.2-2ubuntu1"
+    },
+    "libopenmpt0:amd64": {
+      "binary_version": "0.6.1-1",
+      "source_package": "libopenmpt",
+      "source_version": "0.6.1-1"
+    },
+    "libopus0:amd64": {
+      "binary_version": "1.3.1-0.1build2",
+      "source_package": "opus",
+      "source_version": "1.3.1-0.1build2"
+    },
+    "liborc-0.4-0:amd64": {
+      "binary_version": "1:0.4.32-2ubuntu0.1",
+      "source_package": "orc",
+      "source_version": "1:0.4.32-2ubuntu0.1"
+    },
+    "liborc-0.4-dev-bin": {
+      "binary_version": "1:0.4.32-2ubuntu0.1",
+      "source_package": "orc",
+      "source_version": "1:0.4.32-2ubuntu0.1"
+    },
+    "liborc-0.4-dev:amd64": {
+      "binary_version": "1:0.4.32-2ubuntu0.1",
+      "source_package": "orc",
+      "source_version": "1:0.4.32-2ubuntu0.1"
+    },
+    "libosp5": {
+      "binary_version": "1.5.2-13ubuntu3",
+      "source_package": "opensp",
+      "source_version": "1.5.2-13ubuntu3"
+    },
+    "libp11-kit0:amd64": {
+      "binary_version": "0.24.0-6ubuntu0.1",
+      "source_package": "p11-kit",
+      "source_version": "0.24.0-6ubuntu0.1"
+    },
+    "libpam-modules-bin": {
+      "binary_version": "1.4.0-11ubuntu2.8",
+      "source_package": "pam",
+      "source_version": "1.4.0-11ubuntu2.8"
+    },
+    "libpam-modules:amd64": {
+      "binary_version": "1.4.0-11ubuntu2.8",
+      "source_package": "pam",
+      "source_version": "1.4.0-11ubuntu2.8"
+    },
+    "libpam-runtime": {
+      "binary_version": "1.4.0-11ubuntu2.8",
+      "source_package": "pam",
+      "source_version": "1.4.0-11ubuntu2.8"
+    },
+    "libpam-systemd:amd64": {
+      "binary_version": "249.11-0ubuntu3.22",
+      "source_package": "systemd",
+      "source_version": "249.11-0ubuntu3.22"
+    },
+    "libpam0g:amd64": {
+      "binary_version": "1.4.0-11ubuntu2.8",
+      "source_package": "pam",
+      "source_version": "1.4.0-11ubuntu2.8"
+    },
+    "libpango-1.0-0:amd64": {
+      "binary_version": "1.50.6+ds-2ubuntu1",
+      "source_package": "pango1.0",
+      "source_version": "1.50.6+ds-2ubuntu1"
+    },
+    "libpango1.0-dev:amd64": {
+      "binary_version": "1.50.6+ds-2ubuntu1",
+      "source_package": "pango1.0",
+      "source_version": "1.50.6+ds-2ubuntu1"
+    },
+    "libpangocairo-1.0-0:amd64": {
+      "binary_version": "1.50.6+ds-2ubuntu1",
+      "source_package": "pango1.0",
+      "source_version": "1.50.6+ds-2ubuntu1"
+    },
+    "libpangoft2-1.0-0:amd64": {
+      "binary_version": "1.50.6+ds-2ubuntu1",
+      "source_package": "pango1.0",
+      "source_version": "1.50.6+ds-2ubuntu1"
+    },
+    "libpangoxft-1.0-0:amd64": {
+      "binary_version": "1.50.6+ds-2ubuntu1",
+      "source_package": "pango1.0",
+      "source_version": "1.50.6+ds-2ubuntu1"
+    },
+    "libpciaccess-dev:amd64": {
+      "binary_version": "0.16-3",
+      "source_package": "libpciaccess",
+      "source_version": "0.16-3"
+    },
+    "libpciaccess0:amd64": {
+      "binary_version": "0.16-3",
+      "source_package": "libpciaccess",
+      "source_version": "0.16-3"
+    },
+    "libpcre16-3:amd64": {
+      "binary_version": "2:8.39-13ubuntu0.22.04.1",
+      "source_package": "pcre3",
+      "source_version": "2:8.39-13ubuntu0.22.04.1"
+    },
+    "libpcre2-16-0:amd64": {
+      "binary_version": "10.39-3ubuntu0.1",
+      "source_package": "pcre2",
+      "source_version": "10.39-3ubuntu0.1"
+    },
+    "libpcre2-32-0:amd64": {
+      "binary_version": "10.39-3ubuntu0.1",
+      "source_package": "pcre2",
+      "source_version": "10.39-3ubuntu0.1"
+    },
+    "libpcre2-8-0:amd64": {
+      "binary_version": "10.39-3ubuntu0.1",
+      "source_package": "pcre2",
+      "source_version": "10.39-3ubuntu0.1"
+    },
+    "libpcre2-dev:amd64": {
+      "binary_version": "10.39-3ubuntu0.1",
+      "source_package": "pcre2",
+      "source_version": "10.39-3ubuntu0.1"
+    },
+    "libpcre2-posix3:amd64": {
+      "binary_version": "10.39-3ubuntu0.1",
+      "source_package": "pcre2",
+      "source_version": "10.39-3ubuntu0.1"
+    },
+    "libpcre3-dev:amd64": {
+      "binary_version": "2:8.39-13ubuntu0.22.04.1",
+      "source_package": "pcre3",
+      "source_version": "2:8.39-13ubuntu0.22.04.1"
+    },
+    "libpcre32-3:amd64": {
+      "binary_version": "2:8.39-13ubuntu0.22.04.1",
+      "source_package": "pcre3",
+      "source_version": "2:8.39-13ubuntu0.22.04.1"
+    },
+    "libpcre3:amd64": {
+      "binary_version": "2:8.39-13ubuntu0.22.04.1",
+      "source_package": "pcre3",
+      "source_version": "2:8.39-13ubuntu0.22.04.1"
+    },
+    "libpcrecpp0v5:amd64": {
+      "binary_version": "2:8.39-13ubuntu0.22.04.1",
+      "source_package": "pcre3",
+      "source_version": "2:8.39-13ubuntu0.22.04.1"
+    },
+    "libperl5.34:amd64": {
+      "binary_version": "5.34.0-3ubuntu1.9",
+      "source_package": "perl",
+      "source_version": "5.34.0-3ubuntu1.9"
+    },
+    "libpgm-5.3-0:amd64": {
+      "binary_version": "5.3.128~dfsg-2",
+      "source_package": "libpgm",
+      "source_version": "5.3.128~dfsg-2"
+    },
+    "libpixman-1-0:amd64": {
+      "binary_version": "0.40.0-1ubuntu0.22.04.1",
+      "source_package": "pixman",
+      "source_version": "0.40.0-1ubuntu0.22.04.1"
+    },
+    "libpixman-1-dev:amd64": {
+      "binary_version": "0.40.0-1ubuntu0.22.04.1",
+      "source_package": "pixman",
+      "source_version": "0.40.0-1ubuntu0.22.04.1"
+    },
+    "libpmix2:amd64": {
+      "binary_version": "4.1.2-2ubuntu1",
+      "source_package": "pmix",
+      "source_version": "4.1.2-2ubuntu1"
+    },
+    "libpng-dev:amd64": {
+      "binary_version": "1.6.37-3ubuntu0.6",
+      "source_package": "libpng1.6",
+      "source_version": "1.6.37-3ubuntu0.6"
+    },
+    "libpng16-16:amd64": {
+      "binary_version": "1.6.37-3ubuntu0.6",
+      "source_package": "libpng1.6",
+      "source_version": "1.6.37-3ubuntu0.6"
+    },
+    "libpolkit-agent-1-0:amd64": {
+      "binary_version": "0.105-33ubuntu0.2",
+      "source_package": "policykit-1",
+      "source_version": "0.105-33ubuntu0.2"
+    },
+    "libpolkit-gobject-1-0:amd64": {
+      "binary_version": "0.105-33ubuntu0.2",
+      "source_package": "policykit-1",
+      "source_version": "0.105-33ubuntu0.2"
+    },
+    "libpolkit-gobject-1-dev": {
+      "binary_version": "0.105-33ubuntu0.2",
+      "source_package": "policykit-1",
+      "source_version": "0.105-33ubuntu0.2"
+    },
+    "libpoppler118:amd64": {
+      "binary_version": "22.02.0-2ubuntu0.13",
+      "source_package": "poppler",
+      "source_version": "22.02.0-2ubuntu0.13"
+    },
+    "libpq5:amd64": {
+      "binary_version": "14.24-0ubuntu0.22.04.1",
+      "source_package": "postgresql-14",
+      "source_version": "14.24-0ubuntu0.22.04.1"
+    },
+    "libprocps8:amd64": {
+      "binary_version": "2:3.3.17-6ubuntu2.1",
+      "source_package": "procps",
+      "source_version": "2:3.3.17-6ubuntu2.1"
+    },
+    "libproj22:amd64": {
+      "binary_version": "8.2.1-1",
+      "source_package": "proj",
+      "source_version": "8.2.1-1"
+    },
+    "libprotobuf23:amd64": {
+      "binary_version": "3.12.4-1ubuntu7.22.04.6",
+      "source_package": "protobuf",
+      "source_version": "3.12.4-1ubuntu7.22.04.6"
+    },
+    "libproxy1v5:amd64": {
+      "binary_version": "0.4.17-2",
+      "source_package": "libproxy",
+      "source_version": "0.4.17-2"
+    },
+    "libpsl-dev:amd64": {
+      "binary_version": "0.21.0-1.2build2",
+      "source_package": "libpsl",
+      "source_version": "0.21.0-1.2build2"
+    },
+    "libpsl5:amd64": {
+      "binary_version": "0.21.0-1.2build2",
+      "source_package": "libpsl",
+      "source_version": "0.21.0-1.2build2"
+    },
+    "libpsm-infinipath1": {
+      "binary_version": "3.3+20.604758e7-6.1",
+      "source_package": "infinipath-psm",
+      "source_version": "3.3+20.604758e7-6.1"
+    },
+    "libpsm2-2": {
+      "binary_version": "11.2.185-1",
+      "source_package": "libpsm2",
+      "source_version": "11.2.185-1"
+    },
+    "libpthread-stubs0-dev:amd64": {
+      "binary_version": "0.4-1build2",
+      "source_package": "libpthread-stubs",
+      "source_version": "0.4-1build2"
+    },
+    "libpulse-dev:amd64": {
+      "binary_version": "1:15.99.1+dfsg1-1ubuntu2.2",
+      "source_package": "pulseaudio",
+      "source_version": "1:15.99.1+dfsg1-1ubuntu2.2"
+    },
+    "libpulse-mainloop-glib0:amd64": {
+      "binary_version": "1:15.99.1+dfsg1-1ubuntu2.2",
+      "source_package": "pulseaudio",
+      "source_version": "1:15.99.1+dfsg1-1ubuntu2.2"
+    },
+    "libpulse0:amd64": {
+      "binary_version": "1:15.99.1+dfsg1-1ubuntu2.2",
+      "source_package": "pulseaudio",
+      "source_version": "1:15.99.1+dfsg1-1ubuntu2.2"
+    },
+    "libpython3-stdlib:amd64": {
+      "binary_version": "3.10.6-1~22.04.1",
+      "source_package": "python3-defaults",
+      "source_version": "3.10.6-1~22.04.1"
+    },
+    "libpython3.10-minimal:amd64": {
+      "binary_version": "3.10.12-1~22.04.18",
+      "source_package": "python3.10",
+      "source_version": "3.10.12-1~22.04.18"
+    },
+    "libpython3.10-stdlib:amd64": {
+      "binary_version": "3.10.12-1~22.04.18",
+      "source_package": "python3.10",
+      "source_version": "3.10.12-1~22.04.18"
+    },
+    "libqhull-r8.0:amd64": {
+      "binary_version": "2020.2-4",
+      "source_package": "qhull",
+      "source_version": "2020.2-4"
+    },
+    "libquadmath0:amd64": {
+      "binary_version": "12.3.0-1ubuntu1~22.04.3",
+      "source_package": "gcc-12",
+      "source_version": "12.3.0-1ubuntu1~22.04.3"
+    },
+    "librabbitmq4:amd64": {
+      "binary_version": "0.10.0-1ubuntu2.2",
+      "source_package": "librabbitmq",
+      "source_version": "0.10.0-1ubuntu2.2"
+    },
+    "libraw1394-11:amd64": {
+      "binary_version": "2.1.2-2build2",
+      "source_package": "libraw1394",
+      "source_version": "2.1.2-2build2"
+    },
+    "libraw1394-dev:amd64": {
+      "binary_version": "2.1.2-2build2",
+      "source_package": "libraw1394",
+      "source_version": "2.1.2-2build2"
+    },
+    "librdmacm1:amd64": {
+      "binary_version": "39.0-1",
+      "source_package": "rdma-core",
+      "source_version": "39.0-1"
+    },
+    "libreadline8:amd64": {
+      "binary_version": "8.1.2-1",
+      "source_package": "readline",
+      "source_version": "8.1.2-1"
+    },
+    "librhash0:amd64": {
+      "binary_version": "1.4.2-1ubuntu1",
+      "source_package": "rhash",
+      "source_version": "1.4.2-1ubuntu1"
+    },
+    "librsvg2-2:amd64": {
+      "binary_version": "2.52.5+dfsg-3ubuntu0.2",
+      "source_package": "librsvg",
+      "source_version": "2.52.5+dfsg-3ubuntu0.2"
+    },
+    "librsvg2-common:amd64": {
+      "binary_version": "2.52.5+dfsg-3ubuntu0.2",
+      "source_package": "librsvg",
+      "source_version": "2.52.5+dfsg-3ubuntu0.2"
+    },
+    "librtmp1:amd64": {
+      "binary_version": "2.4+20151223.gitfa8646d.1-2build4",
+      "source_package": "rtmpdump",
+      "source_version": "2.4+20151223.gitfa8646d.1-2build4"
+    },
+    "librttopo1:amd64": {
+      "binary_version": "1.1.0-2",
+      "source_package": "librttopo",
+      "source_version": "1.1.0-2"
+    },
+    "libruby3.0:amd64": {
+      "binary_version": "3.0.2-7ubuntu2.13",
+      "source_package": "ruby3.0",
+      "source_version": "3.0.2-7ubuntu2.13"
+    },
+    "libsamplerate0:amd64": {
+      "binary_version": "0.2.2-1build1",
+      "source_package": "libsamplerate",
+      "source_version": "0.2.2-1build1"
+    },
+    "libsasl2-2:amd64": {
+      "binary_version": "2.1.27+dfsg2-3ubuntu1.2",
+      "source_package": "cyrus-sasl2",
+      "source_version": "2.1.27+dfsg2-3ubuntu1.2"
+    },
+    "libsasl2-modules-db:amd64": {
+      "binary_version": "2.1.27+dfsg2-3ubuntu1.2",
+      "source_package": "cyrus-sasl2",
+      "source_version": "2.1.27+dfsg2-3ubuntu1.2"
+    },
+    "libseccomp-dev:amd64": {
+      "binary_version": "2.5.3-2ubuntu3~22.04.1",
+      "source_package": "libseccomp",
+      "source_version": "2.5.3-2ubuntu3~22.04.1"
+    },
+    "libseccomp2:amd64": {
+      "binary_version": "2.5.3-2ubuntu3~22.04.1",
+      "source_package": "libseccomp",
+      "source_version": "2.5.3-2ubuntu3~22.04.1"
+    },
+    "libsecret-1-0:amd64": {
+      "binary_version": "0.20.5-2",
+      "source_package": "libsecret",
+      "source_version": "0.20.5-2"
+    },
+    "libsecret-1-dev:amd64": {
+      "binary_version": "0.20.5-2",
+      "source_package": "libsecret",
+      "source_version": "0.20.5-2"
+    },
+    "libsecret-common": {
+      "binary_version": "0.20.5-2",
+      "source_package": "libsecret",
+      "source_version": "0.20.5-2"
+    },
+    "libselinux1-dev:amd64": {
+      "binary_version": "3.3-1build2",
+      "source_package": "libselinux",
+      "source_version": "3.3-1build2"
+    },
+    "libselinux1:amd64": {
+      "binary_version": "3.3-1build2",
+      "source_package": "libselinux",
+      "source_version": "3.3-1build2"
+    },
+    "libsemanage-common": {
+      "binary_version": "3.3-1build2",
+      "source_package": "libsemanage",
+      "source_version": "3.3-1build2"
+    },
+    "libsemanage2:amd64": {
+      "binary_version": "3.3-1build2",
+      "source_package": "libsemanage",
+      "source_version": "3.3-1build2"
+    },
+    "libsensors-config": {
+      "binary_version": "1:3.6.0-7ubuntu1",
+      "source_package": "lm-sensors",
+      "source_version": "1:3.6.0-7ubuntu1"
+    },
+    "libsensors5:amd64": {
+      "binary_version": "1:3.6.0-7ubuntu1",
+      "source_package": "lm-sensors",
+      "source_version": "1:3.6.0-7ubuntu1"
+    },
+    "libsepol-dev:amd64": {
+      "binary_version": "3.3-1build1",
+      "source_package": "libsepol",
+      "source_version": "3.3-1build1"
+    },
+    "libsepol2:amd64": {
+      "binary_version": "3.3-1build1",
+      "source_package": "libsepol",
+      "source_version": "3.3-1build1"
+    },
+    "libset-scalar-perl": {
+      "binary_version": "1.29-2",
+      "source_package": "libset-scalar-perl",
+      "source_version": "1.29-2"
+    },
+    "libshine3:amd64": {
+      "binary_version": "3.1.1-2",
+      "source_package": "shine",
+      "source_version": "3.1.1-2"
+    },
+    "libshout3:amd64": {
+      "binary_version": "2.4.5-1build3",
+      "source_package": "libshout",
+      "source_version": "2.4.5-1build3"
+    },
+    "libsigsegv2:amd64": {
+      "binary_version": "2.13-1ubuntu3",
+      "source_package": "libsigsegv",
+      "source_version": "2.13-1ubuntu3"
+    },
+    "libslang2:amd64": {
+      "binary_version": "2.3.2-5build4",
+      "source_package": "slang2",
+      "source_version": "2.3.2-5build4"
+    },
+    "libsm-dev:amd64": {
+      "binary_version": "2:1.2.3-1build2",
+      "source_package": "libsm",
+      "source_version": "2:1.2.3-1build2"
+    },
+    "libsm6:amd64": {
+      "binary_version": "2:1.2.3-1build2",
+      "source_package": "libsm",
+      "source_version": "2:1.2.3-1build2"
+    },
+    "libsmartcols1:amd64": {
+      "binary_version": "2.37.2-4ubuntu3.6",
+      "source_package": "util-linux",
+      "source_version": "2.37.2-4ubuntu3.6"
+    },
+    "libsnappy1v5:amd64": {
+      "binary_version": "1.1.8-1build3",
+      "source_package": "snappy",
+      "source_version": "1.1.8-1build3"
+    },
+    "libsndfile1:amd64": {
+      "binary_version": "1.0.31-2ubuntu0.2",
+      "source_package": "libsndfile",
+      "source_version": "1.0.31-2ubuntu0.2"
+    },
+    "libsocket++1:amd64": {
+      "binary_version": "1.12.13+git20131030.5d039ba-1",
+      "source_package": "socket++",
+      "source_version": "1.12.13+git20131030.5d039ba-1"
+    },
+    "libsodium23:amd64": {
+      "binary_version": "1.0.18-1ubuntu0.22.04.1",
+      "source_package": "libsodium",
+      "source_version": "1.0.18-1ubuntu0.22.04.1"
+    },
+    "libsoup-3.0-0:amd64": {
+      "binary_version": "3.0.7-0ubuntu1",
+      "source_package": "libsoup3",
+      "source_version": "3.0.7-0ubuntu1"
+    },
+    "libsoup-3.0-common": {
+      "binary_version": "3.0.7-0ubuntu1",
+      "source_package": "libsoup3",
+      "source_version": "3.0.7-0ubuntu1"
+    },
+    "libsoup-3.0-dev:amd64": {
+      "binary_version": "3.0.7-0ubuntu1",
+      "source_package": "libsoup3",
+      "source_version": "3.0.7-0ubuntu1"
+    },
+    "libsoup2.4-1:amd64": {
+      "binary_version": "2.74.2-3ubuntu0.8",
+      "source_package": "libsoup2.4",
+      "source_version": "2.74.2-3ubuntu0.8"
+    },
+    "libsoup2.4-common": {
+      "binary_version": "2.74.2-3ubuntu0.8",
+      "source_package": "libsoup2.4",
+      "source_version": "2.74.2-3ubuntu0.8"
+    },
+    "libsoxr0:amd64": {
+      "binary_version": "0.1.3-4build2",
+      "source_package": "libsoxr",
+      "source_version": "0.1.3-4build2"
+    },
+    "libspatialite7:amd64": {
+      "binary_version": "5.0.1-2build2",
+      "source_package": "spatialite",
+      "source_version": "5.0.1-2build2"
+    },
+    "libspeex1:amd64": {
+      "binary_version": "1.2~rc1.2-1.1ubuntu3",
+      "source_package": "speex",
+      "source_version": "1.2~rc1.2-1.1ubuntu3"
+    },
+    "libsqlite3-0:amd64": {
+      "binary_version": "3.37.2-2ubuntu0.8",
+      "source_package": "sqlite3",
+      "source_version": "3.37.2-2ubuntu0.8"
+    },
+    "libsqlite3-dev:amd64": {
+      "binary_version": "3.37.2-2ubuntu0.8",
+      "source_package": "sqlite3",
+      "source_version": "3.37.2-2ubuntu0.8"
+    },
+    "libsrt1.4-gnutls:amd64": {
+      "binary_version": "1.4.4-4",
+      "source_package": "srt",
+      "source_version": "1.4.4-4"
+    },
+    "libss2:amd64": {
+      "binary_version": "1.46.5-2ubuntu1.2",
+      "source_package": "e2fsprogs",
+      "source_version": "1.46.5-2ubuntu1.2"
+    },
+    "libssh-4:amd64": {
+      "binary_version": "0.9.6-2ubuntu0.22.04.8",
+      "source_package": "libssh",
+      "source_version": "0.9.6-2ubuntu0.22.04.8"
+    },
+    "libssh-gcrypt-4:amd64": {
+      "binary_version": "0.9.6-2ubuntu0.22.04.8",
+      "source_package": "libssh",
+      "source_version": "0.9.6-2ubuntu0.22.04.8"
+    },
+    "libssl-dev:amd64": {
+      "binary_version": "3.0.2-0ubuntu1.30",
+      "source_package": "openssl",
+      "source_version": "3.0.2-0ubuntu1.30"
+    },
+    "libssl3:amd64": {
+      "binary_version": "3.0.2-0ubuntu1.30",
+      "source_package": "openssl",
+      "source_version": "3.0.2-0ubuntu1.30"
+    },
+    "libstdc++-11-dev:amd64": {
+      "binary_version": "11.4.0-1ubuntu1~22.04.3",
+      "source_package": "gcc-11",
+      "source_version": "11.4.0-1ubuntu1~22.04.3"
+    },
+    "libstdc++-12-dev:amd64": {
+      "binary_version": "12.3.0-1ubuntu1~22.04.3",
+      "source_package": "gcc-12",
+      "source_version": "12.3.0-1ubuntu1~22.04.3"
+    },
+    "libstdc++6:amd64": {
+      "binary_version": "12.3.0-1ubuntu1~22.04.3",
+      "source_package": "gcc-12",
+      "source_version": "12.3.0-1ubuntu1~22.04.3"
+    },
+    "libsuperlu5:amd64": {
+      "binary_version": "5.3.0+dfsg1-2",
+      "source_package": "superlu",
+      "source_version": "5.3.0+dfsg1-2"
+    },
+    "libswresample-dev:amd64": {
+      "binary_version": "7:4.4.2-0ubuntu0.22.04.1",
+      "source_package": "ffmpeg",
+      "source_version": "7:4.4.2-0ubuntu0.22.04.1"
+    },
+    "libswresample3:amd64": {
+      "binary_version": "7:4.4.2-0ubuntu0.22.04.1",
+      "source_package": "ffmpeg",
+      "source_version": "7:4.4.2-0ubuntu0.22.04.1"
+    },
+    "libswscale-dev:amd64": {
+      "binary_version": "7:4.4.2-0ubuntu0.22.04.1",
+      "source_package": "ffmpeg",
+      "source_version": "7:4.4.2-0ubuntu0.22.04.1"
+    },
+    "libswscale5:amd64": {
+      "binary_version": "7:4.4.2-0ubuntu0.22.04.1",
+      "source_package": "ffmpeg",
+      "source_version": "7:4.4.2-0ubuntu0.22.04.1"
+    },
+    "libsysprof-4-dev:amd64": {
+      "binary_version": "3.44.0-1",
+      "source_package": "sysprof",
+      "source_version": "3.44.0-1"
+    },
+    "libsysprof-4:amd64": {
+      "binary_version": "3.44.0-1",
+      "source_package": "sysprof",
+      "source_version": "3.44.0-1"
+    },
+    "libsysprof-ui-4:amd64": {
+      "binary_version": "3.44.0-1",
+      "source_package": "sysprof",
+      "source_version": "3.44.0-1"
+    },
+    "libsystemd-dev:amd64": {
+      "binary_version": "249.11-0ubuntu3.22",
+      "source_package": "systemd",
+      "source_version": "249.11-0ubuntu3.22"
+    },
+    "libsystemd0:amd64": {
+      "binary_version": "249.11-0ubuntu3.22",
+      "source_package": "systemd",
+      "source_version": "249.11-0ubuntu3.22"
+    },
+    "libsz2:amd64": {
+      "binary_version": "1.0.6-1",
+      "source_package": "libaec",
+      "source_version": "1.0.6-1"
+    },
+    "libtag1v5-vanilla:amd64": {
+      "binary_version": "1.11.1+dfsg.1-3ubuntu3",
+      "source_package": "taglib",
+      "source_version": "1.11.1+dfsg.1-3ubuntu3"
+    },
+    "libtag1v5:amd64": {
+      "binary_version": "1.11.1+dfsg.1-3ubuntu3",
+      "source_package": "taglib",
+      "source_version": "1.11.1+dfsg.1-3ubuntu3"
+    },
+    "libtasn1-6-dev:amd64": {
+      "binary_version": "4.18.0-4ubuntu0.2",
+      "source_package": "libtasn1-6",
+      "source_version": "4.18.0-4ubuntu0.2"
+    },
+    "libtasn1-6:amd64": {
+      "binary_version": "4.18.0-4ubuntu0.2",
+      "source_package": "libtasn1-6",
+      "source_version": "4.18.0-4ubuntu0.2"
+    },
+    "libtbb-dev:amd64": {
+      "binary_version": "2021.5.0-7ubuntu2",
+      "source_package": "onetbb",
+      "source_version": "2021.5.0-7ubuntu2"
+    },
+    "libtbb12:amd64": {
+      "binary_version": "2021.5.0-7ubuntu2",
+      "source_package": "onetbb",
+      "source_version": "2021.5.0-7ubuntu2"
+    },
+    "libtbb2:amd64": {
+      "binary_version": "2020.3-1ubuntu3",
+      "source_package": "tbb",
+      "source_version": "2020.3-1ubuntu3"
+    },
+    "libtbbmalloc2:amd64": {
+      "binary_version": "2021.5.0-7ubuntu2",
+      "source_package": "onetbb",
+      "source_version": "2021.5.0-7ubuntu2"
+    },
+    "libtcl8.6:amd64": {
+      "binary_version": "8.6.12+dfsg-1build1",
+      "source_package": "tcl8.6",
+      "source_version": "8.6.12+dfsg-1build1"
+    },
+    "libtesseract4:amd64": {
+      "binary_version": "4.1.1-2.1build1",
+      "source_package": "tesseract",
+      "source_version": "4.1.1-2.1build1"
+    },
+    "libtext-iconv-perl": {
+      "binary_version": "1.7-7build3",
+      "source_package": "libtext-iconv-perl",
+      "source_version": "1.7-7build3"
+    },
+    "libthai-data": {
+      "binary_version": "0.1.29-1build1",
+      "source_package": "libthai",
+      "source_version": "0.1.29-1build1"
+    },
+    "libthai-dev:amd64": {
+      "binary_version": "0.1.29-1build1",
+      "source_package": "libthai",
+      "source_version": "0.1.29-1build1"
+    },
+    "libthai0:amd64": {
+      "binary_version": "0.1.29-1build1",
+      "source_package": "libthai",
+      "source_version": "0.1.29-1build1"
+    },
+    "libtheora0:amd64": {
+      "binary_version": "1.1.1+dfsg.1-15ubuntu4",
+      "source_package": "libtheora",
+      "source_version": "1.1.1+dfsg.1-15ubuntu4"
+    },
+    "libtiff-dev:amd64": {
+      "binary_version": "4.3.0-6ubuntu0.13",
+      "source_package": "tiff",
+      "source_version": "4.3.0-6ubuntu0.13"
+    },
+    "libtiff5:amd64": {
+      "binary_version": "4.3.0-6ubuntu0.13",
+      "source_package": "tiff",
+      "source_version": "4.3.0-6ubuntu0.13"
+    },
+    "libtiffxx5:amd64": {
+      "binary_version": "4.3.0-6ubuntu0.13",
+      "source_package": "tiff",
+      "source_version": "4.3.0-6ubuntu0.13"
+    },
+    "libtinfo6:amd64": {
+      "binary_version": "6.3-2ubuntu0.3",
+      "source_package": "ncurses",
+      "source_version": "6.3-2ubuntu0.3"
+    },
+    "libtirpc-common": {
+      "binary_version": "1.3.2-2ubuntu0.1",
+      "source_package": "libtirpc",
+      "source_version": "1.3.2-2ubuntu0.1"
+    },
+    "libtirpc-dev:amd64": {
+      "binary_version": "1.3.2-2ubuntu0.1",
+      "source_package": "libtirpc",
+      "source_version": "1.3.2-2ubuntu0.1"
+    },
+    "libtirpc3:amd64": {
+      "binary_version": "1.3.2-2ubuntu0.1",
+      "source_package": "libtirpc",
+      "source_version": "1.3.2-2ubuntu0.1"
+    },
+    "libtk8.6:amd64": {
+      "binary_version": "8.6.12-1build1",
+      "source_package": "tk8.6",
+      "source_version": "8.6.12-1build1"
+    },
+    "libtool": {
+      "binary_version": "2.4.6-15build2",
+      "source_package": "libtool",
+      "source_version": "2.4.6-15build2"
+    },
+    "libtsan0:amd64": {
+      "binary_version": "11.4.0-1ubuntu1~22.04.3",
+      "source_package": "gcc-11",
+      "source_version": "11.4.0-1ubuntu1~22.04.3"
+    },
+    "libtsan2:amd64": {
+      "binary_version": "12.3.0-1ubuntu1~22.04.3",
+      "source_package": "gcc-12",
+      "source_version": "12.3.0-1ubuntu1~22.04.3"
+    },
+    "libtwolame0:amd64": {
+      "binary_version": "0.4.0-2build2",
+      "source_package": "twolame",
+      "source_version": "0.4.0-2build2"
+    },
+    "libubsan1:amd64": {
+      "binary_version": "12.3.0-1ubuntu1~22.04.3",
+      "source_package": "gcc-12",
+      "source_version": "12.3.0-1ubuntu1~22.04.3"
+    },
+    "libucx0:amd64": {
+      "binary_version": "1.12.1~rc2-1",
+      "source_package": "ucx",
+      "source_version": "1.12.1~rc2-1"
+    },
+    "libudev-dev:amd64": {
+      "binary_version": "249.11-0ubuntu3.22",
+      "source_package": "systemd",
+      "source_version": "249.11-0ubuntu3.22"
+    },
+    "libudev1:amd64": {
+      "binary_version": "249.11-0ubuntu3.22",
+      "source_package": "systemd",
+      "source_version": "249.11-0ubuntu3.22"
+    },
+    "libudfread0:amd64": {
+      "binary_version": "1.1.2-1",
+      "source_package": "libudfread",
+      "source_version": "1.1.2-1"
+    },
+    "libunistring2:amd64": {
+      "binary_version": "1.0-1",
+      "source_package": "libunistring",
+      "source_version": "1.0-1"
+    },
+    "libunwind-dev:amd64": {
+      "binary_version": "1.3.2-2build2.1",
+      "source_package": "libunwind",
+      "source_version": "1.3.2-2build2.1"
+    },
+    "libunwind8:amd64": {
+      "binary_version": "1.3.2-2build2.1",
+      "source_package": "libunwind",
+      "source_version": "1.3.2-2build2.1"
+    },
+    "liburiparser1:amd64": {
+      "binary_version": "0.9.6+dfsg-1",
+      "source_package": "uriparser",
+      "source_version": "0.9.6+dfsg-1"
+    },
+    "libusb-1.0-0:amd64": {
+      "binary_version": "2:1.0.25-1ubuntu2",
+      "source_package": "libusb-1.0",
+      "source_version": "2:1.0.25-1ubuntu2"
+    },
+    "libuuid1:amd64": {
+      "binary_version": "2.37.2-4ubuntu3.6",
+      "source_package": "util-linux",
+      "source_version": "2.37.2-4ubuntu3.6"
+    },
+    "libuv1:amd64": {
+      "binary_version": "1.43.0-1ubuntu0.1",
+      "source_package": "libuv1",
+      "source_version": "1.43.0-1ubuntu0.1"
+    },
+    "libv4l-0:amd64": {
+      "binary_version": "1.22.1-2build1",
+      "source_package": "v4l-utils",
+      "source_version": "1.22.1-2build1"
+    },
+    "libv4lconvert0:amd64": {
+      "binary_version": "1.22.1-2build1",
+      "source_package": "v4l-utils",
+      "source_version": "1.22.1-2build1"
+    },
+    "libva-dev:amd64": {
+      "binary_version": "2.14.0-1",
+      "source_package": "libva",
+      "source_version": "2.14.0-1"
+    },
+    "libva-drm2:amd64": {
+      "binary_version": "2.14.0-1",
+      "source_package": "libva",
+      "source_version": "2.14.0-1"
+    },
+    "libva-glx2:amd64": {
+      "binary_version": "2.14.0-1",
+      "source_package": "libva",
+      "source_version": "2.14.0-1"
+    },
+    "libva-wayland2:amd64": {
+      "binary_version": "2.14.0-1",
+      "source_package": "libva",
+      "source_version": "2.14.0-1"
+    },
+    "libva-x11-2:amd64": {
+      "binary_version": "2.14.0-1",
+      "source_package": "libva",
+      "source_version": "2.14.0-1"
+    },
+    "libva2:amd64": {
+      "binary_version": "2.14.0-1",
+      "source_package": "libva",
+      "source_version": "2.14.0-1"
+    },
+    "libvdpau1:amd64": {
+      "binary_version": "1.4-3build2",
+      "source_package": "libvdpau",
+      "source_version": "1.4-3build2"
+    },
+    "libvisual-0.4-0:amd64": {
+      "binary_version": "0.4.0-17build2",
+      "source_package": "libvisual",
+      "source_version": "0.4.0-17build2"
+    },
+    "libvorbis0a:amd64": {
+      "binary_version": "1.3.7-1build2",
+      "source_package": "libvorbis",
+      "source_version": "1.3.7-1build2"
+    },
+    "libvorbisenc2:amd64": {
+      "binary_version": "1.3.7-1build2",
+      "source_package": "libvorbis",
+      "source_version": "1.3.7-1build2"
+    },
+    "libvorbisfile3:amd64": {
+      "binary_version": "1.3.7-1build2",
+      "source_package": "libvorbis",
+      "source_version": "1.3.7-1build2"
+    },
+    "libvpx7:amd64": {
+      "binary_version": "1.11.0-2ubuntu2.5",
+      "source_package": "libvpx",
+      "source_version": "1.11.0-2ubuntu2.5"
+    },
+    "libvtk9.1:amd64": {
+      "binary_version": "9.1.0+really9.1.0+dfsg2-3build1",
+      "source_package": "vtk9",
+      "source_version": "9.1.0+really9.1.0+dfsg2-3build1"
+    },
+    "libwavpack1:amd64": {
+      "binary_version": "5.4.0-1build2",
+      "source_package": "wavpack",
+      "source_version": "5.4.0-1build2"
+    },
+    "libwayland-bin": {
+      "binary_version": "1.20.0-1ubuntu0.1",
+      "source_package": "wayland",
+      "source_version": "1.20.0-1ubuntu0.1"
+    },
+    "libwayland-client0:amd64": {
+      "binary_version": "1.20.0-1ubuntu0.1",
+      "source_package": "wayland",
+      "source_version": "1.20.0-1ubuntu0.1"
+    },
+    "libwayland-cursor0:amd64": {
+      "binary_version": "1.20.0-1ubuntu0.1",
+      "source_package": "wayland",
+      "source_version": "1.20.0-1ubuntu0.1"
+    },
+    "libwayland-dev:amd64": {
+      "binary_version": "1.20.0-1ubuntu0.1",
+      "source_package": "wayland",
+      "source_version": "1.20.0-1ubuntu0.1"
+    },
+    "libwayland-egl1:amd64": {
+      "binary_version": "1.20.0-1ubuntu0.1",
+      "source_package": "wayland",
+      "source_version": "1.20.0-1ubuntu0.1"
+    },
+    "libwayland-server0:amd64": {
+      "binary_version": "1.20.0-1ubuntu0.1",
+      "source_package": "wayland",
+      "source_version": "1.20.0-1ubuntu0.1"
+    },
+    "libwebkit2gtk-4.1-0:amd64": {
+      "binary_version": "2.50.4-0ubuntu0.22.04.1",
+      "source_package": "webkit2gtk",
+      "source_version": "2.50.4-0ubuntu0.22.04.1"
+    },
+    "libwebkit2gtk-4.1-dev": {
+      "binary_version": "2.50.4-0ubuntu0.22.04.1",
+      "source_package": "webkit2gtk",
+      "source_version": "2.50.4-0ubuntu0.22.04.1"
+    },
+    "libwebp-dev:amd64": {
+      "binary_version": "1.2.2-2ubuntu0.22.04.2",
+      "source_package": "libwebp",
+      "source_version": "1.2.2-2ubuntu0.22.04.2"
+    },
+    "libwebp7:amd64": {
+      "binary_version": "1.2.2-2ubuntu0.22.04.2",
+      "source_package": "libwebp",
+      "source_version": "1.2.2-2ubuntu0.22.04.2"
+    },
+    "libwebpdemux2:amd64": {
+      "binary_version": "1.2.2-2ubuntu0.22.04.2",
+      "source_package": "libwebp",
+      "source_version": "1.2.2-2ubuntu0.22.04.2"
+    },
+    "libwebpmux3:amd64": {
+      "binary_version": "1.2.2-2ubuntu0.22.04.2",
+      "source_package": "libwebp",
+      "source_version": "1.2.2-2ubuntu0.22.04.2"
+    },
+    "libwoff-dev:amd64": {
+      "binary_version": "1.0.2-1build4",
+      "source_package": "woff2",
+      "source_version": "1.0.2-1build4"
+    },
+    "libwoff1:amd64": {
+      "binary_version": "1.0.2-1build4",
+      "source_package": "woff2",
+      "source_version": "1.0.2-1build4"
+    },
+    "libx11-6:amd64": {
+      "binary_version": "2:1.7.5-1ubuntu0.3",
+      "source_package": "libx11",
+      "source_version": "2:1.7.5-1ubuntu0.3"
+    },
+    "libx11-data": {
+      "binary_version": "2:1.7.5-1ubuntu0.3",
+      "source_package": "libx11",
+      "source_version": "2:1.7.5-1ubuntu0.3"
+    },
+    "libx11-dev:amd64": {
+      "binary_version": "2:1.7.5-1ubuntu0.3",
+      "source_package": "libx11",
+      "source_version": "2:1.7.5-1ubuntu0.3"
+    },
+    "libx11-xcb-dev:amd64": {
+      "binary_version": "2:1.7.5-1ubuntu0.3",
+      "source_package": "libx11",
+      "source_version": "2:1.7.5-1ubuntu0.3"
+    },
+    "libx11-xcb1:amd64": {
+      "binary_version": "2:1.7.5-1ubuntu0.3",
+      "source_package": "libx11",
+      "source_version": "2:1.7.5-1ubuntu0.3"
+    },
+    "libx264-163:amd64": {
+      "binary_version": "2:0.163.3060+git5db6aa6-2build1",
+      "source_package": "x264",
+      "source_version": "2:0.163.3060+git5db6aa6-2build1"
+    },
+    "libx265-199:amd64": {
+      "binary_version": "3.5-2",
+      "source_package": "x265",
+      "source_version": "3.5-2"
+    },
+    "libxau-dev:amd64": {
+      "binary_version": "1:1.0.9-1build5",
+      "source_package": "libxau",
+      "source_version": "1:1.0.9-1build5"
+    },
+    "libxau6:amd64": {
+      "binary_version": "1:1.0.9-1build5",
+      "source_package": "libxau",
+      "source_version": "1:1.0.9-1build5"
+    },
+    "libxcb-dri2-0:amd64": {
+      "binary_version": "1.14-3ubuntu3",
+      "source_package": "libxcb",
+      "source_version": "1.14-3ubuntu3"
+    },
+    "libxcb-dri3-0:amd64": {
+      "binary_version": "1.14-3ubuntu3",
+      "source_package": "libxcb",
+      "source_version": "1.14-3ubuntu3"
+    },
+    "libxcb-dri3-dev:amd64": {
+      "binary_version": "1.14-3ubuntu3",
+      "source_package": "libxcb",
+      "source_version": "1.14-3ubuntu3"
+    },
+    "libxcb-glx0:amd64": {
+      "binary_version": "1.14-3ubuntu3",
+      "source_package": "libxcb",
+      "source_version": "1.14-3ubuntu3"
+    },
+    "libxcb-present0:amd64": {
+      "binary_version": "1.14-3ubuntu3",
+      "source_package": "libxcb",
+      "source_version": "1.14-3ubuntu3"
+    },
+    "libxcb-randr0:amd64": {
+      "binary_version": "1.14-3ubuntu3",
+      "source_package": "libxcb",
+      "source_version": "1.14-3ubuntu3"
+    },
+    "libxcb-render0-dev:amd64": {
+      "binary_version": "1.14-3ubuntu3",
+      "source_package": "libxcb",
+      "source_version": "1.14-3ubuntu3"
+    },
+    "libxcb-render0:amd64": {
+      "binary_version": "1.14-3ubuntu3",
+      "source_package": "libxcb",
+      "source_version": "1.14-3ubuntu3"
+    },
+    "libxcb-shm0-dev:amd64": {
+      "binary_version": "1.14-3ubuntu3",
+      "source_package": "libxcb",
+      "source_version": "1.14-3ubuntu3"
+    },
+    "libxcb-shm0:amd64": {
+      "binary_version": "1.14-3ubuntu3",
+      "source_package": "libxcb",
+      "source_version": "1.14-3ubuntu3"
+    },
+    "libxcb-sync1:amd64": {
+      "binary_version": "1.14-3ubuntu3",
+      "source_package": "libxcb",
+      "source_version": "1.14-3ubuntu3"
+    },
+    "libxcb-xfixes0:amd64": {
+      "binary_version": "1.14-3ubuntu3",
+      "source_package": "libxcb",
+      "source_version": "1.14-3ubuntu3"
+    },
+    "libxcb1-dev:amd64": {
+      "binary_version": "1.14-3ubuntu3",
+      "source_package": "libxcb",
+      "source_version": "1.14-3ubuntu3"
+    },
+    "libxcb1:amd64": {
+      "binary_version": "1.14-3ubuntu3",
+      "source_package": "libxcb",
+      "source_version": "1.14-3ubuntu3"
+    },
+    "libxcomposite-dev:amd64": {
+      "binary_version": "1:0.4.5-1build2",
+      "source_package": "libxcomposite",
+      "source_version": "1:0.4.5-1build2"
+    },
+    "libxcomposite1:amd64": {
+      "binary_version": "1:0.4.5-1build2",
+      "source_package": "libxcomposite",
+      "source_version": "1:0.4.5-1build2"
+    },
+    "libxcursor-dev:amd64": {
+      "binary_version": "1:1.2.0-2build4",
+      "source_package": "libxcursor",
+      "source_version": "1:1.2.0-2build4"
+    },
+    "libxcursor1:amd64": {
+      "binary_version": "1:1.2.0-2build4",
+      "source_package": "libxcursor",
+      "source_version": "1:1.2.0-2build4"
+    },
+    "libxdamage-dev:amd64": {
+      "binary_version": "1:1.1.5-2build2",
+      "source_package": "libxdamage",
+      "source_version": "1:1.1.5-2build2"
+    },
+    "libxdamage1:amd64": {
+      "binary_version": "1:1.1.5-2build2",
+      "source_package": "libxdamage",
+      "source_version": "1:1.1.5-2build2"
+    },
+    "libxdmcp-dev:amd64": {
+      "binary_version": "1:1.1.3-0ubuntu5",
+      "source_package": "libxdmcp",
+      "source_version": "1:1.1.3-0ubuntu5"
+    },
+    "libxdmcp6:amd64": {
+      "binary_version": "1:1.1.3-0ubuntu5",
+      "source_package": "libxdmcp",
+      "source_version": "1:1.1.3-0ubuntu5"
+    },
+    "libxerces-c3.2:amd64": {
+      "binary_version": "3.2.3+debian-3ubuntu0.1",
+      "source_package": "xerces-c",
+      "source_version": "3.2.3+debian-3ubuntu0.1"
+    },
+    "libxext-dev:amd64": {
+      "binary_version": "2:1.3.4-1build1",
+      "source_package": "libxext",
+      "source_version": "2:1.3.4-1build1"
+    },
+    "libxext6:amd64": {
+      "binary_version": "2:1.3.4-1build1",
+      "source_package": "libxext",
+      "source_version": "2:1.3.4-1build1"
+    },
+    "libxfixes-dev:amd64": {
+      "binary_version": "1:6.0.0-1",
+      "source_package": "libxfixes",
+      "source_version": "1:6.0.0-1"
+    },
+    "libxfixes3:amd64": {
+      "binary_version": "1:6.0.0-1",
+      "source_package": "libxfixes",
+      "source_version": "1:6.0.0-1"
+    },
+    "libxft-dev:amd64": {
+      "binary_version": "2.3.4-1",
+      "source_package": "xft",
+      "source_version": "2.3.4-1"
+    },
+    "libxft2:amd64": {
+      "binary_version": "2.3.4-1",
+      "source_package": "xft",
+      "source_version": "2.3.4-1"
+    },
+    "libxi-dev:amd64": {
+      "binary_version": "2:1.8-1build1",
+      "source_package": "libxi",
+      "source_version": "2:1.8-1build1"
+    },
+    "libxi6:amd64": {
+      "binary_version": "2:1.8-1build1",
+      "source_package": "libxi",
+      "source_version": "2:1.8-1build1"
+    },
+    "libxinerama-dev:amd64": {
+      "binary_version": "2:1.1.4-3",
+      "source_package": "libxinerama",
+      "source_version": "2:1.1.4-3"
+    },
+    "libxinerama1:amd64": {
+      "binary_version": "2:1.1.4-3",
+      "source_package": "libxinerama",
+      "source_version": "2:1.1.4-3"
+    },
+    "libxkbcommon-dev:amd64": {
+      "binary_version": "1.4.0-1",
+      "source_package": "libxkbcommon",
+      "source_version": "1.4.0-1"
+    },
+    "libxkbcommon0:amd64": {
+      "binary_version": "1.4.0-1",
+      "source_package": "libxkbcommon",
+      "source_version": "1.4.0-1"
+    },
+    "libxml2-dev:amd64": {
+      "binary_version": "2.9.13+dfsg-1ubuntu0.13",
+      "source_package": "libxml2",
+      "source_version": "2.9.13+dfsg-1ubuntu0.13"
+    },
+    "libxml2:amd64": {
+      "binary_version": "2.9.13+dfsg-1ubuntu0.13",
+      "source_package": "libxml2",
+      "source_version": "2.9.13+dfsg-1ubuntu0.13"
+    },
+    "libxnvctrl0:amd64": {
+      "binary_version": "510.47.03-0ubuntu1.22.04.1",
+      "source_package": "nvidia-settings",
+      "source_version": "510.47.03-0ubuntu1.22.04.1"
+    },
+    "libxpm4:amd64": {
+      "binary_version": "1:3.5.12-1ubuntu0.22.04.3",
+      "source_package": "libxpm",
+      "source_version": "1:3.5.12-1ubuntu0.22.04.3"
+    },
+    "libxpresent-dev:amd64": {
+      "binary_version": "1.0.0-2build1",
+      "source_package": "libxpresent",
+      "source_version": "1.0.0-2build1"
+    },
+    "libxpresent1:amd64": {
+      "binary_version": "1.0.0-2build1",
+      "source_package": "libxpresent",
+      "source_version": "1.0.0-2build1"
+    },
+    "libxrandr-dev:amd64": {
+      "binary_version": "2:1.5.2-1build1",
+      "source_package": "libxrandr",
+      "source_version": "2:1.5.2-1build1"
+    },
+    "libxrandr2:amd64": {
+      "binary_version": "2:1.5.2-1build1",
+      "source_package": "libxrandr",
+      "source_version": "2:1.5.2-1build1"
+    },
+    "libxrender-dev:amd64": {
+      "binary_version": "1:0.9.10-1build4",
+      "source_package": "libxrender",
+      "source_version": "1:0.9.10-1build4"
+    },
+    "libxrender1:amd64": {
+      "binary_version": "1:0.9.10-1build4",
+      "source_package": "libxrender",
+      "source_version": "1:0.9.10-1build4"
+    },
+    "libxshmfence1:amd64": {
+      "binary_version": "1.3-1build4",
+      "source_package": "libxshmfence",
+      "source_version": "1.3-1build4"
+    },
+    "libxslt1-dev:amd64": {
+      "binary_version": "1.1.34-4ubuntu0.22.04.5",
+      "source_package": "libxslt",
+      "source_version": "1.1.34-4ubuntu0.22.04.5"
+    },
+    "libxslt1.1:amd64": {
+      "binary_version": "1.1.34-4ubuntu0.22.04.5",
+      "source_package": "libxslt",
+      "source_version": "1.1.34-4ubuntu0.22.04.5"
+    },
+    "libxss-dev:amd64": {
+      "binary_version": "1:1.2.3-1build2",
+      "source_package": "libxss",
+      "source_version": "1:1.2.3-1build2"
+    },
+    "libxss1:amd64": {
+      "binary_version": "1:1.2.3-1build2",
+      "source_package": "libxss",
+      "source_version": "1:1.2.3-1build2"
+    },
+    "libxtst-dev:amd64": {
+      "binary_version": "2:1.2.3-1build4",
+      "source_package": "libxtst",
+      "source_version": "2:1.2.3-1build4"
+    },
+    "libxtst6:amd64": {
+      "binary_version": "2:1.2.3-1build4",
+      "source_package": "libxtst",
+      "source_version": "2:1.2.3-1build4"
+    },
+    "libxvidcore4:amd64": {
+      "binary_version": "2:1.3.7-1",
+      "source_package": "xvidcore",
+      "source_version": "2:1.3.7-1"
+    },
+    "libxxf86vm1:amd64": {
+      "binary_version": "1:1.1.4-1build3",
+      "source_package": "libxxf86vm",
+      "source_version": "1:1.1.4-1build3"
+    },
+    "libxxhash0:amd64": {
+      "binary_version": "0.8.1-1",
+      "source_package": "xxhash",
+      "source_version": "0.8.1-1"
+    },
+    "libyaml-0-2:amd64": {
+      "binary_version": "0.2.2-1build2",
+      "source_package": "libyaml",
+      "source_version": "0.2.2-1build2"
+    },
+    "libyuv0:amd64": {
+      "binary_version": "0.0~git20220104.b91df1a-2",
+      "source_package": "libyuv",
+      "source_version": "0.0~git20220104.b91df1a-2"
+    },
+    "libzmq5:amd64": {
+      "binary_version": "4.3.4-2",
+      "source_package": "zeromq3",
+      "source_version": "4.3.4-2"
+    },
+    "libzstd1:amd64": {
+      "binary_version": "1.4.8+dfsg-3build1",
+      "source_package": "libzstd",
+      "source_version": "1.4.8+dfsg-3build1"
+    },
+    "libzvbi-common": {
+      "binary_version": "0.2.35-19",
+      "source_package": "zvbi",
+      "source_version": "0.2.35-19"
+    },
+    "libzvbi0:amd64": {
+      "binary_version": "0.2.35-19",
+      "source_package": "zvbi",
+      "source_version": "0.2.35-19"
+    },
+    "linux-libc-dev:amd64": {
+      "binary_version": "5.15.0-194.204",
+      "source_package": "linux",
+      "source_version": "5.15.0-194.204"
+    },
+    "login": {
+      "binary_version": "1:4.8.1-2ubuntu2.2",
+      "source_package": "shadow",
+      "source_version": "1:4.8.1-2ubuntu2.2"
+    },
+    "logsave": {
+      "binary_version": "1.46.5-2ubuntu1.2",
+      "source_package": "e2fsprogs",
+      "source_version": "1.46.5-2ubuntu1.2"
+    },
+    "lsb-base": {
+      "binary_version": "11.1.0ubuntu4",
+      "source_package": "lsb",
+      "source_version": "11.1.0ubuntu4"
+    },
+    "lto-disabled-list": {
+      "binary_version": "24",
+      "source_package": "lto-disabled-list",
+      "source_version": "24"
+    },
+    "m4": {
+      "binary_version": "1.4.18-5ubuntu2",
+      "source_package": "m4",
+      "source_version": "1.4.18-5ubuntu2"
+    },
+    "make": {
+      "binary_version": "4.3-4.1build1",
+      "source_package": "make-dfsg",
+      "source_version": "4.3-4.1build1"
+    },
+    "mawk": {
+      "binary_version": "1.3.4.20200120-3",
+      "source_package": "mawk",
+      "source_version": "1.3.4.20200120-3"
+    },
+    "media-types": {
+      "binary_version": "7.0.0",
+      "source_package": "media-types",
+      "source_version": "7.0.0"
+    },
+    "mount": {
+      "binary_version": "2.37.2-4ubuntu3.6",
+      "source_package": "util-linux",
+      "source_version": "2.37.2-4ubuntu3.6"
+    },
+    "mysql-common": {
+      "binary_version": "5.8+1.0.8",
+      "source_package": "mysql-defaults",
+      "source_version": "1.0.8"
+    },
+    "ncurses-base": {
+      "binary_version": "6.3-2ubuntu0.3",
+      "source_package": "ncurses",
+      "source_version": "6.3-2ubuntu0.3"
+    },
+    "ncurses-bin": {
+      "binary_version": "6.3-2ubuntu0.3",
+      "source_package": "ncurses",
+      "source_version": "6.3-2ubuntu0.3"
+    },
+    "ninja-build": {
+      "binary_version": "1.10.1-1",
+      "source_package": "ninja-build",
+      "source_version": "1.10.1-1"
+    },
+    "ocl-icd-libopencl1:amd64": {
+      "binary_version": "2.2.14-3",
+      "source_package": "ocl-icd",
+      "source_version": "2.2.14-3"
+    },
+    "opensp": {
+      "binary_version": "1.5.2-13ubuntu3",
+      "source_package": "opensp",
+      "source_version": "1.5.2-13ubuntu3"
+    },
+    "openssl": {
+      "binary_version": "3.0.2-0ubuntu1.30",
+      "source_package": "openssl",
+      "source_version": "3.0.2-0ubuntu1.30"
+    },
+    "pango1.0-tools": {
+      "binary_version": "1.50.6+ds-2ubuntu1",
+      "source_package": "pango1.0",
+      "source_version": "1.50.6+ds-2ubuntu1"
+    },
+    "passwd": {
+      "binary_version": "1:4.8.1-2ubuntu2.2",
+      "source_package": "shadow",
+      "source_version": "1:4.8.1-2ubuntu2.2"
+    },
+    "patch": {
+      "binary_version": "2.7.6-7build2",
+      "source_package": "patch",
+      "source_version": "2.7.6-7build2"
+    },
+    "patchelf": {
+      "binary_version": "0.14.3-1",
+      "source_package": "patchelf",
+      "source_version": "0.14.3-1"
+    },
+    "pci.ids": {
+      "binary_version": "0.0~2022.01.22-1ubuntu0.1",
+      "source_package": "pci.ids",
+      "source_version": "0.0~2022.01.22-1ubuntu0.1"
+    },
+    "perl": {
+      "binary_version": "5.34.0-3ubuntu1.9",
+      "source_package": "perl",
+      "source_version": "5.34.0-3ubuntu1.9"
+    },
+    "perl-base": {
+      "binary_version": "5.34.0-3ubuntu1.9",
+      "source_package": "perl",
+      "source_version": "5.34.0-3ubuntu1.9"
+    },
+    "perl-modules-5.34": {
+      "binary_version": "5.34.0-3ubuntu1.9",
+      "source_package": "perl",
+      "source_version": "5.34.0-3ubuntu1.9"
+    },
+    "pinentry-curses": {
+      "binary_version": "1.1.1-1build2",
+      "source_package": "pinentry",
+      "source_version": "1.1.1-1build2"
+    },
+    "pkg-config": {
+      "binary_version": "0.29.2-1ubuntu3",
+      "source_package": "pkg-config",
+      "source_version": "0.29.2-1ubuntu3"
+    },
+    "procps": {
+      "binary_version": "2:3.3.17-6ubuntu2.1",
+      "source_package": "procps",
+      "source_version": "2:3.3.17-6ubuntu2.1"
+    },
+    "proj-data": {
+      "binary_version": "8.2.1-1",
+      "source_package": "proj",
+      "source_version": "8.2.1-1"
+    },
+    "python-babel-localedata": {
+      "binary_version": "2.8.0+dfsg.1-7",
+      "source_package": "python-babel",
+      "source_version": "2.8.0+dfsg.1-7"
+    },
+    "python3": {
+      "binary_version": "3.10.6-1~22.04.1",
+      "source_package": "python3-defaults",
+      "source_version": "3.10.6-1~22.04.1"
+    },
+    "python3-babel": {
+      "binary_version": "2.8.0+dfsg.1-7",
+      "source_package": "python-babel",
+      "source_version": "2.8.0+dfsg.1-7"
+    },
+    "python3-distutils": {
+      "binary_version": "3.10.8-1~22.04",
+      "source_package": "python3-stdlib-extensions",
+      "source_version": "3.10.8-1~22.04"
+    },
+    "python3-importlib-metadata": {
+      "binary_version": "4.6.4-1",
+      "source_package": "python-importlib-metadata",
+      "source_version": "4.6.4-1"
+    },
+    "python3-jinja2": {
+      "binary_version": "3.0.3-1ubuntu0.4",
+      "source_package": "jinja2",
+      "source_version": "3.0.3-1ubuntu0.4"
+    },
+    "python3-lib2to3": {
+      "binary_version": "3.10.8-1~22.04",
+      "source_package": "python3-stdlib-extensions",
+      "source_version": "3.10.8-1~22.04"
+    },
+    "python3-lxml:amd64": {
+      "binary_version": "4.8.0-1build1",
+      "source_package": "lxml",
+      "source_version": "4.8.0-1build1"
+    },
+    "python3-mako": {
+      "binary_version": "1.1.3+ds1-2ubuntu0.2",
+      "source_package": "mako",
+      "source_version": "1.1.3+ds1-2ubuntu0.2"
+    },
+    "python3-markdown": {
+      "binary_version": "3.3.6-1",
+      "source_package": "python-markdown",
+      "source_version": "3.3.6-1"
+    },
+    "python3-markupsafe": {
+      "binary_version": "2.0.1-2build1",
+      "source_package": "markupsafe",
+      "source_version": "2.0.1-2build1"
+    },
+    "python3-minimal": {
+      "binary_version": "3.10.6-1~22.04.1",
+      "source_package": "python3-defaults",
+      "source_version": "3.10.6-1~22.04.1"
+    },
+    "python3-more-itertools": {
+      "binary_version": "8.10.0-2",
+      "source_package": "more-itertools",
+      "source_version": "8.10.0-2"
+    },
+    "python3-pkg-resources": {
+      "binary_version": "59.6.0-1.2ubuntu0.22.04.3",
+      "source_package": "setuptools",
+      "source_version": "59.6.0-1.2ubuntu0.22.04.3"
+    },
+    "python3-pygments": {
+      "binary_version": "2.11.2+dfsg-2ubuntu0.1",
+      "source_package": "pygments",
+      "source_version": "2.11.2+dfsg-2ubuntu0.1"
+    },
+    "python3-tz": {
+      "binary_version": "2022.1-1ubuntu0.22.04.1",
+      "source_package": "python-tz",
+      "source_version": "2022.1-1ubuntu0.22.04.1"
+    },
+    "python3-zipp": {
+      "binary_version": "1.0.0-3ubuntu0.1",
+      "source_package": "python-zipp",
+      "source_version": "1.0.0-3ubuntu0.1"
+    },
+    "python3.10": {
+      "binary_version": "3.10.12-1~22.04.18",
+      "source_package": "python3.10",
+      "source_version": "3.10.12-1~22.04.18"
+    },
+    "python3.10-minimal": {
+      "binary_version": "3.10.12-1~22.04.18",
+      "source_package": "python3.10",
+      "source_version": "3.10.12-1~22.04.18"
+    },
+    "rake": {
+      "binary_version": "13.0.6-2",
+      "source_package": "rake",
+      "source_version": "13.0.6-2"
+    },
+    "readline-common": {
+      "binary_version": "8.1.2-1",
+      "source_package": "readline",
+      "source_version": "8.1.2-1"
+    },
+    "rpcsvc-proto": {
+      "binary_version": "1.4.2-0ubuntu6",
+      "source_package": "rpcsvc-proto",
+      "source_version": "1.4.2-0ubuntu6"
+    },
+    "ruby": {
+      "binary_version": "1:3.0~exp1",
+      "source_package": "ruby-defaults",
+      "source_version": "1:3.0~exp1"
+    },
+    "ruby-net-telnet": {
+      "binary_version": "0.1.1-2",
+      "source_package": "ruby-net-telnet",
+      "source_version": "0.1.1-2"
+    },
+    "ruby-rubygems": {
+      "binary_version": "3.3.5-2ubuntu1.2",
+      "source_package": "rubygems",
+      "source_version": "3.3.5-2ubuntu1.2"
+    },
+    "ruby-webrick": {
+      "binary_version": "1.7.0-3ubuntu0.2",
+      "source_package": "ruby-webrick",
+      "source_version": "1.7.0-3ubuntu0.2"
+    },
+    "ruby-xmlrpc": {
+      "binary_version": "0.3.2-1ubuntu0.1",
+      "source_package": "ruby-xmlrpc",
+      "source_version": "0.3.2-1ubuntu0.1"
+    },
+    "ruby3.0": {
+      "binary_version": "3.0.2-7ubuntu2.13",
+      "source_package": "ruby3.0",
+      "source_version": "3.0.2-7ubuntu2.13"
+    },
+    "rubygems-integration": {
+      "binary_version": "1.18",
+      "source_package": "rubygems-integration",
+      "source_version": "1.18"
+    },
+    "sed": {
+      "binary_version": "4.8-1ubuntu2.1",
+      "source_package": "sed",
+      "source_version": "4.8-1ubuntu2.1"
+    },
+    "sensible-utils": {
+      "binary_version": "0.0.17",
+      "source_package": "sensible-utils",
+      "source_version": "0.0.17"
+    },
+    "session-migration": {
+      "binary_version": "0.3.6",
+      "source_package": "session-migration",
+      "source_version": "0.3.6"
+    },
+    "sgml-base": {
+      "binary_version": "1.30",
+      "source_package": "sgml-base",
+      "source_version": "1.30"
+    },
+    "sgml-data": {
+      "binary_version": "2.0.11+nmu1",
+      "source_package": "sgml-data",
+      "source_version": "2.0.11+nmu1"
+    },
+    "shared-mime-info": {
+      "binary_version": "2.1-2",
+      "source_package": "shared-mime-info",
+      "source_version": "2.1-2"
+    },
+    "squashfs-tools": {
+      "binary_version": "1:4.5-3build1",
+      "source_package": "squashfs-tools",
+      "source_version": "1:4.5-3build1"
+    },
+    "systemd": {
+      "binary_version": "249.11-0ubuntu3.22",
+      "source_package": "systemd",
+      "source_version": "249.11-0ubuntu3.22"
+    },
+    "systemd-sysv": {
+      "binary_version": "249.11-0ubuntu3.22",
+      "source_package": "systemd",
+      "source_version": "249.11-0ubuntu3.22"
+    },
+    "sysvinit-utils": {
+      "binary_version": "3.01-1ubuntu1",
+      "source_package": "sysvinit",
+      "source_version": "3.01-1ubuntu1"
+    },
+    "tar": {
+      "binary_version": "1.34+dfsg-1ubuntu0.1.22.04.6",
+      "source_package": "tar",
+      "source_version": "1.34+dfsg-1ubuntu0.1.22.04.6"
+    },
+    "time": {
+      "binary_version": "1.9-0.1build2",
+      "source_package": "time",
+      "source_version": "1.9-0.1build2"
+    },
+    "tzdata": {
+      "binary_version": "2026c-0ubuntu0.22.04.1",
+      "source_package": "tzdata",
+      "source_version": "2026c-0ubuntu0.22.04.1"
+    },
+    "ubuntu-keyring": {
+      "binary_version": "2021.03.26",
+      "source_package": "ubuntu-keyring",
+      "source_version": "2021.03.26"
+    },
+    "ubuntu-mono": {
+      "binary_version": "20.10-0ubuntu2",
+      "source_package": "ubuntu-themes",
+      "source_version": "20.10-0ubuntu2"
+    },
+    "ucf": {
+      "binary_version": "3.0043",
+      "source_package": "ucf",
+      "source_version": "3.0043"
+    },
+    "unifdef": {
+      "binary_version": "2.10-1.1build0.2",
+      "source_package": "unifdef",
+      "source_version": "2.10-1.1build0.2"
+    },
+    "unixodbc-common": {
+      "binary_version": "2.3.9-5ubuntu0.1",
+      "source_package": "unixodbc",
+      "source_version": "2.3.9-5ubuntu0.1"
+    },
+    "unzip": {
+      "binary_version": "6.0-26ubuntu3.2",
+      "source_package": "unzip",
+      "source_version": "6.0-26ubuntu3.2"
+    },
+    "usb.ids": {
+      "binary_version": "2022.04.02-1",
+      "source_package": "usb.ids",
+      "source_version": "2022.04.02-1"
+    },
+    "usrmerge": {
+      "binary_version": "25ubuntu2",
+      "source_package": "usrmerge",
+      "source_version": "25ubuntu2"
+    },
+    "util-linux": {
+      "binary_version": "2.37.2-4ubuntu3.6",
+      "source_package": "util-linux",
+      "source_version": "2.37.2-4ubuntu3.6"
+    },
+    "uuid-dev:amd64": {
+      "binary_version": "2.37.2-4ubuntu3.6",
+      "source_package": "util-linux",
+      "source_version": "2.37.2-4ubuntu3.6"
+    },
+    "wayland-protocols": {
+      "binary_version": "1.25-1",
+      "source_package": "wayland-protocols",
+      "source_version": "1.25-1"
+    },
+    "x11-common": {
+      "binary_version": "1:7.7+23ubuntu2",
+      "source_package": "xorg",
+      "source_version": "1:7.7+23ubuntu2"
+    },
+    "x11proto-dev": {
+      "binary_version": "2021.5-1",
+      "source_package": "xorgproto",
+      "source_version": "2021.5-1"
+    },
+    "xdg-dbus-proxy": {
+      "binary_version": "0.1.3-1ubuntu0.1",
+      "source_package": "xdg-dbus-proxy",
+      "source_version": "0.1.3-1ubuntu0.1"
+    },
+    "xdg-utils": {
+      "binary_version": "1.1.3-4.1ubuntu3~22.04.1",
+      "source_package": "xdg-utils",
+      "source_version": "1.1.3-4.1ubuntu3~22.04.1"
+    },
+    "xkb-data": {
+      "binary_version": "2.33-1",
+      "source_package": "xkeyboard-config",
+      "source_version": "2.33-1"
+    },
+    "xml-core": {
+      "binary_version": "0.18+nmu1",
+      "source_package": "xml-core",
+      "source_version": "0.18+nmu1"
+    },
+    "xorg-sgml-doctools": {
+      "binary_version": "1:1.11-1.1",
+      "source_package": "xorg-sgml-doctools",
+      "source_version": "1:1.11-1.1"
+    },
+    "xsltproc": {
+      "binary_version": "1.1.34-4ubuntu0.22.04.5",
+      "source_package": "libxslt",
+      "source_version": "1.1.34-4ubuntu0.22.04.5"
+    },
+    "xtrans-dev": {
+      "binary_version": "1.4.0-1",
+      "source_package": "xtrans",
+      "source_version": "1.4.0-1"
+    },
+    "xz-utils": {
+      "binary_version": "5.2.5-2ubuntu1.1",
+      "source_package": "xz-utils",
+      "source_version": "5.2.5-2ubuntu1.1"
+    },
+    "zlib1g-dev:amd64": {
+      "binary_version": "1:1.2.11.dfsg-2ubuntu9.2",
+      "source_package": "zlib",
+      "source_version": "1:1.2.11.dfsg-2ubuntu9.2"
+    },
+    "zlib1g:amd64": {
+      "binary_version": "1:1.2.11.dfsg-2ubuntu9.2",
+      "source_package": "zlib",
+      "source_version": "1:1.2.11.dfsg-2ubuntu9.2"
+    }
+  },
+  "scope": "installed dpkg records from verified engine OCI only; not full OCI layers/non-dpkg closure"
+}

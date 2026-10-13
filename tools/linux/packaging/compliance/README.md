@@ -7,6 +7,12 @@ format assessments and exact blockers are in
 [the redistribution report](../../../../docs/compliance/linux-redistribution-audit.md).
 The JSON inventory is an intentional review artifact, not executable build output.
 
+Host-side audit/verifier commands require **Python 3.11+** (`hashlib.file_digest`),
+plus `gpgv` for Ubuntu signature checks. This does not change the canonical
+packager's Python 3.10+ requirement or its pinned builder. The source-only
+`ubuntu_sources.py indexes` command runs with the builder's existing Python and
+APT; it does not use the host-side hash verifier.
+
 ## Offline inventory
 
 `inventory.py` reads extracted existing packages, verifies their artifact/file
@@ -93,7 +99,10 @@ python3 tools/linux/packaging/compliance/collect_media_sources.py \
 sha256sum build/Nuvio-media-source.tar.gz
 ```
 
-The collector is offline and requires **all** pinned source/signature/key inputs.
+The collector is offline and requires **all** pinned manifest/signature/key inputs.
+The 18 manifest inputs comprise **17 source archives and one data-only CA bootstrap
+`.deb`**, not 18 source archives. The collector labels that bootstrap binary; its
+source is reviewed separately through the Ubuntu/OCI source lock.
 It verifies SHA256 again, retains exact tracked media recipes/patches and writes
 `source-inputs.json` with checksums/URLs/scope. It does not overwrite output or
 accept symlinked inputs. FFmpeg's signature must also be verified against the
@@ -101,10 +110,119 @@ manifest fingerprint as `build-runtime.sh` does; the collector does not infer a
 valid signature just because signature bytes match their pinned hash.
 
 The audited local bundle's hash is recorded in the evidence JSON; it was not
-uploaded. It covers media only. JDK/JAR/native/Ubuntu/runtime source acquisition,
-full notices, relinking/install material, a recipient-facing source channel and
-legal review remain separate blockers. Never upload binaries or declare a
-release ready merely because this source collector succeeds.
+uploaded. It covers the stated media inputs only. The later tools below record
+additional local retention, without changing what accompanied the original CI
+packages. Required native source closure, full notices, relinking/install
+material, a recipient-facing source channel and legal review remain separate
+blockers. Never upload binaries or declare a release ready merely because this
+collector succeeds.
+
+## Retained Maven/JDK/native inputs
+
+`dependency_sources.py` is offline. It checks every source JAR against its
+receipt, original Maven binary identity and prior published SHA256 where
+available; it also checks POM/module and inherited-license parent POM bytes.
+Additional retained JDK/native/text inputs are rehashed without extraction or
+execution. Use the receipt's exact relative paths under a disposable input root:
+
+```sh
+env -u DISPLAY -u WAYLAND_DISPLAY -u NUVIO_RUN_LIVE_DISPLAY_TESTS \
+  PYTHONDONTWRITEBYTECODE=1 \
+  python3 tools/linux/packaging/compliance/dependency_sources.py \
+  --inventory docs/compliance/linux-third-party-inventory.json \
+  --receipt docs/compliance/evidence/dependency-source-retention.json \
+  --sources build/compliance-inputs/dependency-sources
+```
+
+The receipt supplies exact retrieval URLs and hashes; the verifier does not fetch
+missing inputs. A mismatch must be investigated, never accepted by updating the
+pin. Source archives are not guaranteed source-only: Jansi's source JAR contains
+precompiled native files, and Skiko's runtime source JAR is manifest-only.
+Published SHA1 evidence is explicitly weaker than a pinned SHA256/signature.
+Source/header/notice classification is evidence for review, not a license grant
+or native source-to-binary attestation. Temurin signatures require the separately
+documented pinned-key `gpgv` check; hashing a signature file does not validate it.
+See [dependency evidence](../../../../docs/compliance/dependency-source-retention.md).
+
+## Ubuntu signed source locks and retention
+
+`ubuntu_sources.py indexes` runs **only inside the already verified immutable
+builder**. It obtains the pinned snapshot's `deb-src` indexes using a new APT-list
+directory, then retains InRelease, cleartext Sources and the archive keyring.
+Do not run it against the host's package configuration or substitute a mutable
+container. Existing verified indexes can be reused; no install/build is needed.
+
+The `lock` command is offline: isolated `gpgv` checks the Ubuntu signer, the signed
+release binds each Sources SHA256, and exact source-package versions are selected
+from the recorded binary owners. This recheck writes a **new** file:
+
+```sh
+python3 tools/linux/packaging/compliance/ubuntu_sources.py lock \
+  --indexes build/compliance-inputs/ubuntu-retention/indexes \
+  --provenance docs/compliance/evidence/engine-ubuntu-provenance.json \
+  --output build/appimage-source-lock-rechecked.json
+cmp docs/compliance/evidence/ubuntu-source-lock.json build/appimage-source-lock-rechecked.json
+
+python3 tools/linux/packaging/compliance/ubuntu_sources.py lock \
+  --indexes build/compliance-inputs/ubuntu-retention/indexes \
+  --provenance docs/compliance/evidence/oci-ubuntu-packages.json \
+  --output build/oci-source-lock-rechecked.json
+cmp docs/compliance/evidence/oci-ubuntu-source-lock.json build/oci-source-lock-rechecked.json
+```
+
+For retained inputs, `fetch --offline` makes no network request and verifies all
+archive hashes/sizes plus each `.dsc`'s exact package/version and input closure:
+
+```sh
+python3 tools/linux/packaging/compliance/ubuntu_sources.py fetch \
+  --lock docs/compliance/evidence/ubuntu-source-lock.json \
+  --output build/compliance-inputs/ubuntu-retention/archives --offline
+python3 tools/linux/packaging/compliance/ubuntu_sources.py fetch \
+  --lock docs/compliance/evidence/oci-ubuntu-source-lock.json \
+  --output build/compliance-inputs/ubuntu-retention/all-archives --offline
+```
+
+Omitting `--offline` retrieves missing source files from the pinned HTTPS snapshot
+and reuses already verified inputs. HTTP errors remain failures; rerunning may
+resume by reusing completed files, but the tool does not claim success until the
+entire selected lock verifies. It rejects symlink output roots/ancestors, unsafe
+names, wrong size/hash and existing partial files, and publishes completed files
+atomically without overwriting another process's final entry. The `.dsc` bytes
+are authenticated by the Ubuntu-signed index hash; its optional maintainer
+clear-sign is parsed, not represented as separately verified.
+
+The OCI lock can use the same content-addressed archive directory, but selecting
+it requires **1,314** inputs rather than the AppImage lock's **449**. A lock is
+not proof those bytes have all been retrieved. It does not cover every OCI layer,
+non-dpkg tool, incorporated native dependency or legal/source obligation. See the
+[Ubuntu retention status](../../../../docs/compliance/ubuntu-source-retention.md).
+
+## Immutable review index
+
+`review_index.py` binds the original package commit, inventory, artifact hashes,
+supplemental receipt bytes and verifier scripts. It does **not** inspect source
+caches, download/upload anything, certify legal compliance or grant publication.
+Its status is always `LOCAL_REVIEW_ONLY`, with redistribution `BLOCKED` for all
+four reviewed scopes. Once the reviewed index exists:
+
+```sh
+python3 tools/linux/packaging/compliance/review_index.py --check
+```
+
+After an intentional evidence/tool change, review the changed material first,
+then generate a candidate at a new path and inspect its diff:
+
+```sh
+python3 tools/linux/packaging/compliance/review_index.py \
+  --output build/source-review-index-candidate.json
+```
+
+Creation never overwrites an earlier index. The first finalized index is created
+at `docs/compliance/evidence/source-review-index.json` by omitting `--output`;
+do so only after its referenced evidence/scripts have settled. Do not silently
+regenerate the index to mask tampering or turn original CI artifacts into claims
+about later source retention. The [delivery contract](../../../../docs/compliance/source-delivery-plan.md)
+defines the distinct recipient offer, hosting/retention and review decisions.
 
 ## Application archive and notice changes
 
