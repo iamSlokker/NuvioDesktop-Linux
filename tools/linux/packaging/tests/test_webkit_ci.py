@@ -40,6 +40,53 @@ def run_script(step):
 
 
 class WorkflowIntegrationTest(unittest.TestCase):
+    def test_engine_dispatch_allows_only_linux_and_the_exact_fix_branch(self):
+        text = (seed.REPO / '.github/workflows/linux-webkit.yml').read_text()
+        condition = re.search(r'^    if: (.+)$', text, re.MULTILINE).group(1)
+        for ref, expected in [('refs/heads/linux', True),
+                              ('refs/heads/fix/linux-cloud-player-2026-10-12', True),
+                              ('refs/heads/fix/other', False), ('refs/pull/1/merge', False),
+                              ('refs/heads/sync/nuvio-dev-2026-10-12', False)]:
+            expression = condition.replace('github.ref', repr(ref)).replace('||', 'or')
+            self.assertEqual(eval(expression, {'__builtins__': {}}), expected, ref)
+
+    def test_engine_download_accepts_fix_branch_only_for_its_exact_packaging_commit(self):
+        step = named_step('linux-packages.yml', 'Download trusted engine and its canonical builder seed')
+        script = run_script(step)
+        # Execute the production jq guard, without downloading or invoking Podman.
+        guard = script[script.index('jq -e --arg ref'):script.index('attempt=$(jq')]
+        fix = 'fix/linux-cloud-player-2026-10-12'
+        good = dict(path='.github/workflows/linux-webkit.yml', head_branch=fix,
+                    head_sha='a' * 40, conclusion='success', event='workflow_dispatch')
+        cases = [(good, 'refs/heads/' + fix, True),
+                 (dict(good, head_sha='b' * 40), 'refs/heads/' + fix, False),
+                 (good, 'refs/heads/linux', False),
+                 (dict(good, head_branch='linux'), 'refs/heads/linux', True),
+                 (dict(good, head_branch='fix/other'), 'refs/heads/' + fix, False),
+                 (dict(good, conclusion='failure'), 'refs/heads/' + fix, False),
+                 (dict(good, event='pull_request'), 'refs/heads/' + fix, False),
+                 (dict(good, path='.github/workflows/other.yml'), 'refs/heads/' + fix, False)]
+        with tempfile.TemporaryDirectory() as tmp:
+            for record, ref, expected in cases:
+                (pathlib.Path(tmp) / 'engine-run.json').write_text(json.dumps(record))
+                result = subprocess.run(['bash', '-ec', guard], capture_output=True,
+                    env=dict(os.environ, RUNNER_TEMP=tmp, GITHUB_REF=ref, GITHUB_SHA='a' * 40))
+                self.assertEqual(result.returncode == 0, expected, (record, ref, result.stderr))
+
+    def test_cross_recipe_restore_is_seed_scoped_and_contains_no_completed_engine(self):
+        step = next(block for block in workflow_steps('linux-webkit.yml') if 'id: cache\n' in block)
+        paths = step.split('          path: |\n', 1)[1].split('          key:', 1)[0]
+        self.assertEqual(paths.split(), ['build/linux-webkit/downloads', 'build/linux-webkit/ccache-snapshot'])
+        prefixes = step.split('          restore-keys: |\n', 1)[1].splitlines()
+        self.assertEqual(len(prefixes), 2)
+        self.assertEqual(prefixes[-1].strip(), 'webkit-inputs-v1-${{ inputs.builder_seed_sha256 }}-')
+        self.assertIn('hashFiles(', prefixes[0])
+        script = (seed.HERE / 'build-engine.sh').read_text()
+        self.assertLess(script.index('ccache --show-stats > /work/ccache-before-stats.txt'),
+                        script.index('ccache --zero-stats'))
+        self.assertLess(script.index('ccache --zero-stats'), script.index('cmake -S'))
+        self.assertIn('ccache --show-stats > /work/ccache-stats.txt', script)
+
     def test_engine_handoff_requires_complete_manual_inputs(self):
         step = named_step('linux-packages.yml', 'Validate optional verified engine inputs')
         empty = dict(ENGINE_RUN='', ENGINE_SHA='', SEED_RUN='', SEED_SHA='', BOOTSTRAP_ONLY='false',

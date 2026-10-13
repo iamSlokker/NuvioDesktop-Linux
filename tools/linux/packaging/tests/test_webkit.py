@@ -163,6 +163,15 @@ class WebKitBuildTest(unittest.TestCase):
                 self.assertNotEqual(first, engine.recipe_identity('base-image-2'))
                 script.write_text('second')
                 self.assertNotEqual(first, engine.recipe_identity('base-image-1'))
+                current = engine.recipe_identity('base-image-1')
+                patches = here / 'patches'
+                patches.mkdir()
+                (patches / '0002-skia-bitmap-copy.patch').write_text('bitmap backport fixture')
+                self.assertNotEqual(current, engine.recipe_identity('base-image-1'))
+                for name in ['test-bitmap-copy.py', 'test-bitmap-copy.cpp']:
+                    current = engine.recipe_identity('base-image-1')
+                    (here / name).write_text('changed regression fixture')
+                    self.assertNotEqual(current, engine.recipe_identity('base-image-1'))
 
     def test_cache_requires_matching_provenance_bytes_and_permissions(self):
         with tempfile.TemporaryDirectory() as tmp:

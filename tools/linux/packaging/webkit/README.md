@@ -4,6 +4,43 @@ This stage builds WebKitGTK 2.50.4 in production mode against the canonical
 Ubuntu 22.04 packaging builder. It does not rebuild libmpv, JNI or the application,
 and does not replace DEB's system WebKit or Flatpak's GNOME runtime.
 
+## Transparent HUD bitmap updates
+
+The pinned 2.50.4 Skia path ignores `CompositeOperator::Copy` in
+`ShareableBitmap::paint`. Transparent partial updates blend over the persistent
+backing store: moved thumbnails/text leave trails and translucent scrims can
+accumulate opacity. The AppImage recipe backports reviewed upstream
+[645ce1764ad4](https://github.com/WebKit/WebKit/commit/645ce1764ad44d709b8ddfdcfd564fd06d1d8dc6)
+as `patches/0002-skia-bitmap-copy.patch`. Copy requests use `SkBlendMode::kSrc`;
+other callers retain SrcOver. No playback, rendering-backend or sandbox policy
+changes are involved. DEB/Flatpak continue to use their platform WebKit runtime.
+
+The patch and the headless bitmap-contract fixture participate in recipe identity
+and corresponding-source retention. A previously verified engine **cannot** be
+relabelled or reused as corrected; a matching engine must be built and verified.
+`test-bitmap-copy.py <pinned-source-archive>` applies the patch with zero fuzz and
+compiles the actual before/after paint body against a recording Skia adapter.
+It proves Copy/SourceOver and scale propagation, not complete engine acceptance.
+The normal engine build runs this inexpensive contract before compiling WebKit.
+
+An opt-in pixel regression is available after compiling the excluded CMake target
+`linux_controls_paint_probe`. `probe-player-rendering.py --help` documents its
+required inputs and private-Xvfb opt-in. It uses local media and the production
+HUD, temporary profiles, an authenticated private display and the existing strict
+WebKit sandbox checks. It never launches Nuvio or connects to the active desktop.
+It intentionally fails on the old engine's thumbnail trails; passing that probe
+with the rebuilt engine and full-player AppImage acceptance are still required.
+
+Diagnostic evidence: the unchanged private 2.50.4 engine leaves opaque red pixels
+at the moved thumbnail's old location and opaque black pixels after dismissing
+the fixture's full-screen scrim. The identical production-overlay fixture passes
+on host WebKit 2.54.0 in private Xvfb; that is a control, not acceptance of the
+backported 2.50.4 binary. A separate no-HUD local 16:9 probe passes Neutral →
+Cinematic → Vivid → Neutral on software Vulkan and an NVIDIA RTX 3050, including
+all checked frame edges. No aspect/cropping or mpv color-profile change is justified
+by those results. The original full-application symptoms still need acceptance
+with a rebuilt AppImage.
+
 ```sh
 env -u DISPLAY -u WAYLAND_DISPLAY -u NUVIO_RUN_LIVE_DISPLAY_TESTS \
   python3 tools/linux/packaging/build.py --format webkit \
@@ -46,7 +83,8 @@ corresponding-source `engine-build.json` rather than the runtime payload.
 ## Independent manual CI and builder bootstrap
 
 [Linux WebKit engine](../../../../.github/workflows/linux-webkit.yml) is a
-`workflow_dispatch` workflow on `linux`. It runs the same pinned GTK/WebKit stage
+`workflow_dispatch` workflow restricted to `linux` and the exact correction branch
+`fix/linux-cloud-player-2026-10-12`. It runs the same pinned GTK/WebKit stage
 without media compilation, Gradle, JNI, DEB, Flatpak or Nuvio launch. Canonical
 builds still use `--packaging-work-dir`; independent builds use `--builder-seed`.
 
@@ -135,7 +173,13 @@ The Podman client wait is also bounded to 30 seconds. Runner loss, SIGKILL or ex
 job budget can still prevent uploads; they cannot be guaranteed after host loss.
 
 Only a stopped-container `ccache-snapshot` is uploaded, under unique run/attempt
-keys and recipe/builder restore prefixes. `CCACHE_TEMPDIR` is inside the disposable
+keys and recipe/builder restore prefixes. An exact-recipe miss may restore entries
+from another recipe using the same verified builder-seed digest, including the
+default `linux` branch cache. ccache still validates compiler, options and source
+content; no sloppiness settings or incomplete engine/object trees are restored.
+Historical counters are recorded in `ccache-before-stats.txt`, then reset before
+WebKit compilation so `ccache-stats.txt` reports actual hits/misses this attempt.
+`CCACHE_TEMPDIR` is inside the disposable
 container, outside the cache mount. Snapshot/restore copy completed result and
 manifest entries plus counters, excluding temporary files, locks, symlinks and
 arbitrary configuration. Existing local cache/generations are retained. Fresh
@@ -157,6 +201,9 @@ with four manual inputs: `webkit_run_id`, `webkit_sha256` (the SHA256 of its
 as a complete set; bootstrap-only and tag-triggered builds cannot select this path.
 The downloader requires successful runs from the expected workflows/branch and
 checks the seed commit and caller-supplied trust anchors.
+The temporary correction-branch exception accepts an engine from that branch only
+when packaging runs on the same exact branch and commit. Other non-`linux` engine
+origins remain rejected; seed origins remain restricted to `linux`.
 
 `canonical_from_seed.py` verifies and imports the same immutable canonical builder,
 then builds the current application commit through the existing `native-build.sh`.

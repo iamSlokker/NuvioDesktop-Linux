@@ -29,7 +29,7 @@ concurrency:
 
 jobs:
   engine:
-    if: github.ref == 'refs/heads/linux'
+    if: github.ref == 'refs/heads/linux' || github.ref == 'refs/heads/fix/linux-cloud-player-2026-10-12'
     runs-on: ${{ inputs.runner }}
     timeout-minutes: 360
     env:
@@ -79,6 +79,7 @@ jobs:
           key: webkit-inputs-v1-${{ inputs.builder_seed_sha256 }}-${{ hashFiles('tools/linux/packaging/webkit/manifest.json', 'tools/linux/packaging/webkit/Containerfile', 'tools/linux/packaging/webkit/patches/**', 'tools/linux/packaging/webkit/build*.sh') }}-${{ github.run_id }}-${{ github.run_attempt }}
           restore-keys: |
             webkit-inputs-v1-${{ inputs.builder_seed_sha256 }}-${{ hashFiles('tools/linux/packaging/webkit/manifest.json', 'tools/linux/packaging/webkit/Containerfile', 'tools/linux/packaging/webkit/patches/**', 'tools/linux/packaging/webkit/build*.sh') }}-
+            webkit-inputs-v1-${{ inputs.builder_seed_sha256 }}-
       - name: Restore completed compiler cache entries
         run: python3 tools/linux/packaging/webkit/execution.py restore --work-dir build/linux-webkit
       - name: Build or resume only the pinned engine
@@ -145,7 +146,7 @@ jobs:
             echo 'Retries reuse completed ccache entries; incomplete objects/install trees are not accepted engines.'
             for stats in build/linux-webkit/generations/*/ccache-stats.txt; do
               if [[ -f "$stats" ]]; then
-                echo 'Final compiler counters (startup counters are historical, not this attempt):'
+                echo 'Compiler counters for this attempt (reset after recording the historical startup counters):'
                 echo '```text'
                 cat "$stats"
                 echo '```'

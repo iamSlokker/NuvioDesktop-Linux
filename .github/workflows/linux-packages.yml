@@ -84,7 +84,11 @@ jobs:
           [[ $(jq -r .head_sha "$RUNNER_TEMP/seed-run.json") == $(jq -r .canonical_git_commit build/webkit-builder-seed/builder-seed.json) ]]
           python3 -c 'import sys; sys.path.insert(0,"tools/linux/packaging"); from webkit.builder_seed import verify_seed; from pathlib import Path; import os; verify_seed(Path("build/webkit-builder-seed"), os.environ["SEED_SHA"])'
           gh api "repos/$GITHUB_REPOSITORY/actions/runs/$ENGINE_RUN" > "$RUNNER_TEMP/engine-run.json"
-          jq -e '.path == ".github/workflows/linux-webkit.yml" and .head_branch == "linux" and .conclusion == "success" and .event == "workflow_dispatch"' "$RUNNER_TEMP/engine-run.json"
+          jq -e --arg ref "$GITHUB_REF" --arg sha "$GITHUB_SHA" \
+            '.path == ".github/workflows/linux-webkit.yml" and .conclusion == "success" and .event == "workflow_dispatch" and
+             (.head_branch == "linux" or
+              ($ref == "refs/heads/fix/linux-cloud-player-2026-10-12" and .head_branch == "fix/linux-cloud-player-2026-10-12" and .head_sha == $sha))' \
+            "$RUNNER_TEMP/engine-run.json"
           attempt=$(jq -er .run_attempt "$RUNNER_TEMP/engine-run.json")
           gh run download "$ENGINE_RUN" --repo "$GITHUB_REPOSITORY" --name "webkit-candidate-$ENGINE_RUN-$attempt" --dir build/webkit-candidate
           [[ $(sha256sum build/webkit-candidate/SHA256SUMS | cut -d' ' -f1) == "$ENGINE_SHA" ]]

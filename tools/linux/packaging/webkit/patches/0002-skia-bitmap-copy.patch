@@ -1,0 +1,17 @@
+From: WebKit upstream (Nic; reviewed by Carlos Garcia Campos)
+Subject: [GTK][Skia] ShareableBitmap::paint ignores CompositeOperator::Copy
+Upstream: https://github.com/WebKit/WebKit/commit/645ce1764ad44d709b8ddfdcfd564fd06d1d8dc6
+Bug: https://bugs.webkit.org/show_bug.cgi?id=319864
+
+Backport to the pinned 2.50.4 source. Transparent backing-store updates must
+replace old pixels rather than accumulate thumbnail trails and scrim opacity.
+All non-Copy callers retain the default SrcOver behavior. No sandbox changes.
+
+--- a/Source/WebCore/platform/graphics/skia/ShareableBitmapSkia.cpp
++++ b/Source/WebCore/platform/graphics/skia/ShareableBitmapSkia.cpp
+@@ -87 +87,4 @@
+-    context.platformContext()->drawImageRect(image.get(), scaledSrcRect, scaledDestRect, { }, nullptr, { });
++    SkPaint paint;
++    if (context.compositeMode().operation == CompositeOperator::Copy)
++        paint.setBlendMode(SkBlendMode::kSrc);
++    context.platformContext()->drawImageRect(image.get(), scaledSrcRect, scaledDestRect, { }, &paint, { });

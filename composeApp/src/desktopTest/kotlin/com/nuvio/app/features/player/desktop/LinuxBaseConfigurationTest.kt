@@ -267,7 +267,8 @@ class LinuxBaseConfigurationTest {
         }
     }
 
-    internal class Fixture : AutoCloseable {
+    internal class Fixture(private val videoWidth: Int = 64, private val videoHeight: Int = 64,
+        private val undecorated: Boolean = false) : AutoCloseable {
         val directory: Path = Files.createTempDirectory("nuvio-linux-base-config-")
         val first = directory.resolve("first.y4m")
         val second = directory.resolve("second.y4m")
@@ -286,6 +287,7 @@ class LinuxBaseConfigurationTest {
             writeVideo(second, 150)
             SwingUtilities.invokeAndWait {
                 frame = Frame("Nuvio Linux base configuration test").apply {
+                    isUndecorated = undecorated
                     add(host); setSize(480, 320); isVisible = true
                 }
             }
@@ -339,7 +341,7 @@ class LinuxBaseConfigurationTest {
 
         fun screenshot(target: Path) {
             Files.writeString(Path.of(report.toString() + ".screenshot"), target.toString())
-            waitFor { Files.exists(target) }
+            waitFor { Files.exists(Path.of(target.toString() + ".done")) }
         }
 
         fun applyProfile(isHdr: Boolean?) =
@@ -379,6 +381,7 @@ class LinuxBaseConfigurationTest {
                             local target = request:read('*a'); request:close()
                             os.remove(report .. '.screenshot')
                             mp.commandv('screenshot-to-file', target, 'window')
+                            local done = assert(io.open(target .. '.done', 'w')); done:close()
                         end
                         for key in string.gmatch('scale cscale dscale scale-antiring dither dither-depth temporal-dither deband deband-iterations deband-threshold deband-range deband-grain sigmoid-upscaling correct-downscaling linear-downscaling cache cache-pause cache-pause-initial cache-pause-wait cache-secs demuxer-readahead-secs demuxer-max-bytes demuxer-max-back-bytes stream-buffer-size hr-seek volume-max hwdec vo gpu-api gpu-context config contrast brightness saturation gamma speed glsl-shaders vf target-trc tone-mapping mpv-version frame-drop-count decoder-frame-drop-count time-pos video-params/w video-params/h', '%S+') do
                             values[key] = mp.get_property(key)
@@ -399,9 +402,9 @@ class LinuxBaseConfigurationTest {
         }
 
         private fun writeVideo(path: Path, luma: Int) = Files.newOutputStream(path).use { out ->
-            out.write("YUV4MPEG2 W64 H64 F10:1 Ip A1:1 C420jpeg\n".toByteArray())
-            val pixels = ByteArray(64 * 64 * 3 / 2) { 128.toByte() }
-            pixels.fill(luma.toByte(), 0, 64 * 64)
+            out.write("YUV4MPEG2 W$videoWidth H$videoHeight F10:1 Ip A1:1 C420jpeg\n".toByteArray())
+            val pixels = ByteArray(videoWidth * videoHeight * 3 / 2) { 128.toByte() }
+            pixels.fill(luma.toByte(), 0, videoWidth * videoHeight)
             repeat(120) { out.write("FRAME\n".toByteArray()); out.write(pixels) }
         }
 

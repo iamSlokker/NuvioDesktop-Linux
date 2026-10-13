@@ -20,7 +20,7 @@ sys.path.insert(0, str(HERE.parent))
 
 MANIFEST = json.loads((HERE / 'manifest.json').read_text())
 BUILD_INPUTS = ['manifest.json', 'Containerfile', 'build.py', 'build-engine.sh', 'build-gtk.sh',
-                'execution.py',
+                'execution.py', 'test-bitmap-copy.py', 'test-bitmap-copy.cpp',
                 'prepare-source.py', 'prepare-gtk.py', 'clean-gtk-resources.py', 'gtk-private-resources.patch']
 
 
