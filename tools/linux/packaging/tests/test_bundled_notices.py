@@ -25,7 +25,7 @@ class BundledNoticesTest(unittest.TestCase):
                 self.assertEqual((row['sha256'], row['bytes']), expected[row['path']])
                 self.assertTrue(row['url'].startswith('https://opendatacommons.org/licenses/'))
 
-    def test_notice_binds_the_actual_dataset_without_inventing_upstream_identity(self):
+    def test_notice_binds_actual_dataset_and_import_without_inventing_generation_identity(self):
         provenance = json.loads((RESOURCES / 'anime-mapping/PROVENANCE.json').read_text())
         row = provenance['dataset']
         data = (RESOURCES / row['resource']).read_bytes()
@@ -33,8 +33,13 @@ class BundledNoticesTest(unittest.TestCase):
         self.assertEqual(len(data), row['bytes'])
         blob = b'blob ' + str(len(data)).encode() + b'\0' + data
         self.assertEqual(hashlib.sha1(blob).hexdigest(), row['repository_git_blob'])
-        self.assertIsNone(row['upstream_revision'])
+        self.assertEqual(row['upstream_revision'], '4ddbccd752fb4fe39da71f9729b33e4fd7257555')
+        self.assertEqual(row['entry_count'], 39577)
+        self.assertIn(row['upstream_revision'], row['upstream_url'])
         self.assertIsNone(row['generation_recipe'])
+        self.assertIsNone(provenance['generation_investigation']['original_input_revisions'])
+        self.assertIsNone(provenance['generation_investigation']['run_receipt'])
+        self.assertEqual(provenance['regeneration_evaluation']['decision'].split(';')[0], 'NOT_REGENERATED')
         self.assertTrue(provenance['remaining_blockers'])
         notice = (RESOURCES / 'anime-mapping/NOTICE.txt').read_text()
         for name in ('Fribb/anime-lists', 'anime-offline-database', 'Anime-Lists/anime-lists',

@@ -1,6 +1,6 @@
 {
-  "schema_version": 1,
-  "scope": "Notice and byte identity for the already bundled desktop anime mapping; not complete dataset provenance or redistribution approval.",
+  "schema_version": 2,
+  "scope": "Exact bundled byte identity and upstream import revision established; full generation/input/licensing closure remains BLOCKED.",
   "dataset": {
     "resource": "anime-list-mini.json",
     "sha256": "cfcdee0da5c0c9f2cf91948390d40f5a49b0a59469b8f4030599a947afb2deba",
@@ -8,8 +8,11 @@
     "repository_path": "composeApp/src/desktopMain/resources/anime-list-mini.json",
     "repository_git_blob": "4a92c06f6ab4f0021235bce115da2eab34074dce",
     "reviewed_application_commit": "a5adf33bda9fee1273d7d6cd8f1ad629464feb05",
-    "upstream_revision": null,
-    "generation_recipe": null
+    "upstream_revision": "4ddbccd752fb4fe39da71f9729b33e4fd7257555",
+    "generation_recipe": null,
+    "upstream_url": "https://raw.githubusercontent.com/Fribb/anime-lists/4ddbccd752fb4fe39da71f9729b33e4fd7257555/anime-list-mini.json",
+    "entry_count": 39577,
+    "verification": "Byte-for-byte equality with the primary GitHub blob and pinned raw file; same Git blob and SHA256, no local data transformation or regeneration."
   },
   "attribution_sources": [
     "https://github.com/Fribb/anime-lists",
@@ -37,8 +40,88 @@
     }
   ],
   "remaining_blockers": [
-    "Exact upstream input revisions and derivation/generation record for this bundled mapping are not established.",
-    "The existing attribution and retained license texts do not independently establish the rights in all source contents."
+    "No original generation run receipt, exact raw input revisions or enrichment response snapshot established; inspected code revision remains a candidate.",
+    "Fribb output/generator and Anime-Lists publisher trees have no license files; the existing ODbL attribution does not independently establish rights in all merged/enriched content. Resolve applicable grant/rights scope rather than inventing permission."
   ],
-  "availability": "Bundled JSON and these notices are in the desktop application resources and corresponding application source snapshot; no new public source offer is made."
+  "availability": "Bundled JSON and these notices are in the desktop application resources and corresponding application source snapshot; no new public source offer is made.",
+  "application_history": [
+    {
+      "commit": "f1fc80bc1914d71f4e5e9eee11259521cea25469",
+      "sha256": "287e3520595eba5c45949542288cc7c6c70511dfd14e16f511a557dd6a839770",
+      "event": "First bundled application revision located"
+    },
+    {
+      "commit": "fd33f9d211b36283c99cafa85f5696fbdc0e2763",
+      "sha256": "526400e469df2456fc09202955c8009a770619bb95456be86a5e2e2582f04157",
+      "event": "Application dataset update"
+    },
+    {
+      "commit": "88e5ed6b1d0b958e3efe0faaa36648cc6763f54a",
+      "sha256": "cfcdee0da5c0c9f2cf91948390d40f5a49b0a59469b8f4030599a947afb2deba",
+      "event": "Current application dataset update; matches pinned Fribb output"
+    }
+  ],
+  "upstream_snapshot": [
+    {
+      "path": "README.md",
+      "url": "https://raw.githubusercontent.com/Fribb/anime-lists/4ddbccd752fb4fe39da71f9729b33e4fd7257555/README.md",
+      "sha256": "a0cfa1a699622d014283473e11141eec52273f5fe1f230109b35ecb479d3246e",
+      "scope": "Published documentation or reduced intermediate; not an original input revision/build receipt"
+    },
+    {
+      "path": "anime-lists-reduced.json",
+      "url": "https://raw.githubusercontent.com/Fribb/anime-lists/4ddbccd752fb4fe39da71f9729b33e4fd7257555/anime-lists-reduced.json",
+      "sha256": "998b3ea94f7a23577f5dca74b8bc4d2569b7a842be60d6ac00c869d70f63a934",
+      "scope": "Published documentation or reduced intermediate; not an original input revision/build receipt"
+    },
+    {
+      "path": "anime-offline-database-reduced.json",
+      "url": "https://raw.githubusercontent.com/Fribb/anime-lists/4ddbccd752fb4fe39da71f9729b33e4fd7257555/anime-offline-database-reduced.json",
+      "sha256": "1227cceadf773b9a370ff077d44f9df583d3a1eb235e39d86479ce68f9f996b4",
+      "scope": "Published documentation or reduced intermediate; not an original input revision/build receipt"
+    }
+  ],
+  "generation_investigation": {
+    "repository": "https://github.com/Fribb/anime-lists-generator",
+    "inspected_revision": "6a422015a6f0c7ccb923ed3505a2cf540b864b36",
+    "revision_status": "Latest source commit preceding the output timestamp; candidate only, not proof this revision produced the dump",
+    "source_files": [
+      {
+        "path": "src/main/java/net/fribbtastic/coding/animelistsgenerator/Constants.java",
+        "sha256": "8c4f1359d433ffcca358f8cd12a9c404a23b39952767e39baed1d7710fee6a14"
+      },
+      {
+        "path": "src/main/java/net/fribbtastic/coding/animelistsgenerator/Generator.java",
+        "sha256": "f3b32e2310e820ed721b0ade3b76cb2b4ab4130ac70ee2d01aeaeffcdc096153"
+      }
+    ],
+    "observed_pipeline": [
+      "Fetch cedya77 anime-offline-database latest release (mutable URL)",
+      "Fetch Anime-Lists master XML (mutable URL)",
+      "Reduce and merge by AniDB identity",
+      "Enrich missing IDs through live TMDB API responses",
+      "Serialize full and minified JSON, generate indices/collections"
+    ],
+    "original_input_revisions": null,
+    "original_tmdb_responses": null,
+    "run_receipt": null,
+    "license_files_present": false
+  },
+  "regeneration_evaluation": {
+    "licensed_candidate": {
+      "repository": "https://github.com/cedya77/anime-offline-database",
+      "inspected_revision": "32bfaf32c2445dd2f5ff276473cdf1f6bf653a58",
+      "license": "ODbL-1.0 / DbCL-1.0 per the pinned LICENSE",
+      "license_sha256": "b618196160182d36789b352f8bc21ca645f049295bf8690eed4bd668ff391330"
+    },
+    "decision": "NOT_REGENERATED; no behavior-preserving fully evidenced input chain established",
+    "reason": "A deterministic projection of the licensed offline database could preserve native-provider IDs, but not the existing IMDb/TMDB/TVDB crosswalk and franchise season/episode offsets. Copying unresolved Fribb/Anime-Lists mappings into it would not clear their evidence gap. API enrichment also needs pinned responses and applicable use/source terms.",
+    "current_lookup_fields_not_established_by_candidate_alone": {
+      "imdb_entries": 8229,
+      "tmdb_entries": 8512,
+      "tvdb_entries": 7499,
+      "season_entries": 7434,
+      "episode_offset_entries": 684
+    }
+  }
 }

@@ -2,6 +2,10 @@
 
 **2026-10-13 — reviewable correction; public redistribution remains BLOCKED.**
 Base: `linux` at `a5adf33bda9fee1273d7d6cd8f1ad629464feb05`.
+Later [artwork/data follow-up](artwork-data-closure.md), based on `805797ed`,
+replaces the seven UI imports and recovers the exact anime import revision.
+Other rights, original generation evidence and all public redistribution gates
+remain blocked; the original font/notice validation below is historical evidence.
 This supplement records the current changes. The original inventory and previous
 readiness reports describe historical packages from run `38397205286`; those
 artifacts have not acquired the corrections below. HDR development is postponed
@@ -20,8 +24,9 @@ and is not part of this branch or a prerequisite for an SDR release.
   covers the actual canonical application JARs and exported Flatpak JARs.
 - Full authoritative ODbL 1.0 and Database Contents License 1.0 texts now accompany
   the existing anime mapping attribution and a byte-specific provenance record.
-  The dataset itself is unchanged. Its exact upstream revision and derivation
-  are still unknown; license texts alone do not close that gap.
+  The dataset itself is unchanged. The artwork/data follow-up establishes its
+  exact Fribb import revision; original generation inputs, run receipt and
+  applicable merged-data rights remain unresolved.
 - The shader directory notice correctly distinguishes fourteen MIT shaders and
   two Unlicense downscalers. All sixteen shader bytes and original grants remain
   unchanged.
@@ -54,10 +59,10 @@ targeted typography/playback acceptance after the distribution gates below.
 ## Smallest remaining action set
 
 1. **Resolve the specific rights/data questions.** Retain asset-specific grants
-   for the seven SVG imports listed in [platform evidence](platform-source-evidence.md),
-   applicable provider/rating/award/setup-artwork permissions and the claimed
-   IMDb permission. Establish the anime mapping's input revisions/generation
-   record. Review the already identified model grants/preferred forms and
+   for the remaining provider/rating/award/setup/quality artwork and the claimed
+   IMDb permission. The seven UI imports now have original MIT replacements.
+   The anime import revision is known; establish its original generation inputs,
+   run receipt and applicable merged-data rights. Review model grants/preferred forms and
    applicable license elections/exceptions. Obtain evidence or separately
    approve bounded replacements; do not infer permission. Old Sans distribution
    remains a historical recipient issue even though new resources are corrected.
