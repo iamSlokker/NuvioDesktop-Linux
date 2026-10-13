@@ -34,7 +34,7 @@ permissions:
 
 jobs:
   bulk-close:
-    if: github.event_name == 'workflow_dispatch'
+    if: github.repository != 'iamSlokker/NuvioDesktop-Linux' && github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     steps:
       - name: Close existing legacy issues and pull requests
@@ -127,7 +127,7 @@ jobs:
             }
 
   auto-close-issue:
-    if: github.event_name == 'issues'
+    if: github.repository != 'iamSlokker/NuvioDesktop-Linux' && github.event_name == 'issues'
     runs-on: ubuntu-latest
     steps:
       - name: Close new issues for the discontinued legacy app
@@ -162,7 +162,7 @@ jobs:
             });
 
   auto-close-pull-request:
-    if: github.event_name == 'pull_request_target'
+    if: github.repository != 'iamSlokker/NuvioDesktop-Linux' && github.event_name == 'pull_request_target'
     runs-on: ubuntu-latest
     steps:
       - name: Close new pull requests for the legacy app
