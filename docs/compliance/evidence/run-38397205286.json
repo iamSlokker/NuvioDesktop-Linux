@@ -1,0 +1,76 @@
+{
+  "anonymous_download": {
+    "authenticated": false,
+    "http_status": 401,
+    "url": "https://api.github.com/repos/iamSlokker/NuvioDesktop-Linux/actions/artifacts/11816185435/zip"
+  },
+  "artifact_bundles": [
+    {
+      "digest": "sha256:575f3b365999dbbfa461e5676140be84badcb91cf7b9aba53f91d5a1b39262d0",
+      "expired": false,
+      "expires_at": "2027-01-11T12:25:44Z",
+      "id": 11816185435,
+      "name": "nuvio-linux-x86_64-fce98dc1633b51f813c20965e05941c2745beb8c",
+      "size_in_bytes": 646103339
+    },
+    {
+      "digest": "sha256:dfe3c7dab262e74a63999a10b9892955e32119d3486c63fea7b105a552928664",
+      "expired": false,
+      "expires_at": "2027-01-11T12:25:44Z",
+      "id": 11814883648,
+      "name": "nuvio-webkit-builder-seed",
+      "size_in_bytes": 939423514
+    }
+  ],
+  "ffmpeg_signature_verification": {
+    "fingerprint": "FCF986EA15E6E293A5644F10B4322F04D67658D8",
+    "method": "gpgv against pinned public-key bytes in isolated keyring; no auto-key retrieval",
+    "result": "PASS"
+  },
+  "font_metadata": {
+    "jetbrains_sans_bold.ttf": {
+      "interpretation": "copyright/name observed; no name-table license or license URL; redistribution permission not established",
+      "name_table_records": {
+        "0": "Copyright \u00a9 2020 by Philipp Nurullin. All rights reserved.",
+        "1": "JetBrains Sans"
+      }
+    },
+    "jetbrains_sans_regular.ttf": {
+      "interpretation": "copyright/name observed; no name-table license or license URL; redistribution permission not established",
+      "name_table_records": {
+        "0": "Copyright \u00a9 2020 by Philipp Nurullin. All rights reserved.",
+        "1": "JetBrains Sans"
+      }
+    },
+    "jetbrains_sans_semibold.ttf": {
+      "interpretation": "copyright/name observed; no name-table license or license URL; redistribution permission not established",
+      "name_table_records": {
+        "0": "Copyright \u00a9 2020 by Philipp Nurullin. All rights reserved.",
+        "1": "JetBrains Sans SemiBold"
+      }
+    }
+  },
+  "media_source_collection": {
+    "archive": "Nuvio-media-source-audited.tar.gz",
+    "inputs": 20,
+    "scope": "private media source inputs and recipes only; not complete application corresponding source",
+    "sha256": "a2e77da1bb4757ebf5d313f53d1937ce231d6b3cc1afc834aea403d5916b64cb"
+  },
+  "retention": "sources collected locally for audit only; neither supplemental source archive has been uploaded or offered as a completed source distribution",
+  "run": {
+    "conclusion": "success",
+    "created_at": "2026-10-13T12:25:43Z",
+    "head_branch": "integration/umbra-linux-snapshot-2026-10-13",
+    "head_sha": "fce98dc1633b51f813c20965e05941c2745beb8c",
+    "html_url": "https://github.com/iamSlokker/NuvioDesktop-Linux/actions/runs/38397205286",
+    "id": 38397205286,
+    "path": ".github/workflows/linux-packages.yml",
+    "status": "completed"
+  },
+  "runtime_source": {
+    "commit": "dd6cebedcbddde9c82f89b011e8e1d40b6e43868",
+    "scope": "upstream runtime source only; not complete static dependency sources or build attestation",
+    "sha256": "f5fec23be76e50e2445ed2d018bac49b367490fc483c62c4637e99ec705d27ba",
+    "url": "https://codeload.github.com/AppImage/type2-runtime/tar.gz/dd6cebedcbddde9c82f89b011e8e1d40b6e43868"
+  }
+}

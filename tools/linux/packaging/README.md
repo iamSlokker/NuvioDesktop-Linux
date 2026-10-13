@@ -292,7 +292,11 @@ See [FFmpeg compliance](https://ffmpeg.org/legal.html),
 [mpv copyright](https://github.com/mpv-player/mpv/blob/v0.41.0/Copyright),
 [Adoptium licensing](https://adoptium.net/about/licensing/), and
 [Flatpak permissions](https://docs.flatpak.org/en/latest/sandbox-permissions.html).
-This is a redistribution inventory, not legal certification. Frozen WebKit/media
+The [corresponding-source audit](../../../docs/compliance/linux-redistribution-audit.md)
+records actual package/JAR/native inventories, unresolved source/notice/font
+rights evidence, and a BLOCKED assessment for each format. Its
+[offline collection/inventory tools](compliance/README.md) do not publish artifacts
+or replace legal review. This is a redistribution inventory, not legal certification. Frozen WebKit/media
 snapshots require deliberate security refreshes, not indefinite deployment.
 
 The Umbra snapshot also packages CPU ONNX Runtime Java 1.31.0 and the unchanged

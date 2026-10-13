@@ -1,0 +1,3396 @@
+{
+  "builder_image_id": "a465827efdede9029b1560ce793085a115508500bad83889f167530efcd81ed2",
+  "file_owners": {
+    "bin/nuvio": [],
+    "bin/nuvio-bwrap": [
+      {
+        "original_sha256": "57e31b1b4bfc1592e5e687d1bade1518e73168734ec06d6083ab557f66019b5e",
+        "package": "bubblewrap",
+        "path": "/usr/share/bash-completion/completions/bwrap"
+      },
+      {
+        "original_sha256": "bf6cf3d4456665f5d80c14eb79a76e0ce87b39a0883e614a161658b4ec33492c",
+        "package": "bubblewrap",
+        "path": "/usr/bin/bwrap"
+      }
+    ],
+    "bin/nuvio-dbus-proxy": [
+      {
+        "original_sha256": "8285fa4f7c136fec5b03039eb68b4235808ebb82e39e66ccdd8ad1df89256f02",
+        "package": "xdg-dbus-proxy",
+        "path": "/usr/bin/xdg-dbus-proxy"
+      }
+    ],
+    "bin/nuvio-gst-plugin-scanner": [
+      {
+        "original_sha256": "3be12f5fa30fad9c578ae283e574556e581cfbf87a0a4c188033c850b79bc943",
+        "package": "libgstreamer1.0-0",
+        "path": "/usr/lib/x86_64-linux-gnu/gstreamer1.0/gstreamer-1.0/gst-plugin-scanner"
+      }
+    ],
+    "bin/nuvio-gtk-query": [],
+    "bin/nuvio-pixbuf-query": [
+      {
+        "original_sha256": "719da97b907f7b797cddd6507c11862e4660997cc5a26502c55c024cac089ae5",
+        "package": "libgdk-pixbuf-2.0-0",
+        "path": "/usr/lib/x86_64-linux-gnu/gdk-pixbuf-2.0/gdk-pixbuf-query-loaders"
+      }
+    ],
+    "lib/app/jansi-2.4.2-353426d67ef75d764333dbeffdfd3c.jar:org/fusesource/jansi/internal/native/Linux/x86_64/libjansi.so": [],
+    "lib/app/libskiko-linux-x64.so": [],
+    "lib/app/onnxruntime-1.31.0-ed27eea8b62398e036da7a09a17215c.jar:ai/onnxruntime/native/linux-x64/libonnxruntime.so": [],
+    "lib/app/onnxruntime-1.31.0-ed27eea8b62398e036da7a09a17215c.jar:ai/onnxruntime/native/linux-x64/libonnxruntime4j_jni.so": [],
+    "lib/app/quickjs-jvm-ee40493375f2c9a01029733e84648b2.jar:jni/linux_x64/libquickjs.so": [],
+    "lib/libapplauncher.so": [],
+    "lib/native/gdk-pixbuf-2.0/2.10.0/loaders/libpixbufloader-ani.so": [
+      {
+        "original_sha256": "abc383cb327a4dbcce4f01295509d7c6a11f981637edf2dbf845c629ffba2ef3",
+        "package": "libgdk-pixbuf-2.0-0",
+        "path": "/usr/lib/x86_64-linux-gnu/gdk-pixbuf-2.0/2.10.0/loaders/libpixbufloader-ani.so"
+      }
+    ],
+    "lib/native/gdk-pixbuf-2.0/2.10.0/loaders/libpixbufloader-bmp.so": [
+      {
+        "original_sha256": "e6df90878002c3f24c9a636e037ea800e80661339e7c26aba85971d71ab9366c",
+        "package": "libgdk-pixbuf-2.0-0",
+        "path": "/usr/lib/x86_64-linux-gnu/gdk-pixbuf-2.0/2.10.0/loaders/libpixbufloader-bmp.so"
+      }
+    ],
+    "lib/native/gdk-pixbuf-2.0/2.10.0/loaders/libpixbufloader-gif.so": [
+      {
+        "original_sha256": "4f5941e5e932c9eca0205d5b68539903df97f480fdec524cd0a9813a70cc669e",
+        "package": "libgdk-pixbuf-2.0-0",
+        "path": "/usr/lib/x86_64-linux-gnu/gdk-pixbuf-2.0/2.10.0/loaders/libpixbufloader-gif.so"
+      }
+    ],
+    "lib/native/gdk-pixbuf-2.0/2.10.0/loaders/libpixbufloader-icns.so": [
+      {
+        "original_sha256": "2c424b898f08f263de45da53ed1c955f60a2217bb7df58a3c60ea1e851c31a6a",
+        "package": "libgdk-pixbuf-2.0-0",
+        "path": "/usr/lib/x86_64-linux-gnu/gdk-pixbuf-2.0/2.10.0/loaders/libpixbufloader-icns.so"
+      }
+    ],
+    "lib/native/gdk-pixbuf-2.0/2.10.0/loaders/libpixbufloader-ico.so": [
+      {
+        "original_sha256": "706c2ee6b5a74ea25888270ec71083c1d51c332219cb6f712852f280138264c3",
+        "package": "libgdk-pixbuf-2.0-0",
+        "path": "/usr/lib/x86_64-linux-gnu/gdk-pixbuf-2.0/2.10.0/loaders/libpixbufloader-ico.so"
+      }
+    ],
+    "lib/native/gdk-pixbuf-2.0/2.10.0/loaders/libpixbufloader-pnm.so": [
+      {
+        "original_sha256": "bc195ffab87b34ea3b1bcb4c9e79cd16c1ce69cb009ec7b5246e88a734d099e8",
+        "package": "libgdk-pixbuf-2.0-0",
+        "path": "/usr/lib/x86_64-linux-gnu/gdk-pixbuf-2.0/2.10.0/loaders/libpixbufloader-pnm.so"
+      }
+    ],
+    "lib/native/gdk-pixbuf-2.0/2.10.0/loaders/libpixbufloader-qtif.so": [
+      {
+        "original_sha256": "55dd6010f38276bad0b985d768cf3dacdfa8da627fae7cce0dc6f8e43bde96c6",
+        "package": "libgdk-pixbuf-2.0-0",
+        "path": "/usr/lib/x86_64-linux-gnu/gdk-pixbuf-2.0/2.10.0/loaders/libpixbufloader-qtif.so"
+      }
+    ],
+    "lib/native/gdk-pixbuf-2.0/2.10.0/loaders/libpixbufloader-svg.so": [
+      {
+        "original_sha256": "135034eca82c773f8b2e36d1baa606794162e93bf256ccae77957d0a9169b071",
+        "package": "librsvg2-common",
+        "path": "/usr/lib/x86_64-linux-gnu/gdk-pixbuf-2.0/2.10.0/loaders/libpixbufloader-svg.so"
+      }
+    ],
+    "lib/native/gdk-pixbuf-2.0/2.10.0/loaders/libpixbufloader-tga.so": [
+      {
+        "original_sha256": "feb6458a3b21d4909cbbee96f1f682df6d72ff27dba289f17693d72e02b539c2",
+        "package": "libgdk-pixbuf-2.0-0",
+        "path": "/usr/lib/x86_64-linux-gnu/gdk-pixbuf-2.0/2.10.0/loaders/libpixbufloader-tga.so"
+      }
+    ],
+    "lib/native/gdk-pixbuf-2.0/2.10.0/loaders/libpixbufloader-tiff.so": [
+      {
+        "original_sha256": "bcb9ba200f40b275beafb507ab0556fcdd14eaac5204220648f918efb72fbb67",
+        "package": "libgdk-pixbuf-2.0-0",
+        "path": "/usr/lib/x86_64-linux-gnu/gdk-pixbuf-2.0/2.10.0/loaders/libpixbufloader-tiff.so"
+      }
+    ],
+    "lib/native/gdk-pixbuf-2.0/2.10.0/loaders/libpixbufloader-xbm.so": [
+      {
+        "original_sha256": "a4313a3bad4a054ac7c29f2daab231bf370c872eac3d527d75071c03e514e634",
+        "package": "libgdk-pixbuf-2.0-0",
+        "path": "/usr/lib/x86_64-linux-gnu/gdk-pixbuf-2.0/2.10.0/loaders/libpixbufloader-xbm.so"
+      }
+    ],
+    "lib/native/gdk-pixbuf-2.0/2.10.0/loaders/libpixbufloader-xpm.so": [
+      {
+        "original_sha256": "834a4e20752a732a097795d92d2a4db7bd95de397d5cd90aaa924f0701d7134d",
+        "package": "libgdk-pixbuf-2.0-0",
+        "path": "/usr/lib/x86_64-linux-gnu/gdk-pixbuf-2.0/2.10.0/loaders/libpixbufloader-xpm.so"
+      }
+    ],
+    "lib/native/gio/modules/libdconfsettings.so": [
+      {
+        "original_sha256": "e64bb6e0a8f0772bac6684bf2844302fd69a408179f562449ff79cabe950245c",
+        "package": "dconf-gsettings-backend",
+        "path": "/usr/lib/x86_64-linux-gnu/gio/modules/libdconfsettings.so"
+      }
+    ],
+    "lib/native/gio/modules/libgioenvironmentproxy.so": [
+      {
+        "original_sha256": "990854b1668eae9522972552cb631c6aed601142509f7359fe4de74c3754ff33",
+        "package": "glib-networking",
+        "path": "/usr/lib/x86_64-linux-gnu/gio/modules/libgioenvironmentproxy.so"
+      }
+    ],
+    "lib/native/gio/modules/libgiognomeproxy.so": [
+      {
+        "original_sha256": "cb7329a259197b46daa5ff512c89a8678ae8eda5ce64b18ed78e492dd22b98bc",
+        "package": "glib-networking",
+        "path": "/usr/lib/x86_64-linux-gnu/gio/modules/libgiognomeproxy.so"
+      }
+    ],
+    "lib/native/gio/modules/libgiognutls.so": [
+      {
+        "original_sha256": "38bb3406cd1251e98e1d3e0d969eb029bc0fa40ac3606986e1d0e89424406026",
+        "package": "glib-networking",
+        "path": "/usr/lib/x86_64-linux-gnu/gio/modules/libgiognutls.so"
+      }
+    ],
+    "lib/native/gio/modules/libgiolibproxy.so": [
+      {
+        "original_sha256": "3b16b517fc853e9d26fb2eb8c5a64197b84eef0b8fa7ec2be133c571a4f82a0b",
+        "package": "glib-networking",
+        "path": "/usr/lib/x86_64-linux-gnu/gio/modules/libgiolibproxy.so"
+      }
+    ],
+    "lib/native/gstreamer-1.0/libgst1394.so": [
+      {
+        "original_sha256": "8ea3d2033a36985cde16a5eaf6f0c44a3ad8bf50cf6b44d402b9c7c7e149774f",
+        "package": "gstreamer1.0-plugins-good",
+        "path": "/usr/lib/x86_64-linux-gnu/gstreamer-1.0/libgst1394.so"
+      }
+    ],
+    "lib/native/gstreamer-1.0/libgstaasink.so": [
+      {
+        "original_sha256": "534930d92a2a784321c7fe06bf798862a79c6081d5ff7e851953eb55e424f1a1",
+        "package": "gstreamer1.0-plugins-good",
+        "path": "/usr/lib/x86_64-linux-gnu/gstreamer-1.0/libgstaasink.so"
+      }
+    ],
+    "lib/native/gstreamer-1.0/libgstadder.so": [
+      {
+        "original_sha256": "1cb6fdeb0a880d07383a79a46764588131a6e756f49c388df8f75a51eace3bca",
+        "package": "gstreamer1.0-plugins-base",
+        "path": "/usr/lib/x86_64-linux-gnu/gstreamer-1.0/libgstadder.so"
+      }
+    ],
+    "lib/native/gstreamer-1.0/libgstalaw.so": [
+      {
+        "original_sha256": "d8456d6276bb33a5084da2d1948cc9df1ed7f6a130f08e1dc3e5a319dee523e5",
+        "package": "gstreamer1.0-plugins-good",
+        "path": "/usr/lib/x86_64-linux-gnu/gstreamer-1.0/libgstalaw.so"
+      }
+    ],
+    "lib/native/gstreamer-1.0/libgstalpha.so": [
+      {
+        "original_sha256": "50faca37c6b7e3a9c282c562ba02e073a6f330a564a31a1f3b5476d90c885e22",
+        "package": "gstreamer1.0-plugins-good",
+        "path": "/usr/lib/x86_64-linux-gnu/gstreamer-1.0/libgstalpha.so"
+      }
+    ],
+    "lib/native/gstreamer-1.0/libgstalphacolor.so": [
+      {
+        "original_sha256": "88f22f1b5ab2704ae48f64b42699844915d961635c94cb2e962be016a093af3b",
+        "package": "gstreamer1.0-plugins-good",
+        "path": "/usr/lib/x86_64-linux-gnu/gstreamer-1.0/libgstalphacolor.so"
+      }
+    ],
+    "lib/native/gstreamer-1.0/libgstapetag.so": [
+      {
+        "original_sha256": "3169c3608b7bc7bb6f2eb45a8ae2e64c4e5cf73eb1970a2047453d1c38e2376d",
+        "package": "gstreamer1.0-plugins-good",
+        "path": "/usr/lib/x86_64-linux-gnu/gstreamer-1.0/libgstapetag.so"
+      }
+    ],
+    "lib/native/gstreamer-1.0/libgstapp.so": [
+      {
+        "original_sha256": "8862b59baea6b95de7cb4b45afbe54ed5ec4b40d78b8eb89fcd94ee12b7563ed",
+        "package": "gstreamer1.0-plugins-base",
+        "path": "/usr/lib/x86_64-linux-gnu/gstreamer-1.0/libgstapp.so"
+      }
+    ],
+    "lib/native/gstreamer-1.0/libgstaudioconvert.so": [
+      {
+        "original_sha256": "c17ce3efd1e750ea2890d1d3a8f2420a28380aca3d022d09e59425111ed1d01b",
+        "package": "gstreamer1.0-plugins-base",
+        "path": "/usr/lib/x86_64-linux-gnu/gstreamer-1.0/libgstaudioconvert.so"
+      }
+    ],
+    "lib/native/gstreamer-1.0/libgstaudiofx.so": [
+      {
+        "original_sha256": "c4209e8777dde58ef1d32ee5bf8d54d7030acb87395e23065dcc73ab5b70824e",
+        "package": "gstreamer1.0-plugins-good",
+        "path": "/usr/lib/x86_64-linux-gnu/gstreamer-1.0/libgstaudiofx.so"
+      }
+    ],
+    "lib/native/gstreamer-1.0/libgstaudiomixer.so": [
+      {
+        "original_sha256": "54637d6565736d530fcfc0569bb9c1ef0a359b35dede3c1bf282e28dae9de3ba",
+        "package": "gstreamer1.0-plugins-base",
+        "path": "/usr/lib/x86_64-linux-gnu/gstreamer-1.0/libgstaudiomixer.so"
+      }
+    ],
+    "lib/native/gstreamer-1.0/libgstaudioparsers.so": [
+      {
+        "original_sha256": "c37285469994be8f09754f67c0677fe8e596bd393e7ac83e83e8764148a8ca9b",
+        "package": "gstreamer1.0-plugins-good",
+        "path": "/usr/lib/x86_64-linux-gnu/gstreamer-1.0/libgstaudioparsers.so"
+      }
+    ],
+    "lib/native/gstreamer-1.0/libgstaudiorate.so": [
+      {
+        "original_sha256": "b65156dd2343a80ad61f894e576bd2ce90da23cc55e66af85760189179c9c0d8",
+        "package": "gstreamer1.0-plugins-base",
+        "path": "/usr/lib/x86_64-linux-gnu/gstreamer-1.0/libgstaudiorate.so"
+      }
+    ],
+    "lib/native/gstreamer-1.0/libgstaudioresample.so": [
+      {
+        "original_sha256": "5aac3a7428978c81ab177b2ac27758049f74240c114b16f35607b3c70e7dc4a2",
+        "package": "gstreamer1.0-plugins-base",
+        "path": "/usr/lib/x86_64-linux-gnu/gstreamer-1.0/libgstaudioresample.so"
+      }
+    ],
+    "lib/native/gstreamer-1.0/libgstaudiotestsrc.so": [
+      {
+        "original_sha256": "f1abac670ee6f4b1f3aa39a15d39f08cb266f8c8cbc56d343d0039edf1ed6b8a",
+        "package": "gstreamer1.0-plugins-base",
+        "path": "/usr/lib/x86_64-linux-gnu/gstreamer-1.0/libgstaudiotestsrc.so"
+      }
+    ],
+    "lib/native/gstreamer-1.0/libgstauparse.so": [
+      {
+        "original_sha256": "c262591106ab1452efdc0f71876d7f861054f9d162550ae7831184b2ed6511e1",
+        "package": "gstreamer1.0-plugins-good",
+        "path": "/usr/lib/x86_64-linux-gnu/gstreamer-1.0/libgstauparse.so"
+      }
+    ],
+    "lib/native/gstreamer-1.0/libgstautodetect.so": [
+      {
+        "original_sha256": "5c4d42ca8d41ec93707ed95aefe82dee2b235797ced7eff73c48be21cc1d1d99",
+        "package": "gstreamer1.0-plugins-good",
+        "path": "/usr/lib/x86_64-linux-gnu/gstreamer-1.0/libgstautodetect.so"
+      }
+    ],
+    "lib/native/gstreamer-1.0/libgstavi.so": [
+      {
+        "original_sha256": "31ca9f315bd8ec1a75ea02520b5d0647176f4313ad9e6483df825cf7b823f2fc",
+        "package": "gstreamer1.0-plugins-good",
+        "path": "/usr/lib/x86_64-linux-gnu/gstreamer-1.0/libgstavi.so"
+      }
+    ],
+    "lib/native/gstreamer-1.0/libgstcacasink.so": [
+      {
+        "original_sha256": "7b7d09e49024f8201e3d199d1932ce30d41ceb60858f3f555c24b9dee0365896",
+        "package": "gstreamer1.0-plugins-good",
+        "path": "/usr/lib/x86_64-linux-gnu/gstreamer-1.0/libgstcacasink.so"
+      }
+    ],
+    "lib/native/gstreamer-1.0/libgstcairo.so": [
+      {
+        "original_sha256": "b7788e3a54345112c3631a5c97a551716849c9df0f21d44a8879a5a995b03a06",
+        "package": "gstreamer1.0-plugins-good",
+        "path": "/usr/lib/x86_64-linux-gnu/gstreamer-1.0/libgstcairo.so"
+      }
+    ],
+    "lib/native/gstreamer-1.0/libgstcamerabin.so": [
+      {
+        "original_sha256": "ecbdfed5468adec4dc11dcc10cda37399d080cb67d7ed132fd99d7f96232b55a",
+        "package": "gstreamer1.0-plugins-good",
+        "path": "/usr/lib/x86_64-linux-gnu/gstreamer-1.0/libgstcamerabin.so"
+      }
+    ],
+    "lib/native/gstreamer-1.0/libgstcdparanoia.so": [
+      {
+        "original_sha256": "963fc68cde669a0dc124e93c821869905fb5e28fb1bb597e0fe3a2b375a34630",
+        "package": "gstreamer1.0-plugins-base",
+        "path": "/usr/lib/x86_64-linux-gnu/gstreamer-1.0/libgstcdparanoia.so"
+      }
+    ],
+    "lib/native/gstreamer-1.0/libgstcompositor.so": [
+      {
+        "original_sha256": "0eb6750f40a57b8d14d4c2e03b41dd1bbb7b87493fdd076b53e125f7c3ea375e",
+        "package": "gstreamer1.0-plugins-base",
+        "path": "/usr/lib/x86_64-linux-gnu/gstreamer-1.0/libgstcompositor.so"
+      }
+    ],
+    "lib/native/gstreamer-1.0/libgstcoreelements.so": [
+      {
+        "original_sha256": "bad8c42bce30651eecb6397871af2a6ef15b1985fe98e6be2e015748c5ec7c79",
+        "package": "libgstreamer1.0-0",
+        "path": "/usr/lib/x86_64-linux-gnu/gstreamer-1.0/libgstcoreelements.so"
+      }
+    ],
+    "lib/native/gstreamer-1.0/libgstcoretracers.so": [
+      {
+        "original_sha256": "65749f7839c53d4719e00a5873cb489eef2bcd2230176bc195c5ae66dbebe5a0",
+        "package": "libgstreamer1.0-0",
+        "path": "/usr/lib/x86_64-linux-gnu/gstreamer-1.0/libgstcoretracers.so"
+      }
+    ],
+    "lib/native/gstreamer-1.0/libgstcutter.so": [
+      {
+        "original_sha256": "49484553e068e052161837df7d3acf6c40e5b6b0aa78e1ca6d3ddce6e02df0e4",
+        "package": "gstreamer1.0-plugins-good",
+        "path": "/usr/lib/x86_64-linux-gnu/gstreamer-1.0/libgstcutter.so"
+      }
+    ],
+    "lib/native/gstreamer-1.0/libgstdebug.so": [
+      {
+        "original_sha256": "988a8291299c32ecf64c462679c68fbb276a1caa439108e2e19b729dc02f2bd7",
+        "package": "gstreamer1.0-plugins-good",
+        "path": "/usr/lib/x86_64-linux-gnu/gstreamer-1.0/libgstdebug.so"
+      }
+    ],
+    "lib/native/gstreamer-1.0/libgstdeinterlace.so": [
+      {
+        "original_sha256": "8d8a36ced26f1f6cde15a93487576e0f726f539340018951f000b146352f5d8f",
+        "package": "gstreamer1.0-plugins-good",
+        "path": "/usr/lib/x86_64-linux-gnu/gstreamer-1.0/libgstdeinterlace.so"
+      }
+    ],
+    "lib/native/gstreamer-1.0/libgstdtmf.so": [
+      {
+        "original_sha256": "1e6f7a2c491ba2f790a29b4db006bd56cd7c68c3bae9c90f5e8dda6e97670ea6",
+        "package": "gstreamer1.0-plugins-good",
+        "path": "/usr/lib/x86_64-linux-gnu/gstreamer-1.0/libgstdtmf.so"
+      }
+    ],
+    "lib/native/gstreamer-1.0/libgstdv.so": [
+      {
+        "original_sha256": "4f488efb951b78917218eb6b4d6efc4af53cd81b8f5eaf743a2eca7e5d6e1486",
+        "package": "gstreamer1.0-plugins-good",
+        "path": "/usr/lib/x86_64-linux-gnu/gstreamer-1.0/libgstdv.so"
+      }
+    ],
+    "lib/native/gstreamer-1.0/libgsteffectv.so": [
+      {
+        "original_sha256": "ee057aabd95e4d60056bc319c9a7922a008e84cb7c146e69fe3264511faace67",
+        "package": "gstreamer1.0-plugins-good",
+        "path": "/usr/lib/x86_64-linux-gnu/gstreamer-1.0/libgsteffectv.so"
+      }
+    ],
+    "lib/native/gstreamer-1.0/libgstencoding.so": [
+      {
+        "original_sha256": "3775372d67bdd97281c8e8fd373fde052c5a588e4f0384def269c642424d3f73",
+        "package": "gstreamer1.0-plugins-base",
+        "path": "/usr/lib/x86_64-linux-gnu/gstreamer-1.0/libgstencoding.so"
+      }
+    ],
+    "lib/native/gstreamer-1.0/libgstequalizer.so": [
+      {
+        "original_sha256": "981cf08e67e7708c845d8f32eeb179387e5f488bc45991c3288e9e02b46a535b",
+        "package": "gstreamer1.0-plugins-good",
+        "path": "/usr/lib/x86_64-linux-gnu/gstreamer-1.0/libgstequalizer.so"
+      }
+    ],
+    "lib/native/gstreamer-1.0/libgstflac.so": [
+      {
+        "original_sha256": "dba9f4745ab58c8595a3c2db7a068dafea785eb77bf83afec767b5ae6f0d9bd8",
+        "package": "gstreamer1.0-plugins-good",
+        "path": "/usr/lib/x86_64-linux-gnu/gstreamer-1.0/libgstflac.so"
+      }
+    ],
+    "lib/native/gstreamer-1.0/libgstflv.so": [
+      {
+        "original_sha256": "6f863f065e03c3d4daffff00758e540e63ba7b8d4592f2fd9ba67ece01ab04bf",
+        "package": "gstreamer1.0-plugins-good",
+        "path": "/usr/lib/x86_64-linux-gnu/gstreamer-1.0/libgstflv.so"
+      }
+    ],
+    "lib/native/gstreamer-1.0/libgstflxdec.so": [
+      {
+        "original_sha256": "aeb428cb570b572e99b63d6453c2e5e550944e3bbe4df309a1c82b7e273a3a3b",
+        "package": "gstreamer1.0-plugins-good",
+        "path": "/usr/lib/x86_64-linux-gnu/gstreamer-1.0/libgstflxdec.so"
+      }
+    ],
+    "lib/native/gstreamer-1.0/libgstgdkpixbuf.so": [
+      {
+        "original_sha256": "908a52289009db0cc1f1cbc85ac00cfcf5f62f7f15f5bf6849bbca59161ac5eb",
+        "package": "gstreamer1.0-plugins-good",
+        "path": "/usr/lib/x86_64-linux-gnu/gstreamer-1.0/libgstgdkpixbuf.so"
+      }
+    ],
+    "lib/native/gstreamer-1.0/libgstgio.so": [
+      {
+        "original_sha256": "73d2649ea4c2086e6074f72317f856dd8c8eff5fc443c6b2615c8a3da16308b0",
+        "package": "gstreamer1.0-plugins-base",
+        "path": "/usr/lib/x86_64-linux-gnu/gstreamer-1.0/libgstgio.so"
+      }
+    ],
+    "lib/native/gstreamer-1.0/libgstgoom.so": [
+      {
+        "original_sha256": "0025dc9ca8e43c8a59390c31a933e9529d8212c69e4ef1f3730503aa3bb57be8",
+        "package": "gstreamer1.0-plugins-good",
+        "path": "/usr/lib/x86_64-linux-gnu/gstreamer-1.0/libgstgoom.so"
+      }
+    ],
+    "lib/native/gstreamer-1.0/libgstgoom2k1.so": [
+      {
+        "original_sha256": "570f2db569e055f624030451e6341fd802d3eae1669bc8f011abac466c3d44bb",
+        "package": "gstreamer1.0-plugins-good",
+        "path": "/usr/lib/x86_64-linux-gnu/gstreamer-1.0/libgstgoom2k1.so"
+      }
+    ],
+    "lib/native/gstreamer-1.0/libgsticydemux.so": [
+      {
+        "original_sha256": "2a74de45d8e6130c656ad6ef017dee587be02a6e4f54573fc72ade242ceaecd9",
+        "package": "gstreamer1.0-plugins-good",
+        "path": "/usr/lib/x86_64-linux-gnu/gstreamer-1.0/libgsticydemux.so"
+      }
+    ],
+    "lib/native/gstreamer-1.0/libgstid3demux.so": [
+      {
+        "original_sha256": "6ca5e2d4bb375e9cd69445315bb81fa4c73b8bc7c5e4b84a5e347c157705e9b9",
+        "package": "gstreamer1.0-plugins-good",
+        "path": "/usr/lib/x86_64-linux-gnu/gstreamer-1.0/libgstid3demux.so"
+      }
+    ],
+    "lib/native/gstreamer-1.0/libgstimagefreeze.so": [
+      {
+        "original_sha256": "cf6b63a7e412f4c0e92b865a9e6e18ee98c8851a86a665785a29482fd5b28fa3",
+        "package": "gstreamer1.0-plugins-good",
+        "path": "/usr/lib/x86_64-linux-gnu/gstreamer-1.0/libgstimagefreeze.so"
+      }
+    ],
+    "lib/native/gstreamer-1.0/libgstinterleave.so": [
+      {
+        "original_sha256": "3f25e501772c1541f1964cc19a4465211ef8b1f89dbe12120088c33acfed0c93",
+        "package": "gstreamer1.0-plugins-good",
+        "path": "/usr/lib/x86_64-linux-gnu/gstreamer-1.0/libgstinterleave.so"
+      }
+    ],
+    "lib/native/gstreamer-1.0/libgstisomp4.so": [
+      {
+        "original_sha256": "c14483f8612c3fc3227eeb59f30e3298e407143074113eea06d0df8962282b36",
+        "package": "gstreamer1.0-plugins-good",
+        "path": "/usr/lib/x86_64-linux-gnu/gstreamer-1.0/libgstisomp4.so"
+      }
+    ],
+    "lib/native/gstreamer-1.0/libgstjack.so": [
+      {
+        "original_sha256": "705b44d7ee15457f96fb5247e35bb992bf628a31ed2800f964ce24c268701562",
+        "package": "gstreamer1.0-plugins-good",
+        "path": "/usr/lib/x86_64-linux-gnu/gstreamer-1.0/libgstjack.so"
+      }
+    ],
+    "lib/native/gstreamer-1.0/libgstjpeg.so": [
+      {
+        "original_sha256": "cd544a39cfd602787315f826ef100e17a1544e9ab1ca52354a968b55bd16368f",
+        "package": "gstreamer1.0-plugins-good",
+        "path": "/usr/lib/x86_64-linux-gnu/gstreamer-1.0/libgstjpeg.so"
+      }
+    ],
+    "lib/native/gstreamer-1.0/libgstjpegformat.so": [
+      {
+        "original_sha256": "ed4c7dd09db1571b84de991374da474b7d327d3cb31c15bf56abdcb03e478e30",
+        "package": "gstreamer1.0-plugins-good",
+        "path": "/usr/lib/x86_64-linux-gnu/gstreamer-1.0/libgstjpegformat.so"
+      }
+    ],
+    "lib/native/gstreamer-1.0/libgstlame.so": [
+      {
+        "original_sha256": "ec0da86c213cc3534899c974ccb61b83c231b7b8255c96a3dfc828641c8adead",
+        "package": "gstreamer1.0-plugins-good",
+        "path": "/usr/lib/x86_64-linux-gnu/gstreamer-1.0/libgstlame.so"
+      }
+    ],
+    "lib/native/gstreamer-1.0/libgstlevel.so": [
+      {
+        "original_sha256": "dc7d62ccf17839a1ae6039974b7fc640aab0b7fdc32aa15cb36e348ad81216cd",
+        "package": "gstreamer1.0-plugins-good",
+        "path": "/usr/lib/x86_64-linux-gnu/gstreamer-1.0/libgstlevel.so"
+      }
+    ],
+    "lib/native/gstreamer-1.0/libgstlibvisual.so": [
+      {
+        "original_sha256": "79013cd3368d05d594126b48e35217388d05e2d310c59004a1d1faf73748e2c0",
+        "package": "gstreamer1.0-plugins-base",
+        "path": "/usr/lib/x86_64-linux-gnu/gstreamer-1.0/libgstlibvisual.so"
+      }
+    ],
+    "lib/native/gstreamer-1.0/libgstmatroska.so": [
+      {
+        "original_sha256": "a0fb6ca3dcc3f74d1fd9651b4d137aa0cf2b5a479ae8fdf23ab1415d836a108b",
+        "package": "gstreamer1.0-plugins-good",
+        "path": "/usr/lib/x86_64-linux-gnu/gstreamer-1.0/libgstmatroska.so"
+      }
+    ],
+    "lib/native/gstreamer-1.0/libgstmonoscope.so": [
+      {
+        "original_sha256": "f46314214754d327abdb68cc1d0add0d068ba6eacdc96a27b8ca56a98ca7c77a",
+        "package": "gstreamer1.0-plugins-good",
+        "path": "/usr/lib/x86_64-linux-gnu/gstreamer-1.0/libgstmonoscope.so"
+      }
+    ],
+    "lib/native/gstreamer-1.0/libgstmpg123.so": [
+      {
+        "original_sha256": "988e3a0c6e3ae356f26129277ec092190587153c0e1393cb168d6be8580b6e6b",
+        "package": "gstreamer1.0-plugins-good",
+        "path": "/usr/lib/x86_64-linux-gnu/gstreamer-1.0/libgstmpg123.so"
+      }
+    ],
+    "lib/native/gstreamer-1.0/libgstmulaw.so": [
+      {
+        "original_sha256": "acc3fde892550da0a24b666600988ca4939592adcb8042be40958646c4f286fc",
+        "package": "gstreamer1.0-plugins-good",
+        "path": "/usr/lib/x86_64-linux-gnu/gstreamer-1.0/libgstmulaw.so"
+      }
+    ],
+    "lib/native/gstreamer-1.0/libgstmultifile.so": [
+      {
+        "original_sha256": "e405533efcbd9657eb7a4d694ff5ff9d53017ecdaf440a6358a313a9c3ab5cb0",
+        "package": "gstreamer1.0-plugins-good",
+        "path": "/usr/lib/x86_64-linux-gnu/gstreamer-1.0/libgstmultifile.so"
+      }
+    ],
+    "lib/native/gstreamer-1.0/libgstmultipart.so": [
+      {
+        "original_sha256": "9a0b012576e3f1311e218f5f926b79da537b5a83734873379e766ba9ccf2de16",
+        "package": "gstreamer1.0-plugins-good",
+        "path": "/usr/lib/x86_64-linux-gnu/gstreamer-1.0/libgstmultipart.so"
+      }
+    ],
+    "lib/native/gstreamer-1.0/libgstnavigationtest.so": [
+      {
+        "original_sha256": "fd73a4351fce5b9a4f68addabc0072a3ef30c83ff9043acaad10ea2bb1232ffa",
+        "package": "gstreamer1.0-plugins-good",
+        "path": "/usr/lib/x86_64-linux-gnu/gstreamer-1.0/libgstnavigationtest.so"
+      }
+    ],
+    "lib/native/gstreamer-1.0/libgstogg.so": [
+      {
+        "original_sha256": "0816c7db2640d2b10e551b1c55ae185d985a84c693fb888a0dccef1eaab878ff",
+        "package": "gstreamer1.0-plugins-base",
+        "path": "/usr/lib/x86_64-linux-gnu/gstreamer-1.0/libgstogg.so"
+      }
+    ],
+    "lib/native/gstreamer-1.0/libgstopus.so": [
+      {
+        "original_sha256": "36f0bf7461d0493ab0046b7cd2e204eff96c6b93124d6db5a402269efe1fd3ea",
+        "package": "gstreamer1.0-plugins-base",
+        "path": "/usr/lib/x86_64-linux-gnu/gstreamer-1.0/libgstopus.so"
+      }
+    ],
+    "lib/native/gstreamer-1.0/libgstoss4.so": [
+      {
+        "original_sha256": "006651b1e2ed3ce64c9fca35e95d8edec80a09c4141b3ac66c60c464344248f8",
+        "package": "gstreamer1.0-plugins-good",
+        "path": "/usr/lib/x86_64-linux-gnu/gstreamer-1.0/libgstoss4.so"
+      }
+    ],
+    "lib/native/gstreamer-1.0/libgstossaudio.so": [
+      {
+        "original_sha256": "c862b31162f8ff29292e6185c2493b91e80666f4dfc26d1b7345a654e1232095",
+        "package": "gstreamer1.0-plugins-good",
+        "path": "/usr/lib/x86_64-linux-gnu/gstreamer-1.0/libgstossaudio.so"
+      }
+    ],
+    "lib/native/gstreamer-1.0/libgstoverlaycomposition.so": [
+      {
+        "original_sha256": "eb4848e0ad59e1e062b9b5565f3ee0eca1b92c0496a0b1008e7fd7f5a35a1ee1",
+        "package": "gstreamer1.0-plugins-base",
+        "path": "/usr/lib/x86_64-linux-gnu/gstreamer-1.0/libgstoverlaycomposition.so"
+      }
+    ],
+    "lib/native/gstreamer-1.0/libgstpbtypes.so": [
+      {
+        "original_sha256": "c421c2ccfac7f34238cc85c1fc98fb05ce7112fbcd750e7cb4509c7ba723ad69",
+        "package": "gstreamer1.0-plugins-base",
+        "path": "/usr/lib/x86_64-linux-gnu/gstreamer-1.0/libgstpbtypes.so"
+      }
+    ],
+    "lib/native/gstreamer-1.0/libgstplayback.so": [
+      {
+        "original_sha256": "75355898de4a33c14e04d10538b0111977136d7bc1cb5fc2fc23b7dedcef877b",
+        "package": "gstreamer1.0-plugins-base",
+        "path": "/usr/lib/x86_64-linux-gnu/gstreamer-1.0/libgstplayback.so"
+      }
+    ],
+    "lib/native/gstreamer-1.0/libgstpng.so": [
+      {
+        "original_sha256": "d0451145e770c48a56042b79eb8c52509de4197e872bcb3e05a35d618808474f",
+        "package": "gstreamer1.0-plugins-good",
+        "path": "/usr/lib/x86_64-linux-gnu/gstreamer-1.0/libgstpng.so"
+      }
+    ],
+    "lib/native/gstreamer-1.0/libgstpulseaudio.so": [
+      {
+        "original_sha256": "159602382eb14c7d762082428642d9d309c284687666e57b3f593427bd165084",
+        "package": "gstreamer1.0-plugins-good",
+        "path": "/usr/lib/x86_64-linux-gnu/gstreamer-1.0/libgstpulseaudio.so"
+      }
+    ],
+    "lib/native/gstreamer-1.0/libgstrawparse.so": [
+      {
+        "original_sha256": "c81917b4c5726504d2beac4e2dc6674d1ab8799514ce48150eb224df11123e29",
+        "package": "gstreamer1.0-plugins-base",
+        "path": "/usr/lib/x86_64-linux-gnu/gstreamer-1.0/libgstrawparse.so"
+      }
+    ],
+    "lib/native/gstreamer-1.0/libgstreplaygain.so": [
+      {
+        "original_sha256": "12dbf9e99ab96eaf022993b6d789fe1975e6641f1a3c6567239721019dc7dace",
+        "package": "gstreamer1.0-plugins-good",
+        "path": "/usr/lib/x86_64-linux-gnu/gstreamer-1.0/libgstreplaygain.so"
+      }
+    ],
+    "lib/native/gstreamer-1.0/libgstrtp.so": [
+      {
+        "original_sha256": "dc0d60604526be8b1e8d6e14d8a091fa720f13f6aa1e2efc8586c3e715af2fa4",
+        "package": "gstreamer1.0-plugins-good",
+        "path": "/usr/lib/x86_64-linux-gnu/gstreamer-1.0/libgstrtp.so"
+      }
+    ],
+    "lib/native/gstreamer-1.0/libgstrtpmanager.so": [
+      {
+        "original_sha256": "6bf1655ac29969cf3521f0f2217904a66de0112411c808bac2cd1c875b31522b",
+        "package": "gstreamer1.0-plugins-good",
+        "path": "/usr/lib/x86_64-linux-gnu/gstreamer-1.0/libgstrtpmanager.so"
+      }
+    ],
+    "lib/native/gstreamer-1.0/libgstrtsp.so": [
+      {
+        "original_sha256": "d2e1ed4556a14145cb77a51c45b1bc73f98e7c4b58d12b7af2da4d24cbd9dd80",
+        "package": "gstreamer1.0-plugins-good",
+        "path": "/usr/lib/x86_64-linux-gnu/gstreamer-1.0/libgstrtsp.so"
+      }
+    ],
+    "lib/native/gstreamer-1.0/libgstshapewipe.so": [
+      {
+        "original_sha256": "84cfd575ff96e47bd37d3305591b222e371a6a1c44413f227bf6dd3da8309d9a",
+        "package": "gstreamer1.0-plugins-good",
+        "path": "/usr/lib/x86_64-linux-gnu/gstreamer-1.0/libgstshapewipe.so"
+      }
+    ],
+    "lib/native/gstreamer-1.0/libgstshout2.so": [
+      {
+        "original_sha256": "049727c2df52149007d340aa171bf2fbb9547822c5b9124b38c109667147968a",
+        "package": "gstreamer1.0-plugins-good",
+        "path": "/usr/lib/x86_64-linux-gnu/gstreamer-1.0/libgstshout2.so"
+      }
+    ],
+    "lib/native/gstreamer-1.0/libgstsmpte.so": [
+      {
+        "original_sha256": "d85d7c84028c286930824429837c07060b879cb123715c860986dd72f2af9476",
+        "package": "gstreamer1.0-plugins-good",
+        "path": "/usr/lib/x86_64-linux-gnu/gstreamer-1.0/libgstsmpte.so"
+      }
+    ],
+    "lib/native/gstreamer-1.0/libgstsoup.so": [
+      {
+        "original_sha256": "1d7f8d813b90760700acd16c5fa6dde7497b2bfe64056b30160d65856b59721a",
+        "package": "gstreamer1.0-plugins-good",
+        "path": "/usr/lib/x86_64-linux-gnu/gstreamer-1.0/libgstsoup.so"
+      }
+    ],
+    "lib/native/gstreamer-1.0/libgstspectrum.so": [
+      {
+        "original_sha256": "f34f0c70f1b02a6fc92762f04940d700b3a2d6286b11ea75c02c53022e57bdb7",
+        "package": "gstreamer1.0-plugins-good",
+        "path": "/usr/lib/x86_64-linux-gnu/gstreamer-1.0/libgstspectrum.so"
+      }
+    ],
+    "lib/native/gstreamer-1.0/libgstspeex.so": [
+      {
+        "original_sha256": "ab3efb6369ec90009dad127704b16902c90e105d1f98cec72db45013698bb1fc",
+        "package": "gstreamer1.0-plugins-good",
+        "path": "/usr/lib/x86_64-linux-gnu/gstreamer-1.0/libgstspeex.so"
+      }
+    ],
+    "lib/native/gstreamer-1.0/libgstsubparse.so": [
+      {
+        "original_sha256": "6d0542234a627410c033cfee817a80c7f5c11bf19ebfdd638a486b6c29896308",
+        "package": "gstreamer1.0-plugins-base",
+        "path": "/usr/lib/x86_64-linux-gnu/gstreamer-1.0/libgstsubparse.so"
+      }
+    ],
+    "lib/native/gstreamer-1.0/libgsttaglib.so": [
+      {
+        "original_sha256": "4967f6375336ea859462954eef9d1767a3c7f96335f50e063f136e562fb3b840",
+        "package": "gstreamer1.0-plugins-good",
+        "path": "/usr/lib/x86_64-linux-gnu/gstreamer-1.0/libgsttaglib.so"
+      }
+    ],
+    "lib/native/gstreamer-1.0/libgsttcp.so": [
+      {
+        "original_sha256": "82a25d128d8a17f84d74df260a9c90a61f87144b5675d2447469e25ae1fa2de2",
+        "package": "gstreamer1.0-plugins-base",
+        "path": "/usr/lib/x86_64-linux-gnu/gstreamer-1.0/libgsttcp.so"
+      }
+    ],
+    "lib/native/gstreamer-1.0/libgsttheora.so": [
+      {
+        "original_sha256": "09f061501f64e875f2535748d7b0758f4c6acabe293b1ae8f613919c97cc07c5",
+        "package": "gstreamer1.0-plugins-base",
+        "path": "/usr/lib/x86_64-linux-gnu/gstreamer-1.0/libgsttheora.so"
+      }
+    ],
+    "lib/native/gstreamer-1.0/libgsttwolame.so": [
+      {
+        "original_sha256": "2f9132677c1d4cbe411229d8e2441ecf6627557d4213c80104d6bebd28551e38",
+        "package": "gstreamer1.0-plugins-good",
+        "path": "/usr/lib/x86_64-linux-gnu/gstreamer-1.0/libgsttwolame.so"
+      }
+    ],
+    "lib/native/gstreamer-1.0/libgsttypefindfunctions.so": [
+      {
+        "original_sha256": "2f0934cfbc30a24f68fddd0d892833adb30d3cb1b176b668dc698ffa15200025",
+        "package": "gstreamer1.0-plugins-base",
+        "path": "/usr/lib/x86_64-linux-gnu/gstreamer-1.0/libgsttypefindfunctions.so"
+      }
+    ],
+    "lib/native/gstreamer-1.0/libgstudp.so": [
+      {
+        "original_sha256": "28b63948dfecd53281329b72352f3543a88f75140fb31f222555cf646f1ae7b8",
+        "package": "gstreamer1.0-plugins-good",
+        "path": "/usr/lib/x86_64-linux-gnu/gstreamer-1.0/libgstudp.so"
+      }
+    ],
+    "lib/native/gstreamer-1.0/libgstvideo4linux2.so": [
+      {
+        "original_sha256": "22042d19cb02dfdeee96042288a638d7cd71173e85617627f1e806a4f1e6a468",
+        "package": "gstreamer1.0-plugins-good",
+        "path": "/usr/lib/x86_64-linux-gnu/gstreamer-1.0/libgstvideo4linux2.so"
+      }
+    ],
+    "lib/native/gstreamer-1.0/libgstvideobox.so": [
+      {
+        "original_sha256": "2224d2e9a155afcff5386a654b88f6d2da3c1d5b0aae309b4d6d62ef140f1db4",
+        "package": "gstreamer1.0-plugins-good",
+        "path": "/usr/lib/x86_64-linux-gnu/gstreamer-1.0/libgstvideobox.so"
+      }
+    ],
+    "lib/native/gstreamer-1.0/libgstvideoconvert.so": [
+      {
+        "original_sha256": "a37fb9ee87a1ae2e2e0c4f36eba3d193c8a88fec36ccd18f7e0bc3fb5019486a",
+        "package": "gstreamer1.0-plugins-base",
+        "path": "/usr/lib/x86_64-linux-gnu/gstreamer-1.0/libgstvideoconvert.so"
+      }
+    ],
+    "lib/native/gstreamer-1.0/libgstvideocrop.so": [
+      {
+        "original_sha256": "be0181b3ded1abc6c5ef26acff4124a0de6ce630c40d7e39c3c883712f38cdd6",
+        "package": "gstreamer1.0-plugins-good",
+        "path": "/usr/lib/x86_64-linux-gnu/gstreamer-1.0/libgstvideocrop.so"
+      }
+    ],
+    "lib/native/gstreamer-1.0/libgstvideofilter.so": [
+      {
+        "original_sha256": "909ddfd530f2b6accd982f1bd344f3559940ef9bcbf08e3bd913b01fbd9ce123",
+        "package": "gstreamer1.0-plugins-good",
+        "path": "/usr/lib/x86_64-linux-gnu/gstreamer-1.0/libgstvideofilter.so"
+      }
+    ],
+    "lib/native/gstreamer-1.0/libgstvideomixer.so": [
+      {
+        "original_sha256": "e569b6540a83c3e25860662da7addceac3033b5d6d3da0f6c77998e06337b733",
+        "package": "gstreamer1.0-plugins-good",
+        "path": "/usr/lib/x86_64-linux-gnu/gstreamer-1.0/libgstvideomixer.so"
+      }
+    ],
+    "lib/native/gstreamer-1.0/libgstvideorate.so": [
+      {
+        "original_sha256": "64859fe341495cf7244dba4eaaefba8522f1227d7fe703da663ab51cede7ea38",
+        "package": "gstreamer1.0-plugins-base",
+        "path": "/usr/lib/x86_64-linux-gnu/gstreamer-1.0/libgstvideorate.so"
+      }
+    ],
+    "lib/native/gstreamer-1.0/libgstvideoscale.so": [
+      {
+        "original_sha256": "60b7c43df38979f33a2c0072c38dd4d9a457216b083d611fb692fb0398657329",
+        "package": "gstreamer1.0-plugins-base",
+        "path": "/usr/lib/x86_64-linux-gnu/gstreamer-1.0/libgstvideoscale.so"
+      }
+    ],
+    "lib/native/gstreamer-1.0/libgstvideotestsrc.so": [
+      {
+        "original_sha256": "64ed5e46f7e63ff6b97cd62cdc20f23c51a242b863c533bf30f3e7d2ab633aa2",
+        "package": "gstreamer1.0-plugins-base",
+        "path": "/usr/lib/x86_64-linux-gnu/gstreamer-1.0/libgstvideotestsrc.so"
+      }
+    ],
+    "lib/native/gstreamer-1.0/libgstvolume.so": [
+      {
+        "original_sha256": "5d3433a71ddb24d82613e040d257e7c92ce7cbf88cd9fc3fe0d8634ba2de8207",
+        "package": "gstreamer1.0-plugins-base",
+        "path": "/usr/lib/x86_64-linux-gnu/gstreamer-1.0/libgstvolume.so"
+      }
+    ],
+    "lib/native/gstreamer-1.0/libgstvorbis.so": [
+      {
+        "original_sha256": "df6d5d25edb53fd6cd75d13490058560fc8b5f9807dcc5142c76db1773c24d23",
+        "package": "gstreamer1.0-plugins-base",
+        "path": "/usr/lib/x86_64-linux-gnu/gstreamer-1.0/libgstvorbis.so"
+      }
+    ],
+    "lib/native/gstreamer-1.0/libgstvpx.so": [
+      {
+        "original_sha256": "b5a67ae534cea5f8454822993a15832ac0bd240f03774cf4cca7de9133257277",
+        "package": "gstreamer1.0-plugins-good",
+        "path": "/usr/lib/x86_64-linux-gnu/gstreamer-1.0/libgstvpx.so"
+      }
+    ],
+    "lib/native/gstreamer-1.0/libgstwavenc.so": [
+      {
+        "original_sha256": "10d41b1a0392fba8a92980d07f6479f69f7056e5be9e78251e372d67c98ed27b",
+        "package": "gstreamer1.0-plugins-good",
+        "path": "/usr/lib/x86_64-linux-gnu/gstreamer-1.0/libgstwavenc.so"
+      }
+    ],
+    "lib/native/gstreamer-1.0/libgstwavpack.so": [
+      {
+        "original_sha256": "a1ce84c4c0d14d48fd5bffadaa7ec7224c5f5f9b2e2500392d35dd9dbcb872ce",
+        "package": "gstreamer1.0-plugins-good",
+        "path": "/usr/lib/x86_64-linux-gnu/gstreamer-1.0/libgstwavpack.so"
+      }
+    ],
+    "lib/native/gstreamer-1.0/libgstwavparse.so": [
+      {
+        "original_sha256": "f4f9b84f7311fa3da61edc15c47cb7ba9c57eb5ba8bec66a16273dfe2d27c3b6",
+        "package": "gstreamer1.0-plugins-good",
+        "path": "/usr/lib/x86_64-linux-gnu/gstreamer-1.0/libgstwavparse.so"
+      }
+    ],
+    "lib/native/gstreamer-1.0/libgstximagesrc.so": [
+      {
+        "original_sha256": "cd375bb3f0a8dbc88065c43bd62dc169570e239ad642cc19f67603a53c82e3db",
+        "package": "gstreamer1.0-plugins-good",
+        "path": "/usr/lib/x86_64-linux-gnu/gstreamer-1.0/libgstximagesrc.so"
+      }
+    ],
+    "lib/native/gstreamer-1.0/libgsty4menc.so": [
+      {
+        "original_sha256": "ee11b10b9efd953034ef5eb3395ef37295c20a89297a55ae4f69982fbf974b12",
+        "package": "gstreamer1.0-plugins-good",
+        "path": "/usr/lib/x86_64-linux-gnu/gstreamer-1.0/libgsty4menc.so"
+      }
+    ],
+    "lib/native/gtk-3.0/3.0.0/immodules/im-am-et.so": [
+      {
+        "original_sha256": "16696ae5dc4f2d3354a273ebffa2332e4aa120fcb79fa0d6c80b9d6b53397f7e",
+        "package": "libgtk-3-0",
+        "path": "/usr/lib/x86_64-linux-gnu/gtk-3.0/3.0.0/immodules/im-am-et.so"
+      }
+    ],
+    "lib/native/gtk-3.0/3.0.0/immodules/im-cedilla.so": [
+      {
+        "original_sha256": "89c2044bc143d0d5a8035366936378d4caa8308fa40af87ca2fd5a7c8983913b",
+        "package": "libgtk-3-0",
+        "path": "/usr/lib/x86_64-linux-gnu/gtk-3.0/3.0.0/immodules/im-cedilla.so"
+      }
+    ],
+    "lib/native/gtk-3.0/3.0.0/immodules/im-cyrillic-translit.so": [
+      {
+        "original_sha256": "98358509f410a229d9358fbc5963c4c06faa23619de9c46a534eaf7fa9bc1ec9",
+        "package": "libgtk-3-0",
+        "path": "/usr/lib/x86_64-linux-gnu/gtk-3.0/3.0.0/immodules/im-cyrillic-translit.so"
+      }
+    ],
+    "lib/native/gtk-3.0/3.0.0/immodules/im-inuktitut.so": [
+      {
+        "original_sha256": "68d8358ffa2f325c274986f4eb0b7a68247bc4ca6c9447c86f0949661ae8eec4",
+        "package": "libgtk-3-0",
+        "path": "/usr/lib/x86_64-linux-gnu/gtk-3.0/3.0.0/immodules/im-inuktitut.so"
+      }
+    ],
+    "lib/native/gtk-3.0/3.0.0/immodules/im-ipa.so": [
+      {
+        "original_sha256": "605e3cf92063645d99b09de44ad5f315d23faa05e63a332e18e34f0edf448932",
+        "package": "libgtk-3-0",
+        "path": "/usr/lib/x86_64-linux-gnu/gtk-3.0/3.0.0/immodules/im-ipa.so"
+      }
+    ],
+    "lib/native/gtk-3.0/3.0.0/immodules/im-multipress.so": [
+      {
+        "original_sha256": "1aebe390db693b352d43d46da63b4f71204ed603b919e767afa17e53a090bfcd",
+        "package": "libgtk-3-0",
+        "path": "/usr/lib/x86_64-linux-gnu/gtk-3.0/3.0.0/immodules/im-multipress.so"
+      }
+    ],
+    "lib/native/gtk-3.0/3.0.0/immodules/im-thai.so": [
+      {
+        "original_sha256": "f400678c2007eb0e14275920c9957d5f9d8075e0a63345efe584dc9929df4bda",
+        "package": "libgtk-3-0",
+        "path": "/usr/lib/x86_64-linux-gnu/gtk-3.0/3.0.0/immodules/im-thai.so"
+      }
+    ],
+    "lib/native/gtk-3.0/3.0.0/immodules/im-ti-er.so": [
+      {
+        "original_sha256": "e8c75542bbd796f8465618bc91274db245991ab08e2e20d88fda56ead4a0800b",
+        "package": "libgtk-3-0",
+        "path": "/usr/lib/x86_64-linux-gnu/gtk-3.0/3.0.0/immodules/im-ti-er.so"
+      }
+    ],
+    "lib/native/gtk-3.0/3.0.0/immodules/im-ti-et.so": [
+      {
+        "original_sha256": "7e544f97bb206445317eec2abfb7bde78d1f86786ffefebf9baabd9d460254ab",
+        "package": "libgtk-3-0",
+        "path": "/usr/lib/x86_64-linux-gnu/gtk-3.0/3.0.0/immodules/im-ti-et.so"
+      }
+    ],
+    "lib/native/gtk-3.0/3.0.0/immodules/im-viqr.so": [
+      {
+        "original_sha256": "f9a22a111d61e9845e398503025411414cffa4fa39bf5483a005db15c35dad30",
+        "package": "libgtk-3-0",
+        "path": "/usr/lib/x86_64-linux-gnu/gtk-3.0/3.0.0/immodules/im-viqr.so"
+      }
+    ],
+    "lib/native/gtk-3.0/3.0.0/immodules/im-xim.so": [
+      {
+        "original_sha256": "4eba4a20ddfcaed3580841d170c69b0a2da0deac997073cc86a4b9efb935bfab",
+        "package": "libgtk-3-0",
+        "path": "/usr/lib/x86_64-linux-gnu/gtk-3.0/3.0.0/immodules/im-xim.so"
+      }
+    ],
+    "lib/native/gtk-3.0/3.0.0/printbackends/libprintbackend-file.so": [
+      {
+        "original_sha256": "860ebe0abf66b88de7be2305003910b609f894278bd083db8425ae9493d00f19",
+        "package": "libgtk-3-0",
+        "path": "/usr/lib/x86_64-linux-gnu/gtk-3.0/3.0.0/printbackends/libprintbackend-file.so"
+      }
+    ],
+    "lib/native/gtk-3.0/3.0.0/printbackends/libprintbackend-lpr.so": [
+      {
+        "original_sha256": "3600fe2095e973a9e880d0077303d28dbe32d4083f83cf90fb00bcd054077306",
+        "package": "libgtk-3-0",
+        "path": "/usr/lib/x86_64-linux-gnu/gtk-3.0/3.0.0/printbackends/libprintbackend-lpr.so"
+      }
+    ],
+    "lib/native/libFLAC.so.8": [
+      {
+        "original_sha256": "7f350d720a6ae1e0bab2a3f612d1fd49cefe266c1adc9d260da367e8132406e3",
+        "package": "libflac8",
+        "path": "/usr/lib/x86_64-linux-gnu/libFLAC.so.8"
+      }
+    ],
+    "lib/native/libX11-xcb.so.1": [
+      {
+        "original_sha256": "2526f9d1ca41ce2df4750d2d083bb9d335aa4430955faf66435ec038ea88e473",
+        "package": "libx11-xcb1",
+        "path": "/usr/lib/x86_64-linux-gnu/libX11-xcb.so.1"
+      }
+    ],
+    "lib/native/libX11.so.6": [
+      {
+        "original_sha256": "34b7869a1ba702462a1aa862fc0afe5b2608a7d5a09552c07796802fcf0c684b",
+        "package": "libx11-6",
+        "path": "/usr/lib/x86_64-linux-gnu/libX11.so.6"
+      }
+    ],
+    "lib/native/libXau.so.6": [
+      {
+        "original_sha256": "98343a8324ea62ed75a13c923ed5dea96b7a8ad41aeba9f18126c4cbf7178064",
+        "package": "libxau6",
+        "path": "/usr/lib/x86_64-linux-gnu/libXau.so.6"
+      }
+    ],
+    "lib/native/libXcomposite.so.1": [
+      {
+        "original_sha256": "4eea309674b05930c58bb4c8d2588c049ebae4fc0ce27fd06abe3a5fed9e6f91",
+        "package": "libxcomposite1",
+        "path": "/usr/lib/x86_64-linux-gnu/libXcomposite.so.1"
+      }
+    ],
+    "lib/native/libXcursor.so.1": [
+      {
+        "original_sha256": "a66dc7552a800690b9ff1e7e5026b2ec3f0c359603fe0267f82cc4a6f984f5ac",
+        "package": "libxcursor1",
+        "path": "/usr/lib/x86_64-linux-gnu/libXcursor.so.1"
+      }
+    ],
+    "lib/native/libXdamage.so.1": [
+      {
+        "original_sha256": "2e059ebfa3ed4d37e85c7924529d4c2cf7f3890786acd806b308c2b56571bc20",
+        "package": "libxdamage1",
+        "path": "/usr/lib/x86_64-linux-gnu/libXdamage.so.1"
+      }
+    ],
+    "lib/native/libXdmcp.so.6": [
+      {
+        "original_sha256": "1dc3ff1269a5ede69ef9a8ec2436d73fccbcd10531055b359292e0bde4e29b46",
+        "package": "libxdmcp6",
+        "path": "/usr/lib/x86_64-linux-gnu/libXdmcp.so.6"
+      }
+    ],
+    "lib/native/libXext.so.6": [
+      {
+        "original_sha256": "d61399986f565c00c090a1f222019db7b40f42eaf2d93834136d6234c16ec465",
+        "package": "libxext6",
+        "path": "/usr/lib/x86_64-linux-gnu/libXext.so.6"
+      }
+    ],
+    "lib/native/libXfixes.so.3": [
+      {
+        "original_sha256": "3e03576f262820fe27a8cfbcf4d8a2f3bbb5f1df55290e91643794a8147dffb7",
+        "package": "libxfixes3",
+        "path": "/usr/lib/x86_64-linux-gnu/libXfixes.so.3"
+      }
+    ],
+    "lib/native/libXi.so.6": [
+      {
+        "original_sha256": "dc46e4ed45e94b521486438d902b2c360e50bd162849448b53adc7143fa1cb84",
+        "package": "libxi6",
+        "path": "/usr/lib/x86_64-linux-gnu/libXi.so.6"
+      }
+    ],
+    "lib/native/libXinerama.so.1": [
+      {
+        "original_sha256": "2db9101cec47fe2f00fe27dedf3325ad47e9e8d8f4a552c8ca5f04d6271bd172",
+        "package": "libxinerama1",
+        "path": "/usr/lib/x86_64-linux-gnu/libXinerama.so.1"
+      }
+    ],
+    "lib/native/libXpresent.so.1.0.0": [
+      {
+        "original_sha256": "22a696bd98719ca0f5c4f6ac195672f5233a721114ed501c0c3be51997a203c5",
+        "package": "libxpresent1",
+        "path": "/usr/lib/x86_64-linux-gnu/libXpresent.so.1.0.0"
+      }
+    ],
+    "lib/native/libXrandr.so.2": [
+      {
+        "original_sha256": "237b8560e61e4c2d244ea21b4d2e0cd9614de26ce284f7258646897940d8e796",
+        "package": "libxrandr2",
+        "path": "/usr/lib/x86_64-linux-gnu/libXrandr.so.2"
+      }
+    ],
+    "lib/native/libXrender.so.1": [
+      {
+        "original_sha256": "2415c0b512d332522625bc65bcc5e05dba93c2e3418329ded2855111fb0cf723",
+        "package": "libxrender1",
+        "path": "/usr/lib/x86_64-linux-gnu/libXrender.so.1"
+      }
+    ],
+    "lib/native/libXss.so.1": [
+      {
+        "original_sha256": "2c30b5f8ae4a1a733c70385229fe2143de270f292097a61879f4696abe63545b",
+        "package": "libxss1",
+        "path": "/usr/lib/x86_64-linux-gnu/libXss.so.1"
+      }
+    ],
+    "lib/native/libXtst.so.6": [
+      {
+        "original_sha256": "0c81be070f7857bdcab6bd528161d1049c374f1237aabf76d92e097b2d8ba16a",
+        "package": "libxtst6",
+        "path": "/usr/lib/x86_64-linux-gnu/libXtst.so.6"
+      }
+    ],
+    "lib/native/libaa.so.1": [
+      {
+        "original_sha256": "9b4987c4817440325faa0246ec6ad43cafb5c19ca7bf2afcaad602537edaeaf5",
+        "package": "libaa1",
+        "path": "/usr/lib/x86_64-linux-gnu/libaa.so.1"
+      }
+    ],
+    "lib/native/libabsl_base.so.20210324": [
+      {
+        "original_sha256": "f935401815d697e87cc946ec03b49989c6e88027df35f187b8309810c03829b6",
+        "package": "libabsl20210324",
+        "path": "/usr/lib/x86_64-linux-gnu/libabsl_base.so.20210324"
+      }
+    ],
+    "lib/native/libabsl_debugging_internal.so.20210324": [
+      {
+        "original_sha256": "c6aa2614553a293c6fd90ac3a66ac0e599cfc89487ec8f4fce7bd515347deb2c",
+        "package": "libabsl20210324",
+        "path": "/usr/lib/x86_64-linux-gnu/libabsl_debugging_internal.so.20210324"
+      }
+    ],
+    "lib/native/libabsl_demangle_internal.so.20210324": [
+      {
+        "original_sha256": "4b35fea08af6518002e199fedb3a7a7be1641a09909f3b337c83796067e448ff",
+        "package": "libabsl20210324",
+        "path": "/usr/lib/x86_64-linux-gnu/libabsl_demangle_internal.so.20210324"
+      }
+    ],
+    "lib/native/libabsl_graphcycles_internal.so.20210324": [
+      {
+        "original_sha256": "665ceeb87a80bd4efb8dd2ab6e85b19833c93231c01ffca9339f6f5d8af4a4c1",
+        "package": "libabsl20210324",
+        "path": "/usr/lib/x86_64-linux-gnu/libabsl_graphcycles_internal.so.20210324"
+      }
+    ],
+    "lib/native/libabsl_int128.so.20210324": [
+      {
+        "original_sha256": "7add3b86ffabc651d9fe9f0cab0e47e81cd95ac8b80c2164a4e063f1adfbcce9",
+        "package": "libabsl20210324",
+        "path": "/usr/lib/x86_64-linux-gnu/libabsl_int128.so.20210324"
+      }
+    ],
+    "lib/native/libabsl_malloc_internal.so.20210324": [
+      {
+        "original_sha256": "8f725c2afab1dd7f3f06d03160244af97f4a8ec23651591d38943956eda146f8",
+        "package": "libabsl20210324",
+        "path": "/usr/lib/x86_64-linux-gnu/libabsl_malloc_internal.so.20210324"
+      }
+    ],
+    "lib/native/libabsl_raw_logging_internal.so.20210324": [
+      {
+        "original_sha256": "efcd401f1b7e19c813b6f6ea3156d0e493f561c836deca0afec2241c70e36f61",
+        "package": "libabsl20210324",
+        "path": "/usr/lib/x86_64-linux-gnu/libabsl_raw_logging_internal.so.20210324"
+      }
+    ],
+    "lib/native/libabsl_spinlock_wait.so.20210324": [
+      {
+        "original_sha256": "37228b220c2f88a8836808484c78657cf23725857eeb70d6cdadca3ef627eddf",
+        "package": "libabsl20210324",
+        "path": "/usr/lib/x86_64-linux-gnu/libabsl_spinlock_wait.so.20210324"
+      }
+    ],
+    "lib/native/libabsl_stacktrace.so.20210324": [
+      {
+        "original_sha256": "101aad76e0c9c8136eb082b022c0eac354eeec7618b0e523f0c35ba182ca909f",
+        "package": "libabsl20210324",
+        "path": "/usr/lib/x86_64-linux-gnu/libabsl_stacktrace.so.20210324"
+      }
+    ],
+    "lib/native/libabsl_strings.so.20210324": [
+      {
+        "original_sha256": "c2e95895c87b89293e3d3415635e2e2b857537fd267c4ac1eb7eaa082f6b3f2c",
+        "package": "libabsl20210324",
+        "path": "/usr/lib/x86_64-linux-gnu/libabsl_strings.so.20210324"
+      }
+    ],
+    "lib/native/libabsl_strings_internal.so.20210324": [
+      {
+        "original_sha256": "ff9d090529046c9439a05181729d8a94d0ada2060e82e82fe3a8b446489a91f3",
+        "package": "libabsl20210324",
+        "path": "/usr/lib/x86_64-linux-gnu/libabsl_strings_internal.so.20210324"
+      }
+    ],
+    "lib/native/libabsl_symbolize.so.20210324": [
+      {
+        "original_sha256": "1dcbad6fa372b80a37520bf89b4949d71af601aca74b4dab342a1f2629dbc809",
+        "package": "libabsl20210324",
+        "path": "/usr/lib/x86_64-linux-gnu/libabsl_symbolize.so.20210324"
+      }
+    ],
+    "lib/native/libabsl_synchronization.so.20210324": [
+      {
+        "original_sha256": "54220b5b92a99a21858959554b0fbcecb57a2b527244e99c4d31a9d05b9d258e",
+        "package": "libabsl20210324",
+        "path": "/usr/lib/x86_64-linux-gnu/libabsl_synchronization.so.20210324"
+      }
+    ],
+    "lib/native/libabsl_throw_delegate.so.20210324": [
+      {
+        "original_sha256": "1737bc249ee1579b452a1dac239600f5c77775ab43095841bae227b160ae62b2",
+        "package": "libabsl20210324",
+        "path": "/usr/lib/x86_64-linux-gnu/libabsl_throw_delegate.so.20210324"
+      }
+    ],
+    "lib/native/libabsl_time.so.20210324": [
+      {
+        "original_sha256": "abe64a862145b24de78d4be32342d50b100425af88c632f51353a5870598338f",
+        "package": "libabsl20210324",
+        "path": "/usr/lib/x86_64-linux-gnu/libabsl_time.so.20210324"
+      }
+    ],
+    "lib/native/libabsl_time_zone.so.20210324": [
+      {
+        "original_sha256": "7caa27864056c952e1a4cf6b389e91a96d197fe4d2941c49d8c8bca464e49e65",
+        "package": "libabsl20210324",
+        "path": "/usr/lib/x86_64-linux-gnu/libabsl_time_zone.so.20210324"
+      }
+    ],
+    "lib/native/libaom.so.3": [
+      {
+        "original_sha256": "2918baec317013102ab423f34fbfde76bd01f01677075f6389e13e6cd7de55f4",
+        "package": "libaom3",
+        "path": "/usr/lib/x86_64-linux-gnu/libaom.so.3"
+      }
+    ],
+    "lib/native/libapparmor.so.1": [
+      {
+        "original_sha256": "ecaaeaa571ef0fbec11b138b24c3bab33e2d868325f82f9be51dffc29801e590",
+        "package": "libapparmor1",
+        "path": "/usr/lib/x86_64-linux-gnu/libapparmor.so.1"
+      }
+    ],
+    "lib/native/libasound.so.2": [
+      {
+        "original_sha256": "9b2bd6ae0b44763493961fc287ec6f50808bc79bc6974c2a892401514e190584",
+        "package": "libasound2",
+        "path": "/usr/lib/x86_64-linux-gnu/libasound.so.2"
+      }
+    ],
+    "lib/native/libass.so.9.4.2": [],
+    "lib/native/libasyncns.so.0": [
+      {
+        "original_sha256": "a8c1d3161ac5b18145578742218d8c7c1b6cea692ffffddc3088c955c4199327",
+        "package": "libasyncns0",
+        "path": "/usr/lib/x86_64-linux-gnu/libasyncns.so.0"
+      }
+    ],
+    "lib/native/libatk-1.0.so.0": [
+      {
+        "original_sha256": "65831ad344b15dae860a3c73dbe97512b05e54d3566948f5bc633f67216ffd97",
+        "package": "libatk1.0-0",
+        "path": "/usr/lib/x86_64-linux-gnu/libatk-1.0.so.0"
+      }
+    ],
+    "lib/native/libatk-bridge-2.0.so.0": [
+      {
+        "original_sha256": "13670b19f87dbf32b697104cb5019c91ad886d8122e8d645c27162c97e41e877",
+        "package": "libatk-bridge2.0-0",
+        "path": "/usr/lib/x86_64-linux-gnu/libatk-bridge-2.0.so.0"
+      }
+    ],
+    "lib/native/libatomic.so.1": [
+      {
+        "original_sha256": "d4a3c900a38ad280bb34003fbf8326fff53229d4bc4fc368bd48783b74680a36",
+        "package": "libatomic1",
+        "path": "/usr/lib/x86_64-linux-gnu/libatomic.so.1"
+      }
+    ],
+    "lib/native/libatspi.so.0": [
+      {
+        "original_sha256": "e1df48522f75baa048beb637c749708536bb6459d7dc8e9df12736f003fb2a88",
+        "package": "libatspi2.0-0",
+        "path": "/usr/lib/x86_64-linux-gnu/libatspi.so.0"
+      }
+    ],
+    "lib/native/libavc1394.so.0": [
+      {
+        "original_sha256": "9e2686a6637d177c9ff0df712b6341e4f1cba47ae51e5298dca3abf1f46a7dbb",
+        "package": "libavc1394-0",
+        "path": "/usr/lib/x86_64-linux-gnu/libavc1394.so.0"
+      }
+    ],
+    "lib/native/libavcodec.so.63.1.102": [],
+    "lib/native/libavfilter.so.12.1.102": [],
+    "lib/native/libavformat.so.63.1.102": [],
+    "lib/native/libavif.so.13": [
+      {
+        "original_sha256": "185c388a7d17d97612ed58a9a896a772fda39aa10a4d9e555f318458db53dde1",
+        "package": "libavif13",
+        "path": "/usr/lib/x86_64-linux-gnu/libavif.so.13"
+      }
+    ],
+    "lib/native/libavutil.so.61.1.102": [],
+    "lib/native/libblkid.so.1": [
+      {
+        "original_sha256": "0aa92efdef9d9419f49b784c9377e3fa09c6e4247162ff8b581934b891fcfa0f",
+        "package": "libblkid1",
+        "path": "/usr/lib/x86_64-linux-gnu/libblkid.so.1"
+      }
+    ],
+    "lib/native/libbrotlicommon.so.1": [
+      {
+        "original_sha256": "abf86ae9362dbb413c740a55b194c74adb09a7bd92d8fbd96a293c797a4a6d08",
+        "package": "libbrotli1",
+        "path": "/usr/lib/x86_64-linux-gnu/libbrotlicommon.so.1"
+      }
+    ],
+    "lib/native/libbrotlidec.so.1": [
+      {
+        "original_sha256": "db9dbda709a46c3ae124433f47c4db71167db8aaba4eafdfd99c8a3a14584463",
+        "package": "libbrotli1",
+        "path": "/usr/lib/x86_64-linux-gnu/libbrotlidec.so.1"
+      }
+    ],
+    "lib/native/libbsd.so.0": [
+      {
+        "original_sha256": "e4ad21c203d8e8b9b7f49071311339af6b438026e1ad236403e3b379b022f23d",
+        "package": "libbsd0",
+        "path": "/usr/lib/x86_64-linux-gnu/libbsd.so.0"
+      }
+    ],
+    "lib/native/libbz2.so.1.0.8": [],
+    "lib/native/libcaca.so.0": [
+      {
+        "original_sha256": "b6b46fed664e94a4a92d20eae8c858d5a20e5eb1b2195f4c668dc022532110fe",
+        "package": "libcaca0",
+        "path": "/usr/lib/x86_64-linux-gnu/libcaca.so.0"
+      }
+    ],
+    "lib/native/libcairo-gobject.so.2": [
+      {
+        "original_sha256": "edecf402c8e98ed8d8eb3a7e4b9df27671678b7f7b786bdf243a4c84c003b9b1",
+        "package": "libcairo-gobject2",
+        "path": "/usr/lib/x86_64-linux-gnu/libcairo-gobject.so.2"
+      }
+    ],
+    "lib/native/libcairo.so.2": [
+      {
+        "original_sha256": "62328c06e62439ce52ee03a7e7fa44ebe33a39a56d22b8c96ffc7c7e1eaf0d19",
+        "package": "libcairo2",
+        "path": "/usr/lib/x86_64-linux-gnu/libcairo.so.2"
+      }
+    ],
+    "lib/native/libcap.so.2": [
+      {
+        "original_sha256": "00e8d9ef4e9c081a3c8d8164cfd06165937c9bcb6d4f9b47c6dcfa53d9e52046",
+        "package": "libcap2",
+        "path": "/lib/x86_64-linux-gnu/libcap.so.2"
+      }
+    ],
+    "lib/native/libcdda_interface.so.0": [
+      {
+        "original_sha256": "abfdcc013098e0c0ec47d07ba397e43fc79b61245649cafeb4b0bacb5d0d4150",
+        "package": "libcdparanoia0",
+        "path": "/usr/lib/x86_64-linux-gnu/libcdda_interface.so.0"
+      }
+    ],
+    "lib/native/libcdda_paranoia.so.0": [
+      {
+        "original_sha256": "08d6e361f1bd549745437aed978c5c249b608a28568ab30704d5b7fc8b2b2484",
+        "package": "libcdparanoia0",
+        "path": "/usr/lib/x86_64-linux-gnu/libcdda_paranoia.so.0"
+      }
+    ],
+    "lib/native/libcom_err.so.2": [
+      {
+        "original_sha256": "f196091d8ec9790b4cd203ecdb0eab3b242d35ae8625ead7962d0a944a8fdfa5",
+        "package": "libcom-err2",
+        "path": "/lib/x86_64-linux-gnu/libcom_err.so.2"
+      }
+    ],
+    "lib/native/libcrypto.so.3": [
+      {
+        "original_sha256": "7cc817ff1841b59516d684f357bc0c3fc2cc52c3fa9b4ffb8ce8bdc215f02915",
+        "package": "libssl3",
+        "path": "/usr/lib/x86_64-linux-gnu/libcrypto.so.3"
+      }
+    ],
+    "lib/native/libdatrie.so.1": [
+      {
+        "original_sha256": "bb12f6deede55959973954640ed050ec758de674a73c19715adcd6202abb8dcd",
+        "package": "libdatrie1",
+        "path": "/usr/lib/x86_64-linux-gnu/libdatrie.so.1"
+      }
+    ],
+    "lib/native/libdav1d.so.5": [
+      {
+        "original_sha256": "eb4b11f13938b11a4dd8f0d3581e551e90025df5f0a2130614cb23bd6583fb9b",
+        "package": "libdav1d5",
+        "path": "/usr/lib/x86_64-linux-gnu/libdav1d.so.5"
+      }
+    ],
+    "lib/native/libdav1d.so.7.0.0": [],
+    "lib/native/libdb-5.3.so": [
+      {
+        "original_sha256": "659c3fb811bb0384b6a70127981ec1c1a7f95002cf1e569edc872066f20ef4c3",
+        "package": "libdb5.3",
+        "path": "/usr/lib/x86_64-linux-gnu/libdb-5.3.so"
+      }
+    ],
+    "lib/native/libdbus-1.so.3": [
+      {
+        "original_sha256": "a3d53f7215af9860f3466b94cd8fe3e95c253c46df164dea62af9b9def93dcea",
+        "package": "libdbus-1-3",
+        "path": "/lib/x86_64-linux-gnu/libdbus-1.so.3"
+      }
+    ],
+    "lib/native/libdeflate.so.0": [
+      {
+        "original_sha256": "dce39e00c986632f7d83199f2e5f2b89d7e11c8f311c6e9f204595f899785fa6",
+        "package": "libdeflate0",
+        "path": "/usr/lib/x86_64-linux-gnu/libdeflate.so.0"
+      }
+    ],
+    "lib/native/libdisplay-info.so.0.3.0": [],
+    "lib/native/libdv.so.4": [
+      {
+        "original_sha256": "0ce39cd0ba5c0fd9f99a77d671211c13edd9898897fd2a24823790922bf6ad5a",
+        "package": "libdv4",
+        "path": "/usr/lib/x86_64-linux-gnu/libdv.so.4"
+      }
+    ],
+    "lib/native/libdw.so.1": [
+      {
+        "original_sha256": "5672258f6357d1f66ca9a1344677fbdd69ff155cf162c8e5b94068086a909df7",
+        "package": "libdw1",
+        "path": "/usr/lib/x86_64-linux-gnu/libdw.so.1"
+      }
+    ],
+    "lib/native/libelf.so.1": [
+      {
+        "original_sha256": "89a10cfe5c07353235f80dbff50f4602b89811bed7b19621c3a4023157eb1c85",
+        "package": "libelf1",
+        "path": "/usr/lib/x86_64-linux-gnu/libelf.so.1"
+      }
+    ],
+    "lib/native/libenchant-2.so.2": [
+      {
+        "original_sha256": "47261f4bfe24b52d56e4e3973d66b42c8df3c48429362e5c7e3f90a7d9aab770",
+        "package": "libenchant-2-2",
+        "path": "/usr/lib/x86_64-linux-gnu/libenchant-2.so.2"
+      }
+    ],
+    "lib/native/libepoxy.so.0": [
+      {
+        "original_sha256": "bc592509279dab19668583d47e2edc2b1c6ae9b93ed7ed1a2cef9810b0ad263d",
+        "package": "libepoxy0",
+        "path": "/usr/lib/x86_64-linux-gnu/libepoxy.so.0"
+      }
+    ],
+    "lib/native/libevdev.so.2": [
+      {
+        "original_sha256": "9699894e6afae47dc72717448456c9fff8c42747911aa5ce73eaede9bbbbb0ee",
+        "package": "libevdev2",
+        "path": "/usr/lib/x86_64-linux-gnu/libevdev.so.2"
+      }
+    ],
+    "lib/native/libexpat.so.1": [
+      {
+        "original_sha256": "683e2e41db14581194bf1f6616e95a8f02cd4ab599f0fba807e46325ec01d21f",
+        "package": "libexpat1",
+        "path": "/lib/x86_64-linux-gnu/libexpat.so.1"
+      }
+    ],
+    "lib/native/libffi.so.8": [
+      {
+        "original_sha256": "247da4d5d34a91cadcdd6282be4c4644fcb8af001334d2b8a82ecda435418cbf",
+        "package": "libffi8",
+        "path": "/usr/lib/x86_64-linux-gnu/libffi.so.8"
+      }
+    ],
+    "lib/native/libflite.so.1": [
+      {
+        "original_sha256": "fb35e67157692814db1d6014a97476a28dfb9cc5d81b9ce01318da1c844bd85d",
+        "package": "libflite1",
+        "path": "/usr/lib/x86_64-linux-gnu/libflite.so.1"
+      }
+    ],
+    "lib/native/libflite_cmu_us_awb.so.1": [
+      {
+        "original_sha256": "34bd371de4bec32cf8f6ca8a9cc2877f6914a36b2e288bfaf16295230434e136",
+        "package": "libflite1",
+        "path": "/usr/lib/x86_64-linux-gnu/libflite_cmu_us_awb.so.1"
+      }
+    ],
+    "lib/native/libflite_cmu_us_kal.so.1": [
+      {
+        "original_sha256": "826ec578b3623870c8db161286167454d7b2913c016387ded9c1e18ef3ac3bf3",
+        "package": "libflite1",
+        "path": "/usr/lib/x86_64-linux-gnu/libflite_cmu_us_kal.so.1"
+      }
+    ],
+    "lib/native/libflite_cmu_us_rms.so.1": [
+      {
+        "original_sha256": "a0d2ad36b4237f984cf4da856ed70a0a862e474bc035ec5e01a8e7324ae50702",
+        "package": "libflite1",
+        "path": "/usr/lib/x86_64-linux-gnu/libflite_cmu_us_rms.so.1"
+      }
+    ],
+    "lib/native/libflite_cmu_us_slt.so.1": [
+      {
+        "original_sha256": "7a9bdd4a888e1d8c2058ef35ac87f27d81ed0486947e70d633582cd8c785aed6",
+        "package": "libflite1",
+        "path": "/usr/lib/x86_64-linux-gnu/libflite_cmu_us_slt.so.1"
+      }
+    ],
+    "lib/native/libflite_cmulex.so.1": [
+      {
+        "original_sha256": "dfbdbb46cd54fd2127eba39db2100d374ecd3bd6ba9b2fe8d1138b17b59cfd94",
+        "package": "libflite1",
+        "path": "/usr/lib/x86_64-linux-gnu/libflite_cmulex.so.1"
+      }
+    ],
+    "lib/native/libflite_usenglish.so.1": [
+      {
+        "original_sha256": "1839dfc7ba316d1be11307b12adcfa8bfa27220308935b9194cda3882683e6b5",
+        "package": "libflite1",
+        "path": "/usr/lib/x86_64-linux-gnu/libflite_usenglish.so.1"
+      }
+    ],
+    "lib/native/libfontconfig.so.1": [
+      {
+        "original_sha256": "7d688909aab1c566b60832045fef012ea118ff7ee189df87608fbff999d3bd0d",
+        "package": "libfontconfig1",
+        "path": "/usr/lib/x86_64-linux-gnu/libfontconfig.so.1"
+      }
+    ],
+    "lib/native/libfreetype.so.6": [
+      {
+        "original_sha256": "ef8908dd08eb7072dd1da355277b069048a86512122592d56b5051796ba62ee2",
+        "package": "libfreetype6",
+        "path": "/usr/lib/x86_64-linux-gnu/libfreetype.so.6"
+      }
+    ],
+    "lib/native/libfribidi.so.0": [
+      {
+        "original_sha256": "91879069d84de2889086ad44dfc088405e7e7065e1220c1a122f8970fb1f29a9",
+        "package": "libfribidi0",
+        "path": "/usr/lib/x86_64-linux-gnu/libfribidi.so.0"
+      }
+    ],
+    "lib/native/libgailutil-3.so": [],
+    "lib/native/libgailutil-3.so.0": [],
+    "lib/native/libgailutil-3.so.0.0.0": [],
+    "lib/native/libgav1.so.0": [
+      {
+        "original_sha256": "b005ad58e4815a30589eadee12a4256fe19898f8e47def936dab34a46f6ede5b",
+        "package": "libgav1-0",
+        "path": "/usr/lib/x86_64-linux-gnu/libgav1.so.0"
+      }
+    ],
+    "lib/native/libgcrypt.so.20": [
+      {
+        "original_sha256": "82f7902f4cffbb89540c09cdb3045d8026548ae4c811d003f25e7b74a6de9d9c",
+        "package": "libgcrypt20",
+        "path": "/usr/lib/x86_64-linux-gnu/libgcrypt.so.20"
+      }
+    ],
+    "lib/native/libgdk-3.so": [
+      {
+        "original_sha256": "65444438dce4b145a61cdf9ccee7dd3feb2ae249c939056eff89c04d8766e5a7",
+        "package": "libgtk-3-dev",
+        "path": "/usr/lib/x86_64-linux-gnu/libgdk-3.so"
+      }
+    ],
+    "lib/native/libgdk-3.so.0": [
+      {
+        "original_sha256": "65444438dce4b145a61cdf9ccee7dd3feb2ae249c939056eff89c04d8766e5a7",
+        "package": "libgtk-3-0",
+        "path": "/usr/lib/x86_64-linux-gnu/libgdk-3.so.0"
+      }
+    ],
+    "lib/native/libgdk-3.so.0.2404.29": [
+      {
+        "original_sha256": "65444438dce4b145a61cdf9ccee7dd3feb2ae249c939056eff89c04d8766e5a7",
+        "package": "libgtk-3-0",
+        "path": "/usr/lib/x86_64-linux-gnu/libgdk-3.so.0.2404.29"
+      }
+    ],
+    "lib/native/libgdk_pixbuf-2.0.so.0": [
+      {
+        "original_sha256": "c9b29b64bff5f913438def9ffa26ea972245b89cd61dc9d2388bc1d1540412ef",
+        "package": "libgdk-pixbuf-2.0-0",
+        "path": "/usr/lib/x86_64-linux-gnu/libgdk_pixbuf-2.0.so.0"
+      }
+    ],
+    "lib/native/libgio-2.0.so.0": [
+      {
+        "original_sha256": "b63a477916c1f95de4b2c80bb4f5940a59ebc5860793d93b271448e90edbfe52",
+        "package": "libglib2.0-0",
+        "path": "/usr/lib/x86_64-linux-gnu/libgio-2.0.so.0"
+      }
+    ],
+    "lib/native/libglib-2.0.so.0": [
+      {
+        "original_sha256": "86acf2c843bcfaf5e8c24ab959737960c797da53b41658dc8ec6f257c786048c",
+        "package": "libglib2.0-0",
+        "path": "/usr/lib/x86_64-linux-gnu/libglib-2.0.so.0"
+      }
+    ],
+    "lib/native/libgmodule-2.0.so.0": [
+      {
+        "original_sha256": "1019fc28ced6829f22b446a091ecb5b76b9fa3b3c458bc6ea936c1d328302cb5",
+        "package": "libglib2.0-0",
+        "path": "/usr/lib/x86_64-linux-gnu/libgmodule-2.0.so.0"
+      }
+    ],
+    "lib/native/libgmp.so.10": [
+      {
+        "original_sha256": "4dc20a901c6951e678e216e959da2534bcef7053e6efdf1492509baf142282b0",
+        "package": "libgmp10",
+        "path": "/usr/lib/x86_64-linux-gnu/libgmp.so.10"
+      }
+    ],
+    "lib/native/libgnutls.so.30": [
+      {
+        "original_sha256": "dcadda7f0f82c54ca157b6ca0a5fdc8e1128db4d778109c8e197e2f84c2ac9ba",
+        "package": "libgnutls30",
+        "path": "/usr/lib/x86_64-linux-gnu/libgnutls.so.30"
+      }
+    ],
+    "lib/native/libgobject-2.0.so.0": [
+      {
+        "original_sha256": "05a94d6be0a50dba15a579f3ad1f5c6ec12c8d303f3b715a665fd27824ca523e",
+        "package": "libglib2.0-0",
+        "path": "/usr/lib/x86_64-linux-gnu/libgobject-2.0.so.0"
+      }
+    ],
+    "lib/native/libgpg-error.so.0": [
+      {
+        "original_sha256": "ed682e103b671d628ef11f19f8a5b772b8d2501ba26e4b80c055331a4c4d8dfc",
+        "package": "libgpg-error0",
+        "path": "/lib/x86_64-linux-gnu/libgpg-error.so.0"
+      }
+    ],
+    "lib/native/libgpm.so.2": [
+      {
+        "original_sha256": "9640ab708102bf336b55f311ad6d7cfb0515f5144bdb4ac0813a2c7744e8107a",
+        "package": "libgpm2",
+        "path": "/usr/lib/x86_64-linux-gnu/libgpm.so.2"
+      }
+    ],
+    "lib/native/libgraphite2.so.3": [
+      {
+        "original_sha256": "1d9215d0099e87da7ed9e1a9c2064fdb1da270253b869721ea0580a00657b723",
+        "package": "libgraphite2-3",
+        "path": "/usr/lib/x86_64-linux-gnu/libgraphite2.so.3"
+      }
+    ],
+    "lib/native/libgssapi_krb5.so.2": [
+      {
+        "original_sha256": "a8c1a62a7b925e198c5fb8f8123bb2900c235dd678d6dbf0c1e0b5f06175e84b",
+        "package": "libgssapi-krb5-2",
+        "path": "/usr/lib/x86_64-linux-gnu/libgssapi_krb5.so.2"
+      }
+    ],
+    "lib/native/libgstallocators-1.0.so.0": [
+      {
+        "original_sha256": "4a039e3814da1989503e715c04c13e323fbcb556f4429adedc70e6c13a166ff1",
+        "package": "libgstreamer-plugins-base1.0-0",
+        "path": "/usr/lib/x86_64-linux-gnu/libgstallocators-1.0.so.0"
+      }
+    ],
+    "lib/native/libgstapp-1.0.so.0": [
+      {
+        "original_sha256": "d52735c5d4cbe507b6a9bbf54566d004d3d7048d74f4131871849158034a5d9c",
+        "package": "libgstreamer-plugins-base1.0-0",
+        "path": "/usr/lib/x86_64-linux-gnu/libgstapp-1.0.so.0"
+      }
+    ],
+    "lib/native/libgstaudio-1.0.so.0": [
+      {
+        "original_sha256": "747ac97f51f7e0e9c66b991f114dedcce2a84c302a164a0139659f0f83729453",
+        "package": "libgstreamer-plugins-base1.0-0",
+        "path": "/usr/lib/x86_64-linux-gnu/libgstaudio-1.0.so.0"
+      }
+    ],
+    "lib/native/libgstbase-1.0.so.0": [
+      {
+        "original_sha256": "92080cccbc9cac9bf38eca2bff0fdf65e02fa6145a41ede28637aa2a67162db5",
+        "package": "libgstreamer1.0-0",
+        "path": "/usr/lib/x86_64-linux-gnu/libgstbase-1.0.so.0"
+      }
+    ],
+    "lib/native/libgstbasecamerabinsrc-1.0.so.0": [
+      {
+        "original_sha256": "45623f0c89c4ce00dbbc26332a9d6d5611da474993eb8e00d7b317b76df9c7f7",
+        "package": "libgstreamer-plugins-good1.0-0",
+        "path": "/usr/lib/x86_64-linux-gnu/libgstbasecamerabinsrc-1.0.so.0"
+      }
+    ],
+    "lib/native/libgstfft-1.0.so.0": [
+      {
+        "original_sha256": "98e43bc32a5f0ea306b7fb9c153d1bfc900cdd0aa3f69c5d2a779e0482250608",
+        "package": "libgstreamer-plugins-base1.0-0",
+        "path": "/usr/lib/x86_64-linux-gnu/libgstfft-1.0.so.0"
+      }
+    ],
+    "lib/native/libgstgl-1.0.so.0": [
+      {
+        "original_sha256": "3841bcae1fa9cb5e28345dbc58fc5b4f880b23ffe057c01c2d0233d4a7eff018",
+        "package": "libgstreamer-gl1.0-0",
+        "path": "/usr/lib/x86_64-linux-gnu/libgstgl-1.0.so.0"
+      }
+    ],
+    "lib/native/libgstnet-1.0.so.0": [
+      {
+        "original_sha256": "9b63f3af83a33d5124c2081fbe72c27aa3ac803cf6f0b22e367b42809f2c3fd6",
+        "package": "libgstreamer1.0-0",
+        "path": "/usr/lib/x86_64-linux-gnu/libgstnet-1.0.so.0"
+      }
+    ],
+    "lib/native/libgstpbutils-1.0.so.0": [
+      {
+        "original_sha256": "de911055200a7cf328e0ee9eb06ea98a05820eafba98b2780264a0cf9d10500f",
+        "package": "libgstreamer-plugins-base1.0-0",
+        "path": "/usr/lib/x86_64-linux-gnu/libgstpbutils-1.0.so.0"
+      }
+    ],
+    "lib/native/libgstphotography-1.0.so.0": [
+      {
+        "original_sha256": "addd37284bfda54bdf3342bdfc5b9d14316edc8299d508069b395ec5b1e0b426",
+        "package": "libgstreamer-plugins-good1.0-0",
+        "path": "/usr/lib/x86_64-linux-gnu/libgstphotography-1.0.so.0"
+      }
+    ],
+    "lib/native/libgstreamer-1.0.so.0": [
+      {
+        "original_sha256": "8f238839a55c56c603b4aa933969ec581cf9d9de8482bf1ac5398a7f9e800051",
+        "package": "libgstreamer1.0-0",
+        "path": "/usr/lib/x86_64-linux-gnu/libgstreamer-1.0.so.0"
+      }
+    ],
+    "lib/native/libgstriff-1.0.so.0": [
+      {
+        "original_sha256": "11ffdaca8f065efa14318911faf156b72f82b08baf9b8456c9b7ef73307939c9",
+        "package": "libgstreamer-plugins-base1.0-0",
+        "path": "/usr/lib/x86_64-linux-gnu/libgstriff-1.0.so.0"
+      }
+    ],
+    "lib/native/libgstrtp-1.0.so.0": [
+      {
+        "original_sha256": "210e837462796eb83a91cd388c16e5b1e9d7edb167abac4eba982ed8d31d67e6",
+        "package": "libgstreamer-plugins-base1.0-0",
+        "path": "/usr/lib/x86_64-linux-gnu/libgstrtp-1.0.so.0"
+      }
+    ],
+    "lib/native/libgstrtsp-1.0.so.0": [
+      {
+        "original_sha256": "57ed48e2fb346579b37ce43383a0d322c7a0dda373f1ce5b20b61aa2a3cf310e",
+        "package": "libgstreamer-plugins-base1.0-0",
+        "path": "/usr/lib/x86_64-linux-gnu/libgstrtsp-1.0.so.0"
+      }
+    ],
+    "lib/native/libgstsdp-1.0.so.0": [
+      {
+        "original_sha256": "1cd84c8c3c737deb8c79f595e4b76892338e90f0d1080d3ddc832a0d0c586aa5",
+        "package": "libgstreamer-plugins-base1.0-0",
+        "path": "/usr/lib/x86_64-linux-gnu/libgstsdp-1.0.so.0"
+      }
+    ],
+    "lib/native/libgsttag-1.0.so.0": [
+      {
+        "original_sha256": "cd99c70524a2c86615239d960f2ebbbb7672f1438128e8b989927c3c7b5b40c1",
+        "package": "libgstreamer-plugins-base1.0-0",
+        "path": "/usr/lib/x86_64-linux-gnu/libgsttag-1.0.so.0"
+      }
+    ],
+    "lib/native/libgstvideo-1.0.so.0": [
+      {
+        "original_sha256": "8e82df599ec035bfb99d63047753ee55cb40cabb13f9e25000a9c29060e608e6",
+        "package": "libgstreamer-plugins-base1.0-0",
+        "path": "/usr/lib/x86_64-linux-gnu/libgstvideo-1.0.so.0"
+      }
+    ],
+    "lib/native/libgtk-3.so": [
+      {
+        "original_sha256": "7d48175fd1550f8b77119e77775073f10b5fd736e62efea25f6484fb97b15c57",
+        "package": "libgtk-3-dev",
+        "path": "/usr/lib/x86_64-linux-gnu/libgtk-3.so"
+      }
+    ],
+    "lib/native/libgtk-3.so.0": [
+      {
+        "original_sha256": "7d48175fd1550f8b77119e77775073f10b5fd736e62efea25f6484fb97b15c57",
+        "package": "libgtk-3-0",
+        "path": "/usr/lib/x86_64-linux-gnu/libgtk-3.so.0"
+      }
+    ],
+    "lib/native/libgtk-3.so.0.2404.29": [
+      {
+        "original_sha256": "7d48175fd1550f8b77119e77775073f10b5fd736e62efea25f6484fb97b15c57",
+        "package": "libgtk-3-0",
+        "path": "/usr/lib/x86_64-linux-gnu/libgtk-3.so.0.2404.29"
+      }
+    ],
+    "lib/native/libgudev-1.0.so.0": [
+      {
+        "original_sha256": "87e1ea9da3129a0baf391a08f014e70e803c22a21017f3499fc3549855583686",
+        "package": "libgudev-1.0-0",
+        "path": "/usr/lib/x86_64-linux-gnu/libgudev-1.0.so.0"
+      }
+    ],
+    "lib/native/libharfbuzz-icu.so.0": [
+      {
+        "original_sha256": "6c8e56ce7f61fc3bad823616c8584f3e98ce5cb994a25ddc6f7a08855b9cc882",
+        "package": "libharfbuzz-icu0",
+        "path": "/usr/lib/x86_64-linux-gnu/libharfbuzz-icu.so.0"
+      }
+    ],
+    "lib/native/libharfbuzz.so.0": [
+      {
+        "original_sha256": "da47b2baefbb4e6e6058fec0c4dd0bc9d31703d94150c17c9615288188f4a118",
+        "package": "libharfbuzz0b",
+        "path": "/usr/lib/x86_64-linux-gnu/libharfbuzz.so.0"
+      }
+    ],
+    "lib/native/libhogweed.so.6": [
+      {
+        "original_sha256": "47d56894948545036bd49aed718393bf6edb93fce222874dad30b59f085ad9ee",
+        "package": "libhogweed6",
+        "path": "/usr/lib/x86_64-linux-gnu/libhogweed.so.6"
+      }
+    ],
+    "lib/native/libhyphen.so.0": [
+      {
+        "original_sha256": "857574eb017908187f18024bce2395c5948720beb4e783d8d222d9700a8ab67a",
+        "package": "libhyphen0",
+        "path": "/usr/lib/x86_64-linux-gnu/libhyphen.so.0"
+      }
+    ],
+    "lib/native/libicudata.so.70": [
+      {
+        "original_sha256": "c1404396288e178c8db2f30203cb8150e4d2c14cacee9a2883e0092f45399cc8",
+        "package": "libicu70",
+        "path": "/usr/lib/x86_64-linux-gnu/libicudata.so.70"
+      }
+    ],
+    "lib/native/libicui18n.so.70": [
+      {
+        "original_sha256": "24fa78caa9b66c10c90711c51089f45273b643f132031172d54a3e98d711d48e",
+        "package": "libicu70",
+        "path": "/usr/lib/x86_64-linux-gnu/libicui18n.so.70"
+      }
+    ],
+    "lib/native/libicuuc.so.70": [
+      {
+        "original_sha256": "4683f3623dc47a92e862dc3c8770caff81c9f4c7e116bb672fc439737b06d88a",
+        "package": "libicu70",
+        "path": "/usr/lib/x86_64-linux-gnu/libicuuc.so.70"
+      }
+    ],
+    "lib/native/libidn2.so.0": [
+      {
+        "original_sha256": "1420c60a18189fb2e7bb4b8da1409564b0c1c46c59df5bbb0c23339bb961403a",
+        "package": "libidn2-0",
+        "path": "/usr/lib/x86_64-linux-gnu/libidn2.so.0"
+      }
+    ],
+    "lib/native/libiec61883.so.0": [
+      {
+        "original_sha256": "94782a6cf2eeb52223433818076b3492c8644ac8f345116eef9550f172ce1ad6",
+        "package": "libiec61883-0",
+        "path": "/usr/lib/x86_64-linux-gnu/libiec61883.so.0"
+      }
+    ],
+    "lib/native/libjack.so.0": [
+      {
+        "original_sha256": "9912303f5297814a9f0fa1a12c3c36b30b948e9065e4bd76e7b3baf76a09feb9",
+        "package": "libjack-jackd2-0",
+        "path": "/usr/lib/x86_64-linux-gnu/libjack.so.0"
+      }
+    ],
+    "lib/native/libjavascriptcoregtk-4.1.so": [
+      {
+        "original_sha256": "ce30e117a86cad0225515b58c6b845ce28d56793197a469bb33ac4f82e2c4464",
+        "package": "libjavascriptcoregtk-4.1-dev",
+        "path": "/usr/lib/x86_64-linux-gnu/libjavascriptcoregtk-4.1.so"
+      }
+    ],
+    "lib/native/libjavascriptcoregtk-4.1.so.0": [
+      {
+        "original_sha256": "ce30e117a86cad0225515b58c6b845ce28d56793197a469bb33ac4f82e2c4464",
+        "package": "libjavascriptcoregtk-4.1-0",
+        "path": "/usr/lib/x86_64-linux-gnu/libjavascriptcoregtk-4.1.so.0"
+      }
+    ],
+    "lib/native/libjavascriptcoregtk-4.1.so.0.9.9": [
+      {
+        "original_sha256": "ce30e117a86cad0225515b58c6b845ce28d56793197a469bb33ac4f82e2c4464",
+        "package": "libjavascriptcoregtk-4.1-0",
+        "path": "/usr/lib/x86_64-linux-gnu/libjavascriptcoregtk-4.1.so.0.9.9"
+      }
+    ],
+    "lib/native/libjbig.so.0": [
+      {
+        "original_sha256": "32ed19ff3065742c392e018840ed59a0b2a17817adf94ba409708f16d8cf234b",
+        "package": "libjbig0",
+        "path": "/usr/lib/x86_64-linux-gnu/libjbig.so.0"
+      }
+    ],
+    "lib/native/libjpeg.so.8": [
+      {
+        "original_sha256": "2cfbcf67051b3efd1bf634af7d0b65a47dda98ff61ba793a87415ed554731344",
+        "package": "libjpeg-turbo8",
+        "path": "/usr/lib/x86_64-linux-gnu/libjpeg.so.8"
+      }
+    ],
+    "lib/native/libk5crypto.so.3": [
+      {
+        "original_sha256": "d3c3d1c5415f09918c67a5bb23cf5004aa9524b916003655af4a2bb15627760a",
+        "package": "libk5crypto3",
+        "path": "/usr/lib/x86_64-linux-gnu/libk5crypto.so.3"
+      }
+    ],
+    "lib/native/libkeyutils.so.1": [
+      {
+        "original_sha256": "ad20d5fb89df5297073b46373c65bfbb01f33a00b4949894055d29a7fcf00900",
+        "package": "libkeyutils1",
+        "path": "/lib/x86_64-linux-gnu/libkeyutils.so.1"
+      }
+    ],
+    "lib/native/libkrb5.so.3": [
+      {
+        "original_sha256": "ecc1a3b592c3685e330499aba8eac3b635e9be80b99fa65b2ef3e4f0b2d8a166",
+        "package": "libkrb5-3",
+        "path": "/usr/lib/x86_64-linux-gnu/libkrb5.so.3"
+      }
+    ],
+    "lib/native/libkrb5support.so.0": [
+      {
+        "original_sha256": "add5050d2a960ab105b568c714849d1e771cf2bd67a46dbfcc068a99de80eeec",
+        "package": "libkrb5support0",
+        "path": "/usr/lib/x86_64-linux-gnu/libkrb5support.so.0"
+      }
+    ],
+    "lib/native/liblcms2.so.2": [
+      {
+        "original_sha256": "ebd9d2736f4b45a9b1a6b8e196eb766b724b400c4d6883f5890597abb9dbaad4",
+        "package": "liblcms2-2",
+        "path": "/usr/lib/x86_64-linux-gnu/liblcms2.so.2"
+      }
+    ],
+    "lib/native/libluajit-5.1.so.2.1.1788856981": [],
+    "lib/native/liblz4.so.1": [
+      {
+        "original_sha256": "65f47a3dc2cec5f938379b7b625f0621657bf1254551895d22462c6a204cbad8",
+        "package": "liblz4-1",
+        "path": "/usr/lib/x86_64-linux-gnu/liblz4.so.1"
+      }
+    ],
+    "lib/native/liblzma.so.5": [
+      {
+        "original_sha256": "7fa51c1500cb9fcc4c7d69b7fe0a6d7203cfe6af64373f6c411c5445ef1b402c",
+        "package": "liblzma5",
+        "path": "/lib/x86_64-linux-gnu/liblzma.so.5"
+      }
+    ],
+    "lib/native/libmanette-0.2.so.0": [
+      {
+        "original_sha256": "84f43706a847105efee03cc92f16a46e9041ec2d4519684a32ceffa0e072e940",
+        "package": "libmanette-0.2-0",
+        "path": "/usr/lib/x86_64-linux-gnu/libmanette-0.2.so.0"
+      }
+    ],
+    "lib/native/libmd.so.0": [
+      {
+        "original_sha256": "bb376813876bb214535bbbdac70f2c0c4b00baecb81557dab78a79518248df06",
+        "package": "libmd0",
+        "path": "/usr/lib/x86_64-linux-gnu/libmd.so.0"
+      }
+    ],
+    "lib/native/libmount.so.1": [
+      {
+        "original_sha256": "b6e4a8ddc851b58e7f8c93945f875439d2a14a8809efde17b028c4e2db6af328",
+        "package": "libmount1",
+        "path": "/usr/lib/x86_64-linux-gnu/libmount.so.1"
+      }
+    ],
+    "lib/native/libmp3lame.so.0": [
+      {
+        "original_sha256": "85ca65a26c2138f4c22ad7089defa6ad4c20b556a1145788c56d2efd9fdf3d04",
+        "package": "libmp3lame0",
+        "path": "/usr/lib/x86_64-linux-gnu/libmp3lame.so.0"
+      }
+    ],
+    "lib/native/libmpg123.so.0": [
+      {
+        "original_sha256": "8cbc12cc0e3d6b8184fa1a1f9fc2f77b9a5984cf2ebe43d8fed7ac89f2db2f02",
+        "package": "libmpg123-0",
+        "path": "/usr/lib/x86_64-linux-gnu/libmpg123.so.0"
+      }
+    ],
+    "lib/native/libmpv.so.2.5.0": [],
+    "lib/native/libncurses.so.6": [
+      {
+        "original_sha256": "2f6b3ec2f992420a349d54889453856fe0531de3fba0223fcef1b557d54c6321",
+        "package": "libncurses6",
+        "path": "/lib/x86_64-linux-gnu/libncurses.so.6"
+      }
+    ],
+    "lib/native/libncursesw.so.6": [
+      {
+        "original_sha256": "96a5920c1f6d1fd6ff3ac35c03b8fc9725e8fe6964c10e0299f772667d522a6b",
+        "package": "libncursesw6",
+        "path": "/lib/x86_64-linux-gnu/libncursesw.so.6"
+      }
+    ],
+    "lib/native/libnettle.so.8": [
+      {
+        "original_sha256": "2d3bda6cfa2d477cd91b8178843d19e081b911a124f04b4be06b6e32c9fabc73",
+        "package": "libnettle8",
+        "path": "/usr/lib/x86_64-linux-gnu/libnettle.so.8"
+      }
+    ],
+    "lib/native/libnghttp2.so.14": [
+      {
+        "original_sha256": "3b9cae3346ad67fbe962fa1ed73f358e125604a3ad7bb11626fa712ccefe6ee2",
+        "package": "libnghttp2-14",
+        "path": "/usr/lib/x86_64-linux-gnu/libnghttp2.so.14"
+      }
+    ],
+    "lib/native/libogg.so.0": [
+      {
+        "original_sha256": "a499308d738035e86cec230c6eb0a19e895f3b197c9399107a63706253e0c737",
+        "package": "libogg0",
+        "path": "/usr/lib/x86_64-linux-gnu/libogg.so.0"
+      }
+    ],
+    "lib/native/libopus.so.0": [
+      {
+        "original_sha256": "f63e3597e52b57f8957bafb309e9f4d91108a3987136ace5f386f269a0947e55",
+        "package": "libopus0",
+        "path": "/usr/lib/x86_64-linux-gnu/libopus.so.0"
+      }
+    ],
+    "lib/native/liborc-0.4.so.0": [
+      {
+        "original_sha256": "78021ddd71ece000879a92b854ae2c060898eafe606ad5f38d2889882d42d731",
+        "package": "liborc-0.4-0",
+        "path": "/usr/lib/x86_64-linux-gnu/liborc-0.4.so.0"
+      }
+    ],
+    "lib/native/libp11-kit.so.0": [
+      {
+        "original_sha256": "883ecfef9c8d3a2f17a1b8a3116e9e32d272f1c43e2088bf7837b98d2c50f5e2",
+        "package": "libp11-kit0",
+        "path": "/usr/lib/x86_64-linux-gnu/libp11-kit.so.0"
+      }
+    ],
+    "lib/native/libpango-1.0.so.0": [
+      {
+        "original_sha256": "de79fa0f427b7f0e4eaec7246393435535541bb3b0333f0c71b65d73f07602e1",
+        "package": "libpango-1.0-0",
+        "path": "/usr/lib/x86_64-linux-gnu/libpango-1.0.so.0"
+      }
+    ],
+    "lib/native/libpangocairo-1.0.so.0": [
+      {
+        "original_sha256": "f8ca87d7af66241aae432050c679e61d726a6542cb47a1333ce248c0d14c2448",
+        "package": "libpangocairo-1.0-0",
+        "path": "/usr/lib/x86_64-linux-gnu/libpangocairo-1.0.so.0"
+      }
+    ],
+    "lib/native/libpangoft2-1.0.so.0": [
+      {
+        "original_sha256": "158f0b0d7de5fdadf4b6671f97f69e84fa2eec827bb0416788a54dea41b85b39",
+        "package": "libpangoft2-1.0-0",
+        "path": "/usr/lib/x86_64-linux-gnu/libpangoft2-1.0.so.0"
+      }
+    ],
+    "lib/native/libpcre.so.3": [
+      {
+        "original_sha256": "baae995e98223eee1afe6c640f21bdbba91b9c170584ce766418b59810d98a93",
+        "package": "libpcre3",
+        "path": "/lib/x86_64-linux-gnu/libpcre.so.3"
+      }
+    ],
+    "lib/native/libpcre2-8.so.0": [
+      {
+        "original_sha256": "f887eed7d0df7073f3d8bdc9e60d35082453b10165cf45359b5019e33ba2b9ec",
+        "package": "libpcre2-8-0",
+        "path": "/usr/lib/x86_64-linux-gnu/libpcre2-8.so.0"
+      }
+    ],
+    "lib/native/libpixman-1.so.0": [
+      {
+        "original_sha256": "f6b5d0cabb6fd4b1007edbfdff4a0601f6631aa66595a89aa4f0128958661dd0",
+        "package": "libpixman-1-0",
+        "path": "/usr/lib/x86_64-linux-gnu/libpixman-1.so.0"
+      }
+    ],
+    "lib/native/libplacebo.so.360": [],
+    "lib/native/libplayer_bridge.so": [],
+    "lib/native/libpng16.so.16": [
+      {
+        "original_sha256": "ca1306d319d9e6a904fe4b0fa21e41952db2b2f2f5384f70a1301fa713300f5b",
+        "package": "libpng16-16",
+        "path": "/usr/lib/x86_64-linux-gnu/libpng16.so.16"
+      }
+    ],
+    "lib/native/libproxy.so.1": [
+      {
+        "original_sha256": "cfef5a25cdc7fdd3b8f10b28213c8d9986a26011708f5e618ad0fa3c97ffc893",
+        "package": "libproxy1v5",
+        "path": "/usr/lib/x86_64-linux-gnu/libproxy.so.1"
+      }
+    ],
+    "lib/native/libpsl.so.5": [
+      {
+        "original_sha256": "95ca960ec3417da3d9505c8d2c6f0e9b7caf79ab900f6099a6bd938cf91069c5",
+        "package": "libpsl5",
+        "path": "/usr/lib/x86_64-linux-gnu/libpsl.so.5"
+      }
+    ],
+    "lib/native/libpulse.so.0": [
+      {
+        "original_sha256": "dc4e62204e11605b8568dede082f0f24d36b4d69b2fbc6cb5d9c10c89d748b7e",
+        "package": "libpulse0",
+        "path": "/usr/lib/x86_64-linux-gnu/libpulse.so.0"
+      }
+    ],
+    "lib/native/libpulsecommon-15.99.so": [
+      {
+        "original_sha256": "34d98da64f951df8bec478523323695a198d7ca7596144f4c48c8f7568f138f5",
+        "package": "libpulse0",
+        "path": "/usr/lib/x86_64-linux-gnu/pulseaudio/libpulsecommon-15.99.so"
+      }
+    ],
+    "lib/native/libraw1394.so.11": [
+      {
+        "original_sha256": "7ef6b20355632a339d219d3dfd7f7097056ab9d0532f9acb8890a2e66a79da19",
+        "package": "libraw1394-11",
+        "path": "/usr/lib/x86_64-linux-gnu/libraw1394.so.11"
+      }
+    ],
+    "lib/native/librom1394.so.0": [
+      {
+        "original_sha256": "45430fc3007e2aaddd41aa8dadfd584a0d0f4bebe6dc4c0cc9994a67ea93e132",
+        "package": "libavc1394-0",
+        "path": "/usr/lib/x86_64-linux-gnu/librom1394.so.0"
+      }
+    ],
+    "lib/native/librsvg-2.so.2": [
+      {
+        "original_sha256": "de487005050dc31281932e2de24d8307167b4c1cd9c042521b34602fc93c866f",
+        "package": "librsvg2-2",
+        "path": "/usr/lib/x86_64-linux-gnu/librsvg-2.so.2"
+      }
+    ],
+    "lib/native/libseccomp.so.2": [
+      {
+        "original_sha256": "0a10b36f83b58889352ef9de563fddeb80ba649d6a7108f32f31cfb08693e2a3",
+        "package": "libseccomp2",
+        "path": "/usr/lib/x86_64-linux-gnu/libseccomp.so.2"
+      }
+    ],
+    "lib/native/libsecret-1.so.0": [
+      {
+        "original_sha256": "596a51073e24172166c26ee459b2794c6506c20f4b5a0fbd806adb228dd3f2ae",
+        "package": "libsecret-1-0",
+        "path": "/usr/lib/x86_64-linux-gnu/libsecret-1.so.0"
+      }
+    ],
+    "lib/native/libselinux.so.1": [
+      {
+        "original_sha256": "624eb1e6a7510e0983e9caa1bbf3e1966acb64fd6d3ad4db94528addbe1e7224",
+        "package": "libselinux1",
+        "path": "/lib/x86_64-linux-gnu/libselinux.so.1"
+      }
+    ],
+    "lib/native/libshout.so.3": [
+      {
+        "original_sha256": "296541203df8f6fcb5191b85c2f10e48caa4196f82f3b8fa60e45cb64da4c1e3",
+        "package": "libshout3",
+        "path": "/usr/lib/x86_64-linux-gnu/libshout.so.3"
+      }
+    ],
+    "lib/native/libslang.so.2": [
+      {
+        "original_sha256": "0ff07817ba60356e709ef0062c071489c1fc1b6617880d969de18753b8d674f6",
+        "package": "libslang2",
+        "path": "/usr/lib/x86_64-linux-gnu/libslang.so.2"
+      }
+    ],
+    "lib/native/libsndfile.so.1": [
+      {
+        "original_sha256": "ca86c8366be4cca11811f5338757439d9cb65db6728b4276083aad211b4fbf7f",
+        "package": "libsndfile1",
+        "path": "/usr/lib/x86_64-linux-gnu/libsndfile.so.1"
+      }
+    ],
+    "lib/native/libsoup-3.0.so.0": [
+      {
+        "original_sha256": "aa02ab998740d5d52fa205c95a4f33ad2ac82908f26e1ef17b0d705375f8374b",
+        "package": "libsoup-3.0-0",
+        "path": "/usr/lib/x86_64-linux-gnu/libsoup-3.0.so.0"
+      }
+    ],
+    "lib/native/libspeex.so.1": [
+      {
+        "original_sha256": "ccce92e26df2cb9b87d0c8f745e6348d21f7bafe766dc162b28a3f7e21380bd7",
+        "package": "libspeex1",
+        "path": "/usr/lib/x86_64-linux-gnu/libspeex.so.1"
+      }
+    ],
+    "lib/native/libsqlite3.so.0": [
+      {
+        "original_sha256": "f5a7fc236f80f3185608d14e9f4dea3e3fd647582e123e8a00f253629fe16830",
+        "package": "libsqlite3-0",
+        "path": "/usr/lib/x86_64-linux-gnu/libsqlite3.so.0"
+      }
+    ],
+    "lib/native/libssl.so.3": [
+      {
+        "original_sha256": "51fc92556f11ddce62f3f988d3fe973fab8fb4742032e61a713688581c924262",
+        "package": "libssl3",
+        "path": "/usr/lib/x86_64-linux-gnu/libssl.so.3"
+      }
+    ],
+    "lib/native/libswresample.so.7.1.102": [],
+    "lib/native/libswscale.so.10.1.102": [],
+    "lib/native/libsystemd.so.0": [
+      {
+        "original_sha256": "07e1466948401c25c5026c4eb616bd8c8aef4be410dd6b4a2489f321b7cb360d",
+        "package": "libsystemd0",
+        "path": "/usr/lib/x86_64-linux-gnu/libsystemd.so.0"
+      }
+    ],
+    "lib/native/libtag.so.1": [
+      {
+        "original_sha256": "6108a3cfbeb264bc7a4a35ec681d3d913b2e435fc1b6750a24af763d614bb839",
+        "package": "libtag1v5-vanilla",
+        "path": "/usr/lib/x86_64-linux-gnu/libtag.so.1"
+      }
+    ],
+    "lib/native/libtasn1.so.6": [
+      {
+        "original_sha256": "f198a1272ca6a071b313646ae65fc1942628df8caebe07e4c377b15b68903358",
+        "package": "libtasn1-6",
+        "path": "/usr/lib/x86_64-linux-gnu/libtasn1.so.6"
+      }
+    ],
+    "lib/native/libthai.so.0": [
+      {
+        "original_sha256": "f8459dcadb747e81e21cad576f8143d7e794671689e2aac0edb1b319f548293a",
+        "package": "libthai0",
+        "path": "/usr/lib/x86_64-linux-gnu/libthai.so.0"
+      }
+    ],
+    "lib/native/libtheora.so.0": [
+      {
+        "original_sha256": "d9548890f0fd3a8039843d18f9859113eac85fea53c523bc4711c7bb9df2ae54",
+        "package": "libtheora0",
+        "path": "/usr/lib/x86_64-linux-gnu/libtheora.so.0"
+      }
+    ],
+    "lib/native/libtheoradec.so.1": [
+      {
+        "original_sha256": "ed8da0853c9c402464f548ee53f3cb60fb6f4b627f1bcca7997dd9a2cd63b86f",
+        "package": "libtheora0",
+        "path": "/usr/lib/x86_64-linux-gnu/libtheoradec.so.1"
+      }
+    ],
+    "lib/native/libtheoraenc.so.1": [
+      {
+        "original_sha256": "44fca6dcdbd4ab86814ea1289b671f3e55823fdab8ac16b37a8f49f4f147fb67",
+        "package": "libtheora0",
+        "path": "/usr/lib/x86_64-linux-gnu/libtheoraenc.so.1"
+      }
+    ],
+    "lib/native/libtiff.so.5": [
+      {
+        "original_sha256": "005ba73d8ce3ebec60a985df14d00fc7d57719f3000f142ef80efb2c7011bb1d",
+        "package": "libtiff5",
+        "path": "/usr/lib/x86_64-linux-gnu/libtiff.so.5"
+      }
+    ],
+    "lib/native/libtinfo.so.6": [
+      {
+        "original_sha256": "856b8451914abc2277c3d91c64ba3e72b2e0d519806397afecae92fda1a6b10c",
+        "package": "libtinfo6",
+        "path": "/lib/x86_64-linux-gnu/libtinfo.so.6"
+      }
+    ],
+    "lib/native/libtwolame.so.0": [
+      {
+        "original_sha256": "192bf57f4fbd58b98b01d962e0111fc081c620a75126bc84674f2747399ebe62",
+        "package": "libtwolame0",
+        "path": "/usr/lib/x86_64-linux-gnu/libtwolame.so.0"
+      }
+    ],
+    "lib/native/libudev.so.1": [
+      {
+        "original_sha256": "1f47ab3bd9929605e30935503e339b6f5dcceb71595f0716377be1318962561d",
+        "package": "libudev1",
+        "path": "/usr/lib/x86_64-linux-gnu/libudev.so.1"
+      }
+    ],
+    "lib/native/libunibreak.so.8.0.0": [],
+    "lib/native/libunistring.so.2": [
+      {
+        "original_sha256": "9c28d59500f186fc28bf7e77e9b1a71129f66731c52ac1e974b9acd1a760911a",
+        "package": "libunistring2",
+        "path": "/usr/lib/x86_64-linux-gnu/libunistring.so.2"
+      }
+    ],
+    "lib/native/libunwind.so.8": [
+      {
+        "original_sha256": "5d1f6f104f79698e137c9f17c4b0317dfd96816c0eb6a87c50619a41472ca382",
+        "package": "libunwind8",
+        "path": "/usr/lib/x86_64-linux-gnu/libunwind.so.8"
+      }
+    ],
+    "lib/native/libuuid.so.1": [
+      {
+        "original_sha256": "4472cf91dbc01395761fb45d0f4b25f6241406fe54cbf540c13755a3706a7b17",
+        "package": "libuuid1",
+        "path": "/usr/lib/x86_64-linux-gnu/libuuid.so.1"
+      }
+    ],
+    "lib/native/libv4l2.so.0": [
+      {
+        "original_sha256": "bfe3e229d52274c4556e344945e86b2b7f4a45d3eec05cb55a9252ffa21d8e46",
+        "package": "libv4l-0",
+        "path": "/usr/lib/x86_64-linux-gnu/libv4l2.so.0"
+      }
+    ],
+    "lib/native/libv4lconvert.so.0": [
+      {
+        "original_sha256": "d55d3c8116d854ee6989586ffcb57a3ff444ff0ced65ccc781bd0f0005619077",
+        "package": "libv4lconvert0",
+        "path": "/usr/lib/x86_64-linux-gnu/libv4lconvert.so.0"
+      }
+    ],
+    "lib/native/libvisual-0.4.so.0": [
+      {
+        "original_sha256": "9627e9e6c9e6c0ce9a3b39bfc6e3bdf69a2337b968538270d171510538cf3f0d",
+        "package": "libvisual-0.4-0",
+        "path": "/usr/lib/x86_64-linux-gnu/libvisual-0.4.so.0"
+      }
+    ],
+    "lib/native/libvorbis.so.0": [
+      {
+        "original_sha256": "09ea7bba29ecd10714d85d8de184955e04e37112c8528319ccff25a4013bd30a",
+        "package": "libvorbis0a",
+        "path": "/usr/lib/x86_64-linux-gnu/libvorbis.so.0"
+      }
+    ],
+    "lib/native/libvorbisenc.so.2": [
+      {
+        "original_sha256": "888a965f043cd8346d0ba759ba5e84038c2bf779b4457a0cb6ac628b419d6a47",
+        "package": "libvorbisenc2",
+        "path": "/usr/lib/x86_64-linux-gnu/libvorbisenc.so.2"
+      }
+    ],
+    "lib/native/libvpx.so.7": [
+      {
+        "original_sha256": "46ded032f9e2bd60f08f16802f5804897e3945e36e418606da173a786075b4ab",
+        "package": "libvpx7",
+        "path": "/usr/lib/x86_64-linux-gnu/libvpx.so.7"
+      }
+    ],
+    "lib/native/libvulkan.so.1.4.363": [],
+    "lib/native/libwavpack.so.1": [
+      {
+        "original_sha256": "5390848db554876429f52b4fc52f1fa418a0a98f001e238c16046aa16c146aa0",
+        "package": "libwavpack1",
+        "path": "/usr/lib/x86_64-linux-gnu/libwavpack.so.1"
+      }
+    ],
+    "lib/native/libwayland-client.so.0": [
+      {
+        "original_sha256": "30a119138d812d6e1c3280a7c2d5a9f49f13ae07b31cda2beb397da4f68f6d54",
+        "package": "libwayland-client0",
+        "path": "/usr/lib/x86_64-linux-gnu/libwayland-client.so.0"
+      }
+    ],
+    "lib/native/libwayland-cursor.so.0": [
+      {
+        "original_sha256": "1bf8bf6af96711611300c6a9be353af93ee89e208a2431eb6a894222d314c7b2",
+        "package": "libwayland-cursor0",
+        "path": "/usr/lib/x86_64-linux-gnu/libwayland-cursor.so.0"
+      }
+    ],
+    "lib/native/libwayland-egl.so.1": [
+      {
+        "original_sha256": "c776f338f3dfbbb7056253dde27e08ff851cd3eb269fb57ea9b04b81f56d6ec3",
+        "package": "libwayland-egl1",
+        "path": "/usr/lib/x86_64-linux-gnu/libwayland-egl.so.1"
+      }
+    ],
+    "lib/native/libwayland-server.so.0": [
+      {
+        "original_sha256": "ce73bdce7d0953f4f045a232f5351ba386be24d3a4aa5f00149f346e4d639003",
+        "package": "libwayland-server0",
+        "path": "/usr/lib/x86_64-linux-gnu/libwayland-server.so.0"
+      }
+    ],
+    "lib/native/libwebkit2gtk-4.1.so": [
+      {
+        "original_sha256": "f11fd878a05c1e43a80b986702949bc0bd36f848f926c14dabc32dee40cbb9f3",
+        "package": "libwebkit2gtk-4.1-dev",
+        "path": "/usr/lib/x86_64-linux-gnu/libwebkit2gtk-4.1.so"
+      }
+    ],
+    "lib/native/libwebkit2gtk-4.1.so.0": [
+      {
+        "original_sha256": "f11fd878a05c1e43a80b986702949bc0bd36f848f926c14dabc32dee40cbb9f3",
+        "package": "libwebkit2gtk-4.1-0",
+        "path": "/usr/lib/x86_64-linux-gnu/libwebkit2gtk-4.1.so.0"
+      }
+    ],
+    "lib/native/libwebkit2gtk-4.1.so.0.19.7": [
+      {
+        "original_sha256": "f11fd878a05c1e43a80b986702949bc0bd36f848f926c14dabc32dee40cbb9f3",
+        "package": "libwebkit2gtk-4.1-0",
+        "path": "/usr/lib/x86_64-linux-gnu/libwebkit2gtk-4.1.so.0.19.7"
+      }
+    ],
+    "lib/native/libwebp.so.7": [
+      {
+        "original_sha256": "2cff2529eb932c3b81ef6a344b99a5412c893d3f672a7d28f986a8d08c8b2ccb",
+        "package": "libwebp7",
+        "path": "/usr/lib/x86_64-linux-gnu/libwebp.so.7"
+      }
+    ],
+    "lib/native/libwebpdemux.so.2": [
+      {
+        "original_sha256": "2f45e064033dea262cb8708c845cd0d4d32a19bd05e72b33cf5ec36ee3294b0c",
+        "package": "libwebpdemux2",
+        "path": "/usr/lib/x86_64-linux-gnu/libwebpdemux.so.2"
+      }
+    ],
+    "lib/native/libwebpmux.so.3": [
+      {
+        "original_sha256": "28f3105333cf1a45fa80629665667dbdfcac5cb9a51694a2ce33dea858a3e5fa",
+        "package": "libwebpmux3",
+        "path": "/usr/lib/x86_64-linux-gnu/libwebpmux.so.3"
+      }
+    ],
+    "lib/native/libwoff2common.so.1.0.2": [
+      {
+        "original_sha256": "024cbebf1b88326826b4541e510829f685604caa337d224e7cfb1261b5f42784",
+        "package": "libwoff1",
+        "path": "/usr/lib/x86_64-linux-gnu/libwoff2common.so.1.0.2"
+      }
+    ],
+    "lib/native/libwoff2dec.so.1.0.2": [
+      {
+        "original_sha256": "0815ab1155260dc0a0de93d483eb4ff095d5b9a62c3e5682a87d87d26b36776c",
+        "package": "libwoff1",
+        "path": "/usr/lib/x86_64-linux-gnu/libwoff2dec.so.1.0.2"
+      }
+    ],
+    "lib/native/libxcb-randr.so.0": [
+      {
+        "original_sha256": "942a242b33c80ab4a5ce6d3db62d12f8856589860fa1986248b046850e58a80e",
+        "package": "libxcb-randr0",
+        "path": "/usr/lib/x86_64-linux-gnu/libxcb-randr.so.0"
+      }
+    ],
+    "lib/native/libxcb-render.so.0": [
+      {
+        "original_sha256": "116b70d1eef6cbad17bec65091b19fce427dc009a6213cee796935fa6a9ce520",
+        "package": "libxcb-render0",
+        "path": "/usr/lib/x86_64-linux-gnu/libxcb-render.so.0"
+      }
+    ],
+    "lib/native/libxcb-shm.so.0": [
+      {
+        "original_sha256": "722e13a0a26551dd9f11b930c4632c9e51d2e9f743315d45c1b665356950d42d",
+        "package": "libxcb-shm0",
+        "path": "/usr/lib/x86_64-linux-gnu/libxcb-shm.so.0"
+      }
+    ],
+    "lib/native/libxcb.so.1": [
+      {
+        "original_sha256": "aabc489094abd96c876d1c989a2da8a8aa6d28f5a676c4a84dd6d0a0c34aec5d",
+        "package": "libxcb1",
+        "path": "/usr/lib/x86_64-linux-gnu/libxcb.so.1"
+      }
+    ],
+    "lib/native/libxml2.so.2": [
+      {
+        "original_sha256": "1db824dff2a302a15540b31595d8507ed7a45ac8783d7325953c653acb88112c",
+        "package": "libxml2",
+        "path": "/usr/lib/x86_64-linux-gnu/libxml2.so.2"
+      }
+    ],
+    "lib/native/libxslt.so.1": [
+      {
+        "original_sha256": "926ce009a8640b6d3c30d97667ce2eb226d77f030887223208d868f963938ddd",
+        "package": "libxslt1.1",
+        "path": "/usr/lib/x86_64-linux-gnu/libxslt.so.1"
+      }
+    ],
+    "lib/native/libyuv.so.0": [
+      {
+        "original_sha256": "6a8b7d5002b0438690c35a490a80fdff29ffccf8b5d5c5ac4b68142fd2754e50",
+        "package": "libyuv0",
+        "path": "/usr/lib/x86_64-linux-gnu/libyuv.so.0"
+      }
+    ],
+    "lib/native/libz.so.1": [
+      {
+        "original_sha256": "64c206f0146cc58bbddc4f22054436f4ff278f5a554aa3ce6921ddf7e9133370",
+        "package": "zlib1g",
+        "path": "/lib/x86_64-linux-gnu/libz.so.1"
+      }
+    ],
+    "lib/native/libzstd.so.1": [
+      {
+        "original_sha256": "5df4f4df42d76270bb6981fabc7c1fdccd8ad28a23d84d67f73203fb3f537667",
+        "package": "libzstd1",
+        "path": "/usr/lib/x86_64-linux-gnu/libzstd.so.1"
+      }
+    ],
+    "lib/native/webkit2gtk-4.1/injected-bundle/libwebkit2gtkinjectedbundle.so": [
+      {
+        "original_sha256": "5612d9a4ccf2ec87d4e9c7934fdd7769f4d7e8e8af396fb0bb24923b839f3a23",
+        "package": "libwebkit2gtk-4.1-0",
+        "path": "/usr/lib/x86_64-linux-gnu/webkit2gtk-4.1/injected-bundle/libwebkit2gtkinjectedbundle.so"
+      }
+    ],
+    "lib/webkit2gtk-4.1/WebKitGPUProcess": [
+      {
+        "original_sha256": "d64d1649da700f591da7c2f8015c97b549a4c1e470ca3f8f6b8df13065c78339",
+        "package": "libwebkit2gtk-4.1-0",
+        "path": "/usr/lib/x86_64-linux-gnu/webkit2gtk-4.1/WebKitGPUProcess"
+      }
+    ],
+    "lib/webkit2gtk-4.1/WebKitNetworkProcess": [
+      {
+        "original_sha256": "5f9bf5136fbb4615df1ccd7ef37a4944bb1820870e9c101e3cf891c886a57e49",
+        "package": "libwebkit2gtk-4.1-0",
+        "path": "/usr/lib/x86_64-linux-gnu/webkit2gtk-4.1/WebKitNetworkProcess"
+      }
+    ],
+    "lib/webkit2gtk-4.1/WebKitWebProcess": [
+      {
+        "original_sha256": "5375925828be8acc2c0e905cae0d4654da0519ce1b83f2f724a43eae346bd78e",
+        "package": "libwebkit2gtk-4.1-0",
+        "path": "/usr/lib/x86_64-linux-gnu/webkit2gtk-4.1/WebKitWebProcess"
+      }
+    ],
+    "lib/webkit2gtk-4.1/jsc": []
+  },
+  "oci_sha256": "d6c0c8b5658ce2a9faf724e78336ac0a07f95a9585fc2939583e6e7ae826424f",
+  "packages": {
+    "adwaita-icon-theme": {
+      "binary_version": "41.0-1ubuntu1",
+      "source_package": "adwaita-icon-theme",
+      "source_version": "41.0-1ubuntu1"
+    },
+    "bubblewrap": {
+      "binary_version": "0.6.1-1ubuntu0.3",
+      "source_package": "bubblewrap",
+      "source_version": "0.6.1-1ubuntu0.3"
+    },
+    "dconf-gsettings-backend": {
+      "binary_version": "0.40.0-3ubuntu0.1",
+      "source_package": "dconf",
+      "source_version": "0.40.0-3ubuntu0.1"
+    },
+    "glib-networking": {
+      "binary_version": "2.72.0-1",
+      "source_package": "glib-networking",
+      "source_version": "2.72.0-1"
+    },
+    "gsettings-desktop-schemas": {
+      "binary_version": "42.0-1ubuntu1",
+      "source_package": "gsettings-desktop-schemas",
+      "source_version": "42.0-1ubuntu1"
+    },
+    "gstreamer1.0-plugins-base": {
+      "binary_version": "1.20.1-1ubuntu0.7",
+      "source_package": "gst-plugins-base1.0",
+      "source_version": "1.20.1-1ubuntu0.7"
+    },
+    "gstreamer1.0-plugins-good": {
+      "binary_version": "1.20.3-0ubuntu1.9",
+      "source_package": "gst-plugins-good1.0",
+      "source_version": "1.20.3-0ubuntu1.9"
+    },
+    "gtk-update-icon-cache": {
+      "binary_version": "3.24.33-1ubuntu2.2",
+      "source_package": "gtk+3.0",
+      "source_version": "3.24.33-1ubuntu2.2"
+    },
+    "hicolor-icon-theme": {
+      "binary_version": "0.17-2",
+      "source_package": "hicolor-icon-theme",
+      "source_version": "0.17-2"
+    },
+    "libaa1": {
+      "binary_version": "1.4p5-50build1",
+      "source_package": "aalib",
+      "source_version": "1.4p5-50build1"
+    },
+    "libabsl20210324": {
+      "binary_version": "0~20210324.2-2ubuntu0.3",
+      "source_package": "abseil",
+      "source_version": "0~20210324.2-2ubuntu0.3"
+    },
+    "libaom3": {
+      "binary_version": "3.3.0-1ubuntu0.1",
+      "source_package": "aom",
+      "source_version": "3.3.0-1ubuntu0.1"
+    },
+    "libapparmor1": {
+      "binary_version": "3.0.4-2ubuntu2.5",
+      "source_package": "apparmor",
+      "source_version": "3.0.4-2ubuntu2.5"
+    },
+    "libasound2": {
+      "binary_version": "1.2.6.1-1ubuntu1.2",
+      "source_package": "alsa-lib",
+      "source_version": "1.2.6.1-1ubuntu1.2"
+    },
+    "libasyncns0": {
+      "binary_version": "0.8-6build2",
+      "source_package": "libasyncns",
+      "source_version": "0.8-6build2"
+    },
+    "libatk-bridge2.0-0": {
+      "binary_version": "2.38.0-3",
+      "source_package": "at-spi2-atk",
+      "source_version": "2.38.0-3"
+    },
+    "libatk1.0-0": {
+      "binary_version": "2.36.0-3build1",
+      "source_package": "atk1.0",
+      "source_version": "2.36.0-3build1"
+    },
+    "libatomic1": {
+      "binary_version": "12.3.0-1ubuntu1~22.04.3",
+      "source_package": "gcc-12",
+      "source_version": "12.3.0-1ubuntu1~22.04.3"
+    },
+    "libatspi2.0-0": {
+      "binary_version": "2.44.0-3",
+      "source_package": "at-spi2-core",
+      "source_version": "2.44.0-3"
+    },
+    "libavc1394-0": {
+      "binary_version": "0.5.4-5build2",
+      "source_package": "libavc1394",
+      "source_version": "0.5.4-5build2"
+    },
+    "libavif13": {
+      "binary_version": "0.9.3-3",
+      "source_package": "libavif",
+      "source_version": "0.9.3-3"
+    },
+    "libblkid1": {
+      "binary_version": "2.37.2-4ubuntu3.6",
+      "source_package": "util-linux",
+      "source_version": "2.37.2-4ubuntu3.6"
+    },
+    "libbrotli1": {
+      "binary_version": "1.0.9-2build6",
+      "source_package": "brotli",
+      "source_version": "1.0.9-2build6"
+    },
+    "libbsd0": {
+      "binary_version": "0.11.5-1",
+      "source_package": "libbsd",
+      "source_version": "0.11.5-1"
+    },
+    "libcaca0": {
+      "binary_version": "0.99.beta19-2.2ubuntu4.2",
+      "source_package": "libcaca",
+      "source_version": "0.99.beta19-2.2ubuntu4.2"
+    },
+    "libcairo-gobject2": {
+      "binary_version": "1.16.0-5ubuntu2.1",
+      "source_package": "cairo",
+      "source_version": "1.16.0-5ubuntu2.1"
+    },
+    "libcairo2": {
+      "binary_version": "1.16.0-5ubuntu2.1",
+      "source_package": "cairo",
+      "source_version": "1.16.0-5ubuntu2.1"
+    },
+    "libcap2": {
+      "binary_version": "1:2.44-1ubuntu0.22.04.3",
+      "source_package": "libcap2",
+      "source_version": "1:2.44-1ubuntu0.22.04.3"
+    },
+    "libcdparanoia0": {
+      "binary_version": "3.10.2+debian-14build2",
+      "source_package": "cdparanoia",
+      "source_version": "3.10.2+debian-14build2"
+    },
+    "libcom-err2": {
+      "binary_version": "1.46.5-2ubuntu1.2",
+      "source_package": "e2fsprogs",
+      "source_version": "1.46.5-2ubuntu1.2"
+    },
+    "libdatrie1": {
+      "binary_version": "0.2.13-2",
+      "source_package": "libdatrie",
+      "source_version": "0.2.13-2"
+    },
+    "libdav1d5": {
+      "binary_version": "0.9.2-1",
+      "source_package": "dav1d",
+      "source_version": "0.9.2-1"
+    },
+    "libdb5.3": {
+      "binary_version": "5.3.28+dfsg1-0.8ubuntu3",
+      "source_package": "db5.3",
+      "source_version": "5.3.28+dfsg1-0.8ubuntu3"
+    },
+    "libdbus-1-3": {
+      "binary_version": "1.12.20-2ubuntu4.1",
+      "source_package": "dbus",
+      "source_version": "1.12.20-2ubuntu4.1"
+    },
+    "libdeflate0": {
+      "binary_version": "1.10-2",
+      "source_package": "libdeflate",
+      "source_version": "1.10-2"
+    },
+    "libdv4": {
+      "binary_version": "1.0.0-14build1",
+      "source_package": "libdv",
+      "source_version": "1.0.0-14build1"
+    },
+    "libdw1": {
+      "binary_version": "0.186-1ubuntu0.1",
+      "source_package": "elfutils",
+      "source_version": "0.186-1ubuntu0.1"
+    },
+    "libelf1": {
+      "binary_version": "0.186-1ubuntu0.1",
+      "source_package": "elfutils",
+      "source_version": "0.186-1ubuntu0.1"
+    },
+    "libenchant-2-2": {
+      "binary_version": "2.3.2-1ubuntu2",
+      "source_package": "enchant-2",
+      "source_version": "2.3.2-1ubuntu2"
+    },
+    "libepoxy0": {
+      "binary_version": "1.5.10-1",
+      "source_package": "libepoxy",
+      "source_version": "1.5.10-1"
+    },
+    "libevdev2": {
+      "binary_version": "1.12.1+dfsg-1",
+      "source_package": "libevdev",
+      "source_version": "1.12.1+dfsg-1"
+    },
+    "libexpat1": {
+      "binary_version": "2.4.7-1ubuntu0.9",
+      "source_package": "expat",
+      "source_version": "2.4.7-1ubuntu0.9"
+    },
+    "libffi8": {
+      "binary_version": "3.4.2-4",
+      "source_package": "libffi",
+      "source_version": "3.4.2-4"
+    },
+    "libflac8": {
+      "binary_version": "1.3.3-2ubuntu0.2",
+      "source_package": "flac",
+      "source_version": "1.3.3-2ubuntu0.2"
+    },
+    "libflite1": {
+      "binary_version": "2.2-3",
+      "source_package": "flite",
+      "source_version": "2.2-3"
+    },
+    "libfontconfig1": {
+      "binary_version": "2.13.1-4.2ubuntu5",
+      "source_package": "fontconfig",
+      "source_version": "2.13.1-4.2ubuntu5"
+    },
+    "libfreetype6": {
+      "binary_version": "2.11.1+dfsg-1ubuntu0.3",
+      "source_package": "freetype",
+      "source_version": "2.11.1+dfsg-1ubuntu0.3"
+    },
+    "libfribidi0": {
+      "binary_version": "1.0.8-2ubuntu3.1",
+      "source_package": "fribidi",
+      "source_version": "1.0.8-2ubuntu3.1"
+    },
+    "libgav1-0": {
+      "binary_version": "0.17.0-1build1",
+      "source_package": "libgav1",
+      "source_version": "0.17.0-1build1"
+    },
+    "libgcrypt20": {
+      "binary_version": "1.9.4-3ubuntu3.3",
+      "source_package": "libgcrypt20",
+      "source_version": "1.9.4-3ubuntu3.3"
+    },
+    "libgdk-pixbuf-2.0-0": {
+      "binary_version": "2.42.8+dfsg-1ubuntu0.5",
+      "source_package": "gdk-pixbuf",
+      "source_version": "2.42.8+dfsg-1ubuntu0.5"
+    },
+    "libglib2.0-0": {
+      "binary_version": "2.72.4-0ubuntu2.10",
+      "source_package": "glib2.0",
+      "source_version": "2.72.4-0ubuntu2.10"
+    },
+    "libglib2.0-bin": {
+      "binary_version": "2.72.4-0ubuntu2.10",
+      "source_package": "glib2.0",
+      "source_version": "2.72.4-0ubuntu2.10"
+    },
+    "libglib2.0-dev": {
+      "binary_version": "2.72.4-0ubuntu2.10",
+      "source_package": "glib2.0",
+      "source_version": "2.72.4-0ubuntu2.10"
+    },
+    "libgmp10": {
+      "binary_version": "2:6.2.1+dfsg-3ubuntu1",
+      "source_package": "gmp",
+      "source_version": "2:6.2.1+dfsg-3ubuntu1"
+    },
+    "libgnutls30": {
+      "binary_version": "3.7.3-4ubuntu1.9",
+      "source_package": "gnutls28",
+      "source_version": "3.7.3-4ubuntu1.9"
+    },
+    "libgpg-error0": {
+      "binary_version": "1.43-3",
+      "source_package": "libgpg-error",
+      "source_version": "1.43-3"
+    },
+    "libgpm2": {
+      "binary_version": "1.20.7-10build1",
+      "source_package": "gpm",
+      "source_version": "1.20.7-10build1"
+    },
+    "libgraphite2-3": {
+      "binary_version": "1.3.14-1ubuntu0.1",
+      "source_package": "graphite2",
+      "source_version": "1.3.14-1ubuntu0.1"
+    },
+    "libgssapi-krb5-2": {
+      "binary_version": "1.19.2-2ubuntu0.10",
+      "source_package": "krb5",
+      "source_version": "1.19.2-2ubuntu0.10"
+    },
+    "libgstreamer-gl1.0-0": {
+      "binary_version": "1.20.1-1ubuntu0.7",
+      "source_package": "gst-plugins-base1.0",
+      "source_version": "1.20.1-1ubuntu0.7"
+    },
+    "libgstreamer-plugins-base1.0-0": {
+      "binary_version": "1.20.1-1ubuntu0.7",
+      "source_package": "gst-plugins-base1.0",
+      "source_version": "1.20.1-1ubuntu0.7"
+    },
+    "libgstreamer-plugins-good1.0-0": {
+      "binary_version": "1.20.3-0ubuntu1.9",
+      "source_package": "gst-plugins-good1.0",
+      "source_version": "1.20.3-0ubuntu1.9"
+    },
+    "libgstreamer1.0-0": {
+      "binary_version": "1.20.3-0ubuntu1.1",
+      "source_package": "gstreamer1.0",
+      "source_version": "1.20.3-0ubuntu1.1"
+    },
+    "libgudev-1.0-0": {
+      "binary_version": "1:237-2build1",
+      "source_package": "libgudev",
+      "source_version": "237-2build1"
+    },
+    "libharfbuzz-icu0": {
+      "binary_version": "2.7.4-1ubuntu3.2",
+      "source_package": "harfbuzz",
+      "source_version": "2.7.4-1ubuntu3.2"
+    },
+    "libharfbuzz0b": {
+      "binary_version": "2.7.4-1ubuntu3.2",
+      "source_package": "harfbuzz",
+      "source_version": "2.7.4-1ubuntu3.2"
+    },
+    "libhogweed6": {
+      "binary_version": "3.7.3-1build2",
+      "source_package": "nettle",
+      "source_version": "3.7.3-1build2"
+    },
+    "libhyphen0": {
+      "binary_version": "2.8.8-7build2",
+      "source_package": "hyphen",
+      "source_version": "2.8.8-7build2"
+    },
+    "libicu70": {
+      "binary_version": "70.1-2",
+      "source_package": "icu",
+      "source_version": "70.1-2"
+    },
+    "libidn2-0": {
+      "binary_version": "2.3.2-2build1",
+      "source_package": "libidn2",
+      "source_version": "2.3.2-2build1"
+    },
+    "libiec61883-0": {
+      "binary_version": "1.2.0-4build3",
+      "source_package": "libiec61883",
+      "source_version": "1.2.0-4build3"
+    },
+    "libjack-jackd2-0": {
+      "binary_version": "1.9.20~dfsg-1",
+      "source_package": "jackd2",
+      "source_version": "1.9.20~dfsg-1"
+    },
+    "libjbig0": {
+      "binary_version": "2.1-3.1ubuntu0.22.04.1",
+      "source_package": "jbigkit",
+      "source_version": "2.1-3.1ubuntu0.22.04.1"
+    },
+    "libjpeg-turbo8": {
+      "binary_version": "2.1.2-0ubuntu1",
+      "source_package": "libjpeg-turbo",
+      "source_version": "2.1.2-0ubuntu1"
+    },
+    "libk5crypto3": {
+      "binary_version": "1.19.2-2ubuntu0.10",
+      "source_package": "krb5",
+      "source_version": "1.19.2-2ubuntu0.10"
+    },
+    "libkeyutils1": {
+      "binary_version": "1.6.1-2ubuntu3",
+      "source_package": "keyutils",
+      "source_version": "1.6.1-2ubuntu3"
+    },
+    "libkrb5-3": {
+      "binary_version": "1.19.2-2ubuntu0.10",
+      "source_package": "krb5",
+      "source_version": "1.19.2-2ubuntu0.10"
+    },
+    "libkrb5support0": {
+      "binary_version": "1.19.2-2ubuntu0.10",
+      "source_package": "krb5",
+      "source_version": "1.19.2-2ubuntu0.10"
+    },
+    "liblcms2-2": {
+      "binary_version": "2.12~rc1-2ubuntu0.1",
+      "source_package": "lcms2",
+      "source_version": "2.12~rc1-2ubuntu0.1"
+    },
+    "liblz4-1": {
+      "binary_version": "1.9.3-2build2",
+      "source_package": "lz4",
+      "source_version": "1.9.3-2build2"
+    },
+    "liblzma5": {
+      "binary_version": "5.2.5-2ubuntu1.1",
+      "source_package": "xz-utils",
+      "source_version": "5.2.5-2ubuntu1.1"
+    },
+    "libmanette-0.2-0": {
+      "binary_version": "0.2.6-3build1",
+      "source_package": "libmanette",
+      "source_version": "0.2.6-3build1"
+    },
+    "libmd0": {
+      "binary_version": "1.0.4-1build1",
+      "source_package": "libmd",
+      "source_version": "1.0.4-1build1"
+    },
+    "libmount1": {
+      "binary_version": "2.37.2-4ubuntu3.6",
+      "source_package": "util-linux",
+      "source_version": "2.37.2-4ubuntu3.6"
+    },
+    "libmp3lame0": {
+      "binary_version": "3.100-3build2",
+      "source_package": "lame",
+      "source_version": "3.100-3build2"
+    },
+    "libmpg123-0": {
+      "binary_version": "1.29.3-1ubuntu0.1",
+      "source_package": "mpg123",
+      "source_version": "1.29.3-1ubuntu0.1"
+    },
+    "libncurses6": {
+      "binary_version": "6.3-2ubuntu0.3",
+      "source_package": "ncurses",
+      "source_version": "6.3-2ubuntu0.3"
+    },
+    "libncursesw6": {
+      "binary_version": "6.3-2ubuntu0.3",
+      "source_package": "ncurses",
+      "source_version": "6.3-2ubuntu0.3"
+    },
+    "libnettle8": {
+      "binary_version": "3.7.3-1build2",
+      "source_package": "nettle",
+      "source_version": "3.7.3-1build2"
+    },
+    "libnghttp2-14": {
+      "binary_version": "1.43.0-1ubuntu0.4",
+      "source_package": "nghttp2",
+      "source_version": "1.43.0-1ubuntu0.4"
+    },
+    "libogg0": {
+      "binary_version": "1.3.5-0ubuntu3",
+      "source_package": "libogg",
+      "source_version": "1.3.5-0ubuntu3"
+    },
+    "libopus0": {
+      "binary_version": "1.3.1-0.1build2",
+      "source_package": "opus",
+      "source_version": "1.3.1-0.1build2"
+    },
+    "liborc-0.4-0": {
+      "binary_version": "1:0.4.32-2ubuntu0.1",
+      "source_package": "orc",
+      "source_version": "1:0.4.32-2ubuntu0.1"
+    },
+    "libp11-kit0": {
+      "binary_version": "0.24.0-6ubuntu0.1",
+      "source_package": "p11-kit",
+      "source_version": "0.24.0-6ubuntu0.1"
+    },
+    "libpango-1.0-0": {
+      "binary_version": "1.50.6+ds-2ubuntu1",
+      "source_package": "pango1.0",
+      "source_version": "1.50.6+ds-2ubuntu1"
+    },
+    "libpangocairo-1.0-0": {
+      "binary_version": "1.50.6+ds-2ubuntu1",
+      "source_package": "pango1.0",
+      "source_version": "1.50.6+ds-2ubuntu1"
+    },
+    "libpangoft2-1.0-0": {
+      "binary_version": "1.50.6+ds-2ubuntu1",
+      "source_package": "pango1.0",
+      "source_version": "1.50.6+ds-2ubuntu1"
+    },
+    "libpcre2-8-0": {
+      "binary_version": "10.39-3ubuntu0.1",
+      "source_package": "pcre2",
+      "source_version": "10.39-3ubuntu0.1"
+    },
+    "libpcre3": {
+      "binary_version": "2:8.39-13ubuntu0.22.04.1",
+      "source_package": "pcre3",
+      "source_version": "2:8.39-13ubuntu0.22.04.1"
+    },
+    "libpixman-1-0": {
+      "binary_version": "0.40.0-1ubuntu0.22.04.1",
+      "source_package": "pixman",
+      "source_version": "0.40.0-1ubuntu0.22.04.1"
+    },
+    "libpng16-16": {
+      "binary_version": "1.6.37-3ubuntu0.6",
+      "source_package": "libpng1.6",
+      "source_version": "1.6.37-3ubuntu0.6"
+    },
+    "libproxy1v5": {
+      "binary_version": "0.4.17-2",
+      "source_package": "libproxy",
+      "source_version": "0.4.17-2"
+    },
+    "libpsl5": {
+      "binary_version": "0.21.0-1.2build2",
+      "source_package": "libpsl",
+      "source_version": "0.21.0-1.2build2"
+    },
+    "libpulse0": {
+      "binary_version": "1:15.99.1+dfsg1-1ubuntu2.2",
+      "source_package": "pulseaudio",
+      "source_version": "1:15.99.1+dfsg1-1ubuntu2.2"
+    },
+    "libraw1394-11": {
+      "binary_version": "2.1.2-2build2",
+      "source_package": "libraw1394",
+      "source_version": "2.1.2-2build2"
+    },
+    "librsvg2-2": {
+      "binary_version": "2.52.5+dfsg-3ubuntu0.2",
+      "source_package": "librsvg",
+      "source_version": "2.52.5+dfsg-3ubuntu0.2"
+    },
+    "librsvg2-common": {
+      "binary_version": "2.52.5+dfsg-3ubuntu0.2",
+      "source_package": "librsvg",
+      "source_version": "2.52.5+dfsg-3ubuntu0.2"
+    },
+    "libseccomp2": {
+      "binary_version": "2.5.3-2ubuntu3~22.04.1",
+      "source_package": "libseccomp",
+      "source_version": "2.5.3-2ubuntu3~22.04.1"
+    },
+    "libsecret-1-0": {
+      "binary_version": "0.20.5-2",
+      "source_package": "libsecret",
+      "source_version": "0.20.5-2"
+    },
+    "libselinux1": {
+      "binary_version": "3.3-1build2",
+      "source_package": "libselinux",
+      "source_version": "3.3-1build2"
+    },
+    "libshout3": {
+      "binary_version": "2.4.5-1build3",
+      "source_package": "libshout",
+      "source_version": "2.4.5-1build3"
+    },
+    "libslang2": {
+      "binary_version": "2.3.2-5build4",
+      "source_package": "slang2",
+      "source_version": "2.3.2-5build4"
+    },
+    "libsndfile1": {
+      "binary_version": "1.0.31-2ubuntu0.2",
+      "source_package": "libsndfile",
+      "source_version": "1.0.31-2ubuntu0.2"
+    },
+    "libsoup-3.0-0": {
+      "binary_version": "3.0.7-0ubuntu1",
+      "source_package": "libsoup3",
+      "source_version": "3.0.7-0ubuntu1"
+    },
+    "libspeex1": {
+      "binary_version": "1.2~rc1.2-1.1ubuntu3",
+      "source_package": "speex",
+      "source_version": "1.2~rc1.2-1.1ubuntu3"
+    },
+    "libsqlite3-0": {
+      "binary_version": "3.37.2-2ubuntu0.8",
+      "source_package": "sqlite3",
+      "source_version": "3.37.2-2ubuntu0.8"
+    },
+    "libssl3": {
+      "binary_version": "3.0.2-0ubuntu1.30",
+      "source_package": "openssl",
+      "source_version": "3.0.2-0ubuntu1.30"
+    },
+    "libsystemd0": {
+      "binary_version": "249.11-0ubuntu3.22",
+      "source_package": "systemd",
+      "source_version": "249.11-0ubuntu3.22"
+    },
+    "libtag1v5-vanilla": {
+      "binary_version": "1.11.1+dfsg.1-3ubuntu3",
+      "source_package": "taglib",
+      "source_version": "1.11.1+dfsg.1-3ubuntu3"
+    },
+    "libtasn1-6": {
+      "binary_version": "4.18.0-4ubuntu0.2",
+      "source_package": "libtasn1-6",
+      "source_version": "4.18.0-4ubuntu0.2"
+    },
+    "libthai0": {
+      "binary_version": "0.1.29-1build1",
+      "source_package": "libthai",
+      "source_version": "0.1.29-1build1"
+    },
+    "libtheora0": {
+      "binary_version": "1.1.1+dfsg.1-15ubuntu4",
+      "source_package": "libtheora",
+      "source_version": "1.1.1+dfsg.1-15ubuntu4"
+    },
+    "libtiff5": {
+      "binary_version": "4.3.0-6ubuntu0.13",
+      "source_package": "tiff",
+      "source_version": "4.3.0-6ubuntu0.13"
+    },
+    "libtinfo6": {
+      "binary_version": "6.3-2ubuntu0.3",
+      "source_package": "ncurses",
+      "source_version": "6.3-2ubuntu0.3"
+    },
+    "libtwolame0": {
+      "binary_version": "0.4.0-2build2",
+      "source_package": "twolame",
+      "source_version": "0.4.0-2build2"
+    },
+    "libudev1": {
+      "binary_version": "249.11-0ubuntu3.22",
+      "source_package": "systemd",
+      "source_version": "249.11-0ubuntu3.22"
+    },
+    "libunistring2": {
+      "binary_version": "1.0-1",
+      "source_package": "libunistring",
+      "source_version": "1.0-1"
+    },
+    "libunwind8": {
+      "binary_version": "1.3.2-2build2.1",
+      "source_package": "libunwind",
+      "source_version": "1.3.2-2build2.1"
+    },
+    "libuuid1": {
+      "binary_version": "2.37.2-4ubuntu3.6",
+      "source_package": "util-linux",
+      "source_version": "2.37.2-4ubuntu3.6"
+    },
+    "libv4l-0": {
+      "binary_version": "1.22.1-2build1",
+      "source_package": "v4l-utils",
+      "source_version": "1.22.1-2build1"
+    },
+    "libv4lconvert0": {
+      "binary_version": "1.22.1-2build1",
+      "source_package": "v4l-utils",
+      "source_version": "1.22.1-2build1"
+    },
+    "libvisual-0.4-0": {
+      "binary_version": "0.4.0-17build2",
+      "source_package": "libvisual",
+      "source_version": "0.4.0-17build2"
+    },
+    "libvorbis0a": {
+      "binary_version": "1.3.7-1build2",
+      "source_package": "libvorbis",
+      "source_version": "1.3.7-1build2"
+    },
+    "libvorbisenc2": {
+      "binary_version": "1.3.7-1build2",
+      "source_package": "libvorbis",
+      "source_version": "1.3.7-1build2"
+    },
+    "libvpx7": {
+      "binary_version": "1.11.0-2ubuntu2.5",
+      "source_package": "libvpx",
+      "source_version": "1.11.0-2ubuntu2.5"
+    },
+    "libwavpack1": {
+      "binary_version": "5.4.0-1build2",
+      "source_package": "wavpack",
+      "source_version": "5.4.0-1build2"
+    },
+    "libwayland-client0": {
+      "binary_version": "1.20.0-1ubuntu0.1",
+      "source_package": "wayland",
+      "source_version": "1.20.0-1ubuntu0.1"
+    },
+    "libwayland-cursor0": {
+      "binary_version": "1.20.0-1ubuntu0.1",
+      "source_package": "wayland",
+      "source_version": "1.20.0-1ubuntu0.1"
+    },
+    "libwayland-egl1": {
+      "binary_version": "1.20.0-1ubuntu0.1",
+      "source_package": "wayland",
+      "source_version": "1.20.0-1ubuntu0.1"
+    },
+    "libwayland-server0": {
+      "binary_version": "1.20.0-1ubuntu0.1",
+      "source_package": "wayland",
+      "source_version": "1.20.0-1ubuntu0.1"
+    },
+    "libwebp7": {
+      "binary_version": "1.2.2-2ubuntu0.22.04.2",
+      "source_package": "libwebp",
+      "source_version": "1.2.2-2ubuntu0.22.04.2"
+    },
+    "libwebpdemux2": {
+      "binary_version": "1.2.2-2ubuntu0.22.04.2",
+      "source_package": "libwebp",
+      "source_version": "1.2.2-2ubuntu0.22.04.2"
+    },
+    "libwebpmux3": {
+      "binary_version": "1.2.2-2ubuntu0.22.04.2",
+      "source_package": "libwebp",
+      "source_version": "1.2.2-2ubuntu0.22.04.2"
+    },
+    "libwoff1": {
+      "binary_version": "1.0.2-1build4",
+      "source_package": "woff2",
+      "source_version": "1.0.2-1build4"
+    },
+    "libx11-6": {
+      "binary_version": "2:1.7.5-1ubuntu0.3",
+      "source_package": "libx11",
+      "source_version": "2:1.7.5-1ubuntu0.3"
+    },
+    "libx11-xcb1": {
+      "binary_version": "2:1.7.5-1ubuntu0.3",
+      "source_package": "libx11",
+      "source_version": "2:1.7.5-1ubuntu0.3"
+    },
+    "libxau6": {
+      "binary_version": "1:1.0.9-1build5",
+      "source_package": "libxau",
+      "source_version": "1:1.0.9-1build5"
+    },
+    "libxcb-randr0": {
+      "binary_version": "1.14-3ubuntu3",
+      "source_package": "libxcb",
+      "source_version": "1.14-3ubuntu3"
+    },
+    "libxcb-render0": {
+      "binary_version": "1.14-3ubuntu3",
+      "source_package": "libxcb",
+      "source_version": "1.14-3ubuntu3"
+    },
+    "libxcb-shm0": {
+      "binary_version": "1.14-3ubuntu3",
+      "source_package": "libxcb",
+      "source_version": "1.14-3ubuntu3"
+    },
+    "libxcb1": {
+      "binary_version": "1.14-3ubuntu3",
+      "source_package": "libxcb",
+      "source_version": "1.14-3ubuntu3"
+    },
+    "libxcomposite1": {
+      "binary_version": "1:0.4.5-1build2",
+      "source_package": "libxcomposite",
+      "source_version": "1:0.4.5-1build2"
+    },
+    "libxcursor1": {
+      "binary_version": "1:1.2.0-2build4",
+      "source_package": "libxcursor",
+      "source_version": "1:1.2.0-2build4"
+    },
+    "libxdamage1": {
+      "binary_version": "1:1.1.5-2build2",
+      "source_package": "libxdamage",
+      "source_version": "1:1.1.5-2build2"
+    },
+    "libxdmcp6": {
+      "binary_version": "1:1.1.3-0ubuntu5",
+      "source_package": "libxdmcp",
+      "source_version": "1:1.1.3-0ubuntu5"
+    },
+    "libxext6": {
+      "binary_version": "2:1.3.4-1build1",
+      "source_package": "libxext",
+      "source_version": "2:1.3.4-1build1"
+    },
+    "libxfixes3": {
+      "binary_version": "1:6.0.0-1",
+      "source_package": "libxfixes",
+      "source_version": "1:6.0.0-1"
+    },
+    "libxi6": {
+      "binary_version": "2:1.8-1build1",
+      "source_package": "libxi",
+      "source_version": "2:1.8-1build1"
+    },
+    "libxinerama1": {
+      "binary_version": "2:1.1.4-3",
+      "source_package": "libxinerama",
+      "source_version": "2:1.1.4-3"
+    },
+    "libxml2": {
+      "binary_version": "2.9.13+dfsg-1ubuntu0.13",
+      "source_package": "libxml2",
+      "source_version": "2.9.13+dfsg-1ubuntu0.13"
+    },
+    "libxrandr2": {
+      "binary_version": "2:1.5.2-1build1",
+      "source_package": "libxrandr",
+      "source_version": "2:1.5.2-1build1"
+    },
+    "libxrender1": {
+      "binary_version": "1:0.9.10-1build4",
+      "source_package": "libxrender",
+      "source_version": "1:0.9.10-1build4"
+    },
+    "libxslt1.1": {
+      "binary_version": "1.1.34-4ubuntu0.22.04.5",
+      "source_package": "libxslt",
+      "source_version": "1.1.34-4ubuntu0.22.04.5"
+    },
+    "libxss1": {
+      "binary_version": "1:1.2.3-1build2",
+      "source_package": "libxss",
+      "source_version": "1:1.2.3-1build2"
+    },
+    "libxtst6": {
+      "binary_version": "2:1.2.3-1build4",
+      "source_package": "libxtst",
+      "source_version": "2:1.2.3-1build4"
+    },
+    "libyuv0": {
+      "binary_version": "0.0~git20220104.b91df1a-2",
+      "source_package": "libyuv",
+      "source_version": "0.0~git20220104.b91df1a-2"
+    },
+    "libzstd1": {
+      "binary_version": "1.4.8+dfsg-3build1",
+      "source_package": "libzstd",
+      "source_version": "1.4.8+dfsg-3build1"
+    },
+    "shared-mime-info": {
+      "binary_version": "2.1-2",
+      "source_package": "shared-mime-info",
+      "source_version": "2.1-2"
+    },
+    "xdg-dbus-proxy": {
+      "binary_version": "0.1.3-1ubuntu0.1",
+      "source_package": "xdg-dbus-proxy",
+      "source_version": "0.1.3-1ubuntu0.1"
+    },
+    "zlib1g": {
+      "binary_version": "1:1.2.11.dfsg-2ubuntu9.2",
+      "source_package": "zlib",
+      "source_version": "1:1.2.11.dfsg-2ubuntu9.2"
+    }
+  },
+  "scope": "read-only dpkg-query from the verified engine builder; original file bytes precede AppImage RPATH rewriting"
+}

@@ -45,6 +45,24 @@ def is_elf(path):
         return stream.read(4) == b'\x7fELF'
 
 
+def copy_common_licenses(source, destination):
+    """Make Ubuntu copyright references self-contained, without host-path assumptions."""
+    files = []
+    for src in sorted(source.rglob('*')):
+        if not src.is_file() and not src.is_symlink():
+            continue
+        if not src.resolve().is_relative_to(source.resolve()) or not src.is_file() or is_elf(src):
+            raise ValueError('Unsafe common-license input: ' + src.name)
+        relative = src.relative_to(source)
+        target = destination / relative
+        target.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copyfile(src, target)
+        files.append(relative.as_posix())
+    if not files:
+        raise ValueError('Missing Ubuntu common license texts')
+    return files
+
+
 def clean_icon_sources(originals, destination, source_output):
     """Clean installed SVG editor metadata and retain exact corresponding source.
 
@@ -216,6 +234,15 @@ def stage(image, generation, resource_sources):
             raise ValueError('Missing runtime notice: ' + package)
         shutil.copy2(source, notices / (package + '.copyright'))
     (notices / 'packages.json').write_text(json.dumps(sorted(packages), indent=2) + '\n')
+    # Many copyright files reference /usr/share/common-licenses, which need not
+    # exist on an AppImage host. Keep full texts from the same immutable builder.
+    for name in copy_common_licenses(pathlib.Path('/usr/share/common-licenses'), notices / 'common-licenses'):
+        copied.add('share/licenses/Ubuntu-AppImage/common-licenses/' + name)
+    explanation = notices / 'COMMON-LICENSES-README.txt'
+    explanation.write_text('References to /usr/share/common-licenses in the adjacent Ubuntu copyright files\n'
+                           'refer to the full texts preserved here in common-licenses/.\n'
+                           'These notices do not replace corresponding-source obligations.\n')
+    copied.add(str(explanation.relative_to(image)))
     if record['corresponding_source'] != inventory(generation / 'corresponding-source'):
         raise ValueError('Engine source/notices inventory mismatch')
     shutil.copytree(generation / 'corresponding-source/notices', image / 'share/licenses', dirs_exist_ok=True)
