@@ -429,7 +429,8 @@ def build_inventory(repo, inputs, cache, package_rows, owner_rows, runtime=None,
             'flatpak': {'runtime': config['flatpak_runtime'], 'branch': config['flatpak_branch'], 'commit': config['flatpak_runtime_commit'],
                         'scope': 'separate GNOME runtime; exact runtime source closure not audited', 'metadata_sha256': sha(inputs / 'flatpak/metadata')},
             'host_drivers': 'not bundled; no legal System Library conclusion'},
-        'build_only': {name: dict(value, scope='tool only; JDK also supplies bundled runtime') for name,value in config['tools'].items() if name != 'appimage-runtime'},
+        'additional_artifact_scope': {'builder_seed_and_engine_oci': 'BLOCKED: full container/toolchain source and notice closure not covered by application inventory'},
+        'build_only': {name: dict(value, scope='build input, absent as a tool from application packages; present in distributed builder OCI; JDK subset also bundled runtime') for name,value in config['tools'].items() if name != 'appimage-runtime'},
         'assessment': {fmt: 'BLOCKED' for fmt in images},
         'assessment_basis': 'Missing retained corresponding sources/notices and reviewed source availability; no automatic legal certification'}
 

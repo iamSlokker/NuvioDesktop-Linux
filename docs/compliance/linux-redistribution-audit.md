@@ -239,6 +239,15 @@ requires sign-in/read access. Source archives share the package bundle and its
 access/expiry; there is no separate durable, complete source offer for the missing
 third-party inputs. Caches are not a recipient-facing source distribution.
 
+The separate builder-seed artifact exports a full OCI packaging toolchain, not
+just application sources. Build-only tools that are absent from DEB/Flatpak/
+AppImage can nevertheless be redistributed in that OCI (Ubuntu packages,
+compiler/toolchain, full JDK and CMake). Its source/notice closure needs a separate
+container-distribution review; the 322-component application inventory does not
+certify every file/layer of that seed. The standalone engine OCI has the same
+separate scope concern. No build-tool exception is assumed for an actual OCI
+binary distribution.
+
 This audit did not delete, extend, replace, upload or publish an Actions artifact.
 Review whether existing artifact access already constitutes conveying to
 recipients and what obligations are already owed. A public release label is not
@@ -255,6 +264,7 @@ from a successful CI upload or an upstream source hyperlink.
 | DEB | **BLOCKED** | CS01–04, CS08–09: private media/JDK/JVM/native source closure, notice/font rights, rebuild/install information and source availability |
 | Flatpak | **BLOCKED** | Same application/private-media/JDK/JAR gaps; additionally review exact GNOME Platform 49 commit/source closure and responsibility boundary |
 | AppImage | **BLOCKED** | All shared gaps plus CS05–07: Ubuntu source closure, runtime static dependencies/relinking materials and notice coverage |
+| Builder/engine OCI artifacts (separate scope) | **BLOCKED** | Full toolchain/container source and notice closure is not covered by the application inventory |
 
 DEB host GTK/WebKit/graphics/audio libraries are external dependencies; Flatpak's
 GNOME Platform is a separate runtime pinned to

@@ -1,6 +1,7 @@
 # Corresponding-source review tools
 
-These tools collect evidence and source inputs. They do not certify legal
+These tools collect application-package evidence and source inputs. Full builder/engine
+OCI file/license inventories remain a separate BLOCKED review scope. They do not certify legal
 compliance, change licenses, rebuild binaries or publish artifacts. Current
 format assessments and exact blockers are in
 [the redistribution report](../../../../docs/compliance/linux-redistribution-audit.md).
