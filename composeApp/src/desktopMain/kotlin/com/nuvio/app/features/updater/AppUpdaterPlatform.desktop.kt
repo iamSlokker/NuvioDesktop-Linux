@@ -367,10 +367,16 @@ private fun writeInstallManifest(sourceRoot: File, installRoot: File, newFiles: 
         ?.readLines(Charsets.UTF_8)
         ?: return emptyList()
     return previous
-        .map(String::trim)
+        .map { it.trim().replace('/', '\\') }
         .filter { it.isNotEmpty() && it !in newFiles }
-        // Relative paths inside the install folder only, and nothing the batch loop could misread.
-        .filter { it.isBatchSafe() && !it.startsWith("\\") && ':' !in it && ".." !in it.split('\\') }
+        // Windows accepts both separators and normalizes trailing spaces/dots. Reject aliases,
+        // rooted/drive paths and del wildcards, not just literal backslash traversal.
+        .filter { path ->
+            path.isBatchSafe() && ':' !in path && '*' !in path && '?' !in path &&
+                path.split('\\').all { part ->
+                    part.isNotEmpty() && !part.endsWith('.') && !part.endsWith(' ')
+                }
+        }
 }
 
 /** The portable app-image root that holds Nuvio.exe, or null when this isn't a packaged run. */
