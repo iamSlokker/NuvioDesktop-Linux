@@ -4,7 +4,7 @@
   /* The app font, set from JS (applyUiFontFamily in controls.js) when the user picks an installed
    * system family in settings. The fallback list here is what the HUD uses on its own — the
    * bundled face, then whatever the host calls its UI sans. */
-  --nuvio-ui-font: "Nuvio JetBrains Sans", "JetBrains Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --nuvio-ui-font: "Nuvio Inter", "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   /* Combined HUD scale multiplier, set from JS (updateViewportUiScale in controls.js). It folds
    * two factors: the user's UI-scale knob (desktopUiScalePercent setting, -50%..+50%) and the
    * resolution auto-scale that anchors the authored sizes to a 1920x1080 CSS reference viewport

@@ -1,0 +1,2 @@
+# Preserve the authoritative ODbL text byte-for-byte, including publisher spaces.
+composeApp/src/desktopMain/resources/anime-mapping/ODBL-1.0.txt whitespace=-blank-at-eol

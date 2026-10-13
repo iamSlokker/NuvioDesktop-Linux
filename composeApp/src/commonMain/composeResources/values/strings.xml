@@ -1021,7 +1021,7 @@
     <string name="settings_appearance_amoled_black">AMOLED Black</string>
     <string name="settings_appearance_amoled_description">Use pure black backgrounds for OLED screens.</string>
     <string name="settings_appearance_app_font">App Font</string>
-    <string name="settings_appearance_app_font_default">JetBrains Sans (bundled)</string>
+    <string name="settings_appearance_app_font_default">Inter (bundled)</string>
     <string name="settings_appearance_app_font_sheet_title">Choose App Font</string>
     <string name="settings_appearance_app_font_search_placeholder">Search installed fonts</string>
     <string name="settings_appearance_app_font_none_installed">No installed fonts could be listed.</string>

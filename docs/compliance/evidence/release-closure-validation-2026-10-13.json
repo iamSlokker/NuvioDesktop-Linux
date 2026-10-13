@@ -1,0 +1,137 @@
+{
+  "schema_version": 1,
+  "recorded_date": "2026-10-13",
+  "status": "LOCAL_VALIDATION_ONLY_REDISTRIBUTION_BLOCKED",
+  "baseline_commit": "a5adf33bda9fee1273d7d6cd8f1ad629464feb05",
+  "scope": "Current uncommitted font/notice correction and local development JAR; not final package identities, source-offer completeness, full binary reproducibility or release acceptance. Original CI packages are unchanged.",
+  "compilation": {
+    "compileKotlinDesktop": "PASS",
+    "compileTestKotlinDesktop": "PASS",
+    "desktopJar": "PASS",
+    "gradle_mode": "offline; JDK17; disposable HOME/XDG; isolated loopback-only network namespace; java.awt.headless=true; DISPLAY/WAYLAND_DISPLAY/NUVIO_RUN_LIVE_DISPLAY_TESTS absent"
+  },
+  "jvm_tests": {
+    "classes": [
+      {
+        "class": "com.nuvio.app.core.build.LinuxPackagedResourcesTest",
+        "tests": 4,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "xml_sha256": "6b32e459760acb75043afcbc6d9bdb977a47b52d9576b93be5ae65e7d335fa95"
+      },
+      {
+        "class": "com.nuvio.app.core.ui.InterTypographyRenderTest",
+        "tests": 4,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "xml_sha256": "99b83e37cff240d511d37d0187c2ac659ab51f5b37346b674adfd9a630e9374d"
+      },
+      {
+        "class": "com.nuvio.app.core.ui.NuvioTypographySlotsTest",
+        "tests": 2,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "xml_sha256": "752afe585bc8df3dfe9310020c73a3c1819944fcfccac52235af805a5a23aa75"
+      },
+      {
+        "class": "com.nuvio.app.core.ui.SystemFontFamiliesTest",
+        "tests": 3,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "xml_sha256": "5588443d91c2c0fb18b56c90696c92e8a5638c6633fd9f805fcd8f726bed3597"
+      },
+      {
+        "class": "com.nuvio.app.features.auth.AuthWordmarkRenderTest",
+        "tests": 4,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "xml_sha256": "e48e7f3987dea8c2dd613235c4741a834411a2078ab6209a641e9f7c3e4818a3"
+      }
+    ],
+    "total": 17,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "coverage": "Inter 400/600/700, all typography slots, missing system-font fallback, offscreen 100/125/150/175/200% wrapping, unchanged login wordmark, packaged resources and new notices"
+  },
+  "packaging_tests": {
+    "reused_initial_run": {
+      "tests_run": 141,
+      "skipped": 1,
+      "reason": "JAVA_HOME unset; actual packaged class fixture required javac"
+    },
+    "already_started_java17_run": {
+      "tests_run": 141,
+      "skipped": 0,
+      "failures": 0,
+      "result": "PASS",
+      "log_sha256": "599f56d2b34ad20380bd8b3ba1e30b0fa0b06748f2135e99b81c357ccb41ac0d"
+    },
+    "finalization_policy": "Rerun only review-index tests affected by later reference/document changes."
+  },
+  "development_jar": {
+    "filename": "composeApp-desktop.jar",
+    "sha256": "5b538a88586c41175e4b224566d0e5c0ca341594eba7ee557373cb21911842c3",
+    "bytes": 51678041,
+    "font_contract": {
+      "component": "Inter",
+      "version": "4.1",
+      "license": "OFL-1.1",
+      "resources": {
+        "composeResources/nuvio.composeapp.generated.resources/files/licenses/Inter/LICENSE.txt": "262481e844521b326f5ecd053e59b98c8b2da78c8ee1bdbb6e8174305e54935a",
+        "composeResources/nuvio.composeapp.generated.resources/files/licenses/Inter/NOTICE.txt": "d034853ebfdc581c4bac1284e4a7d04d5eb3efb1ef114abf19080a955afba67e",
+        "composeResources/nuvio.composeapp.generated.resources/font/inter_bold.ttf": "288316099b1e0a47a4716d159098005eef7c0066921f34e3200393dbdb01947f",
+        "composeResources/nuvio.composeapp.generated.resources/font/inter_regular.ttf": "40d692fce188e4471e2b3cba937be967878f631ad3ebbbdcd587687c7ebe0c82",
+        "composeResources/nuvio.composeapp.generated.resources/font/inter_semibold.ttf": "78a843fade9d4612a5567302fb595b56976eb5fcebf4fea5a5912d638bafcde3"
+      }
+    },
+    "bundled_notice_sha256": {
+      "anime-mapping/NOTICE.txt": "a69632054df8e678fed87bb3056cadc7ac1f0a506f1fa55c80d41d3768045f63",
+      "anime-mapping/PROVENANCE.json": "96ffdefebded8dfea930464789b7253b80e1f3c68591829c026a5d35ab5f6344",
+      "anime-mapping/ODBL-1.0.txt": "607680718977f6f6c9607972afd98f208573f19251315ed1362a8589b51beaf5",
+      "anime-mapping/DBCL-1.0.txt": "3cbfa990f26df856c6a7d3fff3d1f236e3b0165b1e8257ca0d00f15758754f81",
+      "player-shaders/LICENSE.md": "56c6f7653d9b4cf3b6ec94c654a8e5b90f3c7d64b5d3fde81e5a8cfbfef6f6bb"
+    },
+    "old_sans_names_present": false,
+    "not_a_release_candidate": true
+  },
+  "source_font_payload": {
+    "files": [
+      {
+        "path": "composeApp/src/commonMain/composeResources/font/inter_bold.ttf",
+        "sha256": "288316099b1e0a47a4716d159098005eef7c0066921f34e3200393dbdb01947f"
+      },
+      {
+        "path": "composeApp/src/commonMain/composeResources/font/inter_regular.ttf",
+        "sha256": "40d692fce188e4471e2b3cba937be967878f631ad3ebbbdcd587687c7ebe0c82"
+      },
+      {
+        "path": "composeApp/src/commonMain/composeResources/font/inter_semibold.ttf",
+        "sha256": "78a843fade9d4612a5567302fb595b56976eb5fcebf4fea5a5912d638bafcde3"
+      }
+    ],
+    "matches_official_release_bytes": true,
+    "source_and_release_archives_match_pins": true,
+    "old_sans_hashes_present": false
+  },
+  "not_performed": [
+    "full DEB/Flatpak/AppImage build",
+    "WebKit compilation",
+    "HDR integration or runtime rebuild during release finalization",
+    "GUI/live-display tests",
+    "Nuvio launch",
+    "installed application or personal configuration modification",
+    "binary/source-artifact publication",
+    "merge/tag/release"
+  ],
+  "redistribution": {
+    "deb": "BLOCKED",
+    "flatpak": "BLOCKED",
+    "appimage": "BLOCKED"
+  }
+}

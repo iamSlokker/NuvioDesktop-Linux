@@ -141,6 +141,7 @@ class ApplicationSourceArchiveTest(unittest.TestCase):
             self.assertEqual(t.getmember('./application/gradlew').mode, 0o755)
             text = t.extractfile('./SOURCE-README.txt').read().decode()
             self.assertIn('NOT a complete third-party', text)
+            self.assertIn('modified-build-and-install.md', text)
             self.assertIn('requires Git metadata', text)
             self.assertIn('Preserve the sandbox', text)
 

@@ -1,0 +1,44 @@
+{
+  "schema_version": 1,
+  "scope": "Notice and byte identity for the already bundled desktop anime mapping; not complete dataset provenance or redistribution approval.",
+  "dataset": {
+    "resource": "anime-list-mini.json",
+    "sha256": "cfcdee0da5c0c9f2cf91948390d40f5a49b0a59469b8f4030599a947afb2deba",
+    "bytes": 5862205,
+    "repository_path": "composeApp/src/desktopMain/resources/anime-list-mini.json",
+    "repository_git_blob": "4a92c06f6ab4f0021235bce115da2eab34074dce",
+    "reviewed_application_commit": "a5adf33bda9fee1273d7d6cd8f1ad629464feb05",
+    "upstream_revision": null,
+    "generation_recipe": null
+  },
+  "attribution_sources": [
+    "https://github.com/Fribb/anime-lists",
+    "https://github.com/cedya77/anime-offline-database",
+    "https://github.com/Anime-Lists/anime-lists"
+  ],
+  "license_texts": [
+    {
+      "path": "ODBL-1.0.txt",
+      "license": "ODbL-1.0",
+      "url": "https://opendatacommons.org/licenses/odbl/odbl-10.txt",
+      "publisher_page": "https://opendatacommons.org/licenses/odbl/1-0/",
+      "sha256": "607680718977f6f6c9607972afd98f208573f19251315ed1362a8589b51beaf5",
+      "bytes": 25278,
+      "verification": "Exact bytes retrieved over HTTPS from the license publisher; SHA256 recorded locally, not an upstream signature."
+    },
+    {
+      "path": "DBCL-1.0.txt",
+      "license": "DbCL-1.0",
+      "url": "https://opendatacommons.org/licenses/dbcl/dbcl-10.txt",
+      "publisher_page": "https://opendatacommons.org/licenses/dbcl/1-0/",
+      "sha256": "3cbfa990f26df856c6a7d3fff3d1f236e3b0165b1e8257ca0d00f15758754f81",
+      "bytes": 2374,
+      "verification": "Exact bytes retrieved over HTTPS from the license publisher; SHA256 recorded locally, not an upstream signature."
+    }
+  ],
+  "remaining_blockers": [
+    "Exact upstream input revisions and derivation/generation record for this bundled mapping are not established.",
+    "The existing attribution and retained license texts do not independently establish the rights in all source contents."
+  ],
+  "availability": "Bundled JSON and these notices are in the desktop application resources and corresponding application source snapshot; no new public source offer is made."
+}

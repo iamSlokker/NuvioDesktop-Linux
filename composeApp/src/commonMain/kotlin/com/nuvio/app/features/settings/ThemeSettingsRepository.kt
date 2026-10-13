@@ -78,7 +78,7 @@ object ThemeSettingsRepository {
     private val _desktopAppUiScaleAppliesToDetails = MutableStateFlow(true)
     val desktopAppUiScaleAppliesToDetails: StateFlow<Boolean> = _desktopAppUiScaleAppliesToDetails.asStateFlow()
 
-    // "" means the bundled JetBrains Sans. Any other value is an installed system family name,
+    // "" means the bundled Inter. Any other value is an installed system family name,
     // resolved (and validated) by the theme — nothing here checks the host has it.
     private val _appFontFamily = MutableStateFlow("")
     val appFontFamily: StateFlow<String> = _appFontFamily.asStateFlow()
@@ -344,7 +344,7 @@ object ThemeSettingsRepository {
         ThemeSettingsStorage.saveDesktopAppUiScaleAppliesToDetails(enabled)
     }
 
-    /** [fontFamily] is an installed system family name, or "" for the bundled JetBrains Sans. */
+    /** [fontFamily] is an installed system family name, or "" for the bundled Inter. */
     fun setAppFontFamily(fontFamily: String) {
         ensureLoaded()
         val next = fontFamily.trim()

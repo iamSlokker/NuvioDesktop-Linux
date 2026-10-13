@@ -6,6 +6,9 @@ This is an engineering contract for review, not a legal opinion or permission to
 redistribute. A license notice, upstream URL or successful download is not a
 complete source offer.
 
+The [current release-preparation supplement](release-closure.md) records the
+licensed font correction, notice closure, validation and remaining finite gates.
+
 ## Identities and retained materials
 
 Use the binary's own `release-info.json`, never the current Git branch name.
@@ -29,6 +32,8 @@ reports local review only, not source-delivery or redistribution approval.
 | [OCI package evidence](evidence/oci-ubuntu-packages.json) | Separately scoped full installed-package inventory in the immutable engine and canonical seed; does not certify every OCI layer/file |
 | [OCI source lock](evidence/oci-ubuntu-source-lock.json) | Engine's 847 installed Ubuntu packages map to 427 exact source versions and 1,314 signed-index inputs; separate from non-dpkg/layer closure |
 | [Ubuntu retention receipt](evidence/ubuntu-source-retention.json) | Both full input sets rechecked offline, including every descriptor's closure; canonical seed's 587 package versions match the engine map |
+| [Inter replacement](inter-font-replacement.md) | New source/font pins and OFL for future builds; historical package bytes still contain the old Sans assets |
+| [Modified-build instructions](modified-build-and-install.md) | Concrete private-library/repack entry points and per-format installation boundaries; incomplete native/static rebuild and recipient-delivery gates remain explicit |
 
 Historical findings in the original inventory describe the **original CI
 artifact**, whose bytes were not altered. Supplemental receipts record later
@@ -105,6 +110,11 @@ snapshot byte before building. The additional source receipt does not solve
 offline bootstrap, all external toolchain inputs or whole-package bit-for-bit
 reproducibility. Do not reconstruct a different commit and label it original.
 
+Concrete current entry points, per-format installation boundaries and the
+remaining untested/static-link gaps are recorded in
+[modified build and installation instructions](modified-build-and-install.md).
+They do not claim a completed offline rebuild or authorize publication.
+
 For modified shared media/JNI libraries, preserve their ABI and private image
 layout, rebuild using the retained options/patches, and repackage through the
 normal integrity gates. Do not disable sandboxing, forge receipts or directly
@@ -145,8 +155,10 @@ independent bit-identical rebuild as a legal condition.
 
 ## Exit criteria
 
-1. Resolve the precise Sans grant or approve and accept a licensed replacement;
-   review model/artwork rights and applicable license elections/exceptions.
+1. The owner-authorized Inter replacement resolves the future payload's missing
+   Sans grant. Validate its actual package bytes and typography before acceptance;
+   it does not resolve historical font distribution. Review the remaining
+   model/artwork rights and applicable license elections/exceptions.
 2. Finish required native/static/build/relink source and notice closure; obtain
    absent upstream input identities instead of guessing. Recheck the source map.
 3. Approve and test a durable recipient channel and instructions for both future
