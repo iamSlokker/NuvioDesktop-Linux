@@ -35,13 +35,25 @@ import org.jetbrains.skia.Bitmap
 /** Raster Compose only: no AWT peer, window, GTK, WebKit or DISPLAY connection. */
 @OptIn(ExperimentalComposeUiApi::class)
 class AuthWordmarkRenderTest {
-    private data class Render(val bounds: Rect, val pixels: IntArray)
+    private data class Render(val bounds: Rect, val width: Int, val pixels: IntArray) {
+        fun logoPixel(x: Float, y: Float): Int {
+            val px = (bounds.left + bounds.width * x / 1085f).roundToInt()
+            val py = (bounds.top + bounds.height * y / 344f).roundToInt()
+            return pixels[py * width + px]
+        }
+    }
 
-    private fun render(width: Int, density: Float, os: DesktopHostOs, legacy: Boolean = false): Render {
+    private fun render(
+        width: Int,
+        density: Float,
+        os: DesktopHostOs,
+        legacy: Boolean = false,
+        background: Color = Color.Black,
+    ): Render {
         var bounds = Rect.Zero
         val scene = ImageComposeScene(width, (180 * density).roundToInt(), Density(density)) {
             Column(
-                Modifier.fillMaxSize().background(Color.Black).padding(horizontal = 24.dp),
+                Modifier.fillMaxSize().background(background).padding(horizontal = 24.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
                 Column(Modifier.widthIn(max = 460.dp).fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
@@ -66,14 +78,15 @@ class AuthWordmarkRenderTest {
                 Bitmap().use { bitmap ->
                     bitmap.allocN32Pixels(image.width, image.height)
                     assertTrue(image.readPixels(bitmap, 0, 0))
-                    Render(bounds, IntArray(image.width * image.height) { i -> bitmap.getColor(i % image.width, i / image.width) })
+                    Render(bounds, image.width,
+                        IntArray(image.width * image.height) { i -> bitmap.getColor(i % image.width, i / image.width) })
                 }
             }
         } finally { scene.close() }
     }
 
     @Test fun linuxUsesAvailableWidthWithoutStretchingClippingOrLosingCenterAcrossScaleFactors() {
-        for (density in listOf(1f, 1.25f, 1.5f, 2f)) {
+        for (density in listOf(1f, 1.25f, 1.5f, 1.75f, 2f)) {
             for (width in listOf(360, 640, 1280, 1920, 2560)) {
                 val result = render(width, density, DesktopHostOs.LINUX)
                 val expectedWidth = min(width / density - 48f, 460f) * 0.6f * density
@@ -82,6 +95,22 @@ class AuthWordmarkRenderTest {
                 assertTrue(abs(result.bounds.center.x - width / 2f) <= 1f, "Logo is not centered")
                 assertTrue(result.bounds.left >= 0f && result.bounds.right <= width)
                 assertTrue(result.pixels.count { (it and 0xffffff) != 0 } > 100, "Actual asset was not rendered")
+            }
+        }
+    }
+
+    @Test fun compactIconHasSolidContrastVisiblePlayAndTransparentCutoutAtEveryTargetSize() {
+        for (density in listOf(1f, 1.25f, 1.5f, 1.75f, 2f)) {
+            for (width in listOf(360, 640, 1280, 1920, 2560)) {
+                val result = render(width, density, DesktopHostOs.LINUX, background = Color.Transparent)
+                // Sample the actual painter output, not the resource name or a parallel SVG model.
+                assertEquals(0xff647496.toInt(), result.logoPixel(35f, 172f), "$width/$density icon")
+                assertEquals(0xffffffff.toInt(), result.logoPixel(125f, 172f), "$width/$density play")
+                assertEquals(0, result.logoPixel(90f, 172f), "$width/$density transparent cutout")
+                assertEquals(0, result.logoPixel(330f, 172f), "$width/$density spacing")
+                assertEquals(0xffffffff.toInt(), result.logoPixel(880f, 160f), "$width/$density lettering")
+                assertEquals(0, result.logoPixel(1005f, 160f), "$width/$density letter counter")
+                assertEquals(0, result.pixels.first(), "The asset must not paint a rectangular background")
             }
         }
     }

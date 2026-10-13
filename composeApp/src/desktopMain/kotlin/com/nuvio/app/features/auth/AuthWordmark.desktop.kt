@@ -12,7 +12,9 @@ import androidx.compose.ui.unit.dp
 import com.nuvio.app.features.player.desktop.DesktopHostOs
 import nuvio.composeapp.generated.resources.Res
 import nuvio.composeapp.generated.resources.app_logo_wordmark_htpc
+import nuvio.composeapp.generated.resources.app_logo_wordmark_login_compact
 import org.jetbrains.compose.resources.imageResource
+import org.jetbrains.compose.resources.painterResource
 
 @Composable
 internal actual fun AuthWordmark(modifier: Modifier) =
@@ -20,19 +22,22 @@ internal actual fun AuthWordmark(modifier: Modifier) =
 
 @Composable
 internal fun DesktopAuthWordmark(os: DesktopHostOs, modifier: Modifier = Modifier) {
-    val bitmap = imageResource(Res.drawable.app_logo_wordmark_htpc)
-    val linux = os == DesktopHostOs.LINUX
+    if (os == DesktopHostOs.LINUX) {
+        val wordmark = painterResource(Res.drawable.app_logo_wordmark_login_compact)
+        Image(
+            painter = wordmark,
+            contentDescription = null,
+            modifier = modifier.fillMaxWidth(0.6f)
+                .aspectRatio(wordmark.intrinsicSize.width / wordmark.intrinsicSize.height),
+            contentScale = ContentScale.Fit,
+        )
+        return
+    }
     Image(
-        bitmap = bitmap,
+        bitmap = imageResource(Res.drawable.app_logo_wordmark_htpc),
         contentDescription = null,
-        modifier = modifier.fillMaxWidth(0.6f).then(
-            // A 48dp height reduced the 1085x344 image to only 151x48dp inside a
-            // 276dp-wide slot. Let the fine-detail icon use that slot, without stretching it.
-            if (linux) Modifier.aspectRatio(bitmap.width.toFloat() / bitmap.height)
-            else Modifier.height(48.dp),
-        ),
+        modifier = modifier.fillMaxWidth(0.6f).height(48.dp),
         contentScale = ContentScale.Fit,
-        // Mipmapped minification retains the dark icon's fine stars without point-sampling them.
-        filterQuality = if (linux) FilterQuality.Medium else FilterQuality.Low,
+        filterQuality = FilterQuality.Low,
     )
 }
