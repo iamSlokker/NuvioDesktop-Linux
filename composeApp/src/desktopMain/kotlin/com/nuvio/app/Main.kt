@@ -975,6 +975,7 @@ fun main(args: Array<String>) {
                     com.nuvio.app.core.ui.FrameCadenceTelemetry()
                     com.nuvio.app.core.ui.FrameBudgetTelemetry()
                     com.nuvio.app.core.ui.SteadyFramePacingEffect(window)
+                    com.nuvio.app.core.ui.DesktopHdrUiCompensationEffect(window)
                 }
             } else {
                 PlatformPlayerSurface(
