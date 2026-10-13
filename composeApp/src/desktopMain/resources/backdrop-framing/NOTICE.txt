@@ -1,0 +1,26 @@
+Models used for automatic hero backdrop framing.
+
+u2netp.onnx
+  U^2-Net (small variant), Xuebin Qin et al., https://github.com/xuebinqin/U-2-Net
+  Apache License 2.0. ONNX export as distributed by rembg (https://github.com/danielgatis/rembg).
+
+yunet.onnx
+  YuNet face detector (face_detection_yunet_2023mar), Shiqi Yu et al.,
+  https://github.com/opencv/opencv_zoo/tree/main/models/face_detection_yunet
+  MIT License.
+
+The complete license texts accompany the models as LICENSE-U2NET.txt and
+LICENSE-YUNET.txt. License sources:
+  https://github.com/xuebinqin/U-2-Net/blob/ac7e1c817ecab7c7dff5ce6b1abba61cd213ff29/LICENSE
+  https://github.com/opencv/opencv_zoo/blob/47534e27c9851bb1128ccc0102f1145e27f23f98/models/face_detection_yunet/LICENSE
+
+Model bytes are preserved unchanged from UmbraProjects/NuvioDesktop snapshot
+6f155d267a478b3cebd8320de5a8bedc8e5de52a. SHA256:
+  u2netp.onnx 309c8469258dda742793dce0ebea8e6dd393174f89934733ecc8b14c76f4ddd8
+  yunet.onnx  8f2383e4dd3cfbb4553ea8718107fc0423210dc964f9f4280604804ed2552fa4
+
+Inference uses ONNX Runtime Java 1.31.0 (MIT). Its license accompanies these
+resources as LICENSE-ONNXRUNTIME.txt, from:
+  https://github.com/microsoft/onnxruntime/blob/v1.31.0/LICENSE
+ThirdPartyNotices.txt is retained in the packaged onnxruntime JAR. CPU inference
+requires neither CUDA nor a vendor-specific GPU runtime.

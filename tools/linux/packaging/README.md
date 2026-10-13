@@ -271,7 +271,10 @@ Test fresh startup/login with the public defaults before publication; optional
 service configuration and redistribution approval remain separate decisions.
 
 Generated `TraktConfig` credentials are always blank and are not read by current
-Trakt consumers: `TraktSettingsRepository` uses user-configured credentials.
+Trakt consumers: `TraktSettingsRepository` uses a user-configured public client ID,
+falling back to the generated built-in ID if one is configured. This snapshot uses
+device-code authentication; no client secret or localhost callback is required.
+The reviewed public packaging defaults do not supply an optional Trakt client ID.
 TMDB likewise uses user settings, not a generated bundled key. Those settings,
 OAuth secrets, user API tokens and account data must not be copied into packages.
 
@@ -291,6 +294,15 @@ See [FFmpeg compliance](https://ffmpeg.org/legal.html),
 [Flatpak permissions](https://docs.flatpak.org/en/latest/sandbox-permissions.html).
 This is a redistribution inventory, not legal certification. Frozen WebKit/media
 snapshots require deliberate security refreshes, not indefinite deployment.
+
+The Umbra snapshot also packages CPU ONNX Runtime Java 1.31.0 and the unchanged
+U2NetP/YuNet hero-framing models. Full model/runtime licenses and pinned model
+hashes are in `backdrop-framing/` inside the application JAR; the ONNX dependency
+retains its third-party notices. `onnx_contract.py` checks the actual packaged
+Linux JNI/core bytes, model/license bytes, CPU dependencies and ABI floor in DEB,
+Flatpak readback and AppImage verification. See the
+[snapshot integration notes](../../../docs/linux-umbra-snapshot-integration.md)
+for the accepted engine provenance and remaining desktop acceptance.
 
 User-reported DEB smoke installation and Bazzite Flatpak playback are accepted
 within those tested boundaries. Broader DEB desktop/playback/uninstall, AppImage

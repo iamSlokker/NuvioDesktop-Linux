@@ -18,6 +18,7 @@ import org.jetbrains.kotlin.gradle.tasks.KotlinCompilationTask
 import java.time.ZoneOffset
 import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter
+import java.util.Locale
 import java.util.Properties
 import java.util.zip.ZipEntry
 import java.util.zip.ZipFile
@@ -72,9 +73,7 @@ abstract class GenerateRuntimeConfigsTask : DefaultTask() {
                 |package com.nuvio.app.features.trakt
                 |
                 |object TraktConfig {
-                |    const val CLIENT_ID = "" 
-                |    const val CLIENT_SECRET = "" 
-                |    const val REDIRECT_URI = "http://localhost:53682/callback" 
+                |    const val CLIENT_ID = "${props.getProperty("TRAKT_CLIENT_ID", "")}"
                 |}
                 """.trimMargin()
             )
@@ -1299,6 +1298,72 @@ fun trimMaterialIconsExtendedJar(appDir: File, logger: org.gradle.api.logging.Lo
     )
 }
 
+// The ONNX Runtime jar carries several platforms. Package the current desktop target
+// while keeping all classes, metadata and third-party notices intact.
+fun trimOnnxRuntimeJar(appDir: File, logger: org.gradle.api.logging.Logger) {
+    val ortJar = appDir
+        .listFiles { file -> file.isFile && file.name.startsWith("onnxruntime") && file.name.endsWith(".jar") }
+        ?.singleOrNull()
+        ?: return
+    val nativeRoot = "ai/onnxruntime/native/"
+    val osName = System.getProperty("os.name").lowercase(Locale.ROOT)
+    val os = when {
+        osName.contains("mac") || osName.contains("darwin") -> "osx"
+        osName.contains("win") -> "win"
+        osName.contains("linux") -> "linux"
+        else -> return
+    }
+    val arch = when (System.getProperty("os.arch").lowercase(Locale.ROOT)) {
+        "amd64", "x86_64" -> "x64"
+        "aarch64", "arm64" -> "aarch64"
+        else -> return
+    }
+    // ORT 1.31.0 does not ship macOS Intel natives. Leave the artifact untouched there;
+    // optional framing retains its normal model-unavailable fallback.
+    if (os == "osx" && arch == "x64") {
+        logger.warn("ONNX Runtime 1.31.0 has no macOS Intel natives; automatic framing is unavailable")
+        return
+    }
+    // Keep the existing Windows DLL target in sync with its persistent win-x64 loader.
+    val platform = if (os == "win") "win-x64" else "$os-$arch"
+    val keptNatives = "$nativeRoot$platform/"
+    val requiredLibraries = when (os) {
+        "win" -> listOf("onnxruntime.dll", "onnxruntime4j_jni.dll", "onnxruntime_providers_shared.dll")
+        "osx" -> listOf("libonnxruntime.dylib", "libonnxruntime4j_jni.dylib")
+        else -> listOf("libonnxruntime.so", "libonnxruntime4j_jni.so")
+    }
+    val trimmed = File(ortJar.parentFile, "${ortJar.name}.trimmed")
+    var dropped = 0
+    ZipFile(ortJar).use { zip ->
+        requiredLibraries.forEach { library ->
+            check(zip.getEntry("$keptNatives$library") != null) {
+                "Refusing to trim ${ortJar.name}: required native $keptNatives$library is missing."
+            }
+        }
+        ZipOutputStream(trimmed.outputStream().buffered()).use { out ->
+            zip.entries().asSequence().forEach { entry ->
+                val keep = !entry.name.startsWith(nativeRoot) ||
+                    entry.name == nativeRoot ||
+                    entry.name.startsWith(keptNatives)
+                if (!keep) {
+                    dropped++
+                    return@forEach
+                }
+                out.putNextEntry(ZipEntry(entry.name))
+                zip.getInputStream(entry).use { it.copyTo(out) }
+                out.closeEntry()
+            }
+        }
+    }
+    val sizeBefore = ortJar.length()
+    check(ortJar.delete()) { "Could not replace ${ortJar.absolutePath} with its trimmed copy" }
+    check(trimmed.renameTo(ortJar)) { "Could not move ${trimmed.absolutePath} into place" }
+    logger.lifecycle(
+        "Trimmed ${ortJar.name} to $platform natives: dropped $dropped entries " +
+            "(${sizeBefore / 1024 / 1024}MB -> ${ortJar.length() / 1024 / 1024}MB)",
+    )
+}
+
 val repoRootDir = rootProject.layout.projectDirectory.asFile
 
 mapOf(
@@ -1306,7 +1371,7 @@ mapOf(
     "createReleaseDistributable" to "main-release",
 ).forEach { (taskName, imageFlavor) ->
     tasks.matching { it.name == taskName }.configureEach {
-        notCompatibleWithConfigurationCache("Rewrites the packaged material-icons-extended jar in the app image.")
+        notCompatibleWithConfigurationCache("Rewrites the packaged material-icons-extended and onnxruntime jars in the app image.")
         doLast {
             val binariesDir = layout.buildDirectory.dir("compose/binaries/$imageFlavor/app").get().asFile
             val appDir = listOf("Nuvio/app", "Nuvio.app/Contents/app", "nuvio/lib/app")
@@ -1314,6 +1379,7 @@ mapOf(
                 .firstOrNull(File::isDirectory)
             check(appDir != null) { "No packaged app directory found under $binariesDir" }
             trimMaterialIconsExtendedJar(appDir, logger)
+            trimOnnxRuntimeJar(appDir, logger)
             writeAppImageBuildInfo(
                 appDir = appDir,
                 versionName = desktopReleaseVersionName,
@@ -1368,6 +1434,9 @@ kotlin {
                 implementation("com.squareup.okhttp3:okhttp:4.12.0")
                 implementation(libs.quickjs.kt)
                 implementation(libs.ksoup)
+                // Automatic hero backdrop framing (U2-Netp saliency + YuNet faces). The packaged jar
+                // is trimmed to the current desktop platform; see trimOnnxRuntimeJar.
+                implementation("com.microsoft.onnxruntime:onnxruntime:1.31.0")
             }
         }
         commonMain.dependencies {
@@ -1404,6 +1473,8 @@ kotlin {
                 implementation(compose.desktop.currentOs)
                 @OptIn(org.jetbrains.compose.ExperimentalComposeLibrary::class)
                 implementation(compose.uiTest)
+                // Serves byte ranges to the AutoSync embedded-subtitle index loader tests.
+                implementation("com.squareup.okhttp3:mockwebserver:4.12.0")
             }
         }
     }
@@ -1418,6 +1489,11 @@ val runLiveDisplayTests = providers.environmentVariable("NUVIO_RUN_LIVE_DISPLAY_
     .map { it == "1" }.orElse(false)
 tasks.withType<Test>().configureEach {
     inputs.property("runLiveDisplayTests", runLiveDisplayTests)
+    // DesktopStorage would otherwise read and write the real %LOCALAPPDATA%/NuvioHTPC, including
+    // moving its settings into account folders the first time a test opens a store.
+    val testDataDir = layout.buildDirectory.dir("test-data-dir").get().asFile
+    systemProperty("nuvio.desktop.dataDir", testDataDir.absolutePath)
+    doFirst { testDataDir.deleteRecursively() }
     systemProperty(
         "nuvio.focusTests",
         (providers.gradleProperty("nuvio.focusTests").orNull ?: "false").ifBlank { "true" },

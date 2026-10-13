@@ -13,6 +13,7 @@ import zipfile
 from formats import PLATFORM
 from webkit.stage import linked_paths
 from client_config import verify_packaged_backend
+from onnx_contract import NATIVES as ONNX_NATIVES, verify_packaged_onnx
 
 FORBIDDEN = [b'/home/hmacedo', b'/var/home/hmacedo', b'/home/linuxbrew', b'/opt/homebrew',
              b'/source/', b'/work/prefix', b'/recipes/']
@@ -76,6 +77,37 @@ def check_abi(path, label):
             raise ValueError('ABI above Ubuntu 22.04 floor: ' + label + ': ' + tag)
 
 
+def flatpak_jar_names(repository, ref):
+    directory = '/files/lib/nuvio-desktop/lib/app'
+    listing = subprocess.check_output(
+        ['ostree', '--repo=' + str(repository), 'ls', ref, directory], text=True)
+    names = set()
+    for line in listing.splitlines():
+        # ostree ls: type+octal-mode, uid, gid, size, path. Split only the
+        # metadata columns so literal spaces in a JAR filename are preserved.
+        fields = line.split(maxsplit=4)
+        if (len(fields) != 5 or not re.fullmatch(r'[dl-][0-7]{5}', fields[0])
+                or any(not field.isdigit() for field in fields[1:4])):
+            raise ValueError('Unrecognized Flatpak application inventory entry: ' + line)
+        if fields[0][0] == 'l' and '.jar' in fields[4]:
+            # Symlink formatting uses " -> ", which is also legal filename text.
+            # Never let an ambiguous link name hide an additional classpath JAR.
+            raise ValueError('Non-regular/duplicate Flatpak JAR: ' + fields[4])
+        path = fields[4].split(' -> ', 1)[0] if fields[0][0] == 'l' else fields[4]
+        if path == directory:
+            continue
+        if not path.startswith(directory + '/'):
+            raise ValueError('Unexpected Flatpak application inventory path: ' + path)
+        name = path[len(directory) + 1:]
+        if '/' in name:
+            raise ValueError('Unexpected nested Flatpak application inventory path: ' + path)
+        if name.endswith('.jar'):
+            if fields[0][0] != '-' or name in names:
+                raise ValueError('Non-regular/duplicate Flatpak JAR: ' + path)
+            names.add(name)
+    return names
+
+
 def check_image(root):
     root = root.resolve()
     check_webkit_relocation(root)
@@ -94,6 +126,7 @@ def check_image(root):
     if not list((root / 'lib/app').glob('*.jar')):
         raise ValueError('No application jars')
     verify_packaged_backend(root)
+    onnx = verify_packaged_onnx(root, check_abi)
     info = json.loads((root / 'release-info.json').read_text())
     if not re.fullmatch('[a-f0-9]{40}', info['git_commit']):
         raise ValueError('Missing full source revision')
@@ -126,7 +159,10 @@ def check_image(root):
                         scan_bytes(payload, label)
                         # Multi-platform jars also contain other architectures.
                         # Inspect only Linux x86_64 payloads that can run here.
-                        if 'linux' in entry.filename.lower() and payload.startswith(b'\x7fELF') and payload[18:20] == b'\x3e\x00':
+                        if entry.filename in ONNX_NATIVES:
+                            # Verified above as a pinned pair, matching ORT's core-before-JNI load order.
+                            elf_records.append(dict(file=label, embedded=True, component='onnxruntime'))
+                        elif 'linux' in entry.filename.lower() and payload.startswith(b'\x7fELF') and payload[18:20] == b'\x3e\x00':
                             with tempfile.NamedTemporaryFile(suffix='.so') as embedded:
                                 embedded.write(payload)
                                 embedded.flush()
@@ -168,7 +204,7 @@ def check_image(root):
                 if not pathlib.Path(path).resolve().is_relative_to(root):
                     raise ValueError('Private media resolved outside image: ' + dep)
         elf_records.append(dict(file=rel, needed=needed))
-    return dict(source=info, files=records, elf=elf_records)
+    return dict(source=info, files=records, elf=elf_records, onnx=onnx)
 
 
 def artifacts(work, formats):
@@ -217,15 +253,23 @@ def artifacts(work, formats):
                     raise ValueError('Flatpak exported metadata differs from inspected sandbox')
                 # Inspect exported JAR bytes, not just the canonical input or
                 # release stamp: empty/inadvertently overridden defaults fail.
+                jars = sorted((work / 'flatpak-build/files/lib/nuvio-desktop/lib/app').glob('*.jar'))
+                expected_jars = {jar.name for jar in jars}
+                actual_jars = flatpak_jar_names(tmp, ref)
+                if actual_jars != expected_jars:
+                    raise ValueError('Flatpak JAR inventory differs from staging: extra=' +
+                                     repr(sorted(actual_jars - expected_jars)) + ' missing=' +
+                                     repr(sorted(expected_jars - actual_jars)))
                 image = pathlib.Path(tmp) / 'client-audit'
                 (image / 'lib/app').mkdir(parents=True)
-                for jar in (work / 'flatpak-build/files/lib/nuvio-desktop/lib/app').glob('*.jar'):
+                for jar in jars:
                     payload = subprocess.check_output(['ostree', '--repo=' + tmp, 'cat', ref,
                         '/files/lib/nuvio-desktop/lib/app/' + jar.name])
                     (image / 'lib/app' / jar.name).write_bytes(payload)
                 verify_packaged_backend(image)
+                onnx = verify_packaged_onnx(image, check_abi)
                 (dest / 'flatpak-audit.json').write_text(json.dumps(
-                    dict(source=info, ref=ref, metadata=metadata.decode()), indent=2) + '\n')
+                    dict(source=info, ref=ref, metadata=metadata.decode(), onnx=onnx), indent=2) + '\n')
             if not (work / 'flatpak-build/metadata').is_file():
                 raise ValueError('Missing exported Flatpak metadata')
     checksums = ''.join(hashlib.sha256(p.read_bytes()).hexdigest() + '  ' + p.name + '\n'

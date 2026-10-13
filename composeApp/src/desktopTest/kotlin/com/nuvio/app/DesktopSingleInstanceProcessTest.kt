@@ -1,5 +1,7 @@
 package com.nuvio.app
 
+import com.nuvio.app.core.deeplink.AppDeepLink
+import com.nuvio.app.core.deeplink.AppDeepLinkRepository
 import com.nuvio.app.testing.*
 import java.io.Closeable
 import java.net.InetAddress
@@ -10,6 +12,7 @@ import java.nio.file.Path
 import java.util.concurrent.LinkedBlockingQueue
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicInteger
+import java.util.concurrent.atomic.AtomicReference
 import kotlin.test.*
 
 class DesktopSingleInstanceProcessTest {
@@ -43,6 +46,50 @@ class DesktopSingleInstanceProcessTest {
                 b.exit()
             }
             a.exit()
+        }
+    }
+
+    @Test fun secondJvmHandsOffDecodedLinkBeforeActivatingAndLeavesItPending() = withHeadlessFixture { root ->
+        Child(root, "primary:a").use { primary ->
+            primary.primaryPort()
+            val url = "nuvio://meta?type=series&id=tt0944947%3A1%3A2%2Fcaf%C3%A9"
+            secondary(root, "a", true, url)
+            val expected = "META:series:tt0944947:1:2/café"
+            assertEquals("LINK:$expected", primary.command("link"))
+            assertEquals("ACTIVATED-LINK:$expected", primary.command("activated-link"))
+            assertEquals("COUNT:1", primary.command("count"))
+            // A plain second launch must activate without erasing the queued link.
+            secondary(root, "a", true)
+            assertEquals("COUNT:2", primary.command("count"))
+            assertEquals("LINK:$expected", primary.command("link"))
+            primary.exit()
+        }
+    }
+
+    @Test fun linkHandoffStripsRawLineBreaksInsteadOfTruncatingTheUrl() = withHeadlessFixture { root ->
+        Child(root, "primary:a").use { primary ->
+            primary.primaryPort()
+            secondary(root, "a", true, "nuvio://meta?type=series&id=tt094\r\n4947")
+            assertEquals("LINK:META:series:tt0944947", primary.command("link"))
+            assertEquals("ACTIVATED-LINK:META:series:tt0944947", primary.command("activated-link"))
+            assertEquals("COUNT:1", primary.command("count"))
+            primary.exit()
+        }
+    }
+
+    @Test fun invalidLinkCannotReplacePendingNavigationAndLaterLinksStillWork() = withHeadlessFixture { root ->
+        Child(root, "primary:a").use { primary ->
+            primary.primaryPort()
+            secondary(root, "a", true, "nuvio://downloads")
+            assertEquals("LINK:DOWNLOADS", primary.command("link"))
+            for (invalid in listOf("https://example.invalid/meta?type=series&id=other", "nuvio://meta?type=series")) {
+                secondary(root, "a", true, invalid)
+                assertEquals("LINK:DOWNLOADS", primary.command("link"))
+            }
+            secondary(root, "a", true, "nuvio://meta?type=movie&id=tt123")
+            assertEquals("LINK:META:movie:tt123", primary.command("link"))
+            assertEquals("COUNT:4", primary.command("count"))
+            primary.exit()
         }
     }
 
@@ -91,7 +138,7 @@ class DesktopSingleInstanceProcessTest {
         }
     }
 
-    private fun secondary(root: Path, dir: String, signalled: Boolean) = Child(root, "secondary:$dir").use {
+    private fun secondary(root: Path, dir: String, signalled: Boolean, launchUrl: String? = null) = Child(root, "secondary:$dir", launchUrl).use {
         assertEquals("SECONDARY:$signalled", it.next())
         it.awaitExit()
     }
@@ -101,8 +148,9 @@ class DesktopSingleInstanceProcessTest {
         }
     }
 
-    private class Child(root: Path, scenario: String) : Closeable {
+    private class Child(root: Path, scenario: String, launchUrl: String? = null) : Closeable {
         private val process = headlessProbeBuilder(root, DesktopSingleInstanceProcessProbe::class.java, scenario)
+            .apply { if (launchUrl != null) command().add(launchUrl) }
             .redirectErrorStream(true).start()
         private val lines = LinkedBlockingQueue<String>()
         private val output = StringBuffer()
@@ -147,14 +195,20 @@ internal object DesktopSingleInstanceProcessProbe {
         val (role, dir) = args[1].split(':')
         val data = Path.of(args[0]).resolve(dir)
         val count = AtomicInteger()
-        DesktopSingleInstance.onActivate = { count.incrementAndGet() }
-        when (val outcome = DesktopSingleInstance.claim(data)) {
+        val activatedLink = AtomicReference<AppDeepLink?>()
+        DesktopSingleInstance.onActivate = {
+            activatedLink.set(AppDeepLinkRepository.pendingDeepLink.value)
+            count.incrementAndGet()
+        }
+        when (val outcome = DesktopSingleInstance.claim(data, args.getOrNull(2))) {
             DesktopSingleInstance.Outcome.Primary -> {
                 check(role == "primary") { "Secondary incorrectly acquired ownership" }
                 println("fixture:PRIMARY:${Files.readString(data.resolve("instance.port")).trim()}")
                 val input = System.`in`.bufferedReader()
                 while (true) when (input.readLine()) {
                     "count" -> println("fixture:COUNT:${count.get()}")
+                    "link" -> println("fixture:LINK:${describe(AppDeepLinkRepository.pendingDeepLink.value)}")
+                    "activated-link" -> println("fixture:ACTIVATED-LINK:${describe(activatedLink.get())}")
                     "exit", null -> { println("fixture:EXIT"); return }
                     else -> error("Unexpected test command")
                 }
@@ -164,5 +218,11 @@ internal object DesktopSingleInstanceProcessProbe {
                 println("fixture:SECONDARY:${outcome.signalled}")
             }
         }
+    }
+
+    private fun describe(link: AppDeepLink?): String = when (link) {
+        is AppDeepLink.Meta -> "META:${link.type}:${link.id}"
+        AppDeepLink.Downloads -> "DOWNLOADS"
+        null -> "NONE"
     }
 }
