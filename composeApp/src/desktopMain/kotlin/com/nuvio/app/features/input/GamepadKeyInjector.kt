@@ -2,6 +2,7 @@ package com.nuvio.app.features.input
 
 import com.nuvio.app.features.player.AppShortcutsRepository
 import com.nuvio.app.features.player.PlayerShortcutsRepository
+import com.nuvio.app.features.player.desktop.LinuxHdrInputRoute
 import java.awt.Component
 import java.awt.KeyboardFocusManager
 import java.awt.Toolkit
@@ -39,7 +40,7 @@ internal object GamepadKeyInjector {
      */
     fun press(target: GamepadTarget): Int? {
         val keyCode = resolveKeyCode(target) ?: return null
-        val source = focusTarget() ?: return null
+        val source = focusTarget() ?: return keyCode.takeIf(LinuxHdrInputRoute::deliver)
         post(KeyEvent(source, KeyEvent.KEY_PRESSED, System.currentTimeMillis(), 0, keyCode, KeyEvent.CHAR_UNDEFINED))
         return keyCode
     }
@@ -52,7 +53,9 @@ internal object GamepadKeyInjector {
 
     /** Posts one press/release pair for a `VK_` code. */
     fun sendKeyCode(keyCode: Int): Boolean {
-        val source = focusTarget() ?: return false
+        // No Nuvio AWT window is focused while the Linux HDR session's own window is; an
+        // active session takes the key instead (never installed on other platforms).
+        val source = focusTarget() ?: return LinuxHdrInputRoute.deliver(keyCode)
         val now = System.currentTimeMillis()
         post(KeyEvent(source, KeyEvent.KEY_PRESSED, now, 0, keyCode, KeyEvent.CHAR_UNDEFINED))
         post(KeyEvent(source, KeyEvent.KEY_RELEASED, now, 0, keyCode, KeyEvent.CHAR_UNDEFINED))

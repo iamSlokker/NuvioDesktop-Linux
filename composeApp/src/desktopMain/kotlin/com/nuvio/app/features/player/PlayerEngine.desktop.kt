@@ -1232,6 +1232,41 @@ private data class DesktopVideoProfileState(
     val startupProfileRequested: Boolean,
 )
 
+/**
+ * The mpv output-target properties for each desktop HDR mode, in application order. Also
+ * reused, for its HDR-capable modes only, by the experimental Linux Wayland HDR session.
+ */
+internal fun desktopHdrTargetMpvProperties(hdrMode: DesktopHdrMode): List<Pair<String, String>> = when (hdrMode) {
+    DesktopHdrMode.Auto -> listOf(
+        "target-colorspace-hint" to "auto",
+        "target-colorspace-hint-mode" to "target",
+        "target-prim" to "auto",
+        "target-trc" to "auto",
+        "target-peak" to "auto",
+        "target-contrast" to "auto",
+    )
+    // Force an SDR BT.709/BT.1886 target. Merely disabling the colorspace hint does
+    // not request HDR-to-SDR conversion and was effectively a no-op on HDR desktops.
+    DesktopHdrMode.AlwaysTonemap -> listOf(
+        "target-colorspace-hint" to "yes",
+        "target-colorspace-hint-mode" to "target",
+        "target-prim" to "bt.709",
+        "target-trc" to "bt.1886",
+        "target-peak" to "203",
+        "target-contrast" to "1000",
+    )
+    // Source mode signals the source metadata to the compositor/display and is mpv's
+    // traditional HDR passthrough path.
+    DesktopHdrMode.AlwaysPassthrough -> listOf(
+        "target-colorspace-hint" to "yes",
+        "target-colorspace-hint-mode" to "source",
+        "target-prim" to "auto",
+        "target-trc" to "auto",
+        "target-peak" to "auto",
+        "target-contrast" to "auto",
+    )
+}
+
 private fun applyDesktopVideoProfile(
     controller: NativePlayerController,
     hdrMode: DesktopHdrMode,
@@ -1239,36 +1274,7 @@ private fun applyDesktopVideoProfile(
     customGrade: DesktopColorGrade,
     isHdr: Boolean?,
 ) {
-    when (hdrMode) {
-        DesktopHdrMode.Auto -> {
-            controller.setMpvProperty("target-colorspace-hint", "auto")
-            controller.setMpvProperty("target-colorspace-hint-mode", "target")
-            controller.setMpvProperty("target-prim", "auto")
-            controller.setMpvProperty("target-trc", "auto")
-            controller.setMpvProperty("target-peak", "auto")
-            controller.setMpvProperty("target-contrast", "auto")
-        }
-        DesktopHdrMode.AlwaysTonemap -> {
-            // Force an SDR BT.709/BT.1886 target. Merely disabling the colorspace hint does
-            // not request HDR-to-SDR conversion and was effectively a no-op on HDR desktops.
-            controller.setMpvProperty("target-colorspace-hint", "yes")
-            controller.setMpvProperty("target-colorspace-hint-mode", "target")
-            controller.setMpvProperty("target-prim", "bt.709")
-            controller.setMpvProperty("target-trc", "bt.1886")
-            controller.setMpvProperty("target-peak", "203")
-            controller.setMpvProperty("target-contrast", "1000")
-        }
-        DesktopHdrMode.AlwaysPassthrough -> {
-            // Source mode signals the source metadata to the compositor/display and is mpv's
-            // traditional HDR passthrough path.
-            controller.setMpvProperty("target-colorspace-hint", "yes")
-            controller.setMpvProperty("target-colorspace-hint-mode", "source")
-            controller.setMpvProperty("target-prim", "auto")
-            controller.setMpvProperty("target-trc", "auto")
-            controller.setMpvProperty("target-peak", "auto")
-            controller.setMpvProperty("target-contrast", "auto")
-        }
-    }
+    desktopHdrTargetMpvProperties(hdrMode).forEach { (key, value) -> controller.setMpvProperty(key, value) }
     // Color-preset equalizer values adopted from Stremio-Kai by allecsc, used with
     // permission and attribution. The desktop player already mirrors Stremio-Kai's mpv
     // rendering pipeline (gpu-next, spline36/lanczos/mitchell scaling, sigmoid upscaling,
