@@ -48,6 +48,10 @@ def release_rules():
     # Also reject a replacement copied/renamed into any other payload location.
     replacements = {row['replacement']['sha256']: packaged_path(row['resource'])
                     for row in release['replacements']}
+    # Linux packages download the anime dataset at runtime; never redistribute its bytes.
+    dataset = json.loads(data_provenance().read_text())['dataset']
+    removed_names.add(dataset['resource'].casefold())
+    forbidden[dataset['sha256']] = dataset['bytes']
     sizes = set(forbidden.values()) | {row['replacement']['bytes'] for row in release['replacements']}
     return removed_names, forbidden, exceptions, replacements, sizes
 
@@ -63,8 +67,7 @@ def expected_resources():
         if declared and digest != provenance[declared]:
             raise ValueError('Icon license/notice differs from pinned provenance: ' + filename)
         expected[PREFIX + 'files/licenses/NuvioIcons/' + filename] = digest
-    data = json.loads(DATA_PROVENANCE.read_text())
-    expected['anime-list-mini.json'] = data['dataset']['sha256']
+    # The dataset itself is downloaded at runtime; its attribution and licenses still ship.
     for filename in ('PROVENANCE.json', 'NOTICE.txt', 'ODBL-1.0.txt', 'DBCL-1.0.txt'):
         expected['anime-mapping/' + filename] = hashlib.sha256(
             DATA_PROVENANCE.with_name(filename).read_bytes()).hexdigest()
