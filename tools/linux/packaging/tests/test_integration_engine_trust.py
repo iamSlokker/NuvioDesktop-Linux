@@ -85,12 +85,24 @@ class IntegrationEngineTrustTest(unittest.TestCase):
                                  GITHUB_SHA='c' * 40))
                     self.assertEqual(result.returncode == 0, expected, result.stderr)
             # The cross-commit exception must not apply to another integration
-            # branch, a PR merge ref, or linux itself.
+            # branch or a PR merge ref.
             (pathlib.Path(tmp) / 'engine-run.json').write_text(json.dumps(good))
-            for ref in [INTEGRATION_REF + '-other', 'refs/pull/2/merge', 'refs/heads/linux']:
+            for ref in [INTEGRATION_REF + '-other', 'refs/pull/2/merge']:
                 result = subprocess.run(['bash', '-ec', guard], capture_output=True,
                     env=dict(os.environ, RUNNER_TEMP=tmp, GITHUB_REF=ref, GITHUB_SHA='c' * 40))
                 self.assertNotEqual(result.returncode, 0, ref)
+            # linux accepts exactly the reviewed run (byte-identical WebKit recipe)
+            # and nothing else from the fix branch.
+            linux_cases = [(good, True)] + [(dict(good, **{field: wrong}), False) for field, wrong in
+                [('id', int(ENGINE_RUN) + 1), ('run_attempt', 2), ('head_sha', 'b' * 40),
+                 ('head_branch', 'fix/other'), ('conclusion', 'failure'), ('event', 'pull_request'),
+                 ('path', '.github/workflows/linux-packages.yml')]]
+            for record, expected in linux_cases:
+                with self.subTest(linux_record=record):
+                    (pathlib.Path(tmp) / 'engine-run.json').write_text(json.dumps(record))
+                    result = subprocess.run(['bash', '-ec', guard], capture_output=True,
+                        env=dict(os.environ, RUNNER_TEMP=tmp, GITHUB_REF='refs/heads/linux', GITHUB_SHA='c' * 40))
+                    self.assertEqual(result.returncode == 0, expected, result.stderr)
 
     def test_seed_run_still_requires_successful_canonical_linux_workflow(self):
         script = run_script(named_step('linux-packages.yml', 'Download trusted engine and its canonical builder seed'))
