@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- SPDX-License-Identifier: MIT; Copyright (c) 2026 NuvioDesktop-Linux contributors.
+     Original Linux package replacement; not an official logo, rating or award mark. Inter 4.1 outlines; see bundled OFL. -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100" height="100">
+  <title>Limited series (stacked episodes)</title>
+  <path fill="#A68BF5" d="M34.00 12.00C30.69 12.00 28.00 14.69 28.00 18.00L28.00 25.00L76.00 25.00C81.52 25.00 86.00 29.48 86.00 35.00L86.00 47.66L86.00 47.66C88.33 46.83 90.00 44.61 90.00 42.00L90.00 18.00C90.00 14.69 87.31 12.00 84.00 12.00Z"/>
+  <path fill="#A68BF5" d="M24.00 29.00C20.69 29.00 18.00 31.69 18.00 35.00L18.00 42.00L68.00 42.00C73.52 42.00 78.00 46.48 78.00 52.00L78.00 68.66L78.00 68.66C80.33 67.83 82.00 65.61 82.00 63.00L82.00 35.00C82.00 31.69 79.31 29.00 76.00 29.00Z"/>
+  <path fill="#71AFE9" d="M8.00 52.00L8.00 84.00C8.00 87.31 10.69 90.00 14.00 90.00L68.00 90.00C71.31 90.00 74.00 87.31 74.00 84.00L74.00 52.00C74.00 48.69 71.31 46.00 68.00 46.00L14.00 46.00C10.69 46.00 8.00 48.69 8.00 52.00Z"/>
+</svg>

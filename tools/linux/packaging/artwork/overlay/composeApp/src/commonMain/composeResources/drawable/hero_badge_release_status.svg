@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- SPDX-License-Identifier: MIT; Copyright (c) 2026 NuvioDesktop-Linux contributors.
+     Original Linux package replacement; not an official logo, rating or award mark. Inter 4.1 outlines; see bundled OFL. -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100" height="100">
+  <title>Not yet streaming (clock)</title>
+  <path fill="#EF8A73" d="M50.00 20.00C47.79 20.00 46.00 21.79 46.00 24.00L46.00 50.00C46.00 51.45 46.79 52.79 48.06 53.50L66.06 63.50C66.67 63.84 67.34 64.00 68.00 64.00C69.40 64.00 70.77 63.26 71.50 61.94C72.57 60.01 71.87 57.58 69.94 56.50L54.00 47.65L54.00 24.00C54.00 21.79 52.21 20.00 50.00 20.00ZM50.00 14.00C69.88 14.00 86.00 30.12 86.00 50.00C86.00 69.88 69.88 86.00 50.00 86.00C30.12 86.00 14.00 69.88 14.00 50.00C14.00 30.12 30.12 14.00 50.00 14.00ZM50.00 5.00C25.15 5.00 5.00 25.15 5.00 50.00C5.00 74.85 25.15 95.00 50.00 95.00C74.85 95.00 95.00 74.85 95.00 50.00C95.00 25.15 74.85 5.00 50.00 5.00Z"/>
+</svg>
