@@ -108,7 +108,7 @@ class FlatpakJarInventoryTest(unittest.TestCase):
         for name in artwork_contract.expected_resources():
             relative = ('composeApp/src/commonMain/composeResources/' + name.removeprefix(artwork_contract.PREFIX)
                         if name.startswith(artwork_contract.PREFIX) else 'composeApp/src/desktopMain/resources/' + name)
-            payload[name] = (artwork_contract.REPO / relative).read_bytes()
+            payload[name] = (artwork_contract.repository() / relative).read_bytes()
         for bad_export in (False, True):
             content = dict(payload)
             if bad_export:
