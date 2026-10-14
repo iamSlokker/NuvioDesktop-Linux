@@ -76,6 +76,9 @@ Details: [platform source evidence](platform-source-evidence.md).
 
 ## Smallest remaining action set
 
+**2026-10-14:** the engineering items below are closed; see the update at the top of
+[the final readiness report](../FINAL-READINESS-REPORT.md) for evidence and the remaining owner decisions.
+
 1. **Resolve the specific rights/data questions.** Retain asset-specific grants
    for the 47 remaining provider/rating/award resources and the claimed
    IMDb permission. Seventeen resources now have original MIT replacements, and
@@ -121,9 +124,9 @@ Details: [platform source evidence](platform-source-evidence.md).
 
 | Format | Remaining gate | Public redistribution |
 | --- | --- | --- |
-| DEB | Common rights/data, required native source/notices/relink scope, tested replacement/install procedures, recipient delivery, fresh candidate acceptance | **BLOCKED** |
-| Flatpak | Same common gates; review responsibility/source availability for any separately supplied runtime or driver extensions without assuming an exemption | **BLOCKED** |
-| AppImage | Same common gates plus review of the source-built runtime's notices, source archive and relink kit (historical artifacts: original runtime inputs unresolved) | **BLOCKED** |
+| DEB | Engineering gates closed in run 38538334113 (notices, artwork, dataset exclusion, source bundles, Ubuntu install smoke, owner acceptance). Remaining: TMDB attribution confirmation, final owner review, publication with its source assets | **PENDING OWNER DECISIONS** |
+| Flatpak | Same as DEB; the GNOME runtime is installed separately from Flathub and is not part of the bundle | **PENDING OWNER DECISIONS** |
+| AppImage | Same as DEB; source-built runtime with notices, source archive and relink kit, plus WebKit/GTK and Ubuntu library sources, verified in run 38538334113 (historical artifacts: original runtime inputs unresolved, do not redistribute) | **PENDING OWNER DECISIONS** |
 
 These are evidence boundaries, not legal certification. No permissions or
 license exemptions were invented, and no historical package/source receipt was
