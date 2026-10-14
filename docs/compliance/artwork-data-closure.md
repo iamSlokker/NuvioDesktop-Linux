@@ -142,14 +142,15 @@ packages or the Linux source tarball; Linux packages carry original replacement
 artwork instead. To keep Windows/macOS unchanged and upstream merges clean, the
 composeApp originals and all Kotlin are **not modified**.
 
-- **Replacements:** original MIT artwork authored by the existing
+- **Replacements:** 46 original MIT artworks authored by the existing
   [Java2D recipe](../../tools/linux/packaging/artwork/GenerateReleaseArtwork.java)
-  with only the pinned Inter fonts and original geometry, committed under
+  with only the pinned Inter fonts and original geometry, plus TMDB's official
+  attribution logo for `rating_tmdb.png` (below), committed under
   [`tools/linux/packaging/artwork/overlay/`](../../tools/linux/packaging/artwork/overlay)
   at the same repository-relative paths. Names and formats are unchanged; SVGs
   keep their `width`/`height`/`viewBox` and contain only `svg`/`title`/`rect`/`path`;
   PNGs keep their pixel sizes as RGBA. Provider/rating marks are neutral plates
-  with plain Inter text (`IMDb`, `TMDB`, `TR`, `Trakt`, `LB`, `MC`, `MAL`, …);
+  with plain Inter text (`IMDb`, `TR`, `Trakt`, `LB`, `MC`, `MAL`, …);
   Rotten Tomatoes critic/audience states stay distinguishable by circle/square or
   rosette shape, color and an up/down/check glyph, with no tomato/popcorn imagery.
   Award/hero badges are generic trophies, laurels, medals, shields, stars,
@@ -162,7 +163,7 @@ composeApp originals and all Kotlin are **not modified**.
   snapshot. The overlay directory itself stays in the snapshot; the originals do
   not, so the application JAR and source tarball carry only replacements.
 - **Provenance:** each row (original SHA256/bytes/introduction commit and
-  replacement SHA256/bytes/dimensions/MIT) is in the bundled
+  replacement SHA256/bytes/dimensions/license) is in the bundled
   [ReleaseArtwork provenance](../../composeApp/src/commonMain/composeResources/files/licenses/ReleaseArtwork/PROVENANCE.json)
   under `linux_overlay`; its NOTICE describes the overlay. The four former
   retained-hash exceptions are removed.
@@ -176,10 +177,30 @@ composeApp originals and all Kotlin are **not modified**.
   `unresolved_upstream_other_platforms: 47` because upstream/Windows/macOS still
   ship the originals unchanged. No rights in the originals are claimed.
 
-**TMDB attribution (owner action):** `rating_tmdb.png` (also the TMDB integration
-settings icon) was replaced with a plain `TMDB` text mark per owner decision.
-TMDB's API terms may require its approved logo for attribution. Compliance with
-those terms must be confirmed by the owner; it is **not** claimed here.
+**TMDB attribution (owner decision 2026-10-14, resolved):** `rating_tmdb.png`
+(the detail rating-row logo and the TMDB integration/attribution logo) is TMDB's
+**official attribution logo** instead of a text mark. TMDB's
+[logos and attribution page](https://www.themoviedb.org/about/logos-attribution)
+states: "As per our terms of use, every application that uses our data or images
+is required to properly attribute TMDB as the source. Below you will find some
+logos you can use within your application." The "Primary full (blue)" SVG
+([source](https://www.themoviedb.org/assets/v4/logos/v2/blue_square_2-d537fb228cf3ded904ef09b136fe3fec72548ebc1fea3fbbd1ad9e36364db38b.svg),
+SHA-256 `d537fb228cf3ded904ef09b136fe3fec72548ebc1fea3fbbd1ad9e36364db38b`,
+retrieved 2026-10-14) is vendored unmodified with a notice at
+[`tools/linux/packaging/artwork/vendor/tmdb/`](../../tools/linux/packaging/artwork/vendor/tmdb/README.md);
+its 185.04×133.4 viewBox matches the 67×48 slot. The recipe renders it
+reproducibly (uniform scale, transparent centering padding; no recolor, stretch or
+crop) and refuses any other SVG bytes. Its provenance row records license
+`TMDB-attribution-terms` (not MIT) with the source page, URL, hash and quoted
+terms; the artwork gate allows a non-MIT overlay only for this resource and pinned
+SVG, and the bundled ReleaseArtwork NOTICE identifies it as TMDB's logo. Use is
+limited to attribution; no endorsement or broader trademark permission is claimed.
+Validation: `generate.py` on the recorded JDK 17.0.20.1 reproduced all 47
+overlay files byte-identically (only `rating_tmdb.png` changed; the other 46 and
+the ten earlier outputs are unchanged), and an offscreen contact sheet at 1x/2x/4x
+and a comparison with an independent librsvg rendering showed the logo
+undistorted, with correct letter counters. At the 16dp rating-row size the
+lettering is necessarily tiny, as with the upstream raster.
 
 Validation for this change: all 47 overlay files reproduced byte-identically
 from the recipe on the recorded JDK 17.0.20.1, and the receipt equals the pinned
@@ -283,8 +304,8 @@ baseline Git blobs; tests use synthetic old bytes instead of redistributing
 unlicensed imports as fixtures. The gate is not a rights grant or a new package
 build: other artwork and data/source/delivery blockers remain unchanged.
 
-DEB, Flatpak and AppImage remain **BLOCKED** by the enumerated data rights, owner
-confirmation of TMDB attribution,
-required native/static source/relink and recipient-delivery gates. The finite
+DEB, Flatpak and AppImage remain **BLOCKED** by the enumerated data rights,
+required native/static source/relink and recipient-delivery gates (TMDB attribution
+is resolved by the official logo above). The finite
 [release closure](release-closure.md) still applies. No binary publication, HDR,
 WebKit rebuild or SDR renderer change is part of this correction.

@@ -1752,12 +1752,21 @@
           ]
         },
         "replacement": {
-          "sha256": "9d0c35021ef1242c780e4613e380ddb7132962204ef8590a2030f0f74cf33aac",
-          "bytes": 1166,
-          "license": "MIT",
-          "source": "tools/linux/packaging/artwork/GenerateReleaseArtwork.java",
-          "copyright": "Copyright (c) 2026 NuvioDesktop-Linux contributors",
-          "description": "Neutral rounded plate with plain Inter text label; not the provider logo; original Linux replacement, not an official logo or award mark"
+          "sha256": "85248e937670a71d7083d109771fa164d083c59da54cc77012ef1ce3bfa34f38",
+          "bytes": 2866,
+          "license": "TMDB-attribution-terms",
+          "status": "OFFICIAL_TMDB_ATTRIBUTION_LOGO",
+          "source": "tools/linux/packaging/artwork/vendor/tmdb/blue_square_2.svg",
+          "source_sha256": "d537fb228cf3ded904ef09b136fe3fec72548ebc1fea3fbbd1ad9e36364db38b",
+          "source_bytes": 2577,
+          "source_url": "https://www.themoviedb.org/assets/v4/logos/v2/blue_square_2-d537fb228cf3ded904ef09b136fe3fec72548ebc1fea3fbbd1ad9e36364db38b.svg",
+          "source_page": "https://www.themoviedb.org/about/logos-attribution",
+          "source_variant": "Primary full (blue)",
+          "retrieved": "2026-10-14",
+          "terms_statement": "As per our terms of use, every application that uses our data or images is required to properly attribute TMDB as the source. Below you will find some logos you can use within your application.",
+          "renderer": "tools/linux/packaging/artwork/GenerateReleaseArtwork.java",
+          "copyright": "TMDB (The Movie Database) logo; not NuvioDesktop-Linux artwork",
+          "description": "Official TMDB attribution logo used per TMDB terms to attribute TMDB as the data/image source (owner decision 2026-10-14); vendored SVG rendered unmodified with uniform scale and transparent centering only (no recolor, stretch or crop); TMDB mark, not MIT; no endorsement implied"
         },
         "dimensions": {
           "width": 67,
@@ -1913,8 +1922,8 @@
     "source": "tools/linux/packaging/artwork/GenerateReleaseArtwork.java",
     "driver": "tools/linux/packaging/artwork/generate.py",
     "recipe_sha256": {
-      "tools/linux/packaging/artwork/GenerateReleaseArtwork.java": "e59fb7481c2cac0cb7f9f9eeb67eed10091c92aa42288a1f8565afd4f28a4a05",
-      "tools/linux/packaging/artwork/generate.py": "95520d0c326f031cbd3c14232761d4d53b7db3fbdd7dd5971410011743e2d857"
+      "tools/linux/packaging/artwork/GenerateReleaseArtwork.java": "089967b668603a77d3e300420e60cc5f0d079ed03f301c23fd1d395083558b3b",
+      "tools/linux/packaging/artwork/generate.py": "5accf84be8d3a3645b83f89ff14a8d01d843e8eca156f27dd09d02a40f15167a"
     },
     "toolchain": {
       "scope": "Asset authoring only; no runtime, package or rights certification",
@@ -1939,6 +1948,13 @@
           "path": "composeApp/src/commonMain/composeResources/font/inter_bold.ttf",
           "sha256": "288316099b1e0a47a4716d159098005eef7c0066921f34e3200393dbdb01947f",
           "weight": 700
+        }
+      ],
+      "vendored_inputs": [
+        {
+          "path": "tools/linux/packaging/artwork/vendor/tmdb/blue_square_2.svg",
+          "sha256": "d537fb228cf3ded904ef09b136fe3fec72548ebc1fea3fbbd1ad9e36364db38b",
+          "source_url": "https://www.themoviedb.org/assets/v4/logos/v2/blue_square_2-d537fb228cf3ded904ef09b136fe3fec72548ebc1fea3fbbd1ad9e36364db38b.svg"
         }
       ],
       "files": {
@@ -1999,7 +2015,7 @@
         "composeApp/src/commonMain/composeResources/drawable/rating_rotten_tomatoes.png": "7cf8e76889f5cee5189e3b97c16bc0daf521868f986c4f80c0ac6d0d03404cf0",
         "composeApp/src/commonMain/composeResources/drawable/rating_rotten_tomatoes_certified.png": "f470f60356e25b643f9b1c771cd6c4fe42884b0dff56d4e6e34e6c8049f46e64",
         "composeApp/src/commonMain/composeResources/drawable/rating_rotten_tomatoes_rotten.png": "30f0441c9c0960b530ca1839ee804bf7b126244e32e78c7921ee4d58d71e3e3e",
-        "composeApp/src/commonMain/composeResources/drawable/rating_tmdb.png": "9d0c35021ef1242c780e4613e380ddb7132962204ef8590a2030f0f74cf33aac",
+        "composeApp/src/commonMain/composeResources/drawable/rating_tmdb.png": "85248e937670a71d7083d109771fa164d083c59da54cc77012ef1ce3bfa34f38",
         "composeApp/src/commonMain/composeResources/drawable/rating_trakt.png": "da70350b2eb7bcae40d69d63467f9a0132a61a37bec0eaed5d4b0f732823c088",
         "composeApp/src/commonMain/composeResources/drawable/simkl_logo.png": "f290a61ca285b578845b3202eb548f2909dedaa72db7697070910c32d3fe5b38",
         "composeApp/src/commonMain/composeResources/drawable/trakt_logo_wordmark.svg": "3abfa9d9e7fab1170b6619b3c0f063fa47b20b7c4d19bd89e9c58cd09c5afe3d",
@@ -2016,5 +2032,5 @@
     "generated_resources": "Fresh Compose generation and Kotlin compilation verify accessor absence is safe"
   },
   "license_sha256": "2e2f8ffd6a26df5690dc327a6f667d60cf12122461b2572ec568552eebabb88b",
-  "notice_sha256": "486ec9532c643f6478b53a5507b2ec871534c715072b829a3aa71548c501ecc5"
+  "notice_sha256": "8fe29437162cbe5562ac100c5048a12bd7ab9f11696a58b63b6403276b03f938"
 }

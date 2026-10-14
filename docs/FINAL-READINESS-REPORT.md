@@ -8,8 +8,8 @@ evidence of that date.
 
 **Engineering and packaging gates: closed for DEB, Flatpak and AppImage at the
 evidence commit below.**
-**Redistribution: PENDING OWNER DECISIONS** (listed at the end of this section);
-no release has been created or published.
+**Redistribution: PENDING MANUAL PUBLICATION** (the owner decisions are resolved;
+see the end of this section); no release has been created or published.
 **HDR10: unchanged, deferred and optional.**
 
 ### Evidence build
@@ -50,7 +50,7 @@ not the recipient delivery channel.
 | Unclassified template brand mark | Removed and forbidden in JARs | #10 |
 | Anime mapping dataset rights chain | Not redistributed: excluded from the Linux snapshot, JAR and source tarball; the app downloads the pinned revision and verifies size and SHA256 | #11 |
 | Native notices (Skiko/Skia and its static set, ONNX Runtime, QuickJS, c-vector, Jansi) | 24 pinned texts shipped in `share/licenses/third-party/` in all formats; verified per format | #12 |
-| 47 provider/rating and award/hero artwork resources | Replaced in Linux packages by original MIT artwork (overlay); upstream files and other platforms unchanged; originals forbidden in JARs | #13 |
+| 47 provider/rating and award/hero artwork resources | Replaced in Linux packages (overlay) by 46 original MIT artworks and, for `rating_tmdb`, TMDB's official attribution logo; upstream files and other platforms unchanged; originals forbidden in JARs | #13 |
 | AppImage runtime with unrecoverable static inputs; LGPL libfuse relink | Runtime rebuilt reproducibly from pinned sources (`6ee69667…`), notices shipped, source and relink kit published with each AppImage | #14, #18, #19, #20 |
 | No recipient source delivery | Every build emits application, WebKit/GTK, AppImage runtime, media, Temurin and AppImage-Ubuntu source plus `SOURCE-MAP.json`, gated in CI. Owner decision: deliver as assets of the same GitHub Release | #15, #16, #22 |
 | WebKit engine reuse on `linux` | `linux` may consume only the accepted engine run 38327066209 (recipe byte-identical) | #17 |
@@ -59,13 +59,25 @@ not the recipient delivery channel.
 Trusted builder seed inputs (`build.py`, `config.json`, Containerfile, media
 runtime) were kept byte-identical throughout.
 
-### Remaining owner decisions before publication
+### Owner decisions before publication
 
-1. **TMDB attribution:** `rating_tmdb` is now a plain text mark. Confirm that this
-   satisfies TMDB's API attribution terms, or adopt TMDB's officially provided
-   attribution logo under those terms.
-2. **Final review** of this evidence and of any remaining legal questions (for
-   example model-file terms and trademark use of plain provider names).
+Resolved on 2026-10-14:
+
+1. **TMDB attribution — resolved.** TMDB's terms require applications using its
+   data or images to attribute TMDB, and TMDB provides logos for that purpose
+   ([logos & attribution](https://www.themoviedb.org/about/logos-attribution)).
+   Linux packages now carry TMDB's official "Primary full (blue)" attribution logo
+   as `rating_tmdb.png`, rendered unmodified from the vendored, hash-pinned SVG
+   (`d537fb228cf3ded904ef09b136fe3fec72548ebc1fea3fbbd1ad9e36364db38b`) and recorded
+   as `TMDB-attribution-terms`, not MIT. See
+   [artwork-data-closure.md](compliance/artwork-data-closure.md#linux-package-artwork-overlay).
+   The evidence build above predates this change (it carries the former text mark),
+   so publish only a build that includes it.
+2. **Final review — accepted.** The owner accepted the final review of model-file
+   terms and of plain provider names used in text on 2026-10-14.
+
+Remaining:
+
 3. **Publication:** create the version tag, let CI build the stable channel, and
    publish the packages together with every source asset listed in that build's
    `SOURCE-MAP.json` in the same GitHub Release. There is no automated release job;

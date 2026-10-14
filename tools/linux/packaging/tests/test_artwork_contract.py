@@ -251,7 +251,10 @@ class ArtworkContractTest(unittest.TestCase):
                 self.assertEqual(row['replacement']['sha256'], digest)
                 self.assertEqual(receipt[row['resource']], digest)
                 self.assertEqual(row['replacement']['bytes'], len(data))
-                self.assertEqual('MIT', row['replacement']['license'])
+                # Sole documented exception: TMDB's official attribution logo (pinned vendored SVG).
+                expected_license = ('TMDB-attribution-terms' if row['resource'] == contract.TMDB_ATTRIBUTION['resource']
+                                    and row['replacement']['source_sha256'] == contract.TMDB_ATTRIBUTION['source_sha256'] else 'MIT')
+                self.assertEqual(expected_license, row['replacement']['license'])
                 self.assertEqual('LINUX_OVERLAY_REPLACED', row['status'])
                 self.assertNotEqual(row['original']['sha256'], digest)
                 self.assertNotIn(digest, digests); digests.add(digest)
@@ -297,6 +300,95 @@ class ArtworkContractTest(unittest.TestCase):
         files = self.release['authoring']['toolchain']['files']
         for name in [n for n in files if n.endswith('.svg')]:
             self.assertEqual(files[name], hashlib.sha256((output / name).read_bytes()).hexdigest())
+
+    def test_tmdb_attribution_logo_is_the_only_non_mit_overlay_and_is_pinned_everywhere(self):
+        pin = contract.TMDB_ATTRIBUTION
+        exceptions = [row for row in self.overlay if row['replacement']['license'] != 'MIT']
+        self.assertEqual([pin['resource']], [row['resource'] for row in exceptions])
+        replacement = exceptions[0]['replacement']
+        self.assertEqual({key: replacement[key] for key in ('license', 'source', 'source_sha256')},
+                         {key: pin[key] for key in ('license', 'source', 'source_sha256')})
+        self.assertEqual('OFFICIAL_TMDB_ATTRIBUTION_LOGO', replacement['status'])
+        self.assertEqual('https://www.themoviedb.org/about/logos-attribution', replacement['source_page'])
+        self.assertTrue(replacement['source_url'].startswith('https://www.themoviedb.org/assets/v4/logos/v2/blue_square_2-'))
+        self.assertIn(pin['source_sha256'], replacement['source_url'])  # TMDB's content-addressed asset name
+        self.assertIn('required to properly attribute TMDB as the source', replacement['terms_statement'])
+        svg_bytes = contract.TMDB_LOGO.read_bytes()
+        self.assertEqual(contract.repository() / pin['source'], contract.TMDB_LOGO)
+        self.assertEqual(pin['source_sha256'], hashlib.sha256(svg_bytes).hexdigest())
+        self.assertEqual(replacement['source_bytes'], len(svg_bytes))
+        svg = ET.fromstring(svg_bytes)
+        self.assertEqual('0 0 185.04 133.4', svg.get('viewBox'))
+        self.assertNotIn(b'<!', svg_bytes)
+        self.assertFalse(any('href' in k or k.lower().startswith('on') for x in svg.iter() for k in x.attrib))
+        # The recipe, its driver receipt and the bundled notice pin the same vendored bytes.
+        recipe = (contract.HERE / 'artwork/GenerateReleaseArtwork.java').read_text()
+        self.assertIn(f'TMDB_SVG = "{pin["source"]}"', recipe)
+        self.assertIn(f'TMDB_SVG_SHA256 = "{pin["source_sha256"]}"', recipe)
+        self.assertIn({'path': pin['source'], 'sha256': pin['source_sha256'], 'source_url': replacement['source_url']},
+                      self.release['authoring']['toolchain']['vendored_inputs'])
+        self.assertIn(pin['source_sha256'], contract.release_provenance().with_name('NOTICE.txt').read_text())
+        readme = (contract.TMDB_LOGO.parent / 'README.md').read_text()
+        self.assertIn(pin['source_sha256'], readme); self.assertIn('not** licensed under', readme)
+
+    def test_non_mit_overlay_other_than_pinned_tmdb_logo_is_rejected(self):
+        fixture = self.root / 'provenance'; fixture.mkdir()
+        for name in ('LICENSE.txt', 'NOTICE.txt'):
+            (fixture / name).write_bytes(contract.release_provenance().with_name(name).read_bytes())
+        tmdb = next(i for i, r in enumerate(self.overlay) if r['resource'] == contract.TMDB_ATTRIBUTION['resource'])
+        other = next(i for i, r in enumerate(self.overlay) if r['resource'] != contract.TMDB_ATTRIBUTION['resource'])
+        tampered_logo = self.root / 'tampered.svg'
+        tampered_logo.write_bytes(contract.TMDB_LOGO.read_bytes().replace(b'#90cea1', b'#90cea2'))
+        for label, mutate, logo in (
+                ('other row', lambda r: r['linux_overlay']['resources'][other]['replacement'].update(
+                    {k: v for k, v in contract.TMDB_ATTRIBUTION.items() if k != 'resource'}), contract.TMDB_LOGO),
+                ('source hash', lambda r: r['linux_overlay']['resources'][tmdb]['replacement'].update(source_sha256='0' * 64),
+                 contract.TMDB_LOGO),
+                ('license', lambda r: r['linux_overlay']['resources'][tmdb]['replacement'].update(license='Proprietary'),
+                 contract.TMDB_LOGO),
+                ('vendored bytes', lambda r: None, tampered_logo)):
+            release = json.loads(contract.release_provenance().read_text()); mutate(release)
+            (fixture / 'PROVENANCE.json').write_text(json.dumps(release))
+            with self.subTest(label), patch.object(contract, 'release_provenance', lambda: fixture / 'PROVENANCE.json'), \
+                    patch.object(contract, 'TMDB_LOGO', logo), \
+                    self.assertRaisesRegex(ValueError, 'Only the pinned TMDB attribution logo'):
+                contract.expected_resources()
+
+    def test_recipe_derives_tmdb_overlay_only_from_pinned_vendored_svg(self):
+        java_home = Path(os.environ.get('JAVA_HOME', '/nonexistent'))
+        if not (java_home / 'bin/javac').is_file():
+            self.skipTest('JAVA_HOME with javac required to run the headless authoring recipe')
+        env = {k: v for k, v in os.environ.items() if k in ('PATH', 'LANG')}
+        env.update(HOME=str(self.root), XDG_CONFIG_HOME=str(self.root), XDG_CACHE_HOME=str(self.root))
+        classes = self.root / 'classes'
+        subprocess.run([str(java_home / 'bin/javac'), '-encoding', 'UTF-8', '-d', str(classes),
+                        str(contract.HERE / 'artwork/GenerateReleaseArtwork.java')], env=env, check=True, capture_output=True)
+        # Minimal recipe root: the pinned Inter inputs and the vendored TMDB SVG, nothing else.
+        source = self.root / 'recipe-root'
+        fonts = 'composeApp/src/commonMain/composeResources/font'
+        (source / fonts).mkdir(parents=True)
+        for name in ('inter_regular.ttf', 'inter_bold.ttf'):
+            shutil.copy2(contract.repository() / fonts / name, source / fonts / name)
+        logo = source / contract.TMDB_ATTRIBUTION['source']; logo.parent.mkdir(parents=True)
+        tmdb = contract.TMDB_ATTRIBUTION['resource']
+
+        def run(output):
+            return subprocess.run([str(java_home / 'bin/java'), '-Djava.awt.headless=true', '-Duser.home=' + str(self.root),
+                                   '-cp', str(classes), 'GenerateReleaseArtwork', str(source), str(output)],
+                                  env=env, capture_output=True, text=True)
+        logo.write_bytes(contract.TMDB_LOGO.read_bytes())
+        result = run(self.root / 'pinned')
+        self.assertEqual(0, result.returncode, result.stderr)
+        data = (self.root / 'pinned/linux-overlay' / tmdb).read_bytes()
+        self.assertEqual((contract.OVERLAY / tmdb).read_bytes(), data)
+        self.assertEqual(b'\x89PNG\r\n\x1a\n', data[:8])
+        self.assertEqual((67, 48, b'\x08\x06'), (int.from_bytes(data[16:20], 'big'), int.from_bytes(data[20:24], 'big'), data[24:26]))
+        # Any other bytes (here one gradient stop color) are refused rather than rendered.
+        logo.write_bytes(contract.TMDB_LOGO.read_bytes().replace(b'#90cea1', b'#90cea2'))
+        result = run(self.root / 'tampered')
+        self.assertNotEqual(0, result.returncode)
+        self.assertIn('Vendored TMDB logo differs from its pinned SHA-256', result.stderr)
+        self.assertFalse((self.root / 'tampered/linux-overlay' / tmdb).exists())
 
     def test_replacement_copies_are_rejected_at_renamed_paths_and_across_jars(self):
         for row in self.release['replacements'] + self.overlay:

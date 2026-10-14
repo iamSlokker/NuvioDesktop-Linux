@@ -12,6 +12,15 @@ CHECKOUT = next((parent for parent in HERE.parents if parent / 'tools/linux/pack
 PREFIX = 'composeResources/nuvio.composeapp.generated.resources/'
 # Linux-only replacement bytes that build.py substitutes for tracked composeApp files.
 OVERLAY = HERE / 'artwork/overlay'
+# The only non-MIT overlay replacement: TMDB's official attribution logo, rendered from
+# the vendored, hash-pinned SVG under TMDB's terms (TMDB requires attribution).
+TMDB_ATTRIBUTION = {
+    'resource': 'composeApp/src/commonMain/composeResources/drawable/rating_tmdb.png',
+    'license': 'TMDB-attribution-terms',
+    'source': 'tools/linux/packaging/artwork/vendor/tmdb/blue_square_2.svg',
+    'source_sha256': 'd537fb228cf3ded904ef09b136fe3fec72548ebc1fea3fbbd1ad9e36364db38b',
+}
+TMDB_LOGO = HERE / 'artwork/vendor/tmdb/blue_square_2.svg'
 
 
 def repository():
@@ -96,6 +105,11 @@ def expected_resources():
             raise ValueError('Unexpected Linux artwork overlay row: ' + row['resource'])
         if hashlib.sha256((OVERLAY / row['resource']).read_bytes()).hexdigest() != row['replacement']['sha256']:
             raise ValueError('Linux artwork overlay differs from pinned provenance: ' + row['resource'])
+        exception = dict({key: row['replacement'].get(key) for key in TMDB_ATTRIBUTION}, resource=row['resource'])
+        if row['replacement']['license'] != 'MIT' and (
+                exception != TMDB_ATTRIBUTION or
+                hashlib.sha256(TMDB_LOGO.read_bytes()).hexdigest() != TMDB_ATTRIBUTION['source_sha256']):
+            raise ValueError('Only the pinned TMDB attribution logo may be a non-MIT overlay: ' + row['resource'])
         expected[packaged_path(row['resource'])] = row['replacement']['sha256']
     for filename in ('LICENSE.txt', 'NOTICE.txt', 'PROVENANCE.json'):
         digest = hashlib.sha256(RELEASE_PROVENANCE.with_name(filename).read_bytes()).hexdigest()

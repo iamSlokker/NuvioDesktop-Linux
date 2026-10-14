@@ -124,9 +124,9 @@ Details: [platform source evidence](platform-source-evidence.md).
 
 | Format | Remaining gate | Public redistribution |
 | --- | --- | --- |
-| DEB | Engineering gates closed in run 38538334113 (notices, artwork, dataset exclusion, source bundles, Ubuntu install smoke, owner acceptance). Remaining: TMDB attribution confirmation, final owner review, publication with its source assets | **PENDING OWNER DECISIONS** |
-| Flatpak | Same as DEB; the GNOME runtime is installed separately from Flathub and is not part of the bundle | **PENDING OWNER DECISIONS** |
-| AppImage | Same as DEB; source-built runtime with notices, source archive and relink kit, plus WebKit/GTK and Ubuntu library sources, verified in run 38538334113 (historical artifacts: original runtime inputs unresolved, do not redistribute) | **PENDING OWNER DECISIONS** |
+| DEB | Engineering gates closed in run 38538334113 (notices, artwork, dataset exclusion, source bundles, Ubuntu install smoke, owner acceptance). TMDB attribution (official logo) and final owner review resolved 2026-10-14. Remaining: manual publication, from a build that includes the official TMDB logo, with its source assets | **PENDING MANUAL PUBLICATION** |
+| Flatpak | Same as DEB; the GNOME runtime is installed separately from Flathub and is not part of the bundle | **PENDING MANUAL PUBLICATION** |
+| AppImage | Same as DEB; source-built runtime with notices, source archive and relink kit, plus WebKit/GTK and Ubuntu library sources, verified in run 38538334113 (historical artifacts: original runtime inputs unresolved, do not redistribute) | **PENDING MANUAL PUBLICATION** |
 
 These are evidence boundaries, not legal certification. No permissions or
 license exemptions were invented, and no historical package/source receipt was

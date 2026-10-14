@@ -1860,12 +1860,21 @@
         ]
       },
       "replacement": {
-        "sha256": "9d0c35021ef1242c780e4613e380ddb7132962204ef8590a2030f0f74cf33aac",
-        "bytes": 1166,
-        "license": "MIT",
-        "source": "tools/linux/packaging/artwork/GenerateReleaseArtwork.java",
-        "copyright": "Copyright (c) 2026 NuvioDesktop-Linux contributors",
-        "description": "Neutral rounded plate with plain Inter text label; not the provider logo; original Linux replacement, not an official logo or award mark"
+        "sha256": "85248e937670a71d7083d109771fa164d083c59da54cc77012ef1ce3bfa34f38",
+        "bytes": 2866,
+        "license": "TMDB-attribution-terms",
+        "status": "OFFICIAL_TMDB_ATTRIBUTION_LOGO",
+        "source": "tools/linux/packaging/artwork/vendor/tmdb/blue_square_2.svg",
+        "source_sha256": "d537fb228cf3ded904ef09b136fe3fec72548ebc1fea3fbbd1ad9e36364db38b",
+        "source_bytes": 2577,
+        "source_url": "https://www.themoviedb.org/assets/v4/logos/v2/blue_square_2-d537fb228cf3ded904ef09b136fe3fec72548ebc1fea3fbbd1ad9e36364db38b.svg",
+        "source_page": "https://www.themoviedb.org/about/logos-attribution",
+        "source_variant": "Primary full (blue)",
+        "retrieved": "2026-10-14",
+        "terms_statement": "As per our terms of use, every application that uses our data or images is required to properly attribute TMDB as the source. Below you will find some logos you can use within your application.",
+        "renderer": "tools/linux/packaging/artwork/GenerateReleaseArtwork.java",
+        "copyright": "TMDB (The Movie Database) logo; not NuvioDesktop-Linux artwork",
+        "description": "Official TMDB attribution logo used per TMDB terms to attribute TMDB as the data/image source (owner decision 2026-10-14); vendored SVG rendered unmodified with uniform scale and transparent centering only (no recolor, stretch or crop); TMDB mark, not MIT; no endorsement implied"
       },
       "dimensions": {
         "width": 67,
@@ -2338,11 +2347,11 @@
   },
   "linux_overlay": {
     "disposition": "LINUX_OVERLAY_REPLACED",
-    "owner_decision": "Unresolved originals must not be present in Linux packages or the Linux source tarball; Linux packages carry original MIT replacements instead",
+    "owner_decision": "Unresolved originals must not be present in Linux packages or the Linux source tarball; Linux packages carry original MIT replacements instead, except rating_tmdb, which carries TMDB's official attribution logo (owner decision 2026-10-14)",
     "mechanism": "tools/linux/packaging/source_policy.py (applied after build.source_tree() by the seeded canonical build) substitutes tools/linux/packaging/artwork/overlay/<path> for each tracked target and records the overlay sha256 in source-files.json",
     "gate": "tools/linux/packaging/artwork_contract.py requires each replacement hash at its packaged path and rejects all 47 original byte sequences at any JAR path",
     "provenance": "composeApp/src/commonMain/composeResources/files/licenses/ReleaseArtwork/PROVENANCE.json linux_overlay",
-    "tmdb_attribution": "rating_tmdb was replaced with a plain TMDB text mark per owner decision. TMDB API terms may require its approved logo for attribution; compliance with those terms must be confirmed by the owner and is not claimed here.",
+    "tmdb_attribution": "Owner decision 2026-10-14: rating_tmdb carries TMDB's official \"Primary full (blue)\" attribution logo, because TMDB's terms require applications using its data or images to attribute TMDB and https://www.themoviedb.org/about/logos-attribution provides logos for that purpose. The SVG is vendored unmodified at tools/linux/packaging/artwork/vendor/tmdb/blue_square_2.svg (sha256 d537fb228cf3ded904ef09b136fe3fec72548ebc1fea3fbbd1ad9e36364db38b, retrieved 2026-10-14) and rendered to the 67x48 PNG with uniform scale and transparent padding only. License: TMDB-attribution-terms, not MIT. Use is limited to attribution; no endorsement, certification or broader trademark permission is claimed.",
     "not_claimed": "No trademark permission, endorsement, rights clearance of the originals or publication approval"
   }
 }

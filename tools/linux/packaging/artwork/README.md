@@ -5,7 +5,9 @@ four original synthetic setup illustrations and the 47-file Linux package overla
 described below. It is not an application or
 packaging runtime dependency. No previous image is an input. The fictitious titles,
 abstract shapes and preview layouts are authored in `GenerateReleaseArtwork.java`.
-No external artwork, film posters, system fonts or network requests are used.
+No film posters, system fonts or network requests are used. The only external
+artwork input is TMDB's official attribution logo, vendored unmodified and
+hash-pinned under [`vendor/tmdb/`](vendor/tmdb/README.md) (not MIT; see below).
 
 The badges retain the six existing resource names, viewBoxes and intrinsic sizes.
 The two 4K badges retain their gold/white source distinction. `DV`, `ATMOS`, `DTS:X`
@@ -44,7 +46,8 @@ claimed. Publication remains blocked by the separate rights/source/delivery revi
 
 By owner decision, the 47 provider/rating marks and award/hero badges whose
 imported rights are UNRESOLVED are not shipped in Linux packages or the Linux
-source tarball. The same recipe authors original MIT replacements, written to
+source tarball. The same recipe authors 46 original MIT replacements and renders
+TMDB's official attribution logo for `rating_tmdb.png`, all written to
 `linux-overlay/` in the output directory and committed under
 [`overlay/`](overlay) at their repository-relative paths, e.g.
 `overlay/composeApp/src/commonMain/composeResources/drawable/rating_imdb.png`.
@@ -54,8 +57,8 @@ source tarball. The same recipe authors original MIT replacements, written to
   (Inter glyphs as outlines); PNGs keep their pixel sizes as 8-bit RGBA.
   Kotlin is unchanged (`imageResource` rasters and literal `.png` hero names).
 - Provider/rating marks are neutral rounded plates with plain Inter text
-  (`IMDb`, `TMDB`, `TR`/`Trakt`, `LB`, `MC`, `MAL`, `KIT`, `SIMKL`, `TVDB`,
-  `MDB`, `IDB`, `DC`). Rotten Tomatoes/audience states use `RT`/`AS` with
+  (`IMDb`, `TR`/`Trakt`, `LB`, `MC`, `MAL`, `KIT`, `SIMKL`, `TVDB`,
+  `MDB`, `IDB`, `DC`), except TMDB (below). Rotten Tomatoes/audience states use `RT`/`AS` with
   green/slate circles, amber/grey squares and up/down/check glyphs; certified and
   verified states use a generic rosette. No brand colors, logo geometry,
   tomato or popcorn imagery.
@@ -79,9 +82,27 @@ After regenerating, compare `linux-overlay/` with the committed overlay:
 diff -r build/artwork-review/linux-overlay tools/linux/packaging/artwork/overlay
 ```
 
-The receipt's `overlay_files` must equal the provenance `authoring.toolchain`.
-`rating_tmdb.png` is a text mark by owner decision; TMDB's attribution terms may
-require its approved logo, which the owner must confirm separately.
+The receipt's `overlay_files` and `vendored_inputs` must equal the provenance
+`authoring.toolchain`.
+
+### TMDB attribution logo (owner decision 2026-10-14)
+
+TMDB's [logos and attribution page](https://www.themoviedb.org/about/logos-attribution)
+states: "As per our terms of use, every application that uses our data or images
+is required to properly attribute TMDB as the source. Below you will find some
+logos you can use within your application." `rating_tmdb.png` (the detail rating
+row and the TMDB integration/attribution logo) is therefore TMDB's official
+"Primary full (blue)" logo rather than an original plate. Its SVG is vendored
+byte-for-byte at `vendor/tmdb/blue_square_2.svg` (SHA-256
+`d537fb228cf3ded904ef09b136fe3fec72548ebc1fea3fbbd1ad9e36364db38b`, retrieved
+2026-10-14); its 1.387:1 viewBox best fits the 67×48 slot. `generate.py` and the
+recipe refuse other bytes. A minimal reader in the recipe, limited to that file's
+structure (one path of `M/L/H/V/A/Z` commands, one user-space linear gradient, no
+transforms), renders it with Java2D antialiasing, uniformly scaled and centered
+with transparent padding: no recolor, stretch or crop. The provenance row records
+license `TMDB-attribution-terms`, not MIT; `artwork_contract.py` allows that
+exception only for this resource and pinned SVG. It is used for attribution only;
+no endorsement or broader trademark permission is claimed.
 
 ## Former retained-byte exception (superseded)
 

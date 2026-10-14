@@ -1,6 +1,9 @@
 #!/usr/bin/env python3
 """Author synthetic release artwork with existing Inter and headless JDK17.
 
+The Linux overlay's rating_tmdb.png is rendered from TMDB's vendored, hash-pinned
+official attribution logo; it is TMDB's mark, not original artwork.
+
 Outputs a separate review directory. Never rewrites source or uses old images.
 Pillow/libwebp is an optional authoring tool, not an application dependency.
 """
@@ -16,6 +19,11 @@ from PIL import Image, features, __version__ as pillow_version
 
 HERE = Path(__file__).resolve().parent
 REPO = HERE.parents[3]
+# TMDB's official attribution logo, vendored unmodified; GenerateReleaseArtwork.java pins the same hash.
+TMDB_LOGO = {'path': 'tools/linux/packaging/artwork/vendor/tmdb/blue_square_2.svg',
+             'sha256': 'd537fb228cf3ded904ef09b136fe3fec72548ebc1fea3fbbd1ad9e36364db38b',
+             'source_url': 'https://www.themoviedb.org/assets/v4/logos/v2/'
+                           'blue_square_2-d537fb228cf3ded904ef09b136fe3fec72548ebc1fea3fbbd1ad9e36364db38b.svg'}
 
 
 def generate(output, java_home):
@@ -26,6 +34,8 @@ def generate(output, java_home):
     for row in manifest['files']:
         if hashlib.sha256((REPO / row['path']).read_bytes()).hexdigest() != row['sha256']:
             raise ValueError('Pinned Inter input changed')
+    if hashlib.sha256((REPO / TMDB_LOGO['path']).read_bytes()).hexdigest() != TMDB_LOGO['sha256']:
+        raise ValueError('Pinned TMDB attribution logo changed')
     version = subprocess.check_output([str(java_home / 'bin/java'), '-version'], stderr=subprocess.STDOUT, text=True)
     if 'version "17.' not in version:
         raise ValueError('Use the existing JDK17 authoring toolchain')
@@ -43,7 +53,7 @@ def generate(output, java_home):
     overlay = output / 'linux-overlay'
     receipt = {'scope': 'Asset authoring only; no runtime, package or rights certification',
                'jdk': version.splitlines()[0], 'pillow': pillow_version, 'libwebp': features.version('webp'),
-               'inputs': manifest['files'],
+               'inputs': manifest['files'], 'vendored_inputs': [TMDB_LOGO],
                'files': {p.name: hashlib.sha256(p.read_bytes()).hexdigest() for p in sorted(output.iterdir()) if p.is_file()},
                # Linux-only package overlay; mirrors tools/linux/packaging/artwork/overlay.
                'overlay_files': {p.relative_to(overlay).as_posix(): hashlib.sha256(p.read_bytes()).hexdigest()
