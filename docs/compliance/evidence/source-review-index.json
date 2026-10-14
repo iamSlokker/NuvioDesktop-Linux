@@ -190,22 +190,22 @@
       "sha256": "f6f601882b691a7ff28dfc1303376ee4323e0c89d669cdb515832d6bd3aa7dec"
     },
     {
-      "bytes": 4203,
+      "bytes": 4460,
       "path": "tools/linux/packaging/compliance/collect_media_sources.py",
       "scope_limit": "Strict private-media source collector; not whole-application source closure.",
-      "sha256": "000015d06be791a87f7ed749ec012ec61cc703f084508bd50ba6e385f8419e14"
+      "sha256": "21678f6c8644992ccbc0ba1fd3e44e1f9507ee9de7d5a5fe8541264556afb2ac"
     },
     {
-      "bytes": 7379,
+      "bytes": 7628,
       "path": "tools/linux/packaging/compliance/dependency_sources.py",
       "scope_limit": "Offline retained dependency input verifier; no public availability claim.",
-      "sha256": "a4546143aa7417b97d210dacc87f9e9f6e9b481a35a59f63c02226ffe2bb2ca8"
+      "sha256": "e67f67c0f93a0aa3362dfa72f2ac6a2fe62db39701771f95169b4a88a627e8c3"
     },
     {
-      "bytes": 32006,
+      "bytes": 32263,
       "path": "tools/linux/packaging/compliance/inventory.py",
       "scope_limit": "Original package/source inventory verifier.",
-      "sha256": "265ac1aee8ae5b1975740083d9574ffd519596ebcca766763d800c151a242ca7"
+      "sha256": "80913878d7d760da61d06465d966295f686adfb5609aa485b2cc30bae3171d6c"
     },
     {
       "bytes": 10093,
@@ -214,10 +214,10 @@
       "sha256": "b88cf3366029a5b737006aeef347e9067a723228c8e3de88e50e47aaa6d903f0"
     },
     {
-      "bytes": 14515,
+      "bytes": 14772,
       "path": "tools/linux/packaging/compliance/ubuntu_sources.py",
       "scope_limit": "Signed Ubuntu index/input/dsc verifier; no package install or build.",
-      "sha256": "25288c047bfe4f652148075a272a33ca0debca54cc1254ab9d488edf9a6c1c80"
+      "sha256": "2b7a28b15d31a007adfcb1bd2dc1c214fcfc1670fe49bc54b0e9e93fb4b37b1f"
     },
     {
       "bytes": 2151,

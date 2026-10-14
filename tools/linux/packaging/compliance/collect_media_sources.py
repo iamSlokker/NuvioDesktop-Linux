@@ -14,9 +14,17 @@ import subprocess
 import tarfile
 
 
+
+def file_digest(stream, algorithm):
+    # hashlib.file_digest needs Python 3.11; the CI runner's host Python is 3.10.
+    digest = hashlib.new(algorithm)
+    for block in iter(lambda: stream.read(1024 * 1024), b''):
+        digest.update(block)
+    return digest
+
 def sha(path):
     with path.open('rb') as stream:
-        return hashlib.file_digest(stream, 'sha256').hexdigest()
+        return file_digest(stream, 'sha256').hexdigest()
 
 
 def required_inputs(manifest):
