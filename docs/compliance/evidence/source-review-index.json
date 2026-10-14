@@ -184,10 +184,10 @@
       "sha256": "7a3b265c6d38aca88c5a2fd57621ce8a9b0e2d16a3e4cd1d3b35792032165ab6"
     },
     {
-      "bytes": 5528,
+      "bytes": 6357,
       "path": "tools/linux/packaging/artwork_contract.py",
       "scope_limit": "Future artwork/data payload gate; not legal clearance.",
-      "sha256": "15dd66102de2a72bbc0ed442f8fa7ee8842e88bbb55be3d666223af6da4fc67a"
+      "sha256": "ad71478ef29bcfd2b79ba44c4e24adc7652539f50bca6cb56a04967be58a636a"
     },
     {
       "bytes": 4203,
