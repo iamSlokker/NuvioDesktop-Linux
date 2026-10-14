@@ -13,6 +13,19 @@ The checked player/runtime sources agree on the boundaries below. This is source
 and artifact inspection, not a new display test. No compositor, GPU, display
 setting, installed application or personal profile was accessed or changed.
 
+**Runtime update (2026-10-14):** the media recipe now also builds a
+Wayland-capable libmpv (milestone 2 below). It adds pinned source builds of
+Wayland 1.24.0 (client/cursor), wayland-protocols 1.42, libxkbcommon 1.13.1 and
+build-only Bison 3.8.2, and only `-Dwayland=enabled` for mpv; X11, Vulkan,
+libplacebo, `-Dgl=disabled` and both mpv patches are unchanged. The runtime
+audit fails closed unless `HAVE_WAYLAND`, `HAVE_WAYLAND_PROTOCOLS_1_41` and
+`HAVE_X11` are set, the CLI and a headless libmpv option probe accept both
+`x11vk` and `waylandvk`, and libmpv contains the color-management-v1 client.
+The player still selects `x11vk` with the Canvas XID, so the SDR path is
+unchanged. **HDR10 output remains unimplemented and unproven on hardware**;
+the evidence below describes the earlier packaged runtime and still applies to
+the application.
+
 ## What counts as HDR
 
 These are separate capabilities:
@@ -235,8 +248,8 @@ A production proposal must resolve all of these before implementation approval:
    the surface/HUD integration contract first. No application default changes.
 2. **Prepare a Wayland-enabled pinned media recipe separately.** Preserve mpv
    decoder patches and fallback; include >=1.41 protocol generation and exact
-   library/build/source provenance. This requires a new binary build, which was
-   not authorized as a speculative change in this mission.
+   library/build/source provenance. *Done in the media recipe (2026-10-14,
+   local build only); packaged artifacts still need a CI rebuild.*
 3. **Prove actual presentation on authorized Bazzite GNOME/NVIDIA/HDR hardware.**
    Query the created surface's available/selected formats and preferred feedback;
    establish compositor/monitor HDR evidence. Abort the feature if this fails.

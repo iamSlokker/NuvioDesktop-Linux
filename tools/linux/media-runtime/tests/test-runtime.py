@@ -219,6 +219,19 @@ def main():
                 path = root / 'share/nuvio-media-runtime' / filename
                 data = json.loads(path.read_text()); change(data); path.write_text(json.dumps(data))
             mutation(filename, mutate)
+        def without_wayland(key):
+            # Coherent metadata for an X11-only mpv must still fail closed.
+            metadata = root / 'share/nuvio-media-runtime'
+            header = metadata / 'config/mpv.h'
+            header.write_text(header.read_text().replace(f'#define {key} 1\n', f'#define {key} 0\n'))
+            for filename, field in (('compile-features.json', None), ('capabilities.json', 'config')):
+                data = json.loads((metadata / filename).read_text())
+                (data[field] if field else data)['mpv'][key] = '0'
+                (metadata / filename).write_text(json.dumps(data))
+        for key in ('HAVE_WAYLAND', 'HAVE_WAYLAND_PROTOCOLS_1_41'):
+            mutation('coherent_' + key.lower(), lambda key=key: without_wayland(key))
+        mutation('libmpv_without_color_management',
+                 lambda: lib.write_bytes(lib.read_bytes().replace(b'wp_color_manager_v1\0', b'wp_color_manxger_v1\0')))
         def hardware_claim():
             path = root / 'share/nuvio-media-runtime/capabilities.json'
             data = json.loads(path.read_text())

@@ -6,8 +6,33 @@ import os
 import pathlib
 import re
 import subprocess
+import sys
 
 SOFTWARE = ['h264', 'hevc', 'vp9', 'libdav1d', 'aac', 'ac3', 'eac3', 'pcm_s16le']
+# The SDR x11vk path stays mandatory; waylandvk is the experimental HDR path.
+GPU_CONTEXTS = ['x11vk', 'waylandvk']
+# Interface names generated from protocol XML into libmpv. Color management
+# requires wayland-protocols >= 1.41 when mpv is configured.
+WAYLAND_INTERFACES = ['xdg_wm_base', 'wp_color_manager_v1',
+                      'wp_color_management_surface_feedback_v1']
+LIBMPV = 'lib/libmpv.so.2.5.0'
+# In-process libmpv option parsing only: no mpv_initialize, VO or display.
+LIBMPV_CONTEXT_PROBE = '''
+import ctypes, json, sys
+lib = ctypes.CDLL(sys.argv[1])
+lib.mpv_create.restype = ctypes.c_void_p
+lib.mpv_set_option_string.argtypes = [ctypes.c_void_p, ctypes.c_char_p, ctypes.c_char_p]
+lib.mpv_destroy.argtypes = [ctypes.c_void_p]
+accepted = []
+for name in sys.argv[2:]:
+    handle = lib.mpv_create()
+    if not handle:
+        raise SystemExit('mpv_create failed')
+    if lib.mpv_set_option_string(handle, b'gpu-context', name.encode()) == 0:
+        accepted.append(name)
+    lib.mpv_destroy(handle)
+print(json.dumps(accepted))
+'''
 PLAYBACK_VECTORS = json.loads((pathlib.Path(__file__).resolve().parents[1] /
                               'tests/vectors.json').read_text())
 
@@ -147,7 +172,8 @@ def validate_playback_report(report):
 
 
 def command(args, timeout=20):
-    env = {k: v for k, v in os.environ.items() if k not in ('LD_LIBRARY_PATH', 'LD_PRELOAD')}
+    env = {k: v for k, v in os.environ.items()
+           if k not in ('LD_LIBRARY_PATH', 'LD_PRELOAD', 'DISPLAY', 'WAYLAND_DISPLAY')}
     result = subprocess.run([str(x) for x in args], env=env, text=True,
                             stdout=subprocess.PIPE, stderr=subprocess.STDOUT, timeout=timeout)
     if result.returncode:
@@ -167,12 +193,19 @@ def query_features(root):
     decoders = command([root / 'bin/ffmpeg', '-hide_banner', '-decoders'])
     muxers = command([root / 'bin/ffmpeg', '-hide_banner', '-muxers'])
     modes = command([root / 'bin/mpv', '--no-config', '--hwdec=help']).splitlines()
+    contexts = command([root / 'bin/mpv', '--no-config', '--gpu-context=help'])
+    probe = [pathlib.Path(sys.executable), '-I', '-c', LIBMPV_CONTEXT_PROBE, root / LIBMPV]
+    library_contexts = json.loads(command(probe + GPU_CONTEXTS + ['nuvio-invalid-context']))
+    library = (root / LIBMPV).read_bytes()
     return dict(
         program_versions=versions,
         software_decoders=[n for n in SOFTWARE if re.search(r'^\s*\S+\s+' + n + r'\s', decoders, re.M)],
         ffmpeg_hwaccels=sorted(x.strip() for x in accels if x.strip()),
         spdif_muxer=bool(re.search(r'^\s*E\s+spdif\s', muxers, re.M)),
         mpv_hwdec_modes=[x.strip() for x in modes if re.match(r'^\s+\S+\s+\(', x)],
+        mpv_gpu_contexts=[n for n in GPU_CONTEXTS if re.search(r'^\s+' + n + r'\s', contexts, re.M)],
+        libmpv_gpu_contexts=library_contexts,
+        libmpv_wayland_interfaces=[n for n in WAYLAND_INTERFACES if n.encode() + b'\0' in library],
     )
 
 
@@ -193,6 +226,14 @@ def check_features(config, actual):
         if config['ffmpeg'].get(name) != '1':
             raise ValueError('Missing compile feature: ' + name)
     for name in ('HAVE_DRM', 'HAVE_VAAPI', 'HAVE_VAAPI_DRM', 'HAVE_CUDA_HWACCEL',
-                 'HAVE_CUDA_INTEROP', 'HAVE_VULKAN'):
+                 'HAVE_CUDA_INTEROP', 'HAVE_VULKAN', 'HAVE_X11', 'HAVE_WAYLAND',
+                 'HAVE_WAYLAND_PROTOCOLS_1_41'):
         if config['mpv'].get(name) != '1':
             raise ValueError('Missing mpv feature: ' + name)
+    # Fail closed unless both the player CLI and libmpv itself accept the X11
+    # and Wayland Vulkan contexts, and libmpv carries color-management code.
+    for key in ('mpv_gpu_contexts', 'libmpv_gpu_contexts'):
+        if actual.get(key) != GPU_CONTEXTS:
+            raise ValueError('Missing GPU context in ' + key + ': ' + repr(actual.get(key)))
+    if actual.get('libmpv_wayland_interfaces') != WAYLAND_INTERFACES:
+        raise ValueError('Missing Wayland protocol code in libmpv')

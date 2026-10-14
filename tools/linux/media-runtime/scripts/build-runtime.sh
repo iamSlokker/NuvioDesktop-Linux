@@ -102,6 +102,26 @@ build_bzip2() {
     ln -sfn libbz2.so.1.0 /work/prefix/lib/libbz2.so
     cp /work/src/bzip2/bzlib.h /work/prefix/include/
 }
+build_bison() {
+    mkdir -p /work/build/bison
+    mapfile -t opts < <(source_options bison)
+    (cd /work/build/bison; /work/src/bison/configure --prefix=/work/tools "${opts[@]}"; make -j "$jobs"; make install)
+}
+build_wayland() {
+    meson_build wayland "$@"
+    # Only client/cursor are runtime inputs for mpv; never export server/EGL.
+    rm -f /work/prefix/lib/libwayland-{server,egl}.so* \
+        /work/prefix/lib/pkgconfig/wayland-{server,egl,egl-backend}.pc
+    # mpv locates the scanner on PATH; use the pinned one, not the builder's 1.20.
+    install -m 0755 /work/prefix/bin/wayland-scanner /work/tools/bin/wayland-scanner
+}
+build_wayland_protocols() {
+    meson_build wayland-protocols "$@"
+    # Data-only package installs under share/pkgconfig; expose it privately.
+    mv /work/prefix/share/pkgconfig/wayland-protocols.pc /work/prefix/lib/pkgconfig/
+    rmdir --ignore-fail-on-non-empty /work/prefix/share/pkgconfig
+    sed -i 's|^prefix=/usr$|prefix=/work/prefix|' /work/prefix/lib/pkgconfig/wayland-protocols.pc
+}
 build_ffmpeg() {
     mkdir -p /work/build/FFmpeg
     mapfile -t opts < <(source_options FFmpeg)
@@ -134,6 +154,14 @@ run_component bzip2 build_bzip2
 run_component FFmpeg build_ffmpeg
 mapfile -t opts < <(source_options libXpresent)
 run_component libXpresent autoconf_build libXpresent "${opts[@]}"
+# Wayland inputs are built last so no earlier component sees them.
+run_component bison build_bison
+mapfile -t opts < <(source_options wayland)
+run_component wayland build_wayland "${opts[@]}"
+mapfile -t opts < <(source_options wayland-protocols)
+run_component wayland-protocols build_wayland_protocols "${opts[@]}"
+mapfile -t opts < <(source_options libxkbcommon)
+run_component libxkbcommon meson_build libxkbcommon "${opts[@]}"
 mapfile -t opts < <(source_options mpv)
 run_component mpv meson_build mpv "${opts[@]}"
 python3 /recipes/tests/test-cuda-mapper.py /work/build/mpv --output /work/logs/cuda-mapper.json

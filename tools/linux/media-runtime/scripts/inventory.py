@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Generate licenses and inventory from the exact verified build (builder only)."""
-import glob, hashlib, json, pathlib, shutil, subprocess, sys
+import glob, hashlib, json, pathlib, re, shutil, subprocess, sys
 from artifact_contract import build_features, seal
 from source_patches import capture
 root = pathlib.Path(sys.argv[1])
@@ -29,6 +29,12 @@ for source in manifest['sources']:
                 text = src.read_text()
                 if not text.startswith('/*') or '*/' not in text: raise RuntimeError('Missing header notice: ' + str(relative))
                 dst.write_text(text[:text.index('*/') + 2] + '\n')
+            elif src.suffix == '.xml':
+                # Wayland protocol XML is generated into private binaries.
+                # Preserve its copyright element, not the whole interface text.
+                notice = re.search(r'<copyright>.*?</copyright>', src.read_text(), re.S)
+                if not notice: raise RuntimeError('Missing protocol notice: ' + str(relative))
+                dst.write_text(notice.group(0) + '\n')
             else:
                 shutil.copyfile(src, dst)
 features = build_features(pathlib.Path('/work/build'))

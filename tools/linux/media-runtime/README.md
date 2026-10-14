@@ -83,6 +83,15 @@ incompatible distro SONAMEs; Xpresent is private because it is not installed on
 all XWayland desktops; bzip2 is private because Ubuntu/Fedora use different
 library SONAMEs; libdisplay-info supplies mpv's full DRM build path.
 
+Experimental HDR groundwork adds pinned Wayland 1.24.0 (client/cursor only),
+wayland-protocols 1.42, libxkbcommon 1.13.1 and build-only GNU Bison 3.8.2.
+They are built after every other dependency, immediately before mpv, so no
+earlier component is configured against them. mpv adds only `-Dwayland=enabled`;
+protocols >= 1.41 compile its color-management-v1 client. The builder's
+Wayland 1.20 cannot satisfy mpv's >= 1.21 requirement and has no Bison, hence
+source builds. Each new archive's signature/announcement/independent checksum
+evidence is recorded in its manifest `verification` entry.
+
 FFmpeg keeps broad software decoders, demuxers, parsers, network protocols and
 filters. libdav1d supplies real AV1 software decoding. OpenSSL supplies HTTPS.
 H.264, HEVC/Main10, VP9, AAC, AC-3/E-AC-3, PCM, Matroska, MP4, MPEG-TS and subtitle
@@ -99,13 +108,19 @@ uses GPL mpv; this is a license inventory, not legal certification.
 mpv enables shared libmpv, the diagnostic CLI, gpu-next/libplacebo, Vulkan,
 X11/x11vk/wid, LuaJIT/OSC, libass, ALSA/PulseAudio, CUDA hardware frames/interop,
 VAAPI-X11 and VAAPI-DRM/DRM. It exposes direct and copy modes supported by upstream.
+It also compiles the native Wayland Vulkan context (`waylandvk`); production still
+selects `x11vk`, so SDR playback paths are unchanged. Audit fails closed unless
+`HAVE_X11`, `HAVE_WAYLAND` and `HAVE_WAYLAND_PROTOCOLS_1_41` are set, both the
+CLI and an in-process libmpv option probe (no `mpv_initialize`, no display)
+accept `x11vk` and `waylandvk`, and libmpv contains the color-management
+interfaces. This is not HDR presentation evidence.
 Nothing in the build selects a vendor or forces copy-back globally.
 
 ## Private and platform boundary
 
 Private: FFmpeg libraries, libmpv, libplacebo, dav1d, libass, libunibreak, LuaJIT,
-libdisplay-info, bzip2, the generic Xpresent extension client, and the **generic**
-Vulkan loader. glslang is statically
+libdisplay-info, bzip2, the generic Xpresent extension client, libwayland-client/
+cursor, libxkbcommon, and the **generic** Vulkan loader. glslang is statically
 incorporated into libplacebo; its BSD-2/BSD-3/MIT/Apache notices are included.
 The Vulkan loader's incorporated cJSON MIT notice is exported separately.
 
@@ -114,8 +129,9 @@ font stack, OpenSSL/zlib/lcms2, audio interfaces, GTK/GLib/WebKitGTK, and actual
 GPU drivers. Exact allowed direct ELF SONAMEs are in the manifest. These are future
 package/SDK dependencies; this tree does not make them disappear.
 
-Build-only: Meson, NASM, nv-codec-headers, Vulkan headers, CA bootstrap and the
-snapshot toolchain/development packages. No compiler or GPU driver is exported. Free Vulkan/nv-codec header notices are included because generated/inline
+Build-only: Meson, NASM, Bison, wayland-scanner, nv-codec-headers, Vulkan headers,
+wayland-protocols, CA bootstrap and the snapshot toolchain/development packages.
+Copyright elements of the protocol XML compiled into libmpv are exported. No compiler or GPU driver is exported. Free Vulkan/nv-codec header notices are included because generated/inline
 interface code is incorporated; these are not proprietary driver licenses.
 The pinned hwdata PNP registry is a
 builder-provided data input incorporated into libdisplay-info; its bytes are
