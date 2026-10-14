@@ -43,7 +43,10 @@ internal object LinuxFirstRunWizardControllerProbe {
     @JvmStatic fun main(args: Array<String>) {
         val scenario = args[1]
         if (scenario == "existing") {
-            Files.createDirectories(Path.of(args[0], "config", "nuviohtpc"))
+            // Account-scoped storage: an empty data folder is still a new account; a real
+            // legacy store migrated into the account is what marks an existing install.
+            val root = Files.createDirectories(Path.of(args[0], "config", "nuviohtpc"))
+            Files.writeString(root.resolve("nuvio_fixture_legacy.properties"), "fixture=preserved\n")
             HomeCatalogSettingsRepository.setDisplayMode(HomeDisplayMode.Adaptive)
         }
         if (scenario == "corruptMarker" || scenario == "futureMarker") {
