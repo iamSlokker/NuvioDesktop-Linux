@@ -19,6 +19,7 @@ from fetch import CONFIG, fetch
 HERE = pathlib.Path(__file__).resolve().parent
 REPO = HERE.parents[2]
 MEDIA = REPO / 'tools/linux/media-runtime'
+OVERLAY = HERE / 'artwork/overlay'
 
 
 def run(*args, **kw):
@@ -32,7 +33,8 @@ def git(*args):
 def source_tree(destination, channel):
     # Explicit tracked source list, plus this task's new packaging/test files.
     # Never copy the checkout recursively: it includes caches and local secrets.
-    names = git('ls-files', '-z').split('\0')
+    tracked = git('ls-files', '-z').split('\0')
+    names = list(tracked)
     # Development packaging needs this task's new files, not arbitrary
     # untracked files (which may contain personal configuration or credentials).
     untracked = git('ls-files', '--others', '--exclude-standard', '-z').split('\0')
@@ -49,6 +51,8 @@ def source_tree(destination, channel):
         if src.is_symlink():
             raise ValueError('Unexpected source symlink: ' + name)
         files.append((name, hashlib.sha256(src.read_bytes()).hexdigest()))
+    overlay = linux_overlay(files, set(tracked))
+    files = [(name, overlay[name][1] if name in overlay else digest) for name, digest in files]
     dirty = bool(git('status', '--porcelain'))
     if channel == 'stable' and dirty:
         raise ValueError('Stable packaging requires a clean committed source tree')
@@ -56,7 +60,7 @@ def source_tree(destination, channel):
     for name, _ in files:
         target = destination / name
         target.parent.mkdir(parents=True, exist_ok=True)
-        shutil.copy2(REPO / name, target)
+        shutil.copy2(overlay[name][0] if name in overlay else REPO / name, target)
     (destination.parent / 'source-files.json').write_text(json.dumps(files, indent=2) + '\n')
     commit = git('rev-parse', 'HEAD')
     epoch = int(git('show', '-s', '--format=%ct', 'HEAD'))
@@ -68,6 +72,30 @@ def source_tree(destination, channel):
                 git_commit=commit, source_date_epoch=epoch, channel=channel, dirty=dirty,
                 build_kind='release' if channel == 'stable' else 'development',
                 source_sha256=hashlib.sha256(json.dumps(files).encode()).hexdigest())
+
+
+def linux_overlay(files, tracked):
+    """Map tracked targets to Linux-only replacement bytes under OVERLAY.
+
+    Upstream originals stay unchanged in the checkout (and for other platforms);
+    Linux packages and the Linux source snapshot carry only the replacements.
+    """
+    prefix = OVERLAY.relative_to(REPO).as_posix() + '/'
+    selected = dict(files)
+    overlay = {}
+    for name, digest in files:
+        if not name.startswith(prefix):
+            continue
+        target = name[len(prefix):]
+        if target not in tracked or target not in selected or target.startswith(prefix):
+            raise ValueError('Linux overlay target is not a tracked source file: ' + target)
+        overlay[target] = (REPO / name, digest, selected[target])
+    # The replaced originals must not survive anywhere else in the snapshot.
+    originals = {original for _, _, original in overlay.values()}
+    for name, digest in files:
+        if name not in overlay and digest in originals:
+            raise ValueError('Linux overlay original bytes remain in source snapshot: ' + name)
+    return {target: (path, digest) for target, (path, digest, _) in overlay.items()}
 
 
 def development_source(name):

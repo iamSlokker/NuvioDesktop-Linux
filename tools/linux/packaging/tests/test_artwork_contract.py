@@ -22,11 +22,9 @@ class ArtworkContractTest(unittest.TestCase):
         self.root = Path(self.temp.name); (self.root / 'lib/app').mkdir(parents=True)
         self.provenance = json.loads(contract.icon_provenance().read_text())
         self.release = json.loads(contract.release_provenance().read_text())
-        self.payload = {}
-        for name in contract.expected_resources():
-            relative = ('composeApp/src/commonMain/composeResources/' + name.removeprefix(contract.PREFIX)
-                        if name.startswith(contract.PREFIX) else 'composeApp/src/desktopMain/resources/' + name)
-            self.payload[name] = (contract.repository() / relative).read_bytes()
+        self.overlay = self.release['linux_overlay']['resources']
+        # Linux packages carry overlay bytes for the 47 overlay targets, repository bytes otherwise.
+        self.payload = {name: contract.linux_source(name).read_bytes() for name in contract.expected_resources()}
 
     def jar(self, payload, filename='application.jar'):
         with zipfile.ZipFile(self.root / 'lib/app' / filename, 'w') as jar:
@@ -108,11 +106,12 @@ class ArtworkContractTest(unittest.TestCase):
         self.jar(self.payload)
         report = contract.verify_packaged_artwork(self.root)
         self.assertEqual(7, report['replacement_icons'])
-        self.assertEqual(31, len(report['resources']))
+        self.assertEqual(74, len(report['resources']))
         self.assertEqual(6, report['replacement_quality_badges'])
         self.assertEqual(4, report['replacement_setup_previews'])
         self.assertEqual(10, report['removed_resources'])
-        self.assertEqual(4, report['unresolved_exact_path_exceptions'])
+        self.assertEqual(47, report['linux_overlay_replacements'])
+        self.assertEqual(0, report['unresolved_exact_path_exceptions'])
         self.assertEqual('BLOCKED', report['redistribution_assessment'])
 
     def test_missing_tampered_old_or_duplicate_packaged_resources_fail(self):
@@ -130,8 +129,11 @@ class ArtworkContractTest(unittest.TestCase):
         report = json.loads((contract.repository() / 'docs/compliance/evidence/artwork-data-review.json').read_text())
         self.assertEqual('BLOCKED', report['redistribution_status'])
         self.assertEqual(17, report['replaced'])
+        self.assertEqual(47, report['linux_overlay_replaced'])
         self.assertEqual(10, report['excluded_from_packaging'])
-        self.assertEqual(47, len(report['remaining_artwork']))
+        self.assertEqual(0, report['unresolved'])
+        self.assertEqual(0, len(report['remaining_artwork']))
+        self.assertEqual(47, report['unresolved_upstream_other_platforms'])
         drawables = contract.repository() / 'composeApp/src/commonMain/composeResources/drawable'
         scoped = {p.relative_to(contract.repository()).as_posix() for p in drawables.iterdir()
                   if p.name.startswith(('rating_', 'hero_badge_', 'quality_badge_')) or
@@ -140,10 +142,16 @@ class ArtworkContractTest(unittest.TestCase):
         scoped.update(p.relative_to(contract.repository()).as_posix() for p in
                       (contract.repository() / 'composeApp/src/desktopMain/resources/setup').glob('*.webp'))
         self.assertEqual(scoped, set(report['remaining_artwork']) | set(report['resolved_artwork']))
-        for name, row in report['remaining_artwork'].items():
-            self.assertEqual('UNRESOLVED', row['status'])
-            self.assertEqual(row['sha256'], hashlib.sha256((contract.repository() / name).read_bytes()).hexdigest())
-        self.assertEqual(0, sum(row['category'] in ('setup-preview', 'quality-format-mark') for row in report['remaining_artwork'].values()))
+        overlaid = {name: row for name, row in report['resolved_artwork'].items() if row['status'] == 'LINUX_OVERLAY_REPLACED'}
+        self.assertEqual({row['resource'] for row in self.overlay}, set(overlaid))
+        for row in self.overlay:
+            # Upstream originals remain unchanged (still UNRESOLVED for other platforms).
+            name = row['resource']
+            self.assertEqual(row, overlaid[name])
+            self.assertEqual('UNRESOLVED', row['original']['status'])
+            self.assertEqual(row['original']['sha256'], hashlib.sha256((contract.repository() / name).read_bytes()).hexdigest())
+        self.assertEqual({'provider-or-rating-mark': 20, 'award-or-hero-badge': 27},
+                         {c: sum(r['category'] == c for r in overlaid.values()) for c in ('provider-or-rating-mark', 'award-or-hero-badge')})
 
     def test_ten_original_replacements_preserve_dimensions_and_pin_authoring_and_notices(self):
         self.assertEqual(10, len(self.release['replacements']))
@@ -192,19 +200,106 @@ class ArtworkContractTest(unittest.TestCase):
                 with self.assertRaisesRegex(ValueError, 'Removed artwork filename'):
                     contract.verify_packaged_artwork(self.root)
 
-    def test_four_umbra_originals_are_allowed_only_at_their_exact_pinned_paths(self):
-        self.assertEqual(4, len(self.release['retained_hash_exceptions']))
-        self.jar(self.payload); contract.verify_packaged_artwork(self.root)
-        for row in self.release['retained_hash_exceptions']:
-            self.assertEqual('UNRESOLVED', row['status'])
+    def test_all_47_upstream_originals_are_rejected_at_their_own_or_renamed_paths(self):
+        # Actual upstream bytes from composeApp, i.e. what a JAR built without the overlay carries.
+        self.assertEqual(47, len(self.overlay))
+        self.assertNotIn('retained_hash_exceptions', self.release)
+        for row in self.overlay:
+            original = (contract.repository() / row['resource']).read_bytes()
+            self.assertEqual(row['original']['sha256'], hashlib.sha256(original).hexdigest())
             name = contract.packaged_path(row['resource'])
-            for target in ('renamed.bin', name.upper(), name.replace('/drawable/', '/other/')):
-                payload = dict(self.payload); payload[target] = payload[name]; self.jar(payload)
-                with self.assertRaisesRegex(ValueError, 'Forbidden historical artwork bytes'):
-                    contract.verify_packaged_artwork(self.root)
+            for target in (name, 'renamed.bin', name.upper(), name.replace('/drawable/', '/other/')):
+                with self.subTest(resource=row['resource'], target=target):
+                    payload = dict(self.payload); payload[target] = original; self.jar(payload)
+                    with self.assertRaisesRegex(ValueError, 'Forbidden historical artwork bytes'):
+                        contract.verify_packaged_artwork(self.root)
+
+    def test_retained_exceptions_cannot_return_and_overlay_must_match_provenance(self):
+        fixture = self.root / 'provenance'; fixture.mkdir()
+        for name in ('LICENSE.txt', 'NOTICE.txt'):
+            (fixture / name).write_bytes(contract.release_provenance().with_name(name).read_bytes())
+        row = self.overlay[0]
+        for mutate, message in (
+                (lambda r: r.update(retained_hash_exceptions=[{'resource': row['resource'], 'sha256': row['original']['sha256']}]),
+                 'Retained original artwork exceptions'),
+                (lambda r: r['linux_overlay']['resources'][0]['replacement'].update(sha256='0' * 64),
+                 'overlay differs from pinned provenance'),
+                (lambda r: r['linux_overlay']['resources'][1]['replacement'].update(
+                    sha256=r['linux_overlay']['resources'][0]['replacement']['sha256']), 'distinct, non-original'),
+                (lambda r: r['linux_overlay']['resources'][0]['replacement'].update(sha256=row['original']['sha256']),
+                 'distinct, non-original')):
+            release = json.loads(contract.release_provenance().read_text()); mutate(release)
+            (fixture / 'PROVENANCE.json').write_text(json.dumps(release))
+            with self.subTest(message=message), patch.object(contract, 'release_provenance', lambda: fixture / 'PROVENANCE.json'), \
+                    self.assertRaisesRegex(ValueError, message):
+                check = contract.release_rules if 'distinct' in message else lambda: contract.verify_packaged_artwork(self.root)
+                check()
+
+    def test_linux_overlay_is_original_safe_sized_distinct_and_pinned(self):
+        lines = self.release['linux_overlay']
+        self.assertIn('Linux packages', lines['scope'])
+        digests = set()
+        receipt = self.release['authoring']['toolchain']['overlay_files']
+        self.assertEqual({row['resource'] for row in self.overlay}, set(receipt))
+        on_disk = {p.relative_to(contract.OVERLAY).as_posix() for p in contract.OVERLAY.rglob('*') if p.is_file()}
+        self.assertEqual(set(receipt), on_disk)
+        for row in self.overlay:
+            with self.subTest(resource=row['resource']):
+                data = (contract.OVERLAY / row['resource']).read_bytes()
+                original = (contract.repository() / row['resource']).read_bytes()
+                digest = hashlib.sha256(data).hexdigest()
+                self.assertEqual(row['replacement']['sha256'], digest)
+                self.assertEqual(receipt[row['resource']], digest)
+                self.assertEqual(row['replacement']['bytes'], len(data))
+                self.assertEqual('MIT', row['replacement']['license'])
+                self.assertEqual('LINUX_OVERLAY_REPLACED', row['status'])
+                self.assertNotEqual(row['original']['sha256'], digest)
+                self.assertNotIn(digest, digests); digests.add(digest)
+                self.assertEqual(Path(row['resource']).suffix, Path(row['overlay']).suffix)
+                if row['resource'].endswith('.svg'):
+                    svg, old = ET.fromstring(data), ET.fromstring(original)
+                    self.assertEqual({k: old.get(k) for k in ('width', 'height', 'viewBox')},
+                                     {k: svg.get(k) for k in ('width', 'height', 'viewBox')})
+                    self.assertEqual(row['dimensions'], {k: v for k, v in svg.attrib.items() if k in ('width', 'height', 'viewBox')})
+                    self.assertLessEqual({x.tag.split('}')[-1] for x in svg.iter()}, {'svg', 'title', 'rect', 'path'})
+                    self.assertFalse(any('href' in k or k.lower().startswith('on') for x in svg.iter() for k in x.attrib))
+                    self.assertNotIn(b'<!', data.replace(b'<!--', b''))
+                    self.assertNotIn(b'<text', data)
+                    self.assertLess(len(data), 16384)
+                else:
+                    self.assertEqual(b'\x89PNG\r\n\x1a\n', data[:8])
+                    # IHDR: same pixel size as the original, 8-bit RGBA (transparent ARGB source).
+                    self.assertEqual(original[16:24], data[16:24])
+                    self.assertEqual(b'\x08\x06', data[24:26])
+                    self.assertEqual({'width': int.from_bytes(data[16:20], 'big'), 'height': int.from_bytes(data[20:24], 'big'),
+                                      'mode': 'RGBA'}, row['dimensions'])
+
+    def test_recipe_reproduces_linux_overlay_byte_identically(self):
+        java_home = Path(os.environ.get('JAVA_HOME', '/nonexistent'))
+        if not (java_home / 'bin/javac').is_file():
+            self.skipTest('JAVA_HOME with javac required to run the headless authoring recipe')
+        recipe = contract.HERE / 'artwork/GenerateReleaseArtwork.java'
+        classes, output = self.root / 'classes', self.root / 'generated'
+        env = {k: v for k, v in os.environ.items() if k in ('PATH', 'LANG')}
+        env.update(HOME=str(self.root), XDG_CONFIG_HOME=str(self.root), XDG_CACHE_HOME=str(self.root))
+        subprocess.run([str(java_home / 'bin/javac'), '-encoding', 'UTF-8', '-d', str(classes), str(recipe)],
+                       env=env, check=True, capture_output=True)
+        subprocess.run([str(java_home / 'bin/java'), '-Djava.awt.headless=true', '-Duser.home=' + str(self.root),
+                        '-cp', str(classes), 'GenerateReleaseArtwork', str(contract.repository()), str(output)],
+                       env=env, check=True, capture_output=True)
+        generated = output / 'linux-overlay'
+        produced = {p.relative_to(generated).as_posix(): p.read_bytes() for p in generated.rglob('*') if p.is_file()}
+        self.assertEqual({row['resource'] for row in self.overlay}, set(produced))
+        for name, data in produced.items():
+            with self.subTest(resource=name):
+                self.assertEqual((contract.OVERLAY / name).read_bytes(), data)
+        # The pre-existing ten release outputs are unchanged by the overlay recipe.
+        files = self.release['authoring']['toolchain']['files']
+        for name in [n for n in files if n.endswith('.svg')]:
+            self.assertEqual(files[name], hashlib.sha256((output / name).read_bytes()).hexdigest())
 
     def test_replacement_copies_are_rejected_at_renamed_paths_and_across_jars(self):
-        for row in self.release['replacements']:
+        for row in self.release['replacements'] + self.overlay:
             name = contract.packaged_path(row['resource']); payload = dict(self.payload)
             payload['renamed.bin'] = payload[name]; self.jar(payload)
             with self.assertRaisesRegex(ValueError, 'Renamed/duplicate replacement'):

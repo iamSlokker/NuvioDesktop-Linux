@@ -40,10 +40,14 @@ def generate(output, java_home):
     for source in output.glob('setup_mode_*.png'):
         with Image.open(source) as image:
             image.save(source.with_suffix('.webp'), format='WEBP', lossless=True, exact=True, method=6)
+    overlay = output / 'linux-overlay'
     receipt = {'scope': 'Asset authoring only; no runtime, package or rights certification',
                'jdk': version.splitlines()[0], 'pillow': pillow_version, 'libwebp': features.version('webp'),
                'inputs': manifest['files'],
-               'files': {p.name: hashlib.sha256(p.read_bytes()).hexdigest() for p in sorted(output.iterdir()) if p.is_file()}}
+               'files': {p.name: hashlib.sha256(p.read_bytes()).hexdigest() for p in sorted(output.iterdir()) if p.is_file()},
+               # Linux-only package overlay; mirrors tools/linux/packaging/artwork/overlay.
+               'overlay_files': {p.relative_to(overlay).as_posix(): hashlib.sha256(p.read_bytes()).hexdigest()
+                                 for p in sorted(overlay.rglob('*')) if p.is_file()}}
     (output / 'authoring-receipt.json').write_text(json.dumps(receipt, indent=2) + '\n')
     return receipt
 
