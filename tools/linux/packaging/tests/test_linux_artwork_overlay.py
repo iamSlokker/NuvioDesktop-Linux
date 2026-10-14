@@ -12,6 +12,7 @@ from unittest.mock import patch
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 import artwork_contract as contract
 import build
+import source_policy
 
 TARGET = 'composeApp/src/commonMain/composeResources/drawable/rating_fixture.png'
 
@@ -21,7 +22,7 @@ def sha(data):
 
 
 class SyntheticOverlayTest(unittest.TestCase):
-    """A throwaway Git checkout exercises build.source_tree() exactly as packaging calls it."""
+    """A throwaway Git checkout exercises build.source_tree() + source_policy.apply() as packaging does."""
 
     def setUp(self):
         self.temp = tempfile.TemporaryDirectory(); self.addCleanup(self.temp.cleanup)
@@ -46,8 +47,8 @@ class SyntheticOverlayTest(unittest.TestCase):
 
     def snapshot(self):
         destination = Path(self.temp.name) / 'work/source'
-        with patch.object(build, 'REPO', self.repo), patch.object(build, 'OVERLAY', self.overlay):
-            info = build.source_tree(destination, 'nightly')
+        with patch.object(build, 'REPO', self.repo):
+            info = source_policy.apply(destination, build.source_tree(destination, 'nightly'))
         return destination, dict(json.loads((destination.parent / 'source-files.json').read_text())), info
 
     def test_overlay_bytes_replace_tracked_target_and_are_recorded(self):
@@ -91,7 +92,7 @@ class RepositoryOverlayTest(unittest.TestCase):
         rows = release['linux_overlay']['resources']
         with tempfile.TemporaryDirectory() as temporary:
             destination = Path(temporary) / 'work/source'
-            build.source_tree(destination, 'nightly')
+            source_policy.apply(destination, build.source_tree(destination, 'nightly'))
             recorded = dict(json.loads((destination.parent / 'source-files.json').read_text()))
             originals = {row['original']['sha256'] for row in rows}
             self.assertEqual(46, len(originals))  # foreign and people_choice share original bytes

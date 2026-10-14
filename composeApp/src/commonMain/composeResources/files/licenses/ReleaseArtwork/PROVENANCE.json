@@ -544,7 +544,7 @@
   ],
   "linux_overlay": {
     "scope": "Linux packages and Linux source snapshot only; composeApp originals unchanged for upstream/other platforms",
-    "mechanism": "tools/linux/packaging/build.py source_tree substitutes overlay bytes for each tracked target",
+    "mechanism": "tools/linux/packaging/source_policy.py (applied after build.source_tree()) substitutes overlay bytes for each tracked target",
     "superseded_retained_hash_exceptions": [
       "composeApp/src/commonMain/composeResources/drawable/hero_badge_win.png",
       "composeApp/src/commonMain/composeResources/drawable/hero_badge_nom.png",

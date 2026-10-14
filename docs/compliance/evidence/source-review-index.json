@@ -52,15 +52,15 @@
       "sha256": "4976e328fae49f0ca59f32aa4bfbe21fd283bb6016c58b4066f201dfc16411e9"
     },
     {
-      "bytes": 102019,
+      "bytes": 102051,
       "path": "composeApp/src/commonMain/composeResources/files/licenses/ReleaseArtwork/PROVENANCE.json",
       "scope_limit": "Ten replacement identities, removals and 47 Linux-overlay replacement identities; no retained originals; not publication approval.",
-      "sha256": "56e7bdb2ec54ce1e73762cb6e316a6b5a54e4898cc4821d4b73e8d63b8a90743"
+      "sha256": "1b63d6ca7abcb0a92085071ceab47b4ca4e33fac272d724d551c8bb525cbfa2a"
     },
     {
       "bytes": 6854,
       "path": "composeApp/src/desktopMain/resources/anime-mapping/PROVENANCE.json",
-      "scope_limit": "Exact bundled database/import identity and notices; original generation and merged-data rights unresolved.",
+      "scope_limit": "Exact database/import identity and notices; Linux packages download it at runtime; original generation and merged-data rights unresolved.",
       "sha256": "c37de9a42e098ed7c45504bf95127ddcfbe1760a1d27e0c769e8181d6f0c25f3"
     },
     {
@@ -70,16 +70,16 @@
       "sha256": "56c6f7653d9b4cf3b6ec94c654a8e5b90f3c7d64b5d3fde81e5a8cfbfef6f6bb"
     },
     {
-      "bytes": 18482,
+      "bytes": 19892,
       "path": "docs/compliance/artwork-data-closure.md",
       "scope_limit": "Seventeen replacements, ten exclusions, exact anime import and 47-resource Linux package overlay; upstream originals and data rights unresolved.",
-      "sha256": "295a1090296845912137ecbc3b4ba9eb2605c0b9b7b4b0c5eb5244efd8e6a2c1"
+      "sha256": "5ebdecfc97940d4507b7ceaf55c69f4f1f1018bfe4fe198faf4220b43f6e7e3a"
     },
     {
-      "bytes": 119878,
+      "bytes": 119938,
       "path": "docs/compliance/evidence/artwork-data-review.json",
       "scope_limit": "Current resource hashes and unresolved rights inventory, not grants or publication approval.",
-      "sha256": "d7b696820c079386143f83ff0dbbb373c8e33f73f2e16ac6604787cbb69dc942"
+      "sha256": "20ea6ea6522dcca174c633222ae254245a609a1a3dc818701465ba692f01d6b1"
     },
     {
       "bytes": 358949,
@@ -172,10 +172,10 @@
       "sha256": "e59fb7481c2cac0cb7f9f9eeb67eed10091c92aa42288a1f8565afd4f28a4a05"
     },
     {
-      "bytes": 5345,
+      "bytes": 5391,
       "path": "tools/linux/packaging/artwork/README.md",
       "scope_limit": "Original artwork authoring/reproduction and Linux overlay scope.",
-      "sha256": "c08bd93d46a85bf8b6f12d043639c12d3e8e35dde1b1e867ded50b5a0bf4f956"
+      "sha256": "7ad6fbb8878b7d9af7f65536651105a40dba8991a798189410184453d03bdb5a"
     },
     {
       "bytes": 3186,
@@ -184,10 +184,10 @@
       "sha256": "95520d0c326f031cbd3c14232761d4d53b7db3fbdd7dd5971410011743e2d857"
     },
     {
-      "bytes": 7665,
+      "bytes": 7904,
       "path": "tools/linux/packaging/artwork_contract.py",
       "scope_limit": "Future artwork/data payload gate; not legal clearance.",
-      "sha256": "c1d64e474e04ea6e12c88cda29178a1093e5866dfbb18e36366c7606dbf1c24f"
+      "sha256": "f6f601882b691a7ff28dfc1303376ee4323e0c89d669cdb515832d6bd3aa7dec"
     },
     {
       "bytes": 4203,
@@ -208,10 +208,10 @@
       "sha256": "15f81bd9d9ef6eb3f15c9af2439ac6f8c37617d4fb02acf34a98769015523985"
     },
     {
-      "bytes": 10062,
+      "bytes": 10093,
       "path": "tools/linux/packaging/compliance/review_index.py",
       "scope_limit": "Review-index byte bindings only; not a source cache or compliance verifier.",
-      "sha256": "89b340e9463571f97acf0de9c83af801dd954a49575b66812b571a96ec3bac73"
+      "sha256": "b88cf3366029a5b737006aeef347e9067a723228c8e3de88e50e47aaa6d903f0"
     },
     {
       "bytes": 14515,

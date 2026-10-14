@@ -155,7 +155,7 @@ composeApp originals and all Kotlin are **not modified**.
   Award/hero badges are generic trophies, laurels, medals, shields, stars,
   screens, frames and clocks with short text (`NOM`, `1ST`, `NEW`, `CULT`); no
   statuettes or festival/award logo likenesses. All 47 have distinct bytes.
-- **Substitution:** `tools/linux/packaging/build.py` `source_tree()` copies each
+- **Substitution:** `tools/linux/packaging/source_policy.py`, applied after `build.source_tree()` by the seeded canonical build (`build.py` stays byte-identical for the pinned builder seed), copies each
   overlay file over its tracked target in the packaging snapshot and records the
   overlay SHA256 in `source-files.json` (and therefore `source_sha256`). It fails if
   a target is not tracked or if original bytes remain anywhere else in the

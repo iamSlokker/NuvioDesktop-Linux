@@ -2339,7 +2339,7 @@
   "linux_overlay": {
     "disposition": "LINUX_OVERLAY_REPLACED",
     "owner_decision": "Unresolved originals must not be present in Linux packages or the Linux source tarball; Linux packages carry original MIT replacements instead",
-    "mechanism": "tools/linux/packaging/build.py source_tree() substitutes tools/linux/packaging/artwork/overlay/<path> for each tracked target and records the overlay sha256 in source-files.json",
+    "mechanism": "tools/linux/packaging/source_policy.py (applied after build.source_tree() by the seeded canonical build) substitutes tools/linux/packaging/artwork/overlay/<path> for each tracked target and records the overlay sha256 in source-files.json",
     "gate": "tools/linux/packaging/artwork_contract.py requires each replacement hash at its packaged path and rejects all 47 original byte sequences at any JAR path",
     "provenance": "composeApp/src/commonMain/composeResources/files/licenses/ReleaseArtwork/PROVENANCE.json linux_overlay",
     "tmdb_attribution": "rating_tmdb was replaced with a plain TMDB text mark per owner decision. TMDB API terms may require its approved logo for attribution; compliance with those terms must be confirmed by the owner and is not claimed here.",
