@@ -63,24 +63,26 @@ class ArtworkContractTest(unittest.TestCase):
 
     def test_linux_source_snapshot_omits_runtime_downloaded_dataset(self):
         import build
-        self.assertEqual({'composeApp/src/desktopMain/resources/anime-list-mini.json'}, build.RUNTIME_DOWNLOADED)
+        import source_policy
+        self.assertEqual({'composeApp/src/desktopMain/resources/anime-list-mini.json'}, source_policy.RUNTIME_DOWNLOADED)
         repo = self.root / 'repo'
-        for name in ('composeApp/src/desktopMain/resources/anime-list-mini.json',
-                     'composeApp/src/desktopMain/resources/anime-mapping/NOTICE.txt',
-                     'composeApp/Configuration/DesktopVersion.properties'):
+        tracked = ['composeApp/src/desktopMain/resources/anime-list-mini.json',
+                   'composeApp/src/desktopMain/resources/anime-mapping/NOTICE.txt',
+                   'composeApp/Configuration/DesktopVersion.properties']
+        for name in tracked:
             (repo / name).parent.mkdir(parents=True, exist_ok=True)
             (repo / name).write_text('VERSION_NAME=1\nVERSION_CODE=1\n')
-        tracked = '\0'.join(['composeApp/src/desktopMain/resources/anime-list-mini.json',
-                              'composeApp/src/desktopMain/resources/anime-mapping/NOTICE.txt',
-                              'composeApp/Configuration/DesktopVersion.properties'])
-        answers = {'ls-files': tracked, 'status': '', 'rev-parse': 'a' * 40, 'show': '0'}
+        answers = {'ls-files': '\0'.join(tracked), 'status': '', 'rev-parse': 'a' * 40, 'show': '0'}
         with patch.object(build, 'REPO', repo), \
                 patch.object(build, 'git', lambda *args: '' if '--others' in args else answers[args[0]]):
-            build.source_tree(self.root / 'work/source', 'nightly')
-        names = [row[0] for row in json.loads((self.root / 'work/source-files.json').read_text())]
+            info = build.source_tree(self.root / 'work/source', 'nightly')
+        info = source_policy.apply(self.root / 'work/source', info)
+        rows = json.loads((self.root / 'work/source-files.json').read_text())
+        names = [row[0] for row in rows]
         self.assertNotIn('composeApp/src/desktopMain/resources/anime-list-mini.json', names)
         self.assertIn('composeApp/src/desktopMain/resources/anime-mapping/NOTICE.txt', names)
         self.assertFalse((self.root / 'work/source/composeApp/src/desktopMain/resources/anime-list-mini.json').exists())
+        self.assertEqual(hashlib.sha256(json.dumps([tuple(r) for r in rows]).encode()).hexdigest(), info['source_sha256'])
 
     def test_seven_original_vectors_preserve_sizes_use_safe_svg_and_have_real_mit_notice(self):
         self.assertEqual(7, len(self.provenance['assets']))

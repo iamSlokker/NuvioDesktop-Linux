@@ -29,11 +29,6 @@ def git(*args):
     return subprocess.check_output(['git', '-C', str(REPO), *args]).decode().strip()
 
 
-# Not redistributed: the app fetches and verifies this pinned dataset at runtime
-# (AnimeListDownload.kt), so it stays out of the snapshot, the JAR and the source tarball.
-RUNTIME_DOWNLOADED = {'composeApp/src/desktopMain/resources/anime-list-mini.json'}
-
-
 def source_tree(destination, channel):
     # Explicit tracked source list, plus this task's new packaging/test files.
     # Never copy the checkout recursively: it includes caches and local secrets.
@@ -46,7 +41,7 @@ def source_tree(destination, channel):
     files = []
     for name in sorted(set(names)):
         p = pathlib.Path(name)
-        if not name or p.parts[0] in excluded or p.name == 'local.properties' or name in RUNTIME_DOWNLOADED:
+        if not name or p.parts[0] in excluded or p.name == 'local.properties':
             continue
         src = REPO / p
         if not src.is_file():

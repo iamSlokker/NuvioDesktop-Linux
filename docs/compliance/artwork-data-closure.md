@@ -167,8 +167,9 @@ terms and retained responses. Therefore **no regeneration was performed**.
 ## Linux packages download the anime dataset at runtime
 
 By owner decision, Linux release packages no longer redistribute
-`anime-list-mini.json`. `tools/linux/packaging/build.py` omits it from the
-packaging source snapshot, so it is absent from the application JAR and from
+`anime-list-mini.json`. `tools/linux/packaging/source_policy.py` (applied by the seeded
+canonical build; `build.py` stays byte-identical for the pinned builder seed)
+omits it from the packaging source snapshot, so it is absent from the application JAR and from
 `Nuvio-source-<commit>.tar.gz`; the package gate rejects its filename and its
 exact bytes anywhere in `lib/app/*.jar`. When the packaged resource is absent,
 `AnimeListDownload.kt` fetches the exact reviewed revision from
