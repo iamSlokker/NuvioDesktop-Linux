@@ -31,7 +31,7 @@ class NativeArtworkGateTest(unittest.TestCase):
             for name in artwork_contract.expected_resources():
                 relative = ('composeApp/src/commonMain/composeResources/' + name.removeprefix(artwork_contract.PREFIX)
                             if name.startswith(artwork_contract.PREFIX) else 'composeApp/src/desktopMain/resources/' + name)
-                jar.writestr(name, (artwork_contract.REPO / relative).read_bytes())
+                jar.writestr(name, (artwork_contract.repository() / relative).read_bytes())
             if bad: jar.writestr('nested/hero_badge_must_see.png', b'unreviewed')
 
     def audit(self, kind, bad):

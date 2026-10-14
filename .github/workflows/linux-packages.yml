@@ -180,9 +180,10 @@ jobs:
           builder=$(jq -er '.builder_image_id' build/linux-packaging/canonical/release-info.json)
           podman run --rm --network=none --userns=keep-id --cap-drop=all \
             --security-opt label=disable --security-opt no-new-privileges \
-            --env PYTHONDONTWRITEBYTECODE=1 \
+            --env PYTHONDONTWRITEBYTECODE=1 --env NUVIO_REPOSITORY=/repository \
             --mount "type=bind,src=$PWD/build/linux-packaging,dst=/output" \
             --mount "type=bind,src=$PWD/tools/linux/packaging,dst=/packaging,ro" \
+            --mount "type=bind,src=$PWD/composeApp/src,dst=/repository/composeApp/src,ro" \
             "$builder" python3 /packaging/verify.py artifacts /output --formats deb
       - name: Smoke-install DEB on Ubuntu 22.04
         id: deb_smoke
