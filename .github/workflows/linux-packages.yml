@@ -63,6 +63,9 @@ jobs:
           else
             [[ -z "$ENGINE_SHA$SEED_RUN$SEED_SHA" ]]
           fi
+          # linux may consume only the accepted HUD-corrected engine run
+          # 38327066209 (its WebKit recipe is byte-identical to linux), pinned
+          # in the engine download guard below.
           # This snapshot consumes the accepted HUD correction, never another
           # candidate or an implicit WebKit rebuild. Other build modes retain
           # their existing normal/tag/bootstrap behavior.
@@ -101,6 +104,9 @@ jobs:
                 .head_sha == "a5568593562ba18dac4b7d7efe294081801ae74e"
               else
                 .head_branch == "linux" or
+                ($ref == "refs/heads/linux" and .id == 38327066209 and .run_attempt == 1 and
+                 .head_branch == "fix/linux-cloud-player-2026-10-12" and
+                 .head_sha == "a5568593562ba18dac4b7d7efe294081801ae74e") or
                 ($ref == "refs/heads/fix/linux-cloud-player-2026-10-12" and .head_branch == "fix/linux-cloud-player-2026-10-12" and .head_sha == $sha)
               end)' \
             "$RUNNER_TEMP/engine-run.json"
