@@ -419,6 +419,135 @@
       ]
     },
     {
+      "name": "bison",
+      "version": "3.8.2",
+      "url": "https://ftp.gnu.org/gnu/bison/bison-3.8.2.tar.xz",
+      "sha256": "9bba0214ccf7f1079c5d59210045227bcf619519840ebfa80cd3849cff5a5bf2",
+      "classification": "build-only",
+      "license": "GPL-3.0-or-later WITH Bison-exception-2.2",
+      "license_files": [
+        "COPYING"
+      ],
+      "reason": "Parser generator (>= 3.6) required to build libxkbcommon; absent from the builder image. Only exception-covered parser skeleton output enters libxkbcommon.",
+      "options": [
+        "--disable-nls"
+      ],
+      "patches": [],
+      "incorporated_code": true,
+      "verification": {
+        "method": "Detached OpenPGP signature checked when the pin was added; not re-verified at build time.",
+        "signature_url": "https://ftp.gnu.org/gnu/bison/bison-3.8.2.tar.xz.sig",
+        "signature_sha256": "aeff6fd7d7d7cad905ba3bc5228a2ccb95500c0f51fb4483e229c47c7c50f835",
+        "fingerprint": "7DF84374B1EE1F9764BBE25D0DDCAA3278D5264E",
+        "key_source": "https://ftp.gnu.org/gnu/gnu-keyring.gpg"
+      }
+    },
+    {
+      "name": "wayland",
+      "version": "1.24.0",
+      "url": "https://gitlab.freedesktop.org/wayland/wayland/-/releases/1.24.0/downloads/wayland-1.24.0.tar.xz",
+      "sha256": "82892487a01ad67b334eca83b54317a7c86a03a89cfadacfef5211f11a5d0536",
+      "classification": "private-built",
+      "license": "MIT",
+      "license_files": [
+        "COPYING",
+        "protocol/wayland.xml",
+        "cursor/xcursor.c",
+        "cursor/cursor-data.h"
+      ],
+      "reason": "Wayland client/cursor libraries for mpv's native Wayland Vulkan context (mpv requires >= 1.21; the builder provides 1.20). Server/EGL libraries and wayland-scanner are build-only and not exported.",
+      "options": [
+        "-Dlibraries=true",
+        "-Dscanner=true",
+        "-Dtests=false",
+        "-Ddocumentation=false",
+        "-Ddtd_validation=false"
+      ],
+      "patches": [],
+      "runtime_libraries": [
+        "libwayland-client.so*",
+        "libwayland-cursor.so*"
+      ],
+      "verification": {
+        "method": "Detached OpenPGP signature and release-announcement SHA-256 checked when the pin was added; not re-verified at build time.",
+        "signature_url": "https://gitlab.freedesktop.org/wayland/wayland/-/releases/1.24.0/downloads/wayland-1.24.0.tar.xz.sig",
+        "signature_sha256": "94dc71058713f0679749786fe1a5b7244106cc8d43fc3d1e5c956a84dde37190",
+        "fingerprint": "34FF9526CFEF0E97A340E2E40FDE7BE0E88F5E48",
+        "checksum_evidence": "https://www.mail-archive.com/wayland-devel%40lists.freedesktop.org/msg43650.html"
+      }
+    },
+    {
+      "name": "wayland-protocols",
+      "version": "1.42",
+      "url": "https://gitlab.freedesktop.org/wayland/wayland-protocols/-/releases/1.42/downloads/wayland-protocols-1.42.tar.xz",
+      "sha256": "23ba80d410d1200a86fe29592c19766eae8f1c350b67289999e9e7ea12d9f7aa",
+      "classification": "build-only",
+      "license": "MIT",
+      "license_files": [
+        "COPYING",
+        "stable/presentation-time/presentation-time.xml",
+        "stable/viewporter/viewporter.xml",
+        "stable/xdg-shell/xdg-shell.xml",
+        "unstable/idle-inhibit/idle-inhibit-unstable-v1.xml",
+        "unstable/text-input/text-input-unstable-v3.xml",
+        "unstable/linux-dmabuf/linux-dmabuf-unstable-v1.xml",
+        "unstable/xdg-decoration/xdg-decoration-unstable-v1.xml",
+        "staging/content-type/content-type-v1.xml",
+        "staging/fractional-scale/fractional-scale-v1.xml",
+        "staging/single-pixel-buffer/single-pixel-buffer-v1.xml",
+        "staging/xdg-activation/xdg-activation-v1.xml",
+        "unstable/tablet/tablet-unstable-v2.xml",
+        "staging/cursor-shape/cursor-shape-v1.xml",
+        "staging/fifo/fifo-v1.xml",
+        "staging/ext-data-control/ext-data-control-v1.xml",
+        "staging/color-management/color-management-v1.xml"
+      ],
+      "reason": "Protocol XML generated into libmpv. >= 1.41 is required for mpv's color-management-v1 (HDR target feedback) support.",
+      "options": [
+        "-Dtests=false"
+      ],
+      "patches": [],
+      "incorporated_code": true,
+      "verification": {
+        "method": "Release-announcement SHA-256 and detached OpenPGP signature checked when the pin was added; the public signer key copy reports expiry before the signature date (EXPKEYSIG with VALIDSIG).",
+        "signature_url": "https://gitlab.freedesktop.org/wayland/wayland-protocols/-/releases/1.42/downloads/wayland-protocols-1.42.tar.xz.sig",
+        "signature_sha256": "be9a50a783f729624c4925de3dcfdad796a446a0e53828ee7d814f3d0f06a86b",
+        "fingerprint": "8307C0A224BABDA1BABD0EB9A6EEEC9E0136164A",
+        "checksum_evidence": "https://lists.freedesktop.org/archives/wayland-devel/2025-March/044027.html"
+      }
+    },
+    {
+      "name": "libxkbcommon",
+      "version": "1.13.1",
+      "url": "https://github.com/xkbcommon/libxkbcommon/archive/refs/tags/xkbcommon-1.13.1.tar.gz",
+      "sha256": "aeb951964c2f7ecc08174cb5517962d157595e9e3f38fc4a130b91dc2f9fec18",
+      "classification": "private-built",
+      "license": "MIT AND X11 AND MIT-CMU",
+      "license_files": [
+        "LICENSE"
+      ],
+      "reason": "Keymap handling required by mpv's Wayland backend. Library only: no tools, X11, registry, Wayland utilities or documentation.",
+      "options": [
+        "-Denable-tools=false",
+        "-Denable-x11=false",
+        "-Denable-wayland=false",
+        "-Denable-xkbregistry=false",
+        "-Denable-docs=false",
+        "-Denable-bash-completion=false",
+        "-Dxkb-config-root=/usr/share/X11/xkb",
+        "-Dx-locale-root=/usr/share/X11/locale"
+      ],
+      "patches": [],
+      "runtime_libraries": [
+        "libxkbcommon.so*"
+      ],
+      "verification": {
+        "method": "No upstream release tarball/signature for this tag archive; bytes independently match Fedora's libxkbcommon 1.13.1 source SHA-512.",
+        "checksum_evidence": "https://src.fedoraproject.org/rpms/libxkbcommon/raw/rawhide/f/sources",
+        "sha512": "450c33fe26af6b847cf7516685d0df63c2ba0126887e27595c40fe80e4d0487009aa6cdf38ff1270d595c7900cbf3c11e7aa4f9cff80fa361742b5ebb10d83bd"
+      }
+    },
+    {
       "name": "mpv",
       "version": "0.41.0",
       "url": "https://github.com/mpv-player/mpv/archive/refs/tags/v0.41.0.tar.gz",
@@ -430,7 +559,7 @@
         "LICENSE.GPL",
         "LICENSE.LGPL"
       ],
-      "reason": "Existing JNI/API, wid/x11vk, subtitles, audio and software thumbnail contract.",
+      "reason": "Existing JNI/API, wid/x11vk, subtitles, audio and software thumbnail contract; native Wayland Vulkan context (waylandvk) compiled for experimental HDR work.",
       "options": [
         "-Dauto_features=disabled",
         "-Dlibmpv=true",
@@ -440,6 +569,7 @@
         "-Dgl=disabled",
         "-Dlua=luajit",
         "-Dx11=enabled",
+        "-Dwayland=enabled",
         "-Dvulkan=enabled",
         "-Dcuda-hwaccel=enabled",
         "-Dcuda-interop=enabled",
@@ -546,6 +676,7 @@
       "libXss.so.1",
       "libxcb.so.1",
       "libwayland-client.so.0",
+      "libffi.so.8",
       "libasound.so.2",
       "libpulse.so.0",
       "libfontconfig.so.1",
@@ -648,6 +779,18 @@
       "lib/libvulkan.so.1.4.363": {
         "soname": "libvulkan.so.1",
         "component": "Vulkan-Loader"
+      },
+      "lib/libwayland-client.so.0.24.0": {
+        "soname": "libwayland-client.so.0",
+        "component": "wayland"
+      },
+      "lib/libwayland-cursor.so.0.24.0": {
+        "soname": "libwayland-cursor.so.0",
+        "component": "wayland"
+      },
+      "lib/libxkbcommon.so.0.13.1": {
+        "soname": "libxkbcommon.so.0",
+        "component": "libxkbcommon"
       }
     },
     "symlinks": {
@@ -681,7 +824,13 @@
       "lib/libunibreak.so": "libunibreak.so.8.0.0",
       "lib/libunibreak.so.8": "libunibreak.so.8.0.0",
       "lib/libvulkan.so": "libvulkan.so.1",
-      "lib/libvulkan.so.1": "libvulkan.so.1.4.363"
+      "lib/libvulkan.so.1": "libvulkan.so.1.4.363",
+      "lib/libwayland-client.so": "libwayland-client.so.0",
+      "lib/libwayland-client.so.0": "libwayland-client.so.0.24.0",
+      "lib/libwayland-cursor.so": "libwayland-cursor.so.0",
+      "lib/libwayland-cursor.so.0": "libwayland-cursor.so.0.24.0",
+      "lib/libxkbcommon.so": "libxkbcommon.so.0",
+      "lib/libxkbcommon.so.0": "libxkbcommon.so.0.13.1"
     },
     "headers": [
       "include/mpv/client.h",
