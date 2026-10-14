@@ -6,7 +6,7 @@
   "redistribution_status": "BLOCKED",
   "verified": 0,
   "replaced": 17,
-  "excluded_from_packaging": 9,
+  "excluded_from_packaging": 10,
   "unresolved": 47,
   "remaining_artwork": {
     "composeApp/src/commonMain/composeResources/drawable/discord_logo.svg": {
@@ -998,6 +998,25 @@
         "copyright": null
       },
       "reason": "No static or dynamic application reference; remove unused resource rather than infer redistribution rights"
+    },
+    "composeApp/src/commonMain/composeResources/drawable/compose-multiplatform.xml": {
+      "resource": "composeApp/src/commonMain/composeResources/drawable/compose-multiplatform.xml",
+      "filename": "compose-multiplatform.xml",
+      "status": "EXCLUDED_FROM_PACKAGING",
+      "original": {
+        "sha256": "b236686cab2cbd8a1396bfee4d976de07a3d6ceee32f8fac631759bf70d069a4",
+        "bytes": 1493,
+        "introduced_commit": "4b99274756e992a531e9539b04b2bbc444fd017c",
+        "category": "template-brand-mark",
+        "status": "UNRESOLVED",
+        "packaged": true,
+        "source_references": [],
+        "reason": "JetBrains Compose Multiplatform template logo left from project initialization; no asset-specific grant to redistribute it as application artwork was established",
+        "source_url": null,
+        "license": null,
+        "copyright": null
+      },
+      "reason": "Compose Multiplatform template logo (JetBrains) with no static or dynamic application reference; remove unused resource rather than infer redistribution rights"
     }
   },
   "resolved_artwork": {

@@ -54,7 +54,7 @@ class NativeArtworkGateTest(unittest.TestCase):
                     patch.object(verify, 'verify_packaged_fonts', return_value={}):
                 verify.artifacts(root, kind)
             report = json.loads((root / ('artifacts/' + kind + '-audit.json')).read_text())
-            self.assertEqual(9, report['artwork']['removed_resources'])
+            self.assertEqual(10, report['artwork']['removed_resources'])
             self.assertEqual('BLOCKED', report['artwork']['redistribution_assessment'])
 
     def test_both_native_format_verifiers_inspect_actual_extracted_jar(self):

@@ -57,7 +57,7 @@ class ArtworkContractTest(unittest.TestCase):
         self.assertEqual(32, len(report['resources']))
         self.assertEqual(6, report['replacement_quality_badges'])
         self.assertEqual(4, report['replacement_setup_previews'])
-        self.assertEqual(9, report['removed_resources'])
+        self.assertEqual(10, report['removed_resources'])
         self.assertEqual(4, report['unresolved_exact_path_exceptions'])
         self.assertEqual('BLOCKED', report['redistribution_assessment'])
 
@@ -76,7 +76,7 @@ class ArtworkContractTest(unittest.TestCase):
         report = json.loads((contract.REPO / 'docs/compliance/evidence/artwork-data-review.json').read_text())
         self.assertEqual('BLOCKED', report['redistribution_status'])
         self.assertEqual(17, report['replaced'])
-        self.assertEqual(9, report['excluded_from_packaging'])
+        self.assertEqual(10, report['excluded_from_packaging'])
         self.assertEqual(47, len(report['remaining_artwork']))
         drawables = contract.REPO / 'composeApp/src/commonMain/composeResources/drawable'
         scoped = {p.relative_to(contract.REPO).as_posix() for p in drawables.iterdir()
@@ -130,7 +130,7 @@ class ArtworkContractTest(unittest.TestCase):
                         contract.verify_packaged_artwork(self.root)
 
     def test_removed_names_are_rejected_in_any_directory_case_or_bytes(self):
-        self.assertEqual(9, len(self.release['removed']))
+        self.assertEqual(10, len(self.release['removed']))
         for row in self.release['removed']:
             self.assertFalse((contract.REPO / row['resource']).exists())
             for name in (row['filename'], 'another/' + row['filename'].upper(), 'another\\' + row['filename']):
