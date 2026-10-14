@@ -11,6 +11,8 @@ import subprocess
 import tempfile
 import zipfile
 from formats import PLATFORM
+import appimage_runtime
+from compliance.inventory import verify_appimage_runtime
 from webkit.stage import linked_paths
 from client_config import verify_packaged_backend
 from onnx_contract import NATIVES as ONNX_NATIVES, verify_packaged_onnx
@@ -211,6 +213,22 @@ def check_image(root):
     return dict(source=info, files=records, elf=elf_records, onnx=onnx, fonts=fonts, artwork=artwork)
 
 
+def check_appimage_runtime(work, appimage, root):
+    """The AppImage prefix must be the pinned source-built runtime, with its notices and source."""
+    runtime = appimage_runtime.verify_output(work / 'appimage-runtime')
+    embedding = verify_appimage_runtime(runtime['runtime'], appimage, appimage_runtime.expected_sha256())
+    notices = root / appimage_runtime.NOTICE_DIR
+    for name in appimage_runtime.required_notices():
+        path = notices / name
+        if path.is_symlink() or not path.is_file() or path.read_bytes() != (runtime['licenses'] / name).read_bytes():
+            raise ValueError('Missing/different AppImage runtime notice: ' + name)
+    published = sorted((work / 'artifacts').glob(appimage_runtime.ARCHIVE_PREFIX + '*.tar.gz'))
+    if ([p.name for p in published] != [runtime['source_archive'].name]
+            or published[0].read_bytes() != runtime['source_archive'].read_bytes()):
+        raise ValueError('Missing/ambiguous AppImage runtime source archive in artifacts')
+    return dict(embedding, source_archive=published[0].name, notices=appimage_runtime.NOTICE_DIR)
+
+
 def artifacts(work, formats):
     dest = work / 'artifacts'
     wanted = {'deb': ['deb'], 'appimage': ['AppImage'], 'native': ['deb', 'AppImage'],
@@ -239,6 +257,7 @@ def artifacts(work, formats):
                 report = check_image(payload)
                 if report['source'] != json.loads((work / 'canonical/release-info.json').read_text()):
                     raise ValueError('AppImage source/version differs from canonical image')
+                report['appimage_runtime'] = check_appimage_runtime(work, path, root)
                 (dest / 'appimage-audit.json').write_text(json.dumps(report, indent=2) + '\n')
         else:
             # Parse/import the actual bundle into a disposable repository, never

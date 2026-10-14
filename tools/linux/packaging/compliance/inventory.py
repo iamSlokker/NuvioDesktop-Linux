@@ -387,12 +387,15 @@ def build_inventory(repo, inputs, cache, package_rows, owner_rows, runtime=None,
             components['application'].setdefault('font_assets', []).extend(
                 {'path': n, 'sha256': hashlib.sha256(z.read(n)).hexdigest(), 'license': None}
                 for n in z.namelist() if n.endswith(('.ttf', '.otf')) and name == 'u2netp.onnx')
-    components['appimage-runtime'] = {'id': 'appimage-runtime', 'version': '20251108',
-        'binary': config['tools']['appimage-runtime'], 'source': {'url': 'https://github.com/AppImage/type2-runtime/tree/20251108', 'archive_sha256': None},
-        'license_evidence': ['upstream LICENSE: MIT plus statically linked musl, libfuse, squashfuse, zstd, zlib'],
-        'gaps': ['APPIMAGE_RUNTIME_SOURCE_BUILD_AND_NOTICES_MISSING']}
+    runtime_recipe = json.loads((repo / 'tools/linux/packaging/appimage-runtime/manifest.json').read_text())
+    components['appimage-runtime'] = {'id': 'appimage-runtime', 'version': 'source build of type2-runtime ' + runtime_recipe['sources']['type2-runtime']['version'],
+        'binary': {'sha256': runtime_recipe['runtime_sha256'], 'recipe': 'tools/linux/packaging/appimage-runtime/manifest.json'},
+        'source': {'url': runtime_recipe['sources']['type2-runtime']['url'], 'archive_sha256': runtime_recipe['sources']['type2-runtime']['sha256']},
+        'license_evidence': ['upstream LICENSE: MIT plus statically linked musl, libfuse, squashfuse, zstd, zlib, mimalloc; '
+                             'notices in AppDir usr/share/licenses/appimage-runtime, source/relink archive Nuvio-AppImage-runtime-source-*.tar.gz'],
+        'gaps': ['APPIMAGE_RUNTIME_SOURCE_OFFER_AND_NOTICE_REVIEW']}
     if runtime is not None:
-        runtime_evidence = verify_appimage_runtime(runtime, next(artifacts.glob('*.AppImage')), config['tools']['appimage-runtime']['sha256'])
+        runtime_evidence = verify_appimage_runtime(runtime, next(artifacts.glob('*.AppImage')), runtime_recipe['runtime_sha256'])
         components['appimage-runtime']['embedding'] = runtime_evidence
         files.append({'format': 'appimage', 'path': '<outer AppImage ELF runtime prefix>',
                       'sha256': runtime_evidence['embedded_prefix_sha256'], 'component': 'appimage-runtime'})

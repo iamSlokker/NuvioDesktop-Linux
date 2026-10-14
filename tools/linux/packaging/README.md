@@ -77,9 +77,16 @@ Desktop/icon metadata is shared; the existing icon is resized offscreen to 512px
 The media builder uses the existing digest-pinned Ubuntu 22.04/signed snapshot
 and GLIBC 2.35 / GLIBCXX 3.4.30 floor. Packaging extends that builder with
 GTK3/WebKitGTK4.1, verifies pinned Temurin 17.0.20.1+1 and CMake 3.31.6 inputs,
-and records complete package versions. AppImage tool **1.9.1** and type-2 runtime
-**20251108** are independently SHA-256 pinned; `--runtime-file` prevents a
-mutable runtime download. GNOME Platform **49** is pinned to the commit in
+and records complete package versions. AppImage tool **1.9.1** is SHA-256 pinned. The type-2
+runtime is not downloaded: `appimage_runtime.py build --output DIR` compiles it
+from pinned sources (`appimage-runtime/manifest.json`, digest-pinned Alpine,
+`--network=none`), reproducibly, and `--runtime-file` embeds only a runtime equal
+to the manifest's `runtime_sha256`. `webkit/package.py` builds it (or reuses a
+verified `NUVIO_APPIMAGE_RUNTIME_DIR`) into `<work>/appimage-runtime/` before
+assembly; its notices go to `usr/share/licenses/appimage-runtime/` in the
+AppDir and `Nuvio-AppImage-runtime-source-<sha12>.tar.gz` (sources, recipe,
+relink kit, `RELINK.md`) to `artifacts/`. The `appimage-runtime` entry still in
+`config.json` is unused (that file is part of the WebKit builder-seed identity). GNOME Platform **49** is pinned to the commit in
 `config.json`; it supplies GTK3/WebKitGTK4.1 and graphics/audio interfaces.
 
 Fixed inputs and stamps make builds traceable/rebuildable. Whole-package

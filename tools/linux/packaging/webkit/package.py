@@ -2,6 +2,7 @@
 """Build/audit AppImage using the engine's builder, without rebuilding the app."""
 import argparse
 import json
+import os
 import pathlib
 import subprocess
 import sys
@@ -9,6 +10,7 @@ import sys
 HERE = pathlib.Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE.parent))
 from webkit.build import recipe_identity, valid_cache
+from appimage_runtime import prepare as prepare_runtime
 
 
 def main():
@@ -22,6 +24,10 @@ def main():
     if not valid_cache(engine, recipe_identity(base)):
         raise ValueError('No completed engine candidate for current recipe/base image')
     record = json.loads((engine / 'build-complete.json').read_text())
+    # Source-built type2 runtime (Podman, pinned inputs) before the offline
+    # assembly container; NUVIO_APPIMAGE_RUNTIME_DIR may supply a verified build.
+    prepare_runtime(work / 'appimage-runtime', work / 'inputs/appimage-runtime-sources',
+                    prebuilt=os.environ.get('NUVIO_APPIMAGE_RUNTIME_DIR'))
     command = ['podman', 'run', '--rm', '--network=none', '--userns=keep-id', '--cap-drop=all',
                '--security-opt', 'label=disable', '--security-opt', 'no-new-privileges',
                '--env', 'PYTHONDONTWRITEBYTECODE=1', '--env', 'PYTHONPATH=/packaging',

@@ -75,6 +75,36 @@ Pinned recipe references:
 [Makefile](https://github.com/AppImage/type2-runtime/blob/dd6cebedcbddde9c82f89b011e8e1d40b6e43868/src/runtime/Makefile),
 [workflow](https://github.com/AppImage/type2-runtime/blob/dd6cebedcbddde9c82f89b011e8e1d40b6e43868/.github/workflows/build.yaml).
 
+### Replacement: Nuvio source build of the runtime (2026-10-14)
+
+Future AppImages no longer embed the downloaded `20251108` binary. The
+runtime is rebuilt by `tools/linux/packaging/appimage_runtime.py` from
+`tools/linux/packaging/appimage-runtime/manifest.json`, which pins every input by
+URL and SHA-256: type2-runtime `dd6cebed` (archive `f5fec23b...`, identical to
+the retained one), libfuse 3.15.0 (+ upstream `mount.c.diff`), squashfuse 0.5.2,
+zstd 1.5.7, zlib 1.3.2 and mimalloc 2.5.2 (MI_SECURE, as Alpine's
+`libmimalloc.a`). All of them are compiled from those tarballs with
+`--network=none`; none comes from an apk. The toolchain is
+`alpine:3.21.8@sha256:3c81aa9a...5832` (linux/amd64) with exact apk versions;
+the incorporated musl is `musl-dev 1.2.5-r11` (aports commit `21cafa11...`), whose
+upstream tarball (signature-verified) and aports recipe/patches (checked against
+the APKBUILD sha512sums) are retained as its source. libgcc/crt objects come from
+GCC 14.2.0-r4 under the GCC Runtime Library Exception. Signature/checksum checks
+per input are recorded in the manifest (mimalloc and squashfuse publish none;
+their archives were compared with the upstream Git tag trees).
+
+Two clean builds, each with a freshly built toolchain image, produced the same
+runtime SHA-256 `6ee696672e2a10c8b570eb205d92e4df1d15bb40d45fa43182c4d8cec3c6a8ed`
+and the same source archive. The shipped runtime is linked from the relink
+kit (`runtime.o` + static libraries), and relinking that kit reproduces it.
+Each AppImage now carries the notices under `usr/share/licenses/appimage-runtime/`
+and `Nuvio-AppImage-runtime-source-<sha12>.tar.gz` (sources, patch, recipe,
+receipt, relink kit, `RELINK.md`) is published next to it; `verify.py`
+requires both and checks that the AppImage prefix is that runtime apart from
+`.digest_md5`. This does not change the historical binary's gap above or any
+**BLOCKED** assessment. Alpine removes superseded apk versions, so rebuilding the
+toolchain image later may need the recorded package files from another archive.
+
 ## Flatpak: exact runtime metadata now resolves to a source recipe
 
 The packaging provenance names `org.gnome.Platform/x86_64/49` at OSTree commit

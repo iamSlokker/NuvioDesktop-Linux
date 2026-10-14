@@ -1,0 +1,241 @@
+{
+  "schema_version": 1,
+  "description": "Fully pinned inputs for the Nuvio source build of the AppImage type2 runtime (type2-runtime dd6cebed, release 20251108 sources).",
+  "runtime_sha256": "6ee696672e2a10c8b570eb205d92e4df1d15bb40d45fa43182c4d8cec3c6a8ed",
+  "image": {
+    "containerfile": "Containerfile",
+    "base": "docker.io/library/alpine:3.21.8@sha256:3c81aa9a3d770b316568f4499e30461a5cd3fbd7180bd89e28e34894c7845832",
+    "base_index_digest": "sha256:ce64758a109eb420d874a118f87920e625e12d3634e03b4a5573fd9f6e5d3507",
+    "platform": "linux/amd64"
+  },
+  "musl": {
+    "version": "1.2.5",
+    "apk": "1.2.5-r11",
+    "aports_commit": "21cafa1183cf7501d3f1744994d221c038436e45",
+    "scope": "libc.a, crt objects and headers of musl-dev from the pinned image are incorporated into the static runtime; the matching upstream tarball and the aports recipe/patches at the commit recorded in the installed package are retained as its source"
+  },
+  "source_date_epoch": 1762559306,
+  "runtime_version": "https://github.com/AppImage/type2-runtime/commit/dd6cebe",
+  "sources": {
+    "type2-runtime": {
+      "file": "type2-runtime-dd6cebedcbddde9c82f89b011e8e1d40b6e43868.tar.gz",
+      "url": "https://codeload.github.com/AppImage/type2-runtime/tar.gz/dd6cebedcbddde9c82f89b011e8e1d40b6e43868",
+      "sha256": "f5fec23be76e50e2445ed2d018bac49b367490fc483c62c4637e99ec705d27ba",
+      "role": "build",
+      "version": "dd6cebedcbddde9c82f89b011e8e1d40b6e43868",
+      "license": "MIT",
+      "license_files": [
+        "LICENSE"
+      ],
+      "verification": "GitHub tag-less commit archive; contents equal `git archive` of commit dd6cebed (the commit of release 20251108); byte-identical to the archive retained in platform-source-retention.json"
+    },
+    "libfuse": {
+      "file": "fuse-3.15.0.tar.xz",
+      "url": "https://github.com/libfuse/libfuse/releases/download/fuse-3.15.0/fuse-3.15.0.tar.xz",
+      "sha256": "70589cfd5e1cff7ccd6ac91c86c01be340b227285c5e200baa284e401eea2ca0",
+      "role": "build",
+      "version": "3.15.0",
+      "license": "LGPL-2.1-only (library); GPL-2.0-only texts shipped",
+      "license_files": [
+        "LICENSE",
+        "LGPL2.txt",
+        "GPL2.txt"
+      ],
+      "modification": "type2-runtime patches/libfuse/mount.c.diff (FUSERMOUNT_PROG from environment)",
+      "verification": "sha256 equals upstream type2-runtime install-dependencies.sh pin; OpenPGP signature fuse-3.15.0.tar.xz.asc verified with Nikolaus Rath key ED31791B2C5C1613AF388B8AD113FCAC3C4E599F (key expired after signing)"
+    },
+    "squashfuse": {
+      "file": "squashfuse-0.5.2.tar.gz",
+      "url": "https://github.com/vasi/squashfuse/archive/0.5.2.tar.gz",
+      "sha256": "db0238c5981dabbd80ee09ae15387f390091668ca060a7bc38047912491443d3",
+      "role": "build",
+      "version": "0.5.2",
+      "license": "BSD-2-Clause",
+      "license_files": [
+        "LICENSE"
+      ],
+      "verification": "sha256 equals upstream type2-runtime install-dependencies.sh pin; contents equal `git archive` of tag 0.5.2 (commit 775b4cc72ab47641637897f11ce0da15d5c1f115); upstream publishes no signature"
+    },
+    "zstd": {
+      "file": "zstd-1.5.7.tar.gz",
+      "url": "https://github.com/facebook/zstd/releases/download/v1.5.7/zstd-1.5.7.tar.gz",
+      "sha256": "eb33e51f49a15e023950cd7825ca74a4a2b43db8354825ac24fc1b7ee09e6fa3",
+      "role": "build",
+      "version": "1.5.7",
+      "license": "BSD-3-Clause OR GPL-2.0-only",
+      "license_files": [
+        "LICENSE",
+        "COPYING"
+      ],
+      "verification": "matches upstream zstd-1.5.7.tar.gz.sha256; OpenPGP signature zstd-1.5.7.tar.gz.sig verified with Zstandard Release Signing Key 4EF4AC63455FC9F4545D9B7DEF8FE99528B52FFD"
+    },
+    "zlib": {
+      "file": "zlib-1.3.2.tar.gz",
+      "url": "https://github.com/madler/zlib/releases/download/v1.3.2/zlib-1.3.2.tar.gz",
+      "sha256": "bb329a0a2cd0274d05519d61c667c062e06990d72e125ee2dfa8de64f0119d16",
+      "role": "build",
+      "version": "1.3.2",
+      "license": "Zlib",
+      "license_files": [
+        "LICENSE"
+      ],
+      "verification": "matches SHA-256 published on https://zlib.net/; OpenPGP signature zlib-1.3.2.tar.gz.asc verified with Mark Adler key 5ED46A6721D365587791E2AA783FCD8E58BCAFBA"
+    },
+    "mimalloc": {
+      "file": "mimalloc-2.5.2.tar.gz",
+      "url": "https://codeload.github.com/microsoft/mimalloc/tar.gz/refs/tags/v2.5.2",
+      "sha256": "5cf9d2a10fae5551b764e888a623da411c6c6beb0221b847f83492ab1932bdab",
+      "role": "build",
+      "version": "2.5.2",
+      "license": "MIT",
+      "license_files": [
+        "LICENSE"
+      ],
+      "verification": "contents equal `git archive` of annotated tag v2.5.2 (tag 02d5f7ce61f9e6a928a9d69840431838582d492e, commit 2406cc5f3ab6d6e54fe560cdd66fa46eee775312); upstream publishes no checksum or signature (tag/commit unsigned)"
+    },
+    "zstd-signature": {
+      "file": "zstd-1.5.7.tar.gz.sig",
+      "url": "https://github.com/facebook/zstd/releases/download/v1.5.7/zstd-1.5.7.tar.gz.sig",
+      "sha256": "24425933fb954f4608ae9383bc37ad8398e50364c1ec30bbdb5adbfe88209fb1",
+      "role": "signature"
+    },
+    "zstd-sha256": {
+      "file": "zstd-1.5.7.tar.gz.sha256",
+      "url": "https://github.com/facebook/zstd/releases/download/v1.5.7/zstd-1.5.7.tar.gz.sha256",
+      "sha256": "954fa350e59ac782eaba5e04db608a0252b465eb3fc9dd02c426050956520161",
+      "role": "signature"
+    },
+    "zlib-signature": {
+      "file": "zlib-1.3.2.tar.gz.asc",
+      "url": "https://github.com/madler/zlib/releases/download/v1.3.2/zlib-1.3.2.tar.gz.asc",
+      "sha256": "977472e4d306906adbe34f8b1fdbf58c46fe8b4ade1c92117816b8281c5ee096",
+      "role": "signature"
+    },
+    "libfuse-signature": {
+      "file": "fuse-3.15.0.tar.xz.asc",
+      "url": "https://github.com/libfuse/libfuse/releases/download/fuse-3.15.0/fuse-3.15.0.tar.xz.asc",
+      "sha256": "087dfd45c7a1768c5d5cf7068eefd3cacc302f4ff8db5a6828668bc08725339f",
+      "role": "signature"
+    },
+    "musl": {
+      "file": "musl-1.2.5.tar.gz",
+      "url": "https://musl.libc.org/releases/musl-1.2.5.tar.gz",
+      "sha256": "a9a118bbe84d8764da0ea0d28b3ab3fae8477fc7e4085d90102b8596fc7c75e4",
+      "role": "musl-source",
+      "version": "1.2.5",
+      "license": "MIT",
+      "license_files": [
+        "COPYRIGHT"
+      ],
+      "verification": "OpenPGP signature musl-1.2.5.tar.gz.asc verified with musl.pub (8364 8929 0BB6 B70F 99FF DA05 56BC DB59 3020 450F); sha512 equals aports APKBUILD sha512sums"
+    },
+    "musl-signature": {
+      "file": "musl-1.2.5.tar.gz.asc",
+      "url": "https://musl.libc.org/releases/musl-1.2.5.tar.gz.asc",
+      "sha256": "d9030116fd03e4acfa0b665a13a5de46110296b4e30bb8e67be1f08af29f6306",
+      "role": "signature"
+    },
+    "musl-pubkey": {
+      "file": "musl.pub",
+      "url": "https://musl.libc.org/musl.pub",
+      "sha256": "bf6baaa63c2c4958636850a24bb9d2d514c8b6a1b3ab9c08f3b75910fb6f57be",
+      "role": "signature"
+    },
+    "aports-musl/APKBUILD": {
+      "file": "aports-musl-21cafa1183cf/APKBUILD",
+      "url": "https://gitlab.alpinelinux.org/alpine/aports/-/raw/21cafa1183cf7501d3f1744994d221c038436e45/main/musl/APKBUILD",
+      "sha256": "366ce96968b1923e4df867b24b434cac635f3013723231107feb0217d7430bb2",
+      "role": "aports"
+    },
+    "aports-musl/handle-aux-at_base.patch": {
+      "file": "aports-musl-21cafa1183cf/handle-aux-at_base.patch",
+      "url": "https://gitlab.alpinelinux.org/alpine/aports/-/raw/21cafa1183cf7501d3f1744994d221c038436e45/main/musl/handle-aux-at_base.patch",
+      "sha256": "2a65e03b94217063d72fe998e5fb2e25cd01716078a3ba1b0ab574ab205111e6",
+      "role": "aports"
+    },
+    "aports-musl/isatty-glibc-align.patch": {
+      "file": "aports-musl-21cafa1183cf/isatty-glibc-align.patch",
+      "url": "https://gitlab.alpinelinux.org/alpine/aports/-/raw/21cafa1183cf7501d3f1744994d221c038436e45/main/musl/isatty-glibc-align.patch",
+      "sha256": "1321d542b40921a4c248bb2d15dbd03fcbbf008c8725eb2043d3cab62faeba48",
+      "role": "aports"
+    },
+    "aports-musl/ldso-fix-non-functional-fix-to-early-dynamic-PAGE_SI.patch": {
+      "file": "aports-musl-21cafa1183cf/ldso-fix-non-functional-fix-to-early-dynamic-PAGE_SI.patch",
+      "url": "https://gitlab.alpinelinux.org/alpine/aports/-/raw/21cafa1183cf7501d3f1744994d221c038436e45/main/musl/ldso-fix-non-functional-fix-to-early-dynamic-PAGE_SI.patch",
+      "sha256": "7f5806124d4a89536e53a07bfe95fcd0a8f1b7a27fc0dfc89c78c724dea1c924",
+      "role": "aports"
+    },
+    "aports-musl/loongarch64-Add-lsx-and-lasx-vector-structure-defini.patch": {
+      "file": "aports-musl-21cafa1183cf/loongarch64-Add-lsx-and-lasx-vector-structure-defini.patch",
+      "url": "https://gitlab.alpinelinux.org/alpine/aports/-/raw/21cafa1183cf7501d3f1744994d221c038436e45/main/musl/loongarch64-Add-lsx-and-lasx-vector-structure-defini.patch",
+      "sha256": "28efacd507c01b89e1725ed33723f3f9fdfe6cb83eb78ffea1e2acb7fda8a52c",
+      "role": "aports"
+    },
+    "aports-musl/loongarch64-add-TLSDESC-support.patch": {
+      "file": "aports-musl-21cafa1183cf/loongarch64-add-TLSDESC-support.patch",
+      "url": "https://gitlab.alpinelinux.org/alpine/aports/-/raw/21cafa1183cf7501d3f1744994d221c038436e45/main/musl/loongarch64-add-TLSDESC-support.patch",
+      "sha256": "1efb4604e0b28b84e10faf37d17bad448510e73f6a3db89c8be47d38b9e85138",
+      "role": "aports"
+    },
+    "aports-musl/loongarch64-add-fpu-and-simd-context-to-signal.h.patch": {
+      "file": "aports-musl-21cafa1183cf/loongarch64-add-fpu-and-simd-context-to-signal.h.patch",
+      "url": "https://gitlab.alpinelinux.org/alpine/aports/-/raw/21cafa1183cf7501d3f1744994d221c038436e45/main/musl/loongarch64-add-fpu-and-simd-context-to-signal.h.patch",
+      "sha256": "d73f85a90fe52930dd8b5d16cb7f3369a994918c0e41ae3c3dc9a25df4b45099",
+      "role": "aports"
+    },
+    "aports-musl/loongarch64-add-bits-hwcap.h.patch": {
+      "file": "aports-musl-21cafa1183cf/loongarch64-add-bits-hwcap.h.patch",
+      "url": "https://gitlab.alpinelinux.org/alpine/aports/-/raw/21cafa1183cf7501d3f1744994d221c038436e45/main/musl/loongarch64-add-bits-hwcap.h.patch",
+      "sha256": "8849080b49dff046b1f29db24e54ffe6262b5884078091994db77efdafca2505",
+      "role": "aports"
+    },
+    "aports-musl/CVE-2025-26519.patch": {
+      "file": "aports-musl-21cafa1183cf/CVE-2025-26519.patch",
+      "url": "https://gitlab.alpinelinux.org/alpine/aports/-/raw/21cafa1183cf7501d3f1744994d221c038436e45/main/musl/CVE-2025-26519.patch",
+      "sha256": "ab382da2bb5e1cc32d8904be28fb13f8ad3ce813967bd4bf7f5b1c6baee33e17",
+      "role": "aports"
+    },
+    "aports-musl/iconv-gb18030-fix.patch": {
+      "file": "aports-musl-21cafa1183cf/iconv-gb18030-fix.patch",
+      "url": "https://gitlab.alpinelinux.org/alpine/aports/-/raw/21cafa1183cf7501d3f1744994d221c038436e45/main/musl/iconv-gb18030-fix.patch",
+      "sha256": "1d0be2e72b9d5bd16546b923aa8af861d271322f01644716a81823bec4065c99",
+      "role": "aports"
+    },
+    "aports-musl/CVE-2026-40200.patch": {
+      "file": "aports-musl-21cafa1183cf/CVE-2026-40200.patch",
+      "url": "https://gitlab.alpinelinux.org/alpine/aports/-/raw/21cafa1183cf7501d3f1744994d221c038436e45/main/musl/CVE-2026-40200.patch",
+      "sha256": "1ee29f64f9ca8e8ad7c349779d661ff6b52126a27575d3586981357a52c406fb",
+      "role": "aports"
+    },
+    "aports-musl/ldconfig": {
+      "file": "aports-musl-21cafa1183cf/ldconfig",
+      "url": "https://gitlab.alpinelinux.org/alpine/aports/-/raw/21cafa1183cf7501d3f1744994d221c038436e45/main/musl/ldconfig",
+      "sha256": "b4a2c06db38742e8c42c3c9838b285a7d8cdac6c091ff3df5ff9a15f1e41b9c7",
+      "role": "aports"
+    },
+    "aports-musl/__stack_chk_fail_local.c": {
+      "file": "aports-musl-21cafa1183cf/__stack_chk_fail_local.c",
+      "url": "https://gitlab.alpinelinux.org/alpine/aports/-/raw/21cafa1183cf7501d3f1744994d221c038436e45/main/musl/__stack_chk_fail_local.c",
+      "sha256": "299a7d75a09de3e2e11e7fb4acc3182e4a14e868093d2f30938fce9bfcff13da",
+      "role": "aports"
+    },
+    "aports-musl/getconf.c": {
+      "file": "aports-musl-21cafa1183cf/getconf.c",
+      "url": "https://gitlab.alpinelinux.org/alpine/aports/-/raw/21cafa1183cf7501d3f1744994d221c038436e45/main/musl/getconf.c",
+      "sha256": "d87d0cbb3690ae2c5d8cc218349fd8278b93855dd625deaf7ae50e320aad247c",
+      "role": "aports"
+    },
+    "aports-musl/getent.c": {
+      "file": "aports-musl-21cafa1183cf/getent.c",
+      "url": "https://gitlab.alpinelinux.org/alpine/aports/-/raw/21cafa1183cf7501d3f1744994d221c038436e45/main/musl/getent.c",
+      "sha256": "b25f32d306d542246e9358ef65cd67c12b3e3a77656bc467853d3b0c76b5fbbd",
+      "role": "aports"
+    },
+    "aports-musl/iconv.c": {
+      "file": "aports-musl-21cafa1183cf/iconv.c",
+      "url": "https://gitlab.alpinelinux.org/alpine/aports/-/raw/21cafa1183cf7501d3f1744994d221c038436e45/main/musl/iconv.c",
+      "sha256": "f79a2930a2e5bb0624321589edf8b889d1e9b603e01e6b7ae214616605b3fdd7",
+      "role": "aports"
+    }
+  }
+}
