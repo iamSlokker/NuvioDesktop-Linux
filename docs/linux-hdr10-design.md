@@ -1,9 +1,160 @@
-# Linux HDR10: source audit and bounded design proposal
+# Linux HDR10: source audit, design and experimental Wayland session
 
-**Assessment: BLOCKED as an optional platform milestone; design ready for review.**
-The accepted Linux player remains unchanged. Genuine HDR10 output is not implemented
-or hardware-accepted. This does not by itself block redistribution of a correctly
-described SDR player; the separate licensing and source blockers still apply.
+**Assessment (2026-10-14): EXPERIMENTAL Wayland HDR session implemented behind a
+default-off Linux setting. HDR OUTPUT IS UNVERIFIED ON HDR HARDWARE.** Nothing in
+this repository has observed a PQ/BT.2020 frame reach an HDR monitor through Nuvio.
+The accepted embedded X11 player is unchanged and remains the only path whenever any
+gate below is not met. Redistribution of a correctly described SDR player is not
+affected; the separate licensing and source blockers still apply.
+
+The original audit (below the next section) is retained unchanged as the evidence
+for why the embedded X11 Canvas cannot carry HDR and why a separate native-Wayland
+presentation boundary was chosen.
+
+## Implemented experimental session (part 2)
+
+### Architecture
+
+| Piece | Location | Role |
+| --- | --- | --- |
+| Option contracts | `native/linux/player_session_options.h` | Pure lists: the unchanged X11 embedding boundary (`gpu-context=x11vk`, `wid=<XID>`) and the HDR session boundary (`vo=gpu-next`, `gpu-api=vulkan`, `gpu-context=waylandvk`, no `wid`, `fullscreen=yes`, `input-vo-keyboard=yes`, default bindings off, `wayland-app-id`, optional `vulkan-device`). |
+| HDR session helpers | `native/linux/hdr_wayland_session.{h,cpp}` | Headless libmpv capability check (uninitialised handle; mpv rejects `gpu-context=waylandvk` unless compiled in), app-owned key bindings (`keybind <key> "script-message nuvio-hdr-key <code>"`), event translation (`video-target-params`, `vo-configured`, start-time VO errors). |
+| JNI | `player_bridge.cpp` (`LinuxHdrSessionNative_*`) | `create` builds an ordinary `Player` with `hdrSession=true` in the shared handle table, so every existing per-handle `NativePlayerBridge` call (position, seek, tracks, subtitles, volume, stats, dispose) works unchanged. Same shared option steps as the embedded player (`hwdec=auto`, custom/Nuvio options, headers, separate audio, start position); no X11 lifetime reservation, AWT lock, WebKit HUD or seek thumbnails. Always starts **paused**. Also `libmpvSupportsWayland`, `transferPlaybackState`, `showText`, `scriptMessage`, `isFocused`. |
+| Capability probe | `native/linux/hdr_capability_probe.{h,cpp}`, `nuvio_hdr_probe.cpp` → `nuvio-hdr-probe` | Separate helper process (hard 8 s timeout, killable; Vulkan queries are not cancellable). One **unmapped** `wl_surface` + `VkWaylandSurfaceKHR`; no role, commit, swapchain or setting change. Refuses to connect without `WAYLAND_DISPLAY`. Reports colour values by protocol enum **name** from the generated header. |
+| Policy | `LinuxHdrSessionPolicy.kt` | Pure, fail-closed decision table (below). |
+| Coordinator | `LinuxHdrSessionCoordinator.kt` | Handoff/fallback state machine (Idle → Probing → Starting → Active). Display-free; driven by a controller adapter. |
+| Controller glue | `NativePlayerController.kt` (`LinuxHdrHost`, Linux main player only) | Creates/promotes/retires sessions under the existing `nativeProcessLifecycleLock` and attach generation; replays app-owned mpv properties and subtitle styling; re-creates the Canvas player on fallback through the ordinary `attachPending()` path. |
+| Input | `LinuxHdrInput.kt`, `GamepadKeyInjector.kt` | mpv key name → AWT `VK_` code → the same shortcut bindings/actions as the embedded dispatcher. Gamepad keys route to the session only while its window reports `focused`. |
+| HUD v1 | `resources/player-scripts/linux-hdr-osc.lua` | Display-only mpv OSD: title, position/duration, playing/paused, progress bar, key hint, "HDR session (experimental)". Exported at runtime into the user's private data directory (never shared `/tmp`), loaded with `scripts=`. Binds no input. |
+| Setting | `LinuxHdrSessionSettings` + `PlatformHdrSettingsRows` | "Experimental HDR (Wayland)", Linux only, machine-local, **default off**, shown under HDR mode. |
+
+### Gating (all must hold; otherwise the embedded X11 player is used unchanged)
+
+1. Linux main-player attach (not hero/trailer), not in Picture-in-Picture.
+2. "Experimental HDR (Wayland)" enabled.
+3. `WAYLAND_DISPLAY` present.
+4. Desktop HDR mode is Auto or Always Passthrough (Always Tonemap keeps SDR).
+5. Decoded source transfer (embedded player's existing `video-params` report) is PQ or HLG. BT.2020 primaries alone do not qualify.
+6. The **loaded** libmpv has the `waylandvk` context (the current canonical runtime has `HAVE_WAYLAND=0` and therefore always fails this gate).
+7. `nuvio-hdr-probe` is shipped next to `libplayer_bridge.so`, completes, and reports: `wp_color_manager_v1` with PQ and BT.2020; a ready PQ/BT.2020 preferred surface description with luminance headroom (max > reference); at least one PQ/BT.2020 output; exactly one Vulkan device with a 10-bit HDR10 ST2084 surface format, Wayland presentation and `VK_EXT_hdr_metadata` (its name is passed as `vulkan-device`). Missing helper, timeout, crash, malformed output, multiple eligible devices: SDR.
+8. After creation, mpv itself must load the file, configure its VO and report a **PQ/HLG BT.2020 `video-target-params`** before the session is promoted. The target colour space mapping is the shared `desktopHdrTargetMpvProperties()` (Auto: `target-colorspace-hint=auto`, mode `target`; Passthrough: `yes`, mode `source`); PQ is never forced.
+
+Gates 1-6 are evaluated before any display connection; the probe runs at most once
+per attach. Each decision is logged (`LinuxHdrSession` tag) when the setting is on.
+
+### Handoff and fallback
+
+- Eligible: the embedded player is paused at position *P*; the HDR session starts
+  paused at *P* with the same source URL, headers, separate audio and options. After
+  its `fileLoaded` the live track choices, external subtitles, delays, speed and
+  volume are copied (`transferPlaybackState`), and app-owned mpv properties,
+  subtitle style and resize mode are replayed. On promotion the controller handle
+  becomes the HDR session, the embedded player is disposed, and playback resumes
+  only if it was playing. Progress polling, scrobbling/Continue Watching, MPRIS and
+  track menus keep working because they all read the controller handle.
+- Failure before promotion (create error, no Wayland VO, start-time VO error,
+  SDR/unknown target, playback error, 15 s timeout, re-attach, disposal): the HDR
+  session is disposed and the still-alive embedded player resumes in place.
+- Failure or exit after promotion (`vo-configured` false, target becomes SDR e.g.
+  window moved to an SDR monitor, session ended, user leave, HDR mode → Always
+  Tonemap): the embedded Canvas player is re-created at the HDR session's position.
+- Any failure or user leave declines HDR for that source for the rest of the player
+  lifetime (no flapping). New sources and ordinary re-attaches are evaluated again.
+
+### Input and HUD in the HDR window
+
+The HDR window has focus, so the AWT dispatcher sees nothing; each bound mpv key is
+forwarded once. Esc/Dismiss/Go Back (Backspace) = Back (leave playback, ordinary
+progress flush and navigation); app fullscreen key (default F11), double click,
+window close, Open Sources/Episodes = leave the HDR session and continue in the
+embedded player with its full WebKit HUD; Space/K/Enter/right click play-pause;
+←/→/J/L seek; ↑/↓/wheel volume; M mute; S/A subtitle/audio cycle; speed keys;
+C zoom; Tab skip interval; F8 cycles HDR mode; I toggles mpv's stats overlay (shows
+the negotiated target). SVP, colour profile and Anime4K shortcuts report "not
+available" (SDR-only features). Media keys are left to MPRIS. Pills are shown with
+mpv `show-text`. Escape while the session is still starting cancels it and goes
+back.
+
+### SDR path unchanged — evidence
+
+- `linux_hdr_session_test` asserts `linuxX11EmbeddingOptions()` equals the literal
+  pre-change option list; `create` now uses the same helper steps in the same order.
+- `player_bridge` NEEDED libraries are unchanged (no Wayland/Vulkan link); new pump
+  cases and close branch are guarded by `hdrSession`.
+- Linux keeps `applyLinuxBaseVideoProfile`; the shared `applyDesktopVideoProfile`
+  only had its HDR-mode table extracted (`desktopHdrTargetMpvProperties`, values and
+  order pinned by `LinuxHdrSessionPolicyTest`).
+- All existing Linux desktop tests and native fixtures pass unchanged.
+
+### Packaging requirements (not done here)
+
+- A media runtime whose libmpv has `HAVE_WAYLAND=1` and
+  `HAVE_WAYLAND_PROTOCOLS_1_41=1` (separate media-recipe work). Without it the
+  feature is inert.
+- Build and ship `nuvio-hdr-probe` in `lib/native` (needs wayland-client,
+  wayland-scanner, wayland-protocols ≥ 1.41 and Vulkan headers/loader at build
+  time; pass `-DNUVIO_WAYLAND_PROTOCOLS_DIR`/`-DNUVIO_VULKAN_INCLUDE_DIR` when not
+  discoverable) and add it to the verified image inventory and runtime closure
+  checks (it links `libwayland-client.so.0` and `libvulkan.so.1`).
+- Add `linux_hdr_session_test` to the native test step (`--expect-wayland=yes`
+  against a Wayland runtime, `no` against the current one).
+- Flatpak: `--socket=wayland` (currently X11 only; without it `WAYLAND_DISPLAY`
+  is absent or unusable and the gate fails closed). Keep `--socket=x11` and
+  `GDK_BACKEND=x11` for the embedded player/HUD.
+- The OSC Lua script ships inside the application JAR
+  (`player-scripts/linux-hdr-osc.lua`); no separate packaging is needed. libmpv
+  must keep Lua enabled (it already does), otherwise only the OSC is lost.
+
+### Known limitations / unverified
+
+- **Unverified:** actual HDR10 output, compositor/monitor HDR signalling, HDR
+  metadata, brightness of OSD/subtitles in PQ, NVIDIA/AMD/Intel WSI colour-space
+  behaviour, multi-monitor placement, and whether mpv renders and reports
+  `video-target-params` while paused at start on real drivers (if not, the session
+  times out and falls back to SDR).
+- The fixture keypress/OSC tests run real libmpv with null outputs only.
+- No WebKit HUD in the session (no panels, thumbnails, PiP). The embedded player
+  is torn down during the session; leaving re-creates it (brief re-buffer).
+- The prototype capability policy compared raw wire numbers and treated value 9
+  (sRGB in `wp_color_manager_v1`) as PQ (11); this implementation uses generated
+  enum names and pins the case in `LinuxHdrSessionPolicyTest`.
+
+### Owner acceptance commands (HDR display, explicit authorization only)
+
+Never run these against a live session without deciding to: they open Wayland
+connections and, for the app run, a fullscreen window.
+
+```sh
+# 0. Headless checks (safe anywhere).
+unset DISPLAY WAYLAND_DISPLAY NUVIO_RUN_LIVE_DISPLAY_TESTS
+cmake -S composeApp/src/desktopMain/native/linux -B build/hdr-native -G Ninja \
+  -DCMAKE_BUILD_TYPE=Release -DMPV_ROOT=/path/to/wayland-enabled/runtime \
+  -DNUVIO_WAYLAND_PROTOCOLS_DIR=/path/to/share/wayland-protocols \
+  -DNUVIO_VULKAN_INCLUDE_DIR=/path/to/include
+cmake --build build/hdr-native --target player_bridge nuvio-hdr-probe linux_hdr_session_test
+build/hdr-native/linux_hdr_session_test --expect-wayland=yes
+
+# 1. Read-only capability snapshot in the real session (unmapped surface only).
+timeout --signal=TERM --kill-after=2s 20s \
+  build/hdr-native/nuvio-hdr-probe --probe-json | python3 -m json.tool
+#    Expect probe_complete=true, preferred st2084_pq/bt2020 with max_nits > reference_nits,
+#    and exactly one device with hdr10_10bit, wayland_present and hdr_metadata.
+
+# 2. Application run: enable Settings > Playback > "Experimental HDR (Wayland)",
+#    HDR mode Auto, system HDR on, then play licensed HDR10 PQ test material.
+#    Check nuvio.log for "Experimental HDR session active (PQ/HLG BT.2020 target
+#    confirmed by mpv)"; press I for mpv stats (target transfer/primaries);
+#    confirm the monitor's own HDR indicator / compositor HDR state.
+# 3. Exercise: Space, ←/→, ↑/↓, S/A, Esc (back to app, Continue Watching position),
+#    F11 and double click (embedded player resumes at the same position), gamepad
+#    A/D-pad/B, F8 to Always Tonemap (falls back), toggling system HDR off mid-play
+#    (falls back), and an SDR-only display (never selected, or falls back).
+```
+
+Record driver/kernel/compositor/GPU/display identifiers and package hashes with
+each result, as required in "Tests and acceptance required" below.
+
+## Original audit (2026-10-13)
 
 Audit date: 2026-10-13. Application baseline:
 `a96ce242f084a41ecf433c206958f1cbffa53345`. Actual package evidence comes from
