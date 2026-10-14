@@ -52,6 +52,12 @@
       "sha256": "4976e328fae49f0ca59f32aa4bfbe21fd283bb6016c58b4066f201dfc16411e9"
     },
     {
+      "bytes": 30839,
+      "path": "composeApp/src/commonMain/composeResources/files/licenses/ReleaseArtwork/PROVENANCE.json",
+      "scope_limit": "Ten replacement identities, nine exclusions and four unresolved exact-path hash exceptions; not publication approval.",
+      "sha256": "3927c5072a7da258b36b74c0bd54b0d45c4c09c340675f4e078513cebb45f2b9"
+    },
+    {
       "bytes": 6854,
       "path": "composeApp/src/desktopMain/resources/anime-mapping/PROVENANCE.json",
       "scope_limit": "Exact bundled database/import identity and notices; original generation and merged-data rights unresolved.",
@@ -64,16 +70,16 @@
       "sha256": "56c6f7653d9b4cf3b6ec94c654a8e5b90f3c7d64b5d3fde81e5a8cfbfef6f6bb"
     },
     {
-      "bytes": 9220,
+      "bytes": 13126,
       "path": "docs/compliance/artwork-data-closure.md",
-      "scope_limit": "Seven original icon replacements and exact anime import; other artwork/data rights unresolved.",
-      "sha256": "a8bfcc6ce3dd77c2f51890aba2f71b2a6879a9eb6ce2bf4b6cb9061748f68785"
+      "scope_limit": "Seventeen replacements, nine exclusions and exact anime import; 47 other artwork resources/data rights unresolved.",
+      "sha256": "f3c75d6f44dc82d0d1e286a84cd67cc19ee54bffa072cf544da0cadd3fc6c152"
     },
     {
-      "bytes": 59657,
+      "bytes": 84895,
       "path": "docs/compliance/evidence/artwork-data-review.json",
       "scope_limit": "Current resource hashes and unresolved rights inventory, not grants or publication approval.",
-      "sha256": "630be976a7eac12c56088274a9febc1437796628eca82154ea04b1226ba48645"
+      "sha256": "0a3ebd2f374748bc6c854db695f826ae5dd5f983c5afe4930d2966dc5eccb2f4"
     },
     {
       "bytes": 358949,
@@ -148,10 +154,10 @@
       "sha256": "74104e7fff194e6fb653c26e6793063d1dc44886dcc5cb3d12183f6afed43a03"
     },
     {
-      "bytes": 6777,
+      "bytes": 7244,
       "path": "docs/compliance/release-closure.md",
       "scope_limit": "Current font/notice correction and remaining gates; all formats remain blocked.",
-      "sha256": "82b0df454f451c9c6be5c0895afa1798ae95f697de33557d69bae351704f238c"
+      "sha256": "165b1b2ed5f29dc97597a185851466e555e3791540ed3ea359c0d7633f266e98"
     },
     {
       "bytes": 11603,
@@ -160,10 +166,28 @@
       "sha256": "6865a5d51fffdee7b17d68f29fae1a17617c9ae75d086eea0e09f1b2f183a02e"
     },
     {
-      "bytes": 2631,
+      "bytes": 10488,
+      "path": "tools/linux/packaging/artwork/GenerateReleaseArtwork.java",
+      "scope_limit": "Preferred editable form of ten new assets; only original geometry and pinned Inter inputs.",
+      "sha256": "a380a778cc0989020e403a6272b4cc3ea28301cc25ed7609ab231319aca40081"
+    },
+    {
+      "bytes": 3020,
+      "path": "tools/linux/packaging/artwork/README.md",
+      "scope_limit": "Original artwork authoring/reproduction and limits of retained Umbra exception.",
+      "sha256": "74d2403271297dcb1ac7ce067a5754886ae914a8d539b3595a9b05a28bfa1aae"
+    },
+    {
+      "bytes": 2858,
+      "path": "tools/linux/packaging/artwork/generate.py",
+      "scope_limit": "Headless authoring driver; optional tooling, not a new app dependency.",
+      "sha256": "7a3b265c6d38aca88c5a2fd57621ce8a9b0e2d16a3e4cd1d3b35792032165ab6"
+    },
+    {
+      "bytes": 5528,
       "path": "tools/linux/packaging/artwork_contract.py",
       "scope_limit": "Future artwork/data payload gate; not legal clearance.",
-      "sha256": "1950b4b72f045a65edd29d2e2ad8da9b9f56a7feebf30d42b3e1346b93f7aa50"
+      "sha256": "15dd66102de2a72bbc0ed442f8fa7ee8842e88bbb55be3d666223af6da4fc67a"
     },
     {
       "bytes": 4203,
@@ -184,10 +208,10 @@
       "sha256": "15f81bd9d9ef6eb3f15c9af2439ac6f8c37617d4fb02acf34a98769015523985"
     },
     {
-      "bytes": 9355,
+      "bytes": 10004,
       "path": "tools/linux/packaging/compliance/review_index.py",
       "scope_limit": "Review-index byte bindings only; not a source cache or compliance verifier.",
-      "sha256": "dad94ad6adf5db243a19068036caf4792a292cceeaa3cf3b74ed9259eccf8b6a"
+      "sha256": "87bd1ad59d8cb09a32dfe04e77f0a7ce90ff46a7d0c4130c21e3f62860677385"
     },
     {
       "bytes": 14515,

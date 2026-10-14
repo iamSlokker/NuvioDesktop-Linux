@@ -1,13 +1,16 @@
 """Actual-bundle inventory must match staging before inspecting packaged classes."""
 import json
+import io
 import pathlib
 import sys
 import tempfile
 import unittest
+import zipfile
 from unittest.mock import patch
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1]))
 import verify
+import artwork_contract
 
 
 class FlatpakJarInventoryTest(unittest.TestCase):
@@ -99,6 +102,40 @@ class FlatpakJarInventoryTest(unittest.TestCase):
                     with self.assertRaisesRegex(ValueError, 'Non-regular/duplicate'):
                         self.audit()
                 self.assertEqual([], self.cat_jars)
+
+    def test_exported_bundle_reaches_real_artwork_gate_instead_of_trusting_staging(self):
+        payload = {}
+        for name in artwork_contract.expected_resources():
+            relative = ('composeApp/src/commonMain/composeResources/' + name.removeprefix(artwork_contract.PREFIX)
+                        if name.startswith(artwork_contract.PREFIX) else 'composeApp/src/desktopMain/resources/' + name)
+            payload[name] = (artwork_contract.REPO / relative).read_bytes()
+        for bad_export in (False, True):
+            content = dict(payload)
+            if bad_export:
+                # Correct staging plus a forbidden asset in the actual exported JAR must fail.
+                content['nested/HERO_BADGE_MUST_SEE.PNG'] = b'new bytes'
+            stream = io.BytesIO()
+            with zipfile.ZipFile(stream, 'w') as jar:
+                for name, data in content.items(): jar.writestr(name, data)
+            def output(args, **kwargs):
+                if args[-1].endswith('.jar'):
+                    if args[-1].endswith('application.jar'): return stream.getvalue()
+                    empty = io.BytesIO()
+                    with zipfile.ZipFile(empty, 'w'): pass
+                    return empty.getvalue()
+                return self.command_output(args, **kwargs)
+            with self.subTest(bad_export=bad_export), patch.object(verify.subprocess, 'run'), \
+                    patch.object(verify.subprocess, 'check_output', side_effect=output), \
+                    patch.object(verify, 'verify_packaged_backend'), \
+                    patch.object(verify, 'verify_packaged_onnx', return_value={}), \
+                    patch.object(verify, 'verify_packaged_fonts', return_value={}):
+                if bad_export:
+                    with self.assertRaisesRegex(ValueError, 'Removed artwork filename'): self.audit()
+                else:
+                    self.audit()
+                    report = json.loads((self.work / 'artifacts/flatpak-audit.json').read_text())
+                    self.assertEqual(9, report['artwork']['removed_resources'])
+                    self.assertEqual('BLOCKED', report['artwork']['redistribution_assessment'])
 
 
 if __name__ == '__main__':

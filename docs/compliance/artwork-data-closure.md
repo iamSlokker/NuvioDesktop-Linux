@@ -1,6 +1,6 @@
 # Artwork and anime mapping closure
 
-**2026-10-13; baseline `805797ed42103f931f3723c4f83547c249057687`.**
+**2026-10-14; latest correction baseline `1555d7ea75c3777f854f4af1b2256c9ff2419cd9`.**
 Seven missing-grant UI imports are replaced. The exact anime dump import revision
 is established. Other artwork permissions and the full database-generation and
 rights scope remain **BLOCKED**; this is evidence for review, not legal certification.
@@ -38,13 +38,52 @@ viewBox remains 566.828×566.828. Tint palettes and existing resource mappings a
 preserved. No player code, platform input behavior, approved Nuvio logo or
 wordmark is changed. The new MIT grant does not retroactively license old imports.
 
+## Nineteen-resource payload correction
+
+Nine unused resources are removed after checking baseline tracked source, JavaScript,
+JSON, platform code, tests, generated-accessor spellings and dynamic filename
+paths. `HomeHeroSection.heroDiscoveryBadgeFileName` is a fixed switch;
+`HeroCustomBadge.heroBundledBadgeModel` does not enumerate bundled assets.
+Fresh resource generation and Kotlin compilation check the removal boundary.
+
+- Removed: `hero_badge_best_picture_nominee.png`, `hero_badge_golden_leopard.png`,
+  `hero_badge_must_see.png`, `hero_badge_new_currents.png`, `hero_badge_oscar_win.png`,
+  `hero_badge_sundance_grand_jury.png`, `hero_badge_sxsw_jury.png`,
+  `hero_badge_tiger_award.png`, `hero_badge_tribeca_audience_award.png`.
+- Replaced: the six `quality_badge_{4k_bluray,4k_web,atmos,dts,dv,hdr}.svg`
+  files with original generic rectangles and plain Inter typography. Source
+  colors, dimensions, Kotlin mappings and detected capabilities are unchanged.
+  Dolby/DTS symbols and specialized logo lettering are absent. DTS:X remains
+  conditional on the existing DTSX token; no capability detection is broadened.
+- Replaced: the four `setup_mode_{basic,adaptive,adaptive_ambient,tv}.webp`
+  screenshots with original synthetic illustrations: fictitious titles,
+  abstract art, distinguishable layouts, unchanged names and 1920×1082 size.
+  They retain the existing loader and wizard layout, with no app dependency.
+
+Original/replacement identities, hashes, authoring recipe, license and notice
+are in the bundled [ReleaseArtwork provenance](../../composeApp/src/commonMain/composeResources/files/licenses/ReleaseArtwork/PROVENANCE.json).
+The editable Java2D recipe and [reproduction instructions](../../tools/linux/packaging/artwork/README.md)
+use only pinned existing Inter fonts and original geometry. New geometry and
+illustrations are MIT; the unchanged font remains SIL OFL. This does not license
+historical imports or imply endorsement by format owners.
+
+**Owner-approved narrow exception:** eight removed resources share bytes with
+four active Umbra originals. The owner requested preserving `hero_badge_win.png`,
+`hero_badge_nom.png`, `hero_badge_foreign.png` and `hero_badge_people_choice.png`.
+They are byte-identical in `windows-tv-adaptive` at `a70cc370…` and the pinned WIP
+at `18537e3c…` (full revisions/hashes in provenance). Their hashes are allowed
+only at those four exact original Compose JAR paths. Deleted filenames, renamed
+copies and duplicate entries still fail. These four remain **UNRESOLVED**;
+there is no blanket assertion that every deleted hash is absent or licensed.
+
 ## Remaining packaged artwork
 
 [The machine-readable review](evidence/artwork-data-review.json) classifies each
-of **66** remaining resources by exact SHA256, introduction commit, actual code
-references, category and **UNRESOLVED** status. None was excluded or replaced
-silently. Unused resources still count as packaged; no claim that an absent call
-site removes redistribution obligations is made.
+of **47** remaining resources (20 provider/rating marks and 27 award/hero badges)
+by exact SHA256, introduction commit, actual code references and **UNRESOLVED**
+status. Separate maps record the nine removed and ten newly replaced resources.
+Together with the previous seven UI replacements, the cumulative disposition is
+17 replaced, nine excluded, 47 unresolved and zero newly verified grants.
 
 - Provider/rating marks include Trakt, IMDb, TMDB, Rotten Tomatoes/Popcornmeter,
   Letterboxd, Metacritic, MyAnimeList, Kitsu, SIMKL, TVDB, MDBList, IntroDB and Discord.
@@ -68,12 +107,9 @@ site removes redistribution obligations is made.
   also imposes specific statuette/name-use conditions. Other award/festival
   artwork and generic imported graphics have no verified source/license records;
   a generic laurel is not automatically a licensed festival logo.
-- Dolby/DTS and other format/quality marks remain separately inventoried; a codec
-  implementation or API grant does not establish rights to the mark artwork.
-- All four setup previews contain movie posters/backdrops/title artwork (including
-  Joker and Shutter Island). Repository screenshots do not establish rights to
-  their embedded content. They remain unchanged and unresolved; synthetic previews
-  would be a separate bounded, approved presentation correction.
+- The six former quality-mark imports and four embedded-artwork screenshots are
+  replaced as described above. Previous bytes are forbidden in future application
+  JARs, including renamed non-image copies. Historical binaries are unchanged.
 
 ## Exact anime import recovered; generation/rights still incomplete
 
@@ -124,11 +160,31 @@ Raster-only Compose tests exercise actual `appIconPainter`/resource decoding,
 monochrome tint, recognizable cutouts and 18/24/34dp sizes at 100/125/150/175/200%.
 The unchanged logo and production anime lookup tests cover representative native
 IDs, IMDb/TMDB namespaces, franchise/Pokémon offsets and cold/cached/concurrent loads.
-Compilation and **33 focused JVM tests passed**, with zero failures or skips.
-The final development JAR passes the new artwork/data gate and the existing Inter
+At the previous baseline, **33 focused JVM tests passed**, with zero failures or skips.
+That development JAR passed the then-current artwork/data gate and existing Inter
 font gate. Its exact SHA256, resource hashes, test classes and limits are in the
-machine-readable review. These are local development artifacts; no live GUI or
+machine-readable review under `validation_at_previous_baseline`. Current correction
+results are recorded separately under `payload_correction_validation`. These are
+local development artifacts; no live GUI or
 final package acceptance is claimed.
+
+For the nineteen-resource correction, production/test Kotlin compilation and
+`desktopJar` passed. **23 focused JVM tests** and **24 focused Python tests**
+passed with zero failures or skips. Actual production quality painters were
+rasterized at 18dp and 100/125/150/175/200%; setup painters at narrow/normal widths
+across those scales and at 1920px. Contact sheets show readable plain labels,
+uncropped UI text and four distinct synthetic modes. Existing login branding,
+setup settings and capability selection tests remain passing. No visual defect
+was detected offscreen; final target-session acceptance was not performed.
+
+The actual generated application JAR passes all 32 artwork/data resource pins
+and the Inter gate. Fixtures exercise the real artwork gate through all three
+format verifiers, including rejection of forbidden bytes/names in exported JARs.
+All ten new assets reproduced byte-identically using the recorded authoring
+toolchain. All nineteen original identities were independently checked against
+baseline Git blobs; tests use synthetic old bytes instead of redistributing
+unlicensed imports as fixtures. The gate is not a rights grant or a new package
+build: other artwork and data/source/delivery blockers remain unchanged.
 
 DEB, Flatpak and AppImage remain **BLOCKED** by the enumerated artwork/data rights,
 required native/static source/relink and recipient-delivery gates. The finite

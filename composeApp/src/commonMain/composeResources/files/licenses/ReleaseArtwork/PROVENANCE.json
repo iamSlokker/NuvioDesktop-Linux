@@ -1,0 +1,635 @@
+{
+  "schema_version": 1,
+  "baseline_commit": "1555d7ea75c3777f854f4af1b2256c9ff2419cd9",
+  "scope": "Nine unused resource removals and ten original replacements only; other rights and source/delivery gates remain BLOCKED",
+  "license": "MIT",
+  "copyright": "Copyright (c) 2026 NuvioDesktop-Linux contributors",
+  "removed": [
+    {
+      "resource": "composeApp/src/commonMain/composeResources/drawable/hero_badge_best_picture_nominee.png",
+      "filename": "hero_badge_best_picture_nominee.png",
+      "status": "EXCLUDED_FROM_PACKAGING",
+      "original": {
+        "sha256": "8f16e6996d5e6fcd139023ae476dadce07720e63510988635a8b67b5c2daa661",
+        "bytes": 7180,
+        "introduced_commit": "f1fc80bc1914d71f4e5e9eee11259521cea25469",
+        "category": "award-or-hero-badge",
+        "status": "UNRESOLVED",
+        "packaged": true,
+        "source_references": [],
+        "reason": "Exact imported artwork grant and applicable brand/use conditions not established; source history or API access alone is insufficient",
+        "source_url": null,
+        "license": null,
+        "copyright": null
+      },
+      "reason": "No static or dynamic application reference; remove unused resource rather than infer redistribution rights"
+    },
+    {
+      "resource": "composeApp/src/commonMain/composeResources/drawable/hero_badge_golden_leopard.png",
+      "filename": "hero_badge_golden_leopard.png",
+      "status": "EXCLUDED_FROM_PACKAGING",
+      "original": {
+        "sha256": "be8b3a52376381fbb5784fbe2e05e3ddd72521358a71da7586212331e7e3557b",
+        "bytes": 12701,
+        "introduced_commit": "f1fc80bc1914d71f4e5e9eee11259521cea25469",
+        "category": "award-or-hero-badge",
+        "status": "UNRESOLVED",
+        "packaged": true,
+        "source_references": [],
+        "reason": "Exact imported artwork grant and applicable brand/use conditions not established; source history or API access alone is insufficient",
+        "source_url": null,
+        "license": null,
+        "copyright": null
+      },
+      "reason": "No static or dynamic application reference; remove unused resource rather than infer redistribution rights"
+    },
+    {
+      "resource": "composeApp/src/commonMain/composeResources/drawable/hero_badge_must_see.png",
+      "filename": "hero_badge_must_see.png",
+      "status": "EXCLUDED_FROM_PACKAGING",
+      "original": {
+        "sha256": "bd31e4edd891ebd20f94e5fb17d7cd898d3635e31920e68d69ba3dea60d14285",
+        "bytes": 57408,
+        "introduced_commit": "f1fc80bc1914d71f4e5e9eee11259521cea25469",
+        "category": "award-or-hero-badge",
+        "status": "UNRESOLVED",
+        "packaged": true,
+        "source_references": [],
+        "reason": "Exact imported artwork grant and applicable brand/use conditions not established; source history or API access alone is insufficient",
+        "source_url": null,
+        "license": null,
+        "copyright": null
+      },
+      "reason": "No static or dynamic application reference; remove unused resource rather than infer redistribution rights"
+    },
+    {
+      "resource": "composeApp/src/commonMain/composeResources/drawable/hero_badge_new_currents.png",
+      "filename": "hero_badge_new_currents.png",
+      "status": "EXCLUDED_FROM_PACKAGING",
+      "original": {
+        "sha256": "be8b3a52376381fbb5784fbe2e05e3ddd72521358a71da7586212331e7e3557b",
+        "bytes": 12701,
+        "introduced_commit": "f1fc80bc1914d71f4e5e9eee11259521cea25469",
+        "category": "award-or-hero-badge",
+        "status": "UNRESOLVED",
+        "packaged": true,
+        "source_references": [],
+        "reason": "Exact imported artwork grant and applicable brand/use conditions not established; source history or API access alone is insufficient",
+        "source_url": null,
+        "license": null,
+        "copyright": null
+      },
+      "reason": "No static or dynamic application reference; remove unused resource rather than infer redistribution rights"
+    },
+    {
+      "resource": "composeApp/src/commonMain/composeResources/drawable/hero_badge_oscar_win.png",
+      "filename": "hero_badge_oscar_win.png",
+      "status": "EXCLUDED_FROM_PACKAGING",
+      "original": {
+        "sha256": "0fad3e3f18dc9b77a2e8a9832fbe5268f9eaf8e6bdb5816ec7f29575c35befd9",
+        "bytes": 7348,
+        "introduced_commit": "f1fc80bc1914d71f4e5e9eee11259521cea25469",
+        "category": "award-or-hero-badge",
+        "status": "UNRESOLVED",
+        "packaged": true,
+        "source_references": [],
+        "reason": "Exact imported artwork grant and applicable brand/use conditions not established; source history or API access alone is insufficient",
+        "source_url": null,
+        "license": null,
+        "copyright": null
+      },
+      "reason": "No static or dynamic application reference; remove unused resource rather than infer redistribution rights"
+    },
+    {
+      "resource": "composeApp/src/commonMain/composeResources/drawable/hero_badge_sundance_grand_jury.png",
+      "filename": "hero_badge_sundance_grand_jury.png",
+      "status": "EXCLUDED_FROM_PACKAGING",
+      "original": {
+        "sha256": "be8b3a52376381fbb5784fbe2e05e3ddd72521358a71da7586212331e7e3557b",
+        "bytes": 12701,
+        "introduced_commit": "f1fc80bc1914d71f4e5e9eee11259521cea25469",
+        "category": "award-or-hero-badge",
+        "status": "UNRESOLVED",
+        "packaged": true,
+        "source_references": [],
+        "reason": "Exact imported artwork grant and applicable brand/use conditions not established; source history or API access alone is insufficient",
+        "source_url": null,
+        "license": null,
+        "copyright": null
+      },
+      "reason": "No static or dynamic application reference; remove unused resource rather than infer redistribution rights"
+    },
+    {
+      "resource": "composeApp/src/commonMain/composeResources/drawable/hero_badge_sxsw_jury.png",
+      "filename": "hero_badge_sxsw_jury.png",
+      "status": "EXCLUDED_FROM_PACKAGING",
+      "original": {
+        "sha256": "be8b3a52376381fbb5784fbe2e05e3ddd72521358a71da7586212331e7e3557b",
+        "bytes": 12701,
+        "introduced_commit": "f1fc80bc1914d71f4e5e9eee11259521cea25469",
+        "category": "award-or-hero-badge",
+        "status": "UNRESOLVED",
+        "packaged": true,
+        "source_references": [],
+        "reason": "Exact imported artwork grant and applicable brand/use conditions not established; source history or API access alone is insufficient",
+        "source_url": null,
+        "license": null,
+        "copyright": null
+      },
+      "reason": "No static or dynamic application reference; remove unused resource rather than infer redistribution rights"
+    },
+    {
+      "resource": "composeApp/src/commonMain/composeResources/drawable/hero_badge_tiger_award.png",
+      "filename": "hero_badge_tiger_award.png",
+      "status": "EXCLUDED_FROM_PACKAGING",
+      "original": {
+        "sha256": "be8b3a52376381fbb5784fbe2e05e3ddd72521358a71da7586212331e7e3557b",
+        "bytes": 12701,
+        "introduced_commit": "f1fc80bc1914d71f4e5e9eee11259521cea25469",
+        "category": "award-or-hero-badge",
+        "status": "UNRESOLVED",
+        "packaged": true,
+        "source_references": [],
+        "reason": "Exact imported artwork grant and applicable brand/use conditions not established; source history or API access alone is insufficient",
+        "source_url": null,
+        "license": null,
+        "copyright": null
+      },
+      "reason": "No static or dynamic application reference; remove unused resource rather than infer redistribution rights"
+    },
+    {
+      "resource": "composeApp/src/commonMain/composeResources/drawable/hero_badge_tribeca_audience_award.png",
+      "filename": "hero_badge_tribeca_audience_award.png",
+      "status": "EXCLUDED_FROM_PACKAGING",
+      "original": {
+        "sha256": "be8b3a52376381fbb5784fbe2e05e3ddd72521358a71da7586212331e7e3557b",
+        "bytes": 12701,
+        "introduced_commit": "f1fc80bc1914d71f4e5e9eee11259521cea25469",
+        "category": "award-or-hero-badge",
+        "status": "UNRESOLVED",
+        "packaged": true,
+        "source_references": [],
+        "reason": "Exact imported artwork grant and applicable brand/use conditions not established; source history or API access alone is insufficient",
+        "source_url": null,
+        "license": null,
+        "copyright": null
+      },
+      "reason": "No static or dynamic application reference; remove unused resource rather than infer redistribution rights"
+    }
+  ],
+  "replacements": [
+    {
+      "resource": "composeApp/src/commonMain/composeResources/drawable/quality_badge_4k_bluray.svg",
+      "status": "REPLACED",
+      "category": "quality-format-mark",
+      "original": {
+        "sha256": "e34da6c51c71082833b433ad9c8828724c38bbfb15a0fd1cdfca9285f1ebaf95",
+        "bytes": 931,
+        "introduced_commit": "fd33f9d211b36283c99cafa85f5696fbdc0e2763",
+        "category": "quality-format-mark",
+        "status": "UNRESOLVED",
+        "packaged": true,
+        "source_references": [
+          "composeApp/src/commonMain/kotlin/com/nuvio/app/features/qualicache/QualityBadgeArt.kt"
+        ],
+        "reason": "Exact imported artwork grant and applicable brand/use conditions not established; source history or API access alone is insufficient",
+        "source_url": null,
+        "license": null,
+        "copyright": null,
+        "application_commit": "1555d7ea75c3777f854f4af1b2256c9ff2419cd9"
+      },
+      "replacement": {
+        "sha256": "fb9d7a7d46d35903d83e335bb0f067b71fb6b23b9b7226cb952f9794ed999e7b",
+        "bytes": 998,
+        "license": "MIT",
+        "source": "tools/linux/packaging/artwork/GenerateReleaseArtwork.java",
+        "copyright": "Copyright (c) 2026 NuvioDesktop-Linux contributors",
+        "description": "Original plain Inter outlines and generic rounded rectangle; not an official logo"
+      },
+      "dimensions": {
+        "width": "21.3674",
+        "height": "13.2210",
+        "viewBox": "0.0000 0.0000 21.3674 13.2210"
+      }
+    },
+    {
+      "resource": "composeApp/src/commonMain/composeResources/drawable/quality_badge_4k_web.svg",
+      "status": "REPLACED",
+      "category": "quality-format-mark",
+      "original": {
+        "sha256": "e862342fc6dcc3329bfed0849d171b2c1dac0f0a987d11aad34a50d97d2cac52",
+        "bytes": 920,
+        "introduced_commit": "fd33f9d211b36283c99cafa85f5696fbdc0e2763",
+        "category": "quality-format-mark",
+        "status": "UNRESOLVED",
+        "packaged": true,
+        "source_references": [
+          "composeApp/src/commonMain/kotlin/com/nuvio/app/features/qualicache/QualityBadgeArt.kt"
+        ],
+        "reason": "Exact imported artwork grant and applicable brand/use conditions not established; source history or API access alone is insufficient",
+        "source_url": null,
+        "license": null,
+        "copyright": null,
+        "application_commit": "1555d7ea75c3777f854f4af1b2256c9ff2419cd9"
+      },
+      "replacement": {
+        "sha256": "5674727456ff9c3cfdbca74340220659c4ab13d14e5382cdcff5a7b5d09fbcd7",
+        "bytes": 998,
+        "license": "MIT",
+        "source": "tools/linux/packaging/artwork/GenerateReleaseArtwork.java",
+        "copyright": "Copyright (c) 2026 NuvioDesktop-Linux contributors",
+        "description": "Original plain Inter outlines and generic rounded rectangle; not an official logo"
+      },
+      "dimensions": {
+        "width": "21.3674",
+        "height": "13.2210",
+        "viewBox": "0.0000 0.0000 21.3674 13.2210"
+      }
+    },
+    {
+      "resource": "composeApp/src/commonMain/composeResources/drawable/quality_badge_atmos.svg",
+      "status": "REPLACED",
+      "category": "quality-format-mark",
+      "original": {
+        "sha256": "642665c0e532792029e582592b0ec4283587292e35c4137967488c1cac9a5fa3",
+        "bytes": 2190,
+        "introduced_commit": "fd33f9d211b36283c99cafa85f5696fbdc0e2763",
+        "category": "quality-format-mark",
+        "status": "UNRESOLVED",
+        "packaged": true,
+        "source_references": [
+          "composeApp/src/commonMain/kotlin/com/nuvio/app/features/qualicache/QualityBadgeArt.kt"
+        ],
+        "reason": "Exact imported artwork grant and applicable brand/use conditions not established; source history or API access alone is insufficient",
+        "source_url": null,
+        "license": null,
+        "copyright": null,
+        "application_commit": "1555d7ea75c3777f854f4af1b2256c9ff2419cd9"
+      },
+      "replacement": {
+        "sha256": "0636d452f96b47dabe8cd9a1e56f37862339ab2bf5c859b8922acc383d682516",
+        "bytes": 3197,
+        "license": "MIT",
+        "source": "tools/linux/packaging/artwork/GenerateReleaseArtwork.java",
+        "copyright": "Copyright (c) 2026 NuvioDesktop-Linux contributors",
+        "description": "Original plain Inter outlines and generic rounded rectangle; not an official logo"
+      },
+      "dimensions": {
+        "width": "47.5500",
+        "height": "13.2210",
+        "viewBox": "0.0000 0.0000 47.5500 13.2210"
+      }
+    },
+    {
+      "resource": "composeApp/src/commonMain/composeResources/drawable/quality_badge_dts.svg",
+      "status": "REPLACED",
+      "category": "quality-format-mark",
+      "original": {
+        "sha256": "12424b9723c305c991ead6274edd397727593fc8e3cbe30c40d34b27a2797fc3",
+        "bytes": 1462,
+        "introduced_commit": "fd33f9d211b36283c99cafa85f5696fbdc0e2763",
+        "category": "quality-format-mark",
+        "status": "UNRESOLVED",
+        "packaged": true,
+        "source_references": [
+          "composeApp/src/commonMain/kotlin/com/nuvio/app/features/qualicache/QualityBadgeArt.kt"
+        ],
+        "reason": "Exact imported artwork grant and applicable brand/use conditions not established; source history or API access alone is insufficient",
+        "source_url": null,
+        "license": null,
+        "copyright": null,
+        "application_commit": "1555d7ea75c3777f854f4af1b2256c9ff2419cd9"
+      },
+      "replacement": {
+        "sha256": "f31bc1fc7b356bbc7c36442e60cf51abab655650567c7ff266f921c34b5d4ddf",
+        "bytes": 2876,
+        "license": "MIT",
+        "source": "tools/linux/packaging/artwork/GenerateReleaseArtwork.java",
+        "copyright": "Copyright (c) 2026 NuvioDesktop-Linux contributors",
+        "description": "Original plain Inter outlines and generic rounded rectangle; not an official logo"
+      },
+      "dimensions": {
+        "width": "47.5500",
+        "height": "13.2210",
+        "viewBox": "0.0000 0.0000 47.5500 13.2210"
+      }
+    },
+    {
+      "resource": "composeApp/src/commonMain/composeResources/drawable/quality_badge_dv.svg",
+      "status": "REPLACED",
+      "category": "quality-format-mark",
+      "original": {
+        "sha256": "9b478ef9b396228b0c2d79ff5c80efa009ea8733f8959ec92b2922c7b1f02309",
+        "bytes": 2083,
+        "introduced_commit": "fd33f9d211b36283c99cafa85f5696fbdc0e2763",
+        "category": "quality-format-mark",
+        "status": "UNRESOLVED",
+        "packaged": true,
+        "source_references": [
+          "composeApp/src/commonMain/kotlin/com/nuvio/app/features/qualicache/QualityBadgeArt.kt"
+        ],
+        "reason": "Exact imported artwork grant and applicable brand/use conditions not established; source history or API access alone is insufficient",
+        "source_url": null,
+        "license": null,
+        "copyright": null,
+        "application_commit": "1555d7ea75c3777f854f4af1b2256c9ff2419cd9"
+      },
+      "replacement": {
+        "sha256": "a1de49521f9ea07246172c78cc3e15b5068f74d416ab8a85b7b2593419541aa3",
+        "bytes": 1138,
+        "license": "MIT",
+        "source": "tools/linux/packaging/artwork/GenerateReleaseArtwork.java",
+        "copyright": "Copyright (c) 2026 NuvioDesktop-Linux contributors",
+        "description": "Original plain Inter outlines and generic rounded rectangle; not an official logo"
+      },
+      "dimensions": {
+        "width": "47.5500",
+        "height": "13.2210",
+        "viewBox": "0.0000 0.0000 47.5500 13.2210"
+      }
+    },
+    {
+      "resource": "composeApp/src/commonMain/composeResources/drawable/quality_badge_hdr.svg",
+      "status": "REPLACED",
+      "category": "quality-format-mark",
+      "original": {
+        "sha256": "af623937aece5f9eb78ce9e0a4b63681d7189eaa0386812af89d2b14333c638e",
+        "bytes": 3153,
+        "introduced_commit": "fd33f9d211b36283c99cafa85f5696fbdc0e2763",
+        "category": "quality-format-mark",
+        "status": "UNRESOLVED",
+        "packaged": true,
+        "source_references": [
+          "composeApp/src/commonMain/kotlin/com/nuvio/app/features/qualicache/QualityBadgeArt.kt"
+        ],
+        "reason": "Exact imported artwork grant and applicable brand/use conditions not established; source history or API access alone is insufficient",
+        "source_url": null,
+        "license": null,
+        "copyright": null,
+        "application_commit": "1555d7ea75c3777f854f4af1b2256c9ff2419cd9"
+      },
+      "replacement": {
+        "sha256": "198ae6c46ae60a2af0a881bb5ed43ac8a8d8f81dc99f7f8efe6280fa8a11b72a",
+        "bytes": 1508,
+        "license": "MIT",
+        "source": "tools/linux/packaging/artwork/GenerateReleaseArtwork.java",
+        "copyright": "Copyright (c) 2026 NuvioDesktop-Linux contributors",
+        "description": "Original plain Inter outlines and generic rounded rectangle; not an official logo"
+      },
+      "dimensions": {
+        "width": "47.5500",
+        "height": "13.2210",
+        "viewBox": "0.0000 0.0000 47.5500 13.2210"
+      }
+    },
+    {
+      "resource": "composeApp/src/desktopMain/resources/setup/setup_mode_adaptive.webp",
+      "status": "REPLACED",
+      "category": "setup-preview",
+      "original": {
+        "sha256": "9383f9213876a868c88d61b75ca36791128da90ca54d0f6aa94fb58e2b82e68e",
+        "bytes": 512414,
+        "introduced_commit": "18537e3c85d7f365487abb6f7e7edb8a4432a081",
+        "category": "setup-preview",
+        "status": "UNRESOLVED",
+        "packaged": true,
+        "source_references": [
+          "composeApp/src/desktopMain/kotlin/com/nuvio/app/features/setup/SetupModeScreenshots.desktop.kt",
+          "composeApp/src/desktopTest/kotlin/com/nuvio/app/core/build/LinuxPackagedResourcesTest.kt"
+        ],
+        "reason": "Contains movie posters/backdrops/title artwork (Joker/Shutter Island and poster grids); no retained embedded-artwork grant",
+        "source_url": null,
+        "license": null,
+        "copyright": null,
+        "application_commit": "1555d7ea75c3777f854f4af1b2256c9ff2419cd9"
+      },
+      "replacement": {
+        "sha256": "d6707d740232534efb222178627340bdf10c9160c390dd26a8e62389d650b07d",
+        "bytes": 138578,
+        "license": "MIT",
+        "source": "tools/linux/packaging/artwork/GenerateReleaseArtwork.java",
+        "copyright": "Copyright (c) 2026 NuvioDesktop-Linux contributors",
+        "description": "Original synthetic Nuvio UI illustration, fictitious titles, abstract geometric artwork; no third-party film images"
+      },
+      "dimensions": {
+        "width": 1920,
+        "height": 1082,
+        "mode": "RGB"
+      }
+    },
+    {
+      "resource": "composeApp/src/desktopMain/resources/setup/setup_mode_adaptive_ambient.webp",
+      "status": "REPLACED",
+      "category": "setup-preview",
+      "original": {
+        "sha256": "54c04d3b35f2b59ac591a9fd63b6ff63fe3bf34682d5ff3b272a28eb1e828e18",
+        "bytes": 506842,
+        "introduced_commit": "18537e3c85d7f365487abb6f7e7edb8a4432a081",
+        "category": "setup-preview",
+        "status": "UNRESOLVED",
+        "packaged": true,
+        "source_references": [
+          "composeApp/src/desktopMain/kotlin/com/nuvio/app/features/setup/SetupModeScreenshots.desktop.kt",
+          "composeApp/src/desktopTest/kotlin/com/nuvio/app/core/build/LinuxPackagedResourcesTest.kt"
+        ],
+        "reason": "Contains movie posters/backdrops/title artwork (Joker/Shutter Island and poster grids); no retained embedded-artwork grant",
+        "source_url": null,
+        "license": null,
+        "copyright": null,
+        "application_commit": "1555d7ea75c3777f854f4af1b2256c9ff2419cd9"
+      },
+      "replacement": {
+        "sha256": "2ee7d3ca76b82df029ebd4761f44d3fabd8ca2966d63885c0c0290f2fcaf20f0",
+        "bytes": 151164,
+        "license": "MIT",
+        "source": "tools/linux/packaging/artwork/GenerateReleaseArtwork.java",
+        "copyright": "Copyright (c) 2026 NuvioDesktop-Linux contributors",
+        "description": "Original synthetic Nuvio UI illustration, fictitious titles, abstract geometric artwork; no third-party film images"
+      },
+      "dimensions": {
+        "width": 1920,
+        "height": 1082,
+        "mode": "RGB"
+      }
+    },
+    {
+      "resource": "composeApp/src/desktopMain/resources/setup/setup_mode_basic.webp",
+      "status": "REPLACED",
+      "category": "setup-preview",
+      "original": {
+        "sha256": "033945b5db6ead54092b0db1da4a8077288aec4cc8146e0f717e4cf22bcd49fb",
+        "bytes": 408598,
+        "introduced_commit": "18537e3c85d7f365487abb6f7e7edb8a4432a081",
+        "category": "setup-preview",
+        "status": "UNRESOLVED",
+        "packaged": true,
+        "source_references": [
+          "composeApp/src/desktopMain/kotlin/com/nuvio/app/features/setup/SetupModeScreenshots.desktop.kt",
+          "composeApp/src/desktopTest/kotlin/com/nuvio/app/core/build/LinuxPackagedResourcesTest.kt"
+        ],
+        "reason": "Contains movie posters/backdrops/title artwork (Joker/Shutter Island and poster grids); no retained embedded-artwork grant",
+        "source_url": null,
+        "license": null,
+        "copyright": null,
+        "application_commit": "1555d7ea75c3777f854f4af1b2256c9ff2419cd9"
+      },
+      "replacement": {
+        "sha256": "bc14348096b2d240fe51f8cea742a9a792f5d818eb81e10bd35c9f91439e1377",
+        "bytes": 223118,
+        "license": "MIT",
+        "source": "tools/linux/packaging/artwork/GenerateReleaseArtwork.java",
+        "copyright": "Copyright (c) 2026 NuvioDesktop-Linux contributors",
+        "description": "Original synthetic Nuvio UI illustration, fictitious titles, abstract geometric artwork; no third-party film images"
+      },
+      "dimensions": {
+        "width": 1920,
+        "height": 1082,
+        "mode": "RGB"
+      }
+    },
+    {
+      "resource": "composeApp/src/desktopMain/resources/setup/setup_mode_tv.webp",
+      "status": "REPLACED",
+      "category": "setup-preview",
+      "original": {
+        "sha256": "044daae778fae9aae4428912797d569854d84ee9168556388970240a4bdd92fb",
+        "bytes": 526762,
+        "introduced_commit": "18537e3c85d7f365487abb6f7e7edb8a4432a081",
+        "category": "setup-preview",
+        "status": "UNRESOLVED",
+        "packaged": true,
+        "source_references": [
+          "composeApp/src/desktopMain/kotlin/com/nuvio/app/features/setup/SetupModeScreenshots.desktop.kt",
+          "composeApp/src/desktopTest/kotlin/com/nuvio/app/core/build/LinuxPackagedResourcesTest.kt"
+        ],
+        "reason": "Contains movie posters/backdrops/title artwork (Joker/Shutter Island and poster grids); no retained embedded-artwork grant",
+        "source_url": null,
+        "license": null,
+        "copyright": null,
+        "application_commit": "1555d7ea75c3777f854f4af1b2256c9ff2419cd9"
+      },
+      "replacement": {
+        "sha256": "d1580501ccaf7c5507c34925d224dfdb24743fa45d1feb1c11d01cb33760e7d8",
+        "bytes": 144308,
+        "license": "MIT",
+        "source": "tools/linux/packaging/artwork/GenerateReleaseArtwork.java",
+        "copyright": "Copyright (c) 2026 NuvioDesktop-Linux contributors",
+        "description": "Original synthetic Nuvio UI illustration, fictitious titles, abstract geometric artwork; no third-party film images"
+      },
+      "dimensions": {
+        "width": 1920,
+        "height": 1082,
+        "mode": "RGB"
+      }
+    }
+  ],
+  "retained_hash_exceptions": [
+    {
+      "resource": "composeApp/src/commonMain/composeResources/drawable/hero_badge_win.png",
+      "sha256": "0fad3e3f18dc9b77a2e8a9832fbe5268f9eaf8e6bdb5816ec7f29575c35befd9",
+      "bytes": 7348,
+      "status": "UNRESOLVED",
+      "reason": "Owner explicitly requested preserving Umbra originals; exact-path exception only, not a license grant",
+      "upstream_repository": "https://github.com/UmbraProjects/NuvioDesktop",
+      "upstream_branch": "windows-tv-adaptive",
+      "verified_upstream_commit": "a70cc3700570555abb3f165548a67dec7c7a5430",
+      "verified_wip_commit": "18537e3c85d7f365487abb6f7e7edb8a4432a081",
+      "comparison": "Byte-identical at both pinned upstream revisions and application baseline"
+    },
+    {
+      "resource": "composeApp/src/commonMain/composeResources/drawable/hero_badge_nom.png",
+      "sha256": "8f16e6996d5e6fcd139023ae476dadce07720e63510988635a8b67b5c2daa661",
+      "bytes": 7180,
+      "status": "UNRESOLVED",
+      "reason": "Owner explicitly requested preserving Umbra originals; exact-path exception only, not a license grant",
+      "upstream_repository": "https://github.com/UmbraProjects/NuvioDesktop",
+      "upstream_branch": "windows-tv-adaptive",
+      "verified_upstream_commit": "a70cc3700570555abb3f165548a67dec7c7a5430",
+      "verified_wip_commit": "18537e3c85d7f365487abb6f7e7edb8a4432a081",
+      "comparison": "Byte-identical at both pinned upstream revisions and application baseline"
+    },
+    {
+      "resource": "composeApp/src/commonMain/composeResources/drawable/hero_badge_foreign.png",
+      "sha256": "be8b3a52376381fbb5784fbe2e05e3ddd72521358a71da7586212331e7e3557b",
+      "bytes": 12701,
+      "status": "UNRESOLVED",
+      "reason": "Owner explicitly requested preserving Umbra originals; exact-path exception only, not a license grant",
+      "upstream_repository": "https://github.com/UmbraProjects/NuvioDesktop",
+      "upstream_branch": "windows-tv-adaptive",
+      "verified_upstream_commit": "a70cc3700570555abb3f165548a67dec7c7a5430",
+      "verified_wip_commit": "18537e3c85d7f365487abb6f7e7edb8a4432a081",
+      "comparison": "Byte-identical at both pinned upstream revisions and application baseline"
+    },
+    {
+      "resource": "composeApp/src/commonMain/composeResources/drawable/hero_badge_people_choice.png",
+      "sha256": "be8b3a52376381fbb5784fbe2e05e3ddd72521358a71da7586212331e7e3557b",
+      "bytes": 12701,
+      "status": "UNRESOLVED",
+      "reason": "Owner explicitly requested preserving Umbra originals; exact-path exception only, not a license grant",
+      "upstream_repository": "https://github.com/UmbraProjects/NuvioDesktop",
+      "upstream_branch": "windows-tv-adaptive",
+      "verified_upstream_commit": "a70cc3700570555abb3f165548a67dec7c7a5430",
+      "verified_wip_commit": "18537e3c85d7f365487abb6f7e7edb8a4432a081",
+      "comparison": "Byte-identical at both pinned upstream revisions and application baseline"
+    }
+  ],
+  "authoring": {
+    "source": "tools/linux/packaging/artwork/GenerateReleaseArtwork.java",
+    "driver": "tools/linux/packaging/artwork/generate.py",
+    "recipe_sha256": {
+      "tools/linux/packaging/artwork/GenerateReleaseArtwork.java": "a380a778cc0989020e403a6272b4cc3ea28301cc25ed7609ab231319aca40081",
+      "tools/linux/packaging/artwork/generate.py": "7a3b265c6d38aca88c5a2fd57621ce8a9b0e2d16a3e4cd1d3b35792032165ab6"
+    },
+    "toolchain": {
+      "scope": "Asset authoring only; no runtime, package or rights certification",
+      "jdk": "openjdk version \"17.0.20.1\" 2026-08-18",
+      "pillow": "12.3.0",
+      "libwebp": "1.6.0",
+      "inputs": [
+        {
+          "archive_entry": "extras/ttf/Inter-Regular.ttf",
+          "path": "composeApp/src/commonMain/composeResources/font/inter_regular.ttf",
+          "sha256": "40d692fce188e4471e2b3cba937be967878f631ad3ebbbdcd587687c7ebe0c82",
+          "weight": 400
+        },
+        {
+          "archive_entry": "extras/ttf/Inter-SemiBold.ttf",
+          "path": "composeApp/src/commonMain/composeResources/font/inter_semibold.ttf",
+          "sha256": "78a843fade9d4612a5567302fb595b56976eb5fcebf4fea5a5912d638bafcde3",
+          "weight": 600
+        },
+        {
+          "archive_entry": "extras/ttf/Inter-Bold.ttf",
+          "path": "composeApp/src/commonMain/composeResources/font/inter_bold.ttf",
+          "sha256": "288316099b1e0a47a4716d159098005eef7c0066921f34e3200393dbdb01947f",
+          "weight": 700
+        }
+      ],
+      "files": {
+        "quality_badge_4k_bluray.svg": "fb9d7a7d46d35903d83e335bb0f067b71fb6b23b9b7226cb952f9794ed999e7b",
+        "quality_badge_4k_web.svg": "5674727456ff9c3cfdbca74340220659c4ab13d14e5382cdcff5a7b5d09fbcd7",
+        "quality_badge_atmos.svg": "0636d452f96b47dabe8cd9a1e56f37862339ab2bf5c859b8922acc383d682516",
+        "quality_badge_dts.svg": "f31bc1fc7b356bbc7c36442e60cf51abab655650567c7ff266f921c34b5d4ddf",
+        "quality_badge_dv.svg": "a1de49521f9ea07246172c78cc3e15b5068f74d416ab8a85b7b2593419541aa3",
+        "quality_badge_hdr.svg": "198ae6c46ae60a2af0a881bb5ed43ac8a8d8f81dc99f7f8efe6280fa8a11b72a",
+        "setup_mode_adaptive.png": "9b506b77957bd9f2b503555060431a2bc9f1c8250f6e06a0c74bb76b958e5233",
+        "setup_mode_adaptive.webp": "d6707d740232534efb222178627340bdf10c9160c390dd26a8e62389d650b07d",
+        "setup_mode_adaptive_ambient.png": "fffc1e0e68d2020bea397483429648c4a3037f450df0ea77427625e98464aed7",
+        "setup_mode_adaptive_ambient.webp": "2ee7d3ca76b82df029ebd4761f44d3fabd8ca2966d63885c0c0290f2fcaf20f0",
+        "setup_mode_basic.png": "6a53951274a7e4b8fe27f4abf6daeec67be3c1b02fb5dabae8ba3e0433774c3f",
+        "setup_mode_basic.webp": "bc14348096b2d240fe51f8cea742a9a792f5d818eb81e10bd35c9f91439e1377",
+        "setup_mode_tv.png": "02657c99d5d470df3c053f8209694617e144c3720eb82aa6ec45b32be6d39d71",
+        "setup_mode_tv.webp": "d1580501ccaf7c5507c34925d224dfdb24743fa45d1feb1c11d01cb33760e7d8"
+      }
+    },
+    "input_policy": "Only pinned Inter font bytes and original code geometry; no old images, external artwork, system fonts or network",
+    "reproduction": "python3 tools/linux/packaging/artwork/generate.py --output build/artwork-review --java-home <JDK17>"
+  },
+  "unused_reference_review": {
+    "scope": "All tracked nonbinary source/build/test/JS/JSON/platform files; exact stems and generated accessor spellings; no callers found for the nine removed names",
+    "dynamic_path": "HomeHeroSection.heroDiscoveryBadgeFileName is a fixed switch; HeroCustomBadge.heroBundledBadgeModel receives only those fixed names; no bundled-directory enumeration",
+    "generated_resources": "Fresh Compose generation and Kotlin compilation verify accessor absence is safe"
+  },
+  "license_sha256": "2e2f8ffd6a26df5690dc327a6f667d60cf12122461b2572ec568552eebabb88b",
+  "notice_sha256": "ce155cae7fc76e7c8b03e94c166f127735edfd2276badb572aec079b3981aac2"
+}
