@@ -6,6 +6,10 @@ Later [artwork/data follow-up](artwork-data-closure.md), based on `805797ed`,
 replaces the seven UI imports and recovers the exact anime import revision.
 Other rights, original generation evidence and all public redistribution gates
 remain blocked; the original font/notice validation below is historical evidence.
+The subsequent correction at baseline `1555d7ea` removes nine unused award assets
+and replaces six quality marks and four setup previews with original artwork.
+There are now 47 unresolved provider/rating/award resources, including four active
+Umbra originals retained under an explicitly documented exact-path byte exception.
 This supplement records the current changes. The original inventory and previous
 readiness reports describe historical packages from run `38397205286`; those
 artifacts have not acquired the corrections below. HDR development is postponed
@@ -59,8 +63,10 @@ targeted typography/playback acceptance after the distribution gates below.
 ## Smallest remaining action set
 
 1. **Resolve the specific rights/data questions.** Retain asset-specific grants
-   for the remaining provider/rating/award/setup/quality artwork and the claimed
-   IMDb permission. The seven UI imports now have original MIT replacements.
+   for the 47 remaining provider/rating/award resources and the claimed
+   IMDb permission. Seventeen resources now have original MIT replacements, and
+   nine unused resources are excluded. The four retained Umbra byte exceptions
+   remain unresolved; the package exception is not a license grant.
    The anime import revision is known; establish its original generation inputs,
    run receipt and applicable merged-data rights. Review model grants/preferred forms and
    applicable license elections/exceptions. Obtain evidence or separately

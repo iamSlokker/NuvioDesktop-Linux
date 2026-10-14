@@ -1,0 +1,17 @@
+Release artwork, 2026
+Copyright (c) 2026 NuvioDesktop-Linux contributors
+
+Six original plain typographic quality badges and four synthetic setup previews
+are licensed under MIT (LICENSE.txt). Authoring source is included in
+tools/linux/packaging/artwork. No old artwork was traced or reused. The preview
+titles, abstract artwork and layouts are authored illustrations, not film images.
+
+Typography uses unchanged Inter 4.1, Copyright 2020 The Inter Project Authors
+(https://github.com/rsms/inter), under SIL Open Font License 1.1. Its full license
+and notice are bundled at files/licenses/Inter/. The font is not relicensed.
+
+Format names are descriptive labels, not official Dolby/DTS or disc-format logos.
+No endorsement or new media capability is implied; existing detection is unchanged.
+The replacements do not license historical imports or other provider/award artwork.
+Four retained Umbra originals remain UNRESOLVED. The owner-approved package
+exception allows their exact bytes only at the four declared original paths.
