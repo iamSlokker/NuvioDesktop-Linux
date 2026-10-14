@@ -33,6 +33,8 @@ def main():
                '--env', 'PYTHONDONTWRITEBYTECODE=1', '--env', 'PYTHONPATH=/packaging',
                '--env', 'SOURCE_DATE_EPOCH=' + str(release['source_date_epoch']),
                '--env', 'LC_ALL=C', '--env', 'TZ=UTC',
+               # Artwork gate reads reviewed provenance from the packaged source snapshot.
+               '--env', 'NUVIO_REPOSITORY=/output/source',
                '--mount', f'type=bind,src={work},dst=/output',
                '--mount', f'type=bind,src={engine},dst=/engine,ro',
                '--mount', f'type=bind,src={HERE.parent},dst=/packaging,ro', record['builder_image_id'],
