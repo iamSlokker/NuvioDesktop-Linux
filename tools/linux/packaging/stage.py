@@ -9,6 +9,7 @@ import subprocess
 import sys
 
 from fetch import CONFIG
+from notice_contract import stage_notices
 
 
 def stage(work, source=pathlib.Path('/source'), media=pathlib.Path('/media')):
@@ -39,6 +40,7 @@ def stage(work, source=pathlib.Path('/source'), media=pathlib.Path('/media')):
     shutil.copytree(source / 'composeApp/src/desktopMain/resources/player-shaders',
                     licenses / 'player-shaders', ignore=shutil.ignore_patterns('*.glsl'))
     shutil.copytree(pathlib.Path('/opt/jdk/legal'), share / 'licenses/Java', dirs_exist_ok=True)
+    stage_notices(destination)
     shutil.copy2('/builder-packages.tsv', share / 'nuvio-media-runtime/package-builder-packages.tsv')
     info['media_inventory_sha256'] = hashlib.sha256((media / 'share/nuvio-media-runtime/inventory.json').read_bytes()).hexdigest()
     info['jdk_release'] = dict(line.split('=', 1) for line in pathlib.Path('/opt/jdk/release').read_text().splitlines() if '=' in line)

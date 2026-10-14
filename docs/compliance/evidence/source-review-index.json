@@ -154,10 +154,10 @@
       "sha256": "74104e7fff194e6fb653c26e6793063d1dc44886dcc5cb3d12183f6afed43a03"
     },
     {
-      "bytes": 7244,
+      "bytes": 8027,
       "path": "docs/compliance/release-closure.md",
       "scope_limit": "Current font/notice correction and remaining gates; all formats remain blocked.",
-      "sha256": "165b1b2ed5f29dc97597a185851466e555e3791540ed3ea359c0d7633f266e98"
+      "sha256": "55d72d2c2585d3ce19fb3a2d087f7565b78814e8bf4ca48369fca55b5d76397a"
     },
     {
       "bytes": 11603,

@@ -9,6 +9,7 @@ import zipfile
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 import artwork_contract
+import notice_contract
 import verify
 
 
@@ -25,6 +26,7 @@ class NativeArtworkGateTest(unittest.TestCase):
             path.write_bytes(b'fixture, not a native binary')
             if name.startswith('bin/'): path.chmod(0o755)
         (directory / 'release-info.json').write_text(json.dumps(self.info))
+        notice_contract.stage_notices(directory)
         (directory / 'lib/app').mkdir(parents=True)
         (directory / 'lib/app/build-info.properties').write_text('GIT_COMMIT=' + self.info['git_commit'] + '\nVERSION_NAME=fixture\n')
         with zipfile.ZipFile(directory / 'lib/app/application.jar', 'w') as jar:
