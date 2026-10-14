@@ -19,8 +19,10 @@ MAP="-ffile-prefix-map=$SRC/="
 rm -rf /tmp/build "$KIT"
 mkdir -p "$SRC" "$KIT/lib"
 
+# busybox tar never chmods symlinks: GNU tar's lchmod of the zstd test
+# symlinks fails with EPERM under the Ubuntu 22.04 runner's podman 3.4.
 for input in zstd zlib mimalloc libfuse squashfuse type2-runtime; do
-    tar --no-same-owner --no-same-permissions -xf "/inputs/$input" -C "$SRC"
+    busybox tar -xf "/inputs/$input" -C "$SRC"
 done
 
 # Static compression/allocator libraries (upstream: Alpine zstd-static,
