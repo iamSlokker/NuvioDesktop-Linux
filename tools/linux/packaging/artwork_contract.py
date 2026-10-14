@@ -110,6 +110,6 @@ def verify_packaged_artwork(image):
     if set(expected) != set(seen):
         raise ValueError('Missing reviewed artwork/data: ' + ', '.join(sorted(set(expected) - set(seen))))
     return {'replacement_icons': 7, 'replacement_quality_badges': 6, 'replacement_setup_previews': 4,
-            'removed_resources': 9, 'unresolved_exact_path_exceptions': 4, 'resources': seen,
+            'removed_resources': 10, 'unresolved_exact_path_exceptions': 4, 'resources': seen,
             'redistribution_assessment': 'BLOCKED',
             'scope': 'Payload identity only; other artwork, dataset rights and source/delivery gates unresolved'}

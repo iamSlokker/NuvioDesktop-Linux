@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "baseline_commit": "1555d7ea75c3777f854f4af1b2256c9ff2419cd9",
-  "scope": "Nine unused resource removals and ten original replacements only; other rights and source/delivery gates remain BLOCKED",
+  "scope": "Ten unused resource removals and ten original replacements only; other rights and source/delivery gates remain BLOCKED",
   "license": "MIT",
   "copyright": "Copyright (c) 2026 NuvioDesktop-Linux contributors",
   "removed": [
@@ -175,6 +175,25 @@
         "copyright": null
       },
       "reason": "No static or dynamic application reference; remove unused resource rather than infer redistribution rights"
+    },
+    {
+      "resource": "composeApp/src/commonMain/composeResources/drawable/compose-multiplatform.xml",
+      "filename": "compose-multiplatform.xml",
+      "status": "EXCLUDED_FROM_PACKAGING",
+      "original": {
+        "sha256": "b236686cab2cbd8a1396bfee4d976de07a3d6ceee32f8fac631759bf70d069a4",
+        "bytes": 1493,
+        "introduced_commit": "4b99274756e992a531e9539b04b2bbc444fd017c",
+        "category": "template-brand-mark",
+        "status": "UNRESOLVED",
+        "packaged": true,
+        "source_references": [],
+        "reason": "JetBrains Compose Multiplatform template logo left from project initialization; no asset-specific grant to redistribute it as application artwork was established",
+        "source_url": null,
+        "license": null,
+        "copyright": null
+      },
+      "reason": "Compose Multiplatform template logo (JetBrains) with no static or dynamic application reference; remove unused resource rather than infer redistribution rights"
     }
   ],
   "replacements": [
@@ -626,7 +645,7 @@
     "reproduction": "python3 tools/linux/packaging/artwork/generate.py --output build/artwork-review --java-home <JDK17>"
   },
   "unused_reference_review": {
-    "scope": "All tracked nonbinary source/build/test/JS/JSON/platform files; exact stems and generated accessor spellings; no callers found for the nine removed names",
+    "scope": "All tracked nonbinary source/build/test/JS/JSON/platform files; exact stems and generated accessor spellings; no callers found for the ten removed names, including the Compose Multiplatform template mark",
     "dynamic_path": "HomeHeroSection.heroDiscoveryBadgeFileName is a fixed switch; HeroCustomBadge.heroBundledBadgeModel receives only those fixed names; no bundled-directory enumeration",
     "generated_resources": "Fresh Compose generation and Kotlin compilation verify accessor absence is safe"
   },

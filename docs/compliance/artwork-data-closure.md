@@ -76,14 +76,31 @@ only at those four exact original Compose JAR paths. Deleted filenames, renamed
 copies and duplicate entries still fail. These four remain **UNRESOLVED**;
 there is no blanket assertion that every deleted hash is absent or licensed.
 
+## Compose Multiplatform template mark
+
+`drawable/compose-multiplatform.xml` (1,493 bytes, SHA256
+`b236686cab2cbd8a1396bfee4d976de07a3d6ceee32f8fac631759bf70d069a4`) is the
+JetBrains Compose Multiplatform template logo, byte-identical to its
+introduction in project initialization commit
+`4b99274756e992a531e9539b04b2bbc444fd017c`. It was packaged in the application
+JAR but was not classified in the inventory above. `git grep` finds no reference
+to `compose-multiplatform.xml` or its generated accessor `compose_multiplatform`
+in any source set, Gradle build, tool or workflow. It is **removed**
+(category `template-brand-mark`) rather than inferring redistribution rights,
+and recorded with the other removals in the bundled provenance. Its filename and
+bytes are now rejected in application JARs like the other removed resources.
+Fresh Compose resource generation and Kotlin compilation confirm that the
+accessor was not needed. Actual dependency JARs in previous package images do
+not contain this filename, so the ban affects only the application's own copy.
+
 ## Remaining packaged artwork
 
 [The machine-readable review](evidence/artwork-data-review.json) classifies each
 of **47** remaining resources (20 provider/rating marks and 27 award/hero badges)
 by exact SHA256, introduction commit, actual code references and **UNRESOLVED**
-status. Separate maps record the nine removed and ten newly replaced resources.
+status. Separate maps record the ten removed and ten newly replaced resources.
 Together with the previous seven UI replacements, the cumulative disposition is
-17 replaced, nine excluded, 47 unresolved and zero newly verified grants.
+17 replaced, ten excluded, 47 unresolved and zero newly verified grants.
 
 - Provider/rating marks include Trakt, IMDb, TMDB, Rotten Tomatoes/Popcornmeter,
   Letterboxd, Metacritic, MyAnimeList, Kitsu, SIMKL, TVDB, MDBList, IntroDB and Discord.

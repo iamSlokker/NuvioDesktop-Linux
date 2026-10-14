@@ -134,7 +134,7 @@ class FlatpakJarInventoryTest(unittest.TestCase):
                 else:
                     self.audit()
                     report = json.loads((self.work / 'artifacts/flatpak-audit.json').read_text())
-                    self.assertEqual(9, report['artwork']['removed_resources'])
+                    self.assertEqual(10, report['artwork']['removed_resources'])
                     self.assertEqual('BLOCKED', report['artwork']['redistribution_assessment'])
 
 

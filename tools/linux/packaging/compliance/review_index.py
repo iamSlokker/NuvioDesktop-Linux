@@ -31,7 +31,7 @@ REFERENCES = {
     'docs/compliance/inter-font-replacement.md': 'New licensed font correction; historical binaries remain unchanged.',
     'docs/compliance/modified-build-and-install.md': 'Concrete current entry points, not tested complete offline rebuild or installation acceptance.',
     'docs/compliance/release-closure.md': 'Current font/notice correction and remaining gates; all formats remain blocked.',
-    'docs/compliance/artwork-data-closure.md': 'Seventeen replacements, nine exclusions and exact anime import; 47 other artwork resources/data rights unresolved.',
+    'docs/compliance/artwork-data-closure.md': 'Seventeen replacements, ten exclusions and exact anime import; 47 other artwork resources/data rights unresolved.',
     'docs/compliance/evidence/artwork-data-review.json': 'Current resource hashes and unresolved rights inventory, not grants or publication approval.',
     'composeApp/src/commonMain/composeResources/files/licenses/NuvioIcons/PROVENANCE.json': 'Original/replacement icon identities and new MIT grant only; no retroactive license.',
     'composeApp/src/commonMain/composeResources/files/licenses/ReleaseArtwork/PROVENANCE.json': 'Ten replacement identities, nine exclusions and four unresolved exact-path hash exceptions; not publication approval.',
