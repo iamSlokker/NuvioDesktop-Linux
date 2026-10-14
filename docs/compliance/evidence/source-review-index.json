@@ -154,10 +154,10 @@
       "sha256": "74104e7fff194e6fb653c26e6793063d1dc44886dcc5cb3d12183f6afed43a03"
     },
     {
-      "bytes": 8027,
+      "bytes": 9003,
       "path": "docs/compliance/release-closure.md",
       "scope_limit": "Current font/notice correction and remaining gates; all formats remain blocked.",
-      "sha256": "55d72d2c2585d3ce19fb3a2d087f7565b78814e8bf4ca48369fca55b5d76397a"
+      "sha256": "543e36d00699df0f9dbc4499fc1f57e1febfb5c0e0c59ab67e1696800ce3a997"
     },
     {
       "bytes": 11603,
@@ -202,10 +202,10 @@
       "sha256": "a4546143aa7417b97d210dacc87f9e9f6e9b481a35a59f63c02226ffe2bb2ca8"
     },
     {
-      "bytes": 31552,
+      "bytes": 32006,
       "path": "tools/linux/packaging/compliance/inventory.py",
       "scope_limit": "Original package/source inventory verifier.",
-      "sha256": "15f81bd9d9ef6eb3f15c9af2439ac6f8c37617d4fb02acf34a98769015523985"
+      "sha256": "265ac1aee8ae5b1975740083d9574ffd519596ebcca766763d800c151a242ca7"
     },
     {
       "bytes": 10093,

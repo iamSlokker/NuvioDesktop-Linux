@@ -60,6 +60,20 @@ DEB/Flatpak/AppImage bytes or human acceptance of every screen's changed font
 metrics. New candidates still require their own source identity, gates and
 targeted typography/playback acceptance after the distribution gates below.
 
+## AppImage runtime provenance (source build)
+
+New AppImages embed the type2 runtime built by
+`tools/linux/packaging/appimage_runtime.py` from fully pinned inputs
+(`appimage-runtime/manifest.json`: type2-runtime `dd6cebed`, libfuse 3.15.0 +
+upstream patch, squashfuse 0.5.2, zstd 1.5.7, zlib 1.3.2, mimalloc 2.5.2; musl
+from `musl-dev 1.2.5-r11` in a digest-pinned Alpine 3.21.8 image) and compiled
+offline. The result `6ee69667...a8ed` was reproduced byte-for-byte by two clean
+builds. Its notices are in the AppDir under `usr/share/licenses/appimage-runtime/`,
+and its corresponding source plus LGPL-2.1 relink kit is published as
+`Nuvio-AppImage-runtime-source-6ee696672e2a.tar.gz` next to the AppImage. The
+verifier rejects an AppImage without them or with another runtime prefix.
+Details: [platform source evidence](platform-source-evidence.md).
+
 ## Smallest remaining action set
 
 1. **Resolve the specific rights/data questions.** Retain asset-specific grants
@@ -76,9 +90,9 @@ targeted typography/playback acceptance after the distribution gates below.
    retained ONNX Runtime, Skiko/Skia, QuickJS and Jansi roots and recipes; identify
    required incorporated sources, build modifications, toolchain provenance,
    notices and replacement/relink procedures under the applicable licenses.
-   AppImage additionally needs the original runtime's unresolved
-   musl/zstd/zlib/mimalloc input identities or a separately authorized reproducible
-   replacement. Do not repeat the completed 125 Maven, Temurin or 427 Ubuntu
+   AppImage: the original runtime's musl/zstd/zlib/mimalloc identities remain
+   unresolved for historical artifacts; new candidates use the reproducible source
+   build described below and need only review of its notices/relink kit. Do not repeat the completed 125 Maven, Temurin or 427 Ubuntu
    source-retention work. Complete the identified gaps and validate modified
    build/install procedures in disposable environments.
    **Notice coverage update (2026-10-14):** all three formats now ship
@@ -109,7 +123,7 @@ targeted typography/playback acceptance after the distribution gates below.
 | --- | --- | --- |
 | DEB | Common rights/data, required native source/notices/relink scope, tested replacement/install procedures, recipient delivery, fresh candidate acceptance | **BLOCKED** |
 | Flatpak | Same common gates; review responsibility/source availability for any separately supplied runtime or driver extensions without assuming an exemption | **BLOCKED** |
-| AppImage | Same common gates plus the original static runtime's unresolved inputs and applicable relink materials | **BLOCKED** |
+| AppImage | Same common gates plus review of the source-built runtime's notices, source archive and relink kit (historical artifacts: original runtime inputs unresolved) | **BLOCKED** |
 
 These are evidence boundaries, not legal certification. No permissions or
 license exemptions were invented, and no historical package/source receipt was

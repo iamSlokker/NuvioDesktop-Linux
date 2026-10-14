@@ -57,7 +57,8 @@ class NativeArtworkGateTest(unittest.TestCase):
                     patch.object(verify, 'check_webkit_relocation'), \
                     patch.object(verify, 'verify_packaged_backend'), \
                     patch.object(verify, 'verify_packaged_onnx', return_value={}), \
-                    patch.object(verify, 'verify_packaged_fonts', return_value={}):
+                    patch.object(verify, 'verify_packaged_fonts', return_value={}), \
+                    patch.object(verify, 'check_appimage_runtime', return_value={}):
                 verify.artifacts(root, kind)
             report = json.loads((root / ('artifacts/' + kind + '-audit.json')).read_text())
             self.assertEqual(10, report['artwork']['removed_resources'])

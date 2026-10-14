@@ -9,6 +9,7 @@ import shutil
 import subprocess
 import sys
 
+from appimage_runtime import ARCHIVE_PREFIX, NOTICE_DIR, verify_output
 from fetch import CONFIG, fetch
 
 HERE = pathlib.Path(__file__).resolve().parent
@@ -140,8 +141,10 @@ def build_appimage(work, engine=None):
     # Reuse the canonical app/media image. Never remove existing DEB/Flatpak
     # artifacts when iterating on the AppImage-only engine.
     # Recheck tool bytes even when assembling independently of the native build.
-    for name in ['appimagetool', 'appimage-runtime']:
-        fetch(CONFIG['tools'][name], work / 'inputs' / name)
+    fetch(CONFIG['tools']['appimagetool'], work / 'inputs/appimagetool')
+    # The type2 runtime is built from pinned sources (appimage_runtime.py),
+    # never downloaded; only the manifest-pinned SHA-256 is accepted here.
+    runtime = verify_output(work / 'appimage-runtime')
     image = work / 'canonical'
     info = json.loads((image / 'release-info.json').read_text())
     suffix = '' if info['channel'] == 'stable' else '~nightly'
@@ -160,6 +163,10 @@ def build_appimage(work, engine=None):
     (appdir / '.DirIcon').symlink_to('com.nuvio.media.desktop.png')
     (appdir / 'AppRun').write_text('#!/bin/sh\nset -eu\nroot=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)\nexec "$root/usr/lib/nuvio-desktop/bin/nuvio-desktop" "$@"\n')
     (appdir / 'AppRun').chmod(0o755)
+    shutil.copytree(runtime['licenses'], appdir / NOTICE_DIR)
+    for stale in artifacts.glob(ARCHIVE_PREFIX + '*.tar.gz'):
+        stale.unlink()
+    shutil.copy2(runtime['source_archive'], artifacts / runtime['source_archive'].name)
     run('python3', HERE / 'verify.py', 'image', portable)
     tool = work / 'appimagetool'
     shutil.rmtree(tool, ignore_errors=True)
@@ -167,7 +174,7 @@ def build_appimage(work, engine=None):
     executable = work / 'inputs/appimagetool'
     executable.chmod(0o755)
     run(executable, '--appimage-extract', cwd=tool, stdout=subprocess.DEVNULL)
-    run(tool / 'squashfs-root/AppRun', '--runtime-file', work / 'inputs/appimage-runtime',
+    run(tool / 'squashfs-root/AppRun', '--runtime-file', runtime['runtime'],
         '--mksquashfs-opt', '-processors', '--mksquashfs-opt', '2', appdir,
         artifacts / f'Nuvio-Desktop-{version}-x86_64.AppImage',
         env=dict(os.environ, ARCH='x86_64', VERSION=version))
