@@ -164,6 +164,25 @@ entries. Losing these is not a safe drop-in replacement. Copying unresolved
 crosswalks into a new dump would not clear the gap; live enrichment needs its own
 terms and retained responses. Therefore **no regeneration was performed**.
 
+## Linux packages download the anime dataset at runtime
+
+By owner decision, Linux release packages no longer redistribute
+`anime-list-mini.json`. `tools/linux/packaging/source_policy.py` (applied by the seeded
+canonical build; `build.py` stays byte-identical for the pinned builder seed)
+omits it from the packaging source snapshot, so it is absent from the application JAR and from
+`Nuvio-source-<commit>.tar.gz`; the package gate rejects its filename and its
+exact bytes anywhere in `lib/app/*.jar`. When the packaged resource is absent,
+`AnimeListDownload.kt` fetches the exact reviewed revision from
+`raw.githubusercontent.com/Fribb/anime-lists/4ddbccd…/anime-list-mini.json`,
+requires 5,862,205 bytes and SHA256 `cfcdee0d…deba`, and caches it under the
+app data directory (`$XDG_CONFIG_HOME/nuviohtpc/anime-mapping/`; Flatpak has
+network permission). A failed or tampered download is discarded and anime ID
+conversion falls back to the plain ID chain for that session. The ODbL/DbCL
+texts, NOTICE and PROVENANCE still ship because the data is still used.
+Windows/macOS builds and source checkouts are unchanged and keep the bundled
+copy. This avoids redistributing the dataset; it does not establish rights to
+use it, which remains the user's download from the public upstream.
+
 ## Validation and release boundary
 
 Focused Python checks exercise SVG dimensions/safe parsing, exact replacement

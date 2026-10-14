@@ -60,7 +60,7 @@
     {
       "bytes": 6854,
       "path": "composeApp/src/desktopMain/resources/anime-mapping/PROVENANCE.json",
-      "scope_limit": "Exact bundled database/import identity and notices; original generation and merged-data rights unresolved.",
+      "scope_limit": "Exact database/import identity and notices; Linux packages download it at runtime; original generation and merged-data rights unresolved.",
       "sha256": "c37de9a42e098ed7c45504bf95127ddcfbe1760a1d27e0c769e8181d6f0c25f3"
     },
     {
@@ -70,10 +70,10 @@
       "sha256": "56c6f7653d9b4cf3b6ec94c654a8e5b90f3c7d64b5d3fde81e5a8cfbfef6f6bb"
     },
     {
-      "bytes": 14190,
+      "bytes": 15478,
       "path": "docs/compliance/artwork-data-closure.md",
       "scope_limit": "Seventeen replacements, ten exclusions and exact anime import; 47 other artwork resources/data rights unresolved.",
-      "sha256": "13340bc79eb96c56df8af086d58fb1db61066af316ed488b2967e9502410d769"
+      "sha256": "e60c22ac1ae3b2543e0e43e41ee5b465f198b2d9658ce36c77dad3aef7e29a85"
     },
     {
       "bytes": 85964,
@@ -184,10 +184,10 @@
       "sha256": "7a3b265c6d38aca88c5a2fd57621ce8a9b0e2d16a3e4cd1d3b35792032165ab6"
     },
     {
-      "bytes": 6358,
+      "bytes": 6597,
       "path": "tools/linux/packaging/artwork_contract.py",
       "scope_limit": "Future artwork/data payload gate; not legal clearance.",
-      "sha256": "1734a731c8bc6e0dfd796f80b1c333b51de6133deb7eb4b201c8191a9b814516"
+      "sha256": "52ab6bfd91a2838cfb75e56cabffc0296cbf4b96de4767d7d4aaef34a8ea7df6"
     },
     {
       "bytes": 4203,
@@ -208,10 +208,10 @@
       "sha256": "15f81bd9d9ef6eb3f15c9af2439ac6f8c37617d4fb02acf34a98769015523985"
     },
     {
-      "bytes": 10003,
+      "bytes": 10034,
       "path": "tools/linux/packaging/compliance/review_index.py",
       "scope_limit": "Review-index byte bindings only; not a source cache or compliance verifier.",
-      "sha256": "5a65b3f83fd2a77f0e54b0cb20c4573ba1868e43de7ed9a68baf1f28a24c4800"
+      "sha256": "8a80c6a2c2c4a680670f419daa930ac05bc5b92c4f58f3bf64b3e8a1ca43315d"
     },
     {
       "bytes": 14515,

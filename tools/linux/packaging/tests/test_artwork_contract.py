@@ -50,6 +50,40 @@ class ArtworkContractTest(unittest.TestCase):
         self.assertNotEqual(0, result.returncode)
         self.assertIn('requires the repository', result.stderr)
 
+    def test_runtime_downloaded_anime_dataset_is_rejected_by_name_or_bytes(self):
+        dataset = contract.repository() / 'composeApp/src/desktopMain/resources/anime-list-mini.json'
+        data = dataset.read_bytes()
+        for name in ('anime-list-mini.json', 'nested/ANIME-LIST-MINI.JSON', 'renamed/data.bin'):
+            with self.subTest(name=name):
+                self.jar(dict(self.payload, **{name: data}))
+                with self.assertRaisesRegex(ValueError, 'Removed artwork filename|Forbidden historical artwork bytes'):
+                    contract.verify_packaged_artwork(self.root)
+        self.jar(self.payload)
+        self.assertNotIn('anime-list-mini.json', contract.verify_packaged_artwork(self.root)['resources'])
+
+    def test_linux_source_snapshot_omits_runtime_downloaded_dataset(self):
+        import build
+        import source_policy
+        self.assertEqual({'composeApp/src/desktopMain/resources/anime-list-mini.json'}, source_policy.RUNTIME_DOWNLOADED)
+        repo = self.root / 'repo'
+        tracked = ['composeApp/src/desktopMain/resources/anime-list-mini.json',
+                   'composeApp/src/desktopMain/resources/anime-mapping/NOTICE.txt',
+                   'composeApp/Configuration/DesktopVersion.properties']
+        for name in tracked:
+            (repo / name).parent.mkdir(parents=True, exist_ok=True)
+            (repo / name).write_text('VERSION_NAME=1\nVERSION_CODE=1\n')
+        answers = {'ls-files': '\0'.join(tracked), 'status': '', 'rev-parse': 'a' * 40, 'show': '0'}
+        with patch.object(build, 'REPO', repo), \
+                patch.object(build, 'git', lambda *args: '' if '--others' in args else answers[args[0]]):
+            info = build.source_tree(self.root / 'work/source', 'nightly')
+        info = source_policy.apply(self.root / 'work/source', info)
+        rows = json.loads((self.root / 'work/source-files.json').read_text())
+        names = [row[0] for row in rows]
+        self.assertNotIn('composeApp/src/desktopMain/resources/anime-list-mini.json', names)
+        self.assertIn('composeApp/src/desktopMain/resources/anime-mapping/NOTICE.txt', names)
+        self.assertFalse((self.root / 'work/source/composeApp/src/desktopMain/resources/anime-list-mini.json').exists())
+        self.assertEqual(hashlib.sha256(json.dumps([tuple(r) for r in rows]).encode()).hexdigest(), info['source_sha256'])
+
     def test_seven_original_vectors_preserve_sizes_use_safe_svg_and_have_real_mit_notice(self):
         self.assertEqual(7, len(self.provenance['assets']))
         for row in self.provenance['assets']:
@@ -74,7 +108,7 @@ class ArtworkContractTest(unittest.TestCase):
         self.jar(self.payload)
         report = contract.verify_packaged_artwork(self.root)
         self.assertEqual(7, report['replacement_icons'])
-        self.assertEqual(32, len(report['resources']))
+        self.assertEqual(31, len(report['resources']))
         self.assertEqual(6, report['replacement_quality_badges'])
         self.assertEqual(4, report['replacement_setup_previews'])
         self.assertEqual(10, report['removed_resources'])

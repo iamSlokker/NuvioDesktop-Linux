@@ -7,4 +7,6 @@ internal actual object AnimeIdMappingStorage {
         PackagedResources.open("anime-list-mini.json")
             ?.bufferedReader()
             ?.use { it.readText() }
+            // Linux release packages omit the dataset; fetch the pinned revision instead.
+            ?: AnimeListDownload.loadOrFetch()
 }
