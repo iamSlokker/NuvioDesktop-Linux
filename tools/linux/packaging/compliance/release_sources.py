@@ -55,8 +55,9 @@ def check_appimage_lock(work, lock):
     runtime = json.loads((root / 'share/nuvio-webkit/runtime.json').read_text())
     if runtime['builder_image_id'] != lock['builder_image_id']:
         raise ValueError('AppImage engine builder differs from the Ubuntu source lock; regenerate the lock')
+    # packages.json lists the Ubuntu libraries actually copied into the AppImage. GTK and
+    # WebKitGTK are the private patched builds; their source is Nuvio-WebKit-source-*.
     bundled = set(json.loads((root / 'share/licenses/Ubuntu-AppImage/packages.json').read_text()))
-    bundled |= {'libgtk-3-0', 'libwebkit2gtk-4.1-0'}
     locked = {binary['package'] for row in lock['source_packages'] for binary in row['binaries']}
     missing = sorted(bundled - locked)
     if missing:

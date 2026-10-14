@@ -38,7 +38,8 @@ class ReleaseSourcesTest(unittest.TestCase):
         (root / 'share/licenses/Ubuntu-AppImage/packages.json').write_text(json.dumps(packages))
 
     def test_lock_must_match_the_appimage_engine_builder_and_cover_every_bundled_package(self):
-        self.assertEqual(['libfoo1', 'libgtk-3-0', 'libwebkit2gtk-4.1-0'], rs.check_appimage_lock(self.work, self.lock))
+        # Private GTK/WebKitGTK are covered by the WebKit source archive, not the Ubuntu lock.
+        self.assertEqual(['libfoo1'], rs.check_appimage_lock(self.work, self.lock))
         self.runtime(builder='e' * 64, packages=['libfoo1'])
         with self.assertRaisesRegex(ValueError, 'builder differs'):
             rs.check_appimage_lock(self.work, self.lock)
