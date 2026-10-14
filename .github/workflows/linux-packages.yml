@@ -251,6 +251,17 @@ jobs:
             find build/linux-webkit/generations -type f -name build.log -print -exec tail -n 100 {} \; || true
             exit 1
           fi
+      - name: Collect corresponding third-party source
+        id: sources
+        if: ${{ !cancelled() && env.BOOTSTRAP_ONLY != 'true' && steps.native.outcome == 'success' }}
+        continue-on-error: true
+        shell: bash
+        run: |
+          set -euo pipefail
+          unset DISPLAY WAYLAND_DISPLAY NUVIO_RUN_LIVE_DISPLAY_TESTS
+          # Media/JDK/AppImage-Ubuntu source bundles plus SOURCE-MAP.json, all
+          # hash-verified against pinned inputs; they join the normal artifact.
+          python3 tools/linux/packaging/compliance/release_sources.py
       - name: Stop WebKit compiler before caching
         id: webkit_quiescent
         timeout-minutes: 10
@@ -293,6 +304,8 @@ jobs:
           [[ '${{ steps.deb_smoke.outcome }}' == success ]]
           [[ '${{ steps.flatpak.outcome }}' == success ]]
           [[ '${{ steps.evidence.outcome }}' == success ]]
+          [[ '${{ steps.sources.outcome }}' == success ]]
+          test -s build/linux-packaging/artifacts/SOURCE-MAP.json
       - name: Require bootstrap seed export and upload
         if: ${{ always() && env.BOOTSTRAP_ONLY == 'true' }}
         env:
@@ -322,6 +335,7 @@ jobs:
           FLATPAK_RESULT: ${{ steps.flatpak.outcome }}
           FLATPAK_RUNTIME_RESULT: ${{ steps.flatpak_runtime.outcome }}
           EVIDENCE_RESULT: ${{ steps.evidence.outcome }}
+          SOURCES_RESULT: ${{ steps.sources.outcome }}
         shell: bash
         run: |
           {
@@ -333,6 +347,7 @@ jobs:
             echo "| Private WebKit and AppImage | $APPIMAGE_RESULT |"
             echo "| Flatpak runtime preparation | $FLATPAK_RUNTIME_RESULT |"
             echo "| Flatpak export and static verification | $FLATPAK_RESULT |"
+            echo "| Corresponding third-party source | $SOURCES_RESULT |"
             echo "| Available artifact checksums | $EVIDENCE_RESULT |"
             echo
             echo 'Q02 remains partial. All three verified formats are mandatory; independent successes and a compiled engine do not establish release or manual acceptance.'
