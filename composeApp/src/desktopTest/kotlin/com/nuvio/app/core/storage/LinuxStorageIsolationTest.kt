@@ -44,7 +44,9 @@ internal object LinuxStorageIsolationProbe {
                 assertTrue(DesktopStorage.isFreshInstall)
                 DesktopStorage.store("fixture").putString("key", "value")
                 DesktopStorage.flushAll()
-                assertTrue(Files.isRegularFile(destination.resolve("fixture.properties")))
+                // Account-scoped stores live under accounts/<slot>/ inside the XDG root.
+                assertTrue(Files.isRegularFile(DesktopStorage.storeFile("fixture")))
+                assertTrue(DesktopStorage.storeFile("fixture").startsWith(destination))
                 assertFalse(Files.exists(root.resolve("data/nuviohtpc")))
             }
             "migration", "existing" -> {
@@ -74,8 +76,8 @@ internal object LinuxStorageIsolationProbe {
                 assertNull(store.getString(ProfileScopedKey.of("progress", 3)))
                 PlatformLocalAccountDataCleaner.accountStoreNames.forEach {
                     assertEquals("old-account", DesktopStorage.store(it).getString("account"))
-                    Files.writeString(destination.resolve("$it.properties.bak"), "backup")
-                    Files.writeString(destination.resolve("$it.properties.tmp"), "staging")
+                    Files.writeString(DesktopStorage.storeFile(it).resolveSibling("$it.properties.bak"), "backup")
+                    Files.writeString(DesktopStorage.storeFile(it).resolveSibling("$it.properties.tmp"), "staging")
                 }
                 PlatformLocalAccountDataCleaner.wipe()
                 assertNull(store.getString(ProfileScopedKey.of("progress", 1)), "Cached store must also be wiped")
@@ -85,7 +87,7 @@ internal object LinuxStorageIsolationProbe {
             "verifyClean" -> {
                 PlatformLocalAccountDataCleaner.accountStoreNames.forEach { name ->
                     assertNull(DesktopStorage.store(name).getString("account"))
-                    listOf("", ".bak", ".tmp").forEach { assertFalse(Files.exists(destination.resolve("$name.properties$it"))) }
+                    listOf("", ".bak", ".tmp").forEach { assertFalse(Files.exists(DesktopStorage.storeFile(name).resolveSibling("$name.properties$it"))) }
                 }
                 assertNull(DesktopStorage.store("nuvio_watch_progress").getString(ProfileScopedKey.of("progress", 2)))
                 assertPreserved(destination)
