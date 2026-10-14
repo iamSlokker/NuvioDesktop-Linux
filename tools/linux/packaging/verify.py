@@ -16,6 +16,7 @@ from client_config import verify_packaged_backend
 from onnx_contract import NATIVES as ONNX_NATIVES, verify_packaged_onnx
 from font_contract import verify_packaged_fonts
 from artwork_contract import verify_packaged_artwork
+from notice_contract import TARGET as NOTICE_TARGET, expected as notice_files, verify_packaged_notices
 
 FORBIDDEN = [b'/home/hmacedo', b'/var/home/hmacedo', b'/home/linuxbrew', b'/opt/homebrew',
              b'/source/', b'/work/prefix', b'/recipes/']
@@ -131,6 +132,7 @@ def check_image(root):
     onnx = verify_packaged_onnx(root, check_abi)
     fonts = verify_packaged_fonts(root)
     artwork = verify_packaged_artwork(root)
+    notices = verify_packaged_notices(root)
     info = json.loads((root / 'release-info.json').read_text())
     if not re.fullmatch('[a-f0-9]{40}', info['git_commit']):
         raise ValueError('Missing full source revision')
@@ -208,7 +210,8 @@ def check_image(root):
                 if not pathlib.Path(path).resolve().is_relative_to(root):
                     raise ValueError('Private media resolved outside image: ' + dep)
         elf_records.append(dict(file=rel, needed=needed))
-    return dict(source=info, files=records, elf=elf_records, onnx=onnx, fonts=fonts, artwork=artwork)
+    return dict(source=info, files=records, elf=elf_records, onnx=onnx, fonts=fonts, artwork=artwork,
+                notices=notices)
 
 
 def artifacts(work, formats):
@@ -274,8 +277,15 @@ def artifacts(work, formats):
                 onnx = verify_packaged_onnx(image, check_abi)
                 fonts = verify_packaged_fonts(image)
                 artwork = verify_packaged_artwork(image)
+                for name in notice_files():
+                    target = image / NOTICE_TARGET / name
+                    target.parent.mkdir(parents=True, exist_ok=True)
+                    target.write_bytes(subprocess.check_output(['ostree', '--repo=' + tmp, 'cat', ref,
+                        '/files/lib/nuvio-desktop/' + str(NOTICE_TARGET / name)]))
+                notices = verify_packaged_notices(image)
                 (dest / 'flatpak-audit.json').write_text(json.dumps(
-                    dict(source=info, ref=ref, metadata=metadata.decode(), onnx=onnx, fonts=fonts, artwork=artwork), indent=2) + '\n')
+                    dict(source=info, ref=ref, metadata=metadata.decode(), onnx=onnx, fonts=fonts, artwork=artwork,
+                         notices=notices), indent=2) + '\n')
             if not (work / 'flatpak-build/metadata').is_file():
                 raise ValueError('Missing exported Flatpak metadata')
     checksums = ''.join(hashlib.sha256(p.read_bytes()).hexdigest() + '  ' + p.name + '\n'

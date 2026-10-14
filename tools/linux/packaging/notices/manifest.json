@@ -1,0 +1,191 @@
+{
+  "schema_version": 1,
+  "scope": "License/notice texts for native code inside packaged JARs (Skiko/Skia static deps, ONNX Runtime, QuickJS, Jansi). Notice coverage only; not a rights or source-completeness determination.",
+  "skia_pack": {
+    "release": "https://github.com/JetBrains/skia/releases/tag/m144-22f58c9fd4",
+    "asset": "Skia-m144-22f58c9fd4-linux-Release-x64.zip",
+    "sha256": "d36046e308dc8ea2e7d4f87fb8f44533dad1e252e49b5bd222d7d00538a82722",
+    "static_libraries": [
+      "libbentleyottmann.a",
+      "libdng_sdk.a",
+      "libexpat.a",
+      "libfreetype2.a",
+      "libharfbuzz.a",
+      "libicu.a",
+      "libjpeg.a",
+      "libjpeg12.a",
+      "libjpeg16.a",
+      "libjsonreader.a",
+      "libpiex.a",
+      "libpng.a",
+      "libskcms.a",
+      "libskia.a",
+      "libskottie.a",
+      "libskparagraph.a",
+      "libskresources.a",
+      "libsksg.a",
+      "libskshaper.a",
+      "libskunicode_core.a",
+      "libskunicode_icu.a",
+      "libsvg.a",
+      "libwebp.a",
+      "libwebp_sse41.a",
+      "libwuffs.a",
+      "libzlib.a"
+    ],
+    "revision_source": "Skia DEPS at JetBrains/skia 22f58c9fd43d55bde818821c04b48fda5d7ec939; skiko gradle.properties dependencies.skia=m144-22f58c9fd4"
+  },
+  "notice_sha256": "b8eaca5a623224e337cf6085f79286c9b753f3c0fa591ddd3e07d49ff7d13451",
+  "components": {
+    "skiko": {
+      "license": "Apache-2.0",
+      "source": "https://github.com/JetBrains/skiko",
+      "revision": "9a5b398bb2044fff7e7a84fbfd6f4b803e4427c0",
+      "files": {
+        "LICENSE": "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4",
+        "NOTICE": "35dd077c24768b53625101cfcc0ad853ae7e2abc08bd2a111a0267760d1406d8"
+      }
+    },
+    "skia/skia": {
+      "license": "BSD-3-Clause",
+      "source": "https://github.com/JetBrains/skia",
+      "revision": "22f58c9fd43d55bde818821c04b48fda5d7ec939",
+      "files": {
+        "LICENSE": "5f787c1dee3c56547f09ccc2906ab5f5293c4d8dd6c8654e573216c38e908dbd"
+      }
+    },
+    "skia/dng_sdk": {
+      "license": "DNG-SDK",
+      "source": "https://android.googlesource.com/platform/external/dng_sdk",
+      "revision": "dbe0a676450d9b8c71bf00688bb306409b779e90",
+      "files": {
+        "LICENSE": "012e875468ac2f9a2070ee25a950588afa2735b4b2d961f491e3d72c8f572306",
+        "NOTICE": "b60660d2a5a3ee1a49366400e7e9b01c1872356d6f08942f095d356a44deb5f6"
+      }
+    },
+    "skia/expat": {
+      "license": "MIT",
+      "source": "https://chromium.googlesource.com/external/github.com/libexpat/libexpat",
+      "revision": "8e49998f003d693213b538ef765814c7d21abada",
+      "files": {
+        "COPYING": "31b15de82aa19a845156169a17a5488bf597e561b2c318d159ed583139b25e87"
+      }
+    },
+    "skia/freetype": {
+      "license": "FTL",
+      "source": "https://chromium.googlesource.com/chromium/src/third_party/freetype2",
+      "revision": "1518bc83d26b434031bd12c706ac3c7dab3902fd",
+      "files": {
+        "FTL.TXT": "5a5ee54c5001bbad1cdc1a57cc3dd4c42199b2da09d39c7ee41fab002d02967f",
+        "LICENSE.TXT": "bd36c8b474855fa294c2ec5c184544478ef3720aad37d65a6296a4f264fd2d3b"
+      }
+    },
+    "skia/harfbuzz": {
+      "license": "MIT-Modern-Variant",
+      "source": "https://chromium.googlesource.com/external/github.com/harfbuzz/harfbuzz",
+      "revision": "08b52ae2e44931eef163dbad71697f911fadc323",
+      "files": {
+        "COPYING": "ba8f810f2455c2f08e2d56bb49b72f37fcf68f1f4fade38977cfd7372050ad64"
+      }
+    },
+    "skia/icu": {
+      "license": "Unicode-3.0 AND ICU",
+      "source": "https://chromium.googlesource.com/chromium/deps/icu",
+      "revision": "364118a1d9da24bb5b770ac3d762ac144d6da5a4",
+      "files": {
+        "LICENSE": "17510cf7a58b4879b887ec05a45d72cf1b73544dd9ec7e72f20110ed104229ee"
+      }
+    },
+    "skia/libjpeg-turbo": {
+      "license": "IJG AND BSD-3-Clause AND Zlib",
+      "source": "https://chromium.googlesource.com/chromium/deps/libjpeg_turbo",
+      "revision": "e14cbfaa85529d47f9f55b0f104a579c1061f9ad",
+      "files": {
+        "LICENSE.md": "96f5b328adbb78eeaaec6980d73fd558cb1e4d62560ed615646bc3cf5e532430",
+        "README.ijg": "75815e3bf6484201a3c3d17a1bbf10f2e8e3237f84df10a2357ea896db2a81d6"
+      }
+    },
+    "skia/libpng": {
+      "license": "libpng-2.0",
+      "source": "https://skia.googlesource.com/third_party/libpng",
+      "revision": "49363adcfaf098748d7a4c8c624ad8c45a8c3a86",
+      "files": {
+        "LICENSE": "16d9daaafbf63a31a5bdc91d4600972548fef5aaa1244202393288dbd079c49a"
+      }
+    },
+    "skia/libwebp": {
+      "license": "BSD-3-Clause",
+      "source": "https://chromium.googlesource.com/webm/libwebp",
+      "revision": "845d5476a866141ba35ac133f856fa62f0b7445f",
+      "files": {
+        "COPYING": "5aec868f669e384a22372a4e8a1a6cd7d44c64cd451f960ca69cc170d1e13acf",
+        "PATENTS": "cc3273e0694ea5896145e0677699b53471b03ea43021ddc50e7923fbb9f5023c"
+      }
+    },
+    "skia/piex": {
+      "license": "Apache-2.0",
+      "source": "https://android.googlesource.com/platform/external/piex",
+      "revision": "bb217acdca1cc0c16b704669dd6f91a1b509c406",
+      "files": {
+        "LICENSE": "58d1e17ffe5109a7ae296caafcadfdbe6a7d176f0bc4ab01e12a689b0499d8bd"
+      }
+    },
+    "skia/wuffs": {
+      "license": "Apache-2.0 OR MIT",
+      "source": "https://skia.googlesource.com/external/github.com/google/wuffs-mirror-release-c",
+      "revision": "e3f919ccfe3ef542cfc983a82146070258fb57f8",
+      "files": {
+        "LICENSE": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30"
+      }
+    },
+    "skia/zlib": {
+      "license": "Zlib",
+      "source": "https://chromium.googlesource.com/chromium/src/third_party/zlib",
+      "revision": "646b7f569718921d7d4b5b8e22572ff6c76f2596",
+      "files": {
+        "LICENSE": "e1cfcc55c325b3f78cf55df9664abaa066e2271dffe8213347d9fccdfbac8f2c"
+      }
+    },
+    "onnxruntime": {
+      "license": "MIT",
+      "source": "https://github.com/microsoft/onnxruntime",
+      "revision": "402979ac1bef89dcd55add41eaa7277c407599eb",
+      "files": {
+        "LICENSE": "2f07c72751aed99790b8a4869cf2311df85a860b22ded05fa22803587a48922c",
+        "ThirdPartyNotices.txt": "143764b952fdb1a7c69ce653bfba74a7744d6a8a573bfb73e235fba356c83de3"
+      }
+    },
+    "quickjs-kt": {
+      "license": "Apache-2.0",
+      "source": "https://github.com/dokar3/quickjs-kt",
+      "revision": "a081755bcdb18ee6afa7ffee25b8fa976f06d31f",
+      "files": {
+        "LICENSE.txt": "b57a9ee546cffc4958d7a3b8ae6757963c3880bbf421d1a570e8064d575818a9"
+      }
+    },
+    "quickjs": {
+      "license": "MIT",
+      "source": "https://github.com/bellard/quickjs",
+      "revision": "04be246001599f5995fa2f2d8c91a0f198d3f34c",
+      "files": {
+        "LICENSE": "598fd7fc928e4350abce36e337ba5a1346923c5c692f5be92c3d8e29ddd7c18d"
+      }
+    },
+    "c-vector": {
+      "license": "MIT",
+      "source": "https://github.com/eteran/c-vector",
+      "revision": "774773d4cb1e66dd736e90e7f482d4f22af464c6",
+      "files": {
+        "LICENSE": "e1cfcf4f5ae40870038105b1474721a532746867c6c6a4288baa9cafd58424e6"
+      }
+    },
+    "jansi": {
+      "license": "Apache-2.0",
+      "source": "https://github.com/fusesource/jansi",
+      "revision": "3d2a9788fa48e4cecbbe28279d01111a125d2f66",
+      "files": {
+        "license.txt": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30"
+      }
+    }
+  }
+}

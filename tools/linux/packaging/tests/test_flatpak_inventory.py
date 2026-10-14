@@ -11,6 +11,7 @@ from unittest.mock import patch
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1]))
 import verify
 import artwork_contract
+import notice_contract
 
 
 class FlatpakJarInventoryTest(unittest.TestCase):
@@ -48,6 +49,8 @@ class FlatpakJarInventoryTest(unittest.TestCase):
             return json.dumps(self.info).encode()
         if args[-1] == '/metadata':
             return b'fixture metadata'
+        if '/share/licenses/third-party/' in args[-1]:
+            return (notice_contract.NOTICES / args[-1].split('/share/licenses/third-party/', 1)[1]).read_bytes()
         self.assertTrue(args[-1].endswith('.jar'))
         name = pathlib.PurePosixPath(args[-1]).name
         self.cat_jars.append(name)
