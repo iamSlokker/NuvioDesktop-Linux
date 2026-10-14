@@ -15,9 +15,16 @@ No endorsement or new media capability is implied; existing detection is unchang
 The replacements do not license historical imports or other provider/award artwork.
 
 Linux packages and the Linux source snapshot additionally replace 47 provider/rating
-marks and award/hero badges with original MIT artwork authored by the same recipe
-and kept in tools/linux/packaging/artwork/overlay (PROVENANCE.json linux_overlay).
-Lettering is plain Inter text and shapes are generic geometry. They are not official
-provider, rating, festival or award logos, and no endorsement is implied. The
-upstream originals stay unchanged in composeApp for other platforms, where their
+marks and award/hero badges, kept in tools/linux/packaging/artwork/overlay
+(PROVENANCE.json linux_overlay). 46 are original MIT artwork authored by the same
+recipe. Lettering is plain Inter text and shapes are generic geometry. They are not
+official provider, rating, festival or award logos, and no endorsement is implied.
+The upstream originals stay unchanged in composeApp for other platforms, where their
 rights remain UNRESOLVED; Linux packages do not distribute them.
+
+The exception is drawable/rating_tmdb.png: TMDB's official attribution logo
+("Primary full (blue)", https://www.themoviedb.org/about/logos-attribution),
+rendered unmodified from the vendored SVG with SHA-256
+d537fb228cf3ded904ef09b136fe3fec72548ebc1fea3fbbd1ad9e36364db38b. It is TMDB's
+logo, not MIT, and is used only to attribute TMDB as the source of data and images
+as TMDB's terms require. No endorsement or certification by TMDB is implied.

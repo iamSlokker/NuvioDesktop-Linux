@@ -8,8 +8,14 @@ import java.awt.geom.*;
 import java.awt.image.BufferedImage;
 import java.io.*;
 import java.nio.file.*;
+import java.security.MessageDigest;
 import java.util.*;
+import java.util.regex.*;
 import javax.imageio.ImageIO;
+import javax.xml.XMLConstants;
+import javax.xml.parsers.DocumentBuilderFactory;
+import org.w3c.dom.Element;
+import org.w3c.dom.NodeList;
 
 public final class GenerateReleaseArtwork {
     private static final int W = 1920, H = 1082;
@@ -143,8 +149,9 @@ public final class GenerateReleaseArtwork {
     }
 
     // ---------------------------------------------------------------------------------------
-    // Linux package overlay. Original replacements for the 47 provider/rating marks and
-    // award/hero badges whose imported rights are unresolved. build.py substitutes these bytes
+    // Linux package overlay. Replacements for the 47 provider/rating marks and award/hero
+    // badges whose imported rights are unresolved: 46 original, plus rating_tmdb.png rendered
+    // from TMDB's official attribution logo (see tmdbAttribution). build.py substitutes these bytes
     // only in the Linux source snapshot; composeApp originals stay unchanged for upstream and
     // other platforms. Names, formats, SVG sizes/viewBoxes and PNG pixel sizes are preserved.
     // ---------------------------------------------------------------------------------------
@@ -327,7 +334,7 @@ public final class GenerateReleaseArtwork {
     private static final String HERO = "viewBox=\"0 0 100 100\" width=\"100\" height=\"100\"";
     private static Scene hero() { return new Scene(100, 100); }
 
-    private static void overlay(Path out) throws IOException {
+    private static void overlay(Path repo, Path out) throws Exception {
         // Provider and rating marks: neutral plates with plain lettering.
         svg(out, "discord_logo.svg", "viewBox=\"0 0 24 24\"", "DC text mark (Linux replacement)", plate(24, 24, "DC", 5, .66, .38));
         png(out, "kitsu_logo.png", plate(48, 48, "KIT", 10, .74, .32));
@@ -338,7 +345,8 @@ public final class GenerateReleaseArtwork {
         svg(out, "trakt_tv_favicon.svg", "viewBox=\"0 0 48 48\"", "TR text mark (Linux replacement)", plate(48, 48, "TR", 24, .56, .34));
         svg(out, "trakt_logo_wordmark.svg", "viewBox=\"0 0 104.55 45\"", "Trakt text label (Linux replacement)", plate(104.55, 45, "Trakt", 9, .80, .50));
         png(out, "rating_imdb.png", plate(95, 48, "IMDb", 9, .80, .46));
-        png(out, "rating_tmdb.png", plate(67, 48, "TMDB", 9, .80, .34));
+        // TMDB requires attribution and supplies logos for it: official logo, not an MIT plate.
+        tmdbAttribution(repo, out, "rating_tmdb.png", 67, 48);
         png(out, "rating_letterboxd.png", plate(48, 48, "LB", 10, .66, .40));
         png(out, "rating_metacritic.png", plate(48, 48, "MC", 10, .70, .38));
         png(out, "rating_trakt.png", plate(48, 48, "TR", 10, .62, .40));
@@ -437,6 +445,133 @@ public final class GenerateReleaseArtwork {
         available.fill(minus(rr(10, 12, 238, 299, 44), poly(92, 104, 92, 220, 184, 162)), GREEN);
         png(out, "hero_badge_release_status_available.png", available);
     }
+    // ---------------------------------------------------------------------------------------
+    // TMDB attribution logo. TMDB's terms require applications using its data/images to
+    // attribute TMDB and https://www.themoviedb.org/about/logos-attribution provides logos for
+    // that. The official "Primary full (blue)" SVG is vendored byte-for-byte and hash-pinned; it
+    // is TMDB's mark (not MIT). This minimal reader accepts only that file's structure: one
+    // path (M/L/H/V/A/Z, absolute or relative; nonzero fill) painted with one userSpaceOnUse
+    // linear gradient, no transforms. It renders uniformly scaled and centered (transparent
+    // padding only): no recolor, stretch or crop.
+    // ---------------------------------------------------------------------------------------
+    static final String TMDB_SVG = "tools/linux/packaging/artwork/vendor/tmdb/blue_square_2.svg";
+    static final String TMDB_SVG_SHA256 = "d537fb228cf3ded904ef09b136fe3fec72548ebc1fea3fbbd1ad9e36364db38b";
+    private static final Set<String> TMDB_TAGS = Set.of("svg", "defs", "style", "linearGradient", "stop", "title", "g", "path");
+
+    private static void tmdbAttribution(Path repo, Path out, String name, int width, int height) throws Exception {
+        byte[] data = Files.readAllBytes(repo.resolve(TMDB_SVG));
+        StringBuilder digest = new StringBuilder();
+        for (byte b : MessageDigest.getInstance("SHA-256").digest(data)) digest.append(String.format(Locale.ROOT, "%02x", b));
+        if (!digest.toString().equals(TMDB_SVG_SHA256)) throw new IllegalStateException("Vendored TMDB logo differs from its pinned SHA-256");
+        DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+        factory.setFeature("http://apache.org/xml/features/disallow-doctype-decl", true);
+        factory.setFeature(XMLConstants.FEATURE_SECURE_PROCESSING, true);
+        factory.setExpandEntityReferences(false);
+        Element root = factory.newDocumentBuilder().parse(new ByteArrayInputStream(data)).getDocumentElement();
+        NodeList all = root.getElementsByTagName("*");
+        Element gradient = null, path = null; String style = null;
+        java.util.List<Element> stops = new ArrayList<>();
+        for (int i = -1; i < all.getLength(); i++) {
+            Element e = i < 0 ? root : (Element) all.item(i);
+            if (!TMDB_TAGS.contains(e.getTagName()) || e.hasAttribute("transform") || e.hasAttribute("style"))
+                throw new IllegalStateException("Unsupported TMDB SVG structure: " + e.getTagName());
+            switch (e.getTagName()) {
+                case "linearGradient": if (gradient != null) throw new IllegalStateException("One gradient expected"); gradient = e; break;
+                case "stop": stops.add(e); break;
+                case "path": if (path != null) throw new IllegalStateException("One path expected"); path = e; break;
+                case "style": style = e.getTextContent(); break;
+                default: break;
+            }
+        }
+        if (gradient == null || path == null || stops.isEmpty() || !"cls-1".equals(path.getAttribute("class"))
+                || !(".cls-1{fill:url(#" + gradient.getAttribute("id") + ");}").equals(style)
+                || !"userSpaceOnUse".equals(gradient.getAttribute("gradientUnits")))
+            throw new IllegalStateException("Unsupported TMDB SVG paint");
+        double[] box = Arrays.stream(root.getAttribute("viewBox").trim().split("[\\s,]+")).mapToDouble(Double::parseDouble).toArray();
+        float[] fractions = new float[stops.size()]; Color[] colors = new Color[stops.size()];
+        for (int i = 0; i < stops.size(); i++) {
+            fractions[i] = Float.parseFloat(stops.get(i).getAttribute("offset"));
+            colors[i] = new Color(Integer.parseInt(stops.get(i).getAttribute("stop-color").substring(1), 16));
+        }
+        Paint paint = new LinearGradientPaint(
+            new Point2D.Double(svgLength(gradient, "x1"), svgLength(gradient, "y1")),
+            new Point2D.Double(svgLength(gradient, "x2"), svgLength(gradient, "y2")), fractions, colors);
+        double scale = Math.min(width / box[2], height / box[3]);
+        BufferedImage image = new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
+        Graphics2D g = image.createGraphics();
+        g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+        g.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
+        g.setRenderingHint(RenderingHints.KEY_COLOR_RENDERING, RenderingHints.VALUE_COLOR_RENDER_QUALITY);
+        g.setRenderingHint(RenderingHints.KEY_STROKE_CONTROL, RenderingHints.VALUE_STROKE_PURE);
+        g.translate((width - box[2] * scale) / 2, (height - box[3] * scale) / 2);
+        g.scale(scale, scale); g.translate(-box[0], -box[1]);
+        g.setPaint(paint); g.fill(svgPath(path.getAttribute("d")));
+        g.dispose(); ImageIO.write(image, "png", target(out, name).toFile());
+    }
+    private static double svgLength(Element e, String attribute) {
+        return e.hasAttribute(attribute) ? Double.parseDouble(e.getAttribute(attribute)) : 0;  // absent x1/y1/y2 are 0 here
+    }
+    /** SVG path data subset: M/L/H/V/A/Z, absolute and relative, with implicit repeats. */
+    static Path2D svgPath(String d) {
+        Matcher m = Pattern.compile("[A-Za-z]|[-+]?(?:\\d+\\.?\\d*|\\.\\d+)(?:[eE][-+]?\\d+)?").matcher(d);
+        java.util.List<String> tokens = new ArrayList<>();
+        while (m.find()) tokens.add(m.group());
+        Path2D.Double p = new Path2D.Double(Path2D.WIND_NON_ZERO);
+        double x = 0, y = 0, sx = 0, sy = 0; char command = 0; int i = 0;
+        while (i < tokens.size()) {
+            if (Character.isLetter(tokens.get(i).charAt(0))) command = tokens.get(i++).charAt(0);
+            else if (command == 0 || command == 'Z' || command == 'z') throw new IllegalArgumentException("Path data without command");
+            boolean rel = Character.isLowerCase(command);
+            double ox = rel ? x : 0, oy = rel ? y : 0;
+            switch (Character.toUpperCase(command)) {
+                case 'M':
+                    x = ox + num(tokens, i++); y = oy + num(tokens, i++); p.moveTo(x, y); sx = x; sy = y;
+                    command = rel ? 'l' : 'L'; break;  // further pairs are implicit lineto
+                case 'L': x = ox + num(tokens, i++); y = oy + num(tokens, i++); p.lineTo(x, y); break;
+                case 'H': x = ox + num(tokens, i++); p.lineTo(x, y); break;
+                case 'V': y = oy + num(tokens, i++); p.lineTo(x, y); break;
+                case 'A': {
+                    double rx = num(tokens, i++), ry = num(tokens, i++), phi = num(tokens, i++);
+                    double large = num(tokens, i++), sweep = num(tokens, i++);
+                    if ((large != 0 && large != 1) || (sweep != 0 && sweep != 1)) throw new IllegalArgumentException("Arc flag");
+                    double ex = ox + num(tokens, i++), ey = oy + num(tokens, i++);
+                    arcTo(p, x, y, rx, ry, phi, large == 1, sweep == 1, ex, ey); x = ex; y = ey; break;
+                }
+                case 'Z': p.closePath(); x = sx; y = sy; break;
+                default: throw new IllegalArgumentException("Unsupported path command " + command);
+            }
+        }
+        return p;
+    }
+    private static double num(java.util.List<String> tokens, int i) {
+        if (i >= tokens.size() || Character.isLetter(tokens.get(i).charAt(0))) throw new IllegalArgumentException("Missing path number");
+        return Double.parseDouble(tokens.get(i));
+    }
+    /** SVG 1.1 implementation notes F.6.5/F.6.6: endpoint to center parameterization. */
+    private static void arcTo(Path2D p, double x1, double y1, double rx, double ry, double phiDeg,
+                              boolean large, boolean sweep, double x2, double y2) {
+        if (x1 == x2 && y1 == y2) return;
+        rx = Math.abs(rx); ry = Math.abs(ry);
+        if (rx == 0 || ry == 0) { p.lineTo(x2, y2); return; }
+        double phi = Math.toRadians(phiDeg), cos = Math.cos(phi), sin = Math.sin(phi);
+        double dx = (x1 - x2) / 2, dy = (y1 - y2) / 2;
+        double x1p = cos * dx + sin * dy, y1p = -sin * dx + cos * dy;
+        double lambda = x1p * x1p / (rx * rx) + y1p * y1p / (ry * ry);
+        if (lambda > 1) { rx *= Math.sqrt(lambda); ry *= Math.sqrt(lambda); }
+        double radicand = rx * rx * ry * ry - rx * rx * y1p * y1p - ry * ry * x1p * x1p;
+        double coef = (large == sweep ? -1 : 1) * Math.sqrt(Math.max(0, radicand / (rx * rx * y1p * y1p + ry * ry * x1p * x1p)));
+        double cxp = coef * rx * y1p / ry, cyp = -coef * ry * x1p / rx;
+        double cx = cos * cxp - sin * cyp + (x1 + x2) / 2, cy = sin * cxp + cos * cyp + (y1 + y2) / 2;
+        double ux = (x1p - cxp) / rx, uy = (y1p - cyp) / ry, vx = (-x1p - cxp) / rx, vy = (-y1p - cyp) / ry;
+        double start = Math.atan2(uy, ux), extent = Math.atan2(ux * vy - uy * vx, ux * vx + uy * vy);
+        if (!sweep && extent > 0) extent -= 2 * Math.PI; else if (sweep && extent < 0) extent += 2 * Math.PI;
+        // Arc2D angles run counterclockwise on screen (y down), the opposite sign of SVG's.
+        Arc2D arc = new Arc2D.Double(-rx, -ry, 2 * rx, 2 * ry, -Math.toDegrees(start), -Math.toDegrees(extent), Arc2D.OPEN);
+        AffineTransform t = AffineTransform.getTranslateInstance(cx, cy); t.rotate(phi);
+        p.append(arc.getPathIterator(t), true);
+        p.lineTo(x2, y2);
+    }
+
     /** Tall ribbon medal: win = gold disc with solid star cut-out; nomination = silver with outlined star. */
     private static Scene medal(int w, int h, boolean win) {
         Scene s = new Scene(w, h); double c = w / 2.0, r = c - 10;
@@ -460,6 +595,6 @@ public final class GenerateReleaseArtwork {
         quality(out, "quality_badge_dv.svg", "DV", "47.5500", "#FFFFFF");
         quality(out, "quality_badge_hdr.svg", "HDR", "47.5500", "#FFFFFF");
         for (String mode : new String[]{"basic", "adaptive", "adaptive_ambient", "tv"}) preview(out, mode);
-        overlay(out.resolve("linux-overlay"));
+        overlay(repo, out.resolve("linux-overlay"));
     }
 }
