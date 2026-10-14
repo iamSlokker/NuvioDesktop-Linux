@@ -1,5 +1,82 @@
 # Final engineering and release-readiness report
 
+## 2026-10-14 update (supersedes the status lines below)
+
+This is a technical/compliance-engineering review, not legal certification or
+authority to publish. The 2026-10-13 report below is kept unchanged as the
+evidence of that date.
+
+**Engineering and packaging gates: closed for DEB, Flatpak and AppImage at the
+evidence commit below.**
+**Redistribution: PENDING OWNER DECISIONS** (listed at the end of this section);
+no release has been created or published.
+**HDR10: unchanged, deferred and optional.**
+
+### Evidence build
+
+- Run [38538334113](https://github.com/iamSlokker/NuvioDesktop-Linux/actions/runs/38538334113),
+  channel nightly, commit `78cf22ef2d7ba62567056951f63775ddb868d98d`
+  (Umbra snapshot `b54972abf` integrated). Every step succeeded: canonical image and
+  DEB, DEB verification in its pinned builder, DEB install smoke on Ubuntu 22.04,
+  Flatpak export and verification, AppImage with the accepted HUD-corrected WebKit
+  engine run 38327066209, corresponding third-party source, checksums.
+- The current `linux` head `32e42f5d0` adds only test-fixture changes (#24) on top.
+- Owner acceptance on Bazzite/Wayland of this build: installation and normal use
+  reported working. One UI issue was found in shared upstream code (the docked home
+  hero source list does not close when another poster is hovered in TV mode); it is
+  byte-identical to Umbra `b54972abf` and left for upstream.
+
+| Asset | SHA256 |
+| --- | --- |
+| `nuvio-desktop_1.15.0~nightly+git.78cf22ef2d7b_amd64.deb` | `c84d90197b1809b3b2031b7981e77f63f6ee5b510abe541751fdf4c6aae86213` |
+| `Nuvio-Desktop-1.15.0-78cf22ef2d7b-x86_64.flatpak` | `e83c91b8cc7884d2b163c85b4f5e676298061aae7c2211acc559c79a5f88564f` |
+| `Nuvio-Desktop-1.15.0~nightly+git.78cf22ef2d7b-x86_64.AppImage` | `19f0b5aa33ed192e3c63903bc695c2ddd95957e5dad332ebbcce4d91834c9a78` |
+| `Nuvio-source-78cf22ef2d7b.tar.gz` (application) | `d1fc8a74b36715c84913f7042f3a0bc95ede21e4e895e24382c93cf63c7ae06d` |
+| `Nuvio-WebKit-source-b6e4ab22c0b2dd58-430db445474d.tar.gz` | `08e1393103e9c24ac5a6c19dd038c7e8bce0248e282d8b5bf90ba33d00bc86b9` |
+| `Nuvio-AppImage-runtime-source-6ee696672e2a.tar.gz` | `74c79ac35e631513e1862408f5c5cfecb05b37df3e90952eb82a212446776917` |
+| `Nuvio-media-source-78cf22ef2d7b.tar.gz` | `0d7b9156fc27f1e893b5ba2a537f4ad58760167428d54157ba479df7bfda077d` |
+| `Nuvio-AppImage-Ubuntu-source-78cf22ef2d7b.tar` | `30a6b24e4ff0eb165bec1b5294499c55032ad8097c01b77a04a8917a295a3c08` |
+| `OpenJDK17U-jdk-sources_17.0.20.1_1.tar.gz` | `21e2a065d244ab048e737f21af5d1fc74daaeb6707de36477ead8db1dca71214` |
+| `SOURCE-MAP.json` | `2bbb74d887b4311523317fe6240347b530a718a81a4d55b6ca875072fb008761` |
+
+The Actions artifact containing these files expires on 2027-01-12; it is evidence,
+not the recipient delivery channel.
+
+### Blockers closed since 2026-10-13
+
+| Former blocker | Resolution | PRs |
+| --- | --- | --- |
+| Packaging verifier crashed when only `tools/linux/packaging` was mounted | Lazy repository resolution; reviewed source mounted for DEB and AppImage verification | #9, #21 |
+| Unclassified template brand mark | Removed and forbidden in JARs | #10 |
+| Anime mapping dataset rights chain | Not redistributed: excluded from the Linux snapshot, JAR and source tarball; the app downloads the pinned revision and verifies size and SHA256 | #11 |
+| Native notices (Skiko/Skia and its static set, ONNX Runtime, QuickJS, c-vector, Jansi) | 24 pinned texts shipped in `share/licenses/third-party/` in all formats; verified per format | #12 |
+| 47 provider/rating and award/hero artwork resources | Replaced in Linux packages by original MIT artwork (overlay); upstream files and other platforms unchanged; originals forbidden in JARs | #13 |
+| AppImage runtime with unrecoverable static inputs; LGPL libfuse relink | Runtime rebuilt reproducibly from pinned sources (`6ee69667…`), notices shipped, source and relink kit published with each AppImage | #14, #18, #19, #20 |
+| No recipient source delivery | Every build emits application, WebKit/GTK, AppImage runtime, media, Temurin and AppImage-Ubuntu source plus `SOURCE-MAP.json`, gated in CI. Owner decision: deliver as assets of the same GitHub Release | #15, #16, #22 |
+| WebKit engine reuse on `linux` | `linux` may consume only the accepted engine run 38327066209 (recipe byte-identical) | #17 |
+| Stale Linux storage test fixtures | 523 Linux JVM tests pass (52 display/native-flag gated tests skipped by design) | #24 |
+
+Trusted builder seed inputs (`build.py`, `config.json`, Containerfile, media
+runtime) were kept byte-identical throughout.
+
+### Remaining owner decisions before publication
+
+1. **TMDB attribution:** `rating_tmdb` is now a plain text mark. Confirm that this
+   satisfies TMDB's API attribution terms, or adopt TMDB's officially provided
+   attribution logo under those terms.
+2. **Final review** of this evidence and of any remaining legal questions (for
+   example model-file terms and trademark use of plain provider names).
+3. **Publication:** create the version tag, let CI build the stable channel, and
+   publish the packages together with every source asset listed in that build's
+   `SOURCE-MAP.json` in the same GitHub Release. There is no automated release job;
+   publication is a manual, separately approved step.
+4. **Earlier artifacts:** packages from before these changes (for example run
+   38397205286) did not carry this source set; do not redistribute them.
+
+---
+
+## 2026-10-13 report
+
 Evidence date: **2026-10-13**. This is a technical/compliance-engineering review,
 not legal certification or authority to merge or publish.
 
