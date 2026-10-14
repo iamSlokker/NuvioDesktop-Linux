@@ -214,6 +214,14 @@ class PackagingContractTest(unittest.TestCase):
     def test_flatpak_permissions_are_bounded_and_x11_explicit(self):
         permissions = json.loads((pathlib.Path(__file__).resolve().parents[1] / 'flatpak-permissions.json').read_text())
         self.assertIn('--socket=x11', permissions)
+        # Experimental HDR session: native Wayland is added alongside X11, never replacing
+        # it; the embedded player, JAWT and GTK/WebKit HUD remain on X11.
+        self.assertIn('--socket=wayland', permissions)
+        self.assertIn('--env=GDK_BACKEND=x11', permissions)
+        self.assertNotIn('--socket=fallback-x11', permissions)
+        self.assertEqual(['--share=ipc', '--share=network', '--socket=x11', '--socket=wayland',
+                          '--socket=pulseaudio', '--device=dri', '--own-name=org.mpris.MediaPlayer2.Nuvio',
+                          '--talk-name=org.freedesktop.ScreenSaver', '--env=GDK_BACKEND=x11'], permissions)
         self.assertIn('--device=dri', permissions)
         self.assertIn('--own-name=org.mpris.MediaPlayer2.Nuvio', permissions)
         for forbidden in ['--socket=session-bus', '--socket=system-bus', '--device=all',

@@ -2,6 +2,7 @@
   "--share=ipc",
   "--share=network",
   "--socket=x11",
+  "--socket=wayland",
   "--socket=pulseaudio",
   "--device=dri",
   "--own-name=org.mpris.MediaPlayer2.Nuvio",

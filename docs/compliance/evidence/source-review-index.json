@@ -214,10 +214,10 @@
       "sha256": "e67f67c0f93a0aa3362dfa72f2ac6a2fe62db39701771f95169b4a88a627e8c3"
     },
     {
-      "bytes": 32263,
+      "bytes": 32391,
       "path": "tools/linux/packaging/compliance/inventory.py",
       "scope_limit": "Original package/source inventory verifier.",
-      "sha256": "80913878d7d760da61d06465d966295f686adfb5609aa485b2cc30bae3171d6c"
+      "sha256": "2cc3ac5977a1d8830b8fc7cc3314db2f328af515d20d380304e06203b013fce9"
     },
     {
       "bytes": 10447,

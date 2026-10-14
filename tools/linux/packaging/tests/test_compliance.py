@@ -66,6 +66,15 @@ class ComplianceInventoryTest(unittest.TestCase):
         link.unlink(); (self.root / 'lib.so').write_bytes(b'changed')
         with self.assertRaises(ValueError): inv.check_inventory(self.root, {'lib.so': records['lib.so']})
 
+    def test_application_native_helpers_are_attributed_to_application(self):
+        media = {'artifact_contract': {'libraries': {'lib/libwayland-client.so.0.24.0': {
+            'soname': 'libwayland-client.so.0', 'component': 'wayland'}}}}
+        owner = lambda path: inv.native_owner(path, media, {'files': []}, {}, {}, {})
+        self.assertEqual('application', owner('lib/native/libplayer_bridge.so'))
+        self.assertEqual('application', owner('lib/native/nuvio-hdr-probe'))
+        self.assertEqual('media:wayland', owner('lib/native/libwayland-client.so.0'))
+        self.assertEqual('unresolved-native:lib/native/other-helper', owner('lib/native/other-helper'))
+
     def test_jar_inventory_hashes_notices_and_embedded_binaries(self):
         p = self.root / 'fixture.jar'
         jar(p, {'META-INF/LICENSE': b'license', 'native/windows/a.dll': b'MZ-fixture', 'X.class': b'class'})

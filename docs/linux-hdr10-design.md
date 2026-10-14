@@ -1,7 +1,8 @@
 # Linux HDR10: source audit, design and experimental Wayland session
 
 **Assessment (2026-10-14): EXPERIMENTAL Wayland HDR session implemented behind a
-default-off Linux setting. HDR OUTPUT IS UNVERIFIED ON HDR HARDWARE.** Nothing in
+default-off Linux setting and wired into DEB/AppImage/Flatpak packaging (no CI
+package built yet). HDR OUTPUT IS UNVERIFIED ON HDR HARDWARE.** Nothing in
 this repository has observed a PQ/BT.2020 frame reach an HDR monitor through Nuvio.
 The accepted embedded X11 player is unchanged and remains the only path whenever any
 gate below is not met. Redistribution of a correctly described SDR player is not
@@ -35,7 +36,7 @@ presentation boundary was chosen.
 3. `WAYLAND_DISPLAY` present.
 4. Desktop HDR mode is Auto or Always Passthrough (Always Tonemap keeps SDR).
 5. Decoded source transfer (embedded player's existing `video-params` report) is PQ or HLG. BT.2020 primaries alone do not qualify.
-6. The **loaded** libmpv has the `waylandvk` context (the current canonical runtime has `HAVE_WAYLAND=0` and therefore always fails this gate).
+6. The **loaded** libmpv has the `waylandvk` context. The canonical media recipe on this branch builds it (`HAVE_WAYLAND=1`); every package built before it (including all published/inspected artifacts) has `HAVE_WAYLAND=0` and always fails this gate.
 7. `nuvio-hdr-probe` is shipped next to `libplayer_bridge.so`, completes, and reports: `wp_color_manager_v1` with PQ and BT.2020; a ready PQ/BT.2020 preferred surface description with luminance headroom (max > reference); at least one PQ/BT.2020 output; exactly one Vulkan device with a 10-bit HDR10 ST2084 surface format, Wayland presentation and `VK_EXT_hdr_metadata` (its name is passed as `vulkan-device`). Missing helper, timeout, crash, malformed output, multiple eligible devices: SDR.
 8. After creation, mpv itself must load the file, configure its VO and report a **PQ/HLG BT.2020 `video-target-params`** before the session is promoted. The target colour space mapping is the shared `desktopHdrTargetMpvProperties()` (Auto: `target-colorspace-hint=auto`, mode `target`; Passthrough: `yes`, mode `source`); PQ is never forced.
 
@@ -86,24 +87,34 @@ back.
   order pinned by `LinuxHdrSessionPolicyTest`).
 - All existing Linux desktop tests and native fixtures pass unchanged.
 
-### Packaging requirements (not done here)
+### Packaging (implemented, CI rebuild pending)
 
-- A media runtime whose libmpv has `HAVE_WAYLAND=1` and
-  `HAVE_WAYLAND_PROTOCOLS_1_41=1` (separate media-recipe work). Without it the
-  feature is inert.
-- Build and ship `nuvio-hdr-probe` in `lib/native` (needs wayland-client,
-  wayland-scanner, wayland-protocols ≥ 1.41 and Vulkan headers/loader at build
-  time; pass `-DNUVIO_WAYLAND_PROTOCOLS_DIR`/`-DNUVIO_VULKAN_INCLUDE_DIR` when not
-  discoverable) and add it to the verified image inventory and runtime closure
-  checks (it links `libwayland-client.so.0` and `libvulkan.so.1`).
-- Add `linux_hdr_session_test` to the native test step (`--expect-wayland=yes`
-  against a Wayland runtime, `no` against the current one).
-- Flatpak: `--socket=wayland` (currently X11 only; without it `WAYLAND_DISPLAY`
-  is absent or unusable and the gate fails closed). Keep `--socket=x11` and
-  `GDK_BACKEND=x11` for the embedded player/HUD.
-- The OSC Lua script ships inside the application JAR
-  (`player-scripts/linux-hdr-osc.lua`); no separate packaging is needed. libmpv
-  must keep Lua enabled (it already does), otherwise only the OSC is lost.
+All three formats carry the same canonical `lib/native/nuvio-hdr-probe` next to
+`libplayer_bridge.so`; the OSC script ships inside the application JAR
+(`player-scripts/linux-hdr-osc.lua`).
+
+| Step | Implementation |
+| --- | --- |
+| Build inputs | The packaging builder (Ubuntu 22.04) has wayland-protocols/scanner older than 1.41/1.24. The media runtime therefore exports a **build-only SDK area** next to its existing `include/mpv` and `bin/` (never staged): the pinned `bin/wayland-scanner` (Wayland 1.24.0), `share/wayland-protocols/staging/color-management/color-management-v1.xml` (wayland-protocols 1.42, manifest `artifact_contract.build_data`) and the 34 Vulkan-Headers 1.4.363.0 C headers under `include/vulkan`/`include/vk_video` (listed one by one in the manifest). Only the builder's wayland-client 1.20 development interface comes from Ubuntu; generated code and `-z defs` linking are checked against it. |
+| Media audit | `layout_errors` accepts exactly the listed headers/build data. The scanner's builder `libexpat.so.1` is allowed only through `build_tool_needed` for `bin/wayland-scanner`; the same NEEDED on any other runtime ELF still fails (new `tests/test-runtime.py` mutations: missing header/XML, unlisted protocol XML, extra scanner dependency, `libexpat` on libmpv and on `bin/mpv`). |
+| Canonical build | `native-build.sh` passes `-DNUVIO_WAYLAND_SCANNER=/media/bin/wayland-scanner`, `-DNUVIO_WAYLAND_PROTOCOLS_DIR=/media/share/wayland-protocols`, `-DNUVIO_VULKAN_INCLUDE_DIR=/media/include`, `-DNUVIO_VULKAN_LIBRARY=/media/lib/libvulkan.so`, builds `nuvio-hdr-probe` and `linux_hdr_session_test`, and runs `linux_hdr_session_test --expect-wayland=yes` (display variables unset) after the existing native fixtures. CMake makes the probe **required** when `NUVIO_PACKAGE_BUILD=ON`, so a package cannot silently omit it. |
+| Staging | `stage.py` copies the probe into `lib/native` and removes `build_data` (and its empty parents) after copying the media `share/`; bin/include/pkg-config were already never staged. |
+| Image gate | `verify.check_image` (DEB extraction, AppImage payload, canonical image) calls `check_hdr_probe`: executable ELF, RUNPATH exactly `$ORIGIN:$ORIGIN/../runtime/lib` (same as the bridge), NEEDED ⊆ {libwayland-client.so.0, libvulkan.so.1, libstdc++, libgcc_s, libc, libm} with both private libraries present, and — with `LD_LIBRARY_PATH` removed — `libwayland-client.so.0`/`libvulkan.so.1` resolving inside the image's `lib/native`. No `share/wayland-protocols`, `bin/wayland-scanner` or `include/vulkan`/`include/vk_video` may appear. The generic ELF loop (ABI floor, ORIGIN-only RUNPATH, closure) applies as well. |
+| AppImage | No extra staging: the probe is not in the WebKit stage's copied set, keeps its RUNPATH, and its in-image dependencies are skipped by the `linked_paths` closure walk. |
+| Flatpak | The sandbox closure check requires the probe to be executable and `ldd`s it with the shared libraries (the private Vulkan loader is removed, so `libvulkan.so.1` comes from GNOME Platform as for libmpv). The exported bundle is checked for an executable regular `lib/native/nuvio-hdr-probe` (`flatpak_hdr_probe`). `--socket=wayland` is added **alongside** `--socket=x11`; `GDK_BACKEND=x11` is unchanged, so JAWT/Canvas, GTK/WebKit HUD and the embedded player stay on X11/XWayland. With the wayland socket the sandbox now sees `WAYLAND_DISPLAY` (as DEB/AppImage already do); in application code its only other consumer is the X11 idle fallback, which already stays disabled in Wayland sessions via `XDG_SESSION_TYPE`. Third-party library reactions inside the Flatpak (GNOME WebKitGTK/Mesa) have not been observed and need owner acceptance. |
+| Notices | The probe incorporates generated color-management-v1 code, Vulkan header inline code and libwayland client headers; their notices (`share/licenses/wayland-protocols`, `Vulkan-Headers`, `wayland`) already ship from the media runtime and are unchanged. `compliance/inventory.py` attributes the probe to the application (the source review index was regenerated for that script binding only). |
+
+CI implications: the media recipe hash changes (new runtime generation required), so
+the packaging builder identity and the immutable WebKit builder seed change; the
+AppImage assembly identity also changes (`verify.py`). A new bootstrap/seed export
+and a WebKit engine rebuild/import are expected before an all-format run passes.
+
+### Enabling the experimental session
+
+Default **off**. In a package built from this branch, open Settings → Playback and
+enable **Experimental HDR (Wayland)** (shown under HDR mode, Linux only, stored per
+machine). Keep HDR mode on Auto or Always Passthrough. Nothing changes unless every
+gate above holds; otherwise the embedded X11 player is used exactly as before.
 
 ### Known limitations / unverified
 
@@ -125,16 +136,26 @@ Never run these against a live session without deciding to: they open Wayland
 connections and, for the app run, a fullscreen window.
 
 ```sh
-# 0. Headless checks (safe anywhere).
+# 0. Headless checks (safe anywhere). Packages run the same test in native-build.sh.
 unset DISPLAY WAYLAND_DISPLAY NUVIO_RUN_LIVE_DISPLAY_TESTS
+runtime=build/linux-media-runtime/runtime   # this branch's media recipe
 cmake -S composeApp/src/desktopMain/native/linux -B build/hdr-native -G Ninja \
-  -DCMAKE_BUILD_TYPE=Release -DMPV_ROOT=/path/to/wayland-enabled/runtime \
-  -DNUVIO_WAYLAND_PROTOCOLS_DIR=/path/to/share/wayland-protocols \
-  -DNUVIO_VULKAN_INCLUDE_DIR=/path/to/include
+  -DCMAKE_BUILD_TYPE=Release -DMPV_ROOT="$PWD/$runtime" \
+  -DNUVIO_WAYLAND_SCANNER="$PWD/$runtime/bin/wayland-scanner" \
+  -DNUVIO_WAYLAND_PROTOCOLS_DIR="$PWD/$runtime/share/wayland-protocols" \
+  -DNUVIO_VULKAN_INCLUDE_DIR="$PWD/$runtime/include"
 cmake --build build/hdr-native --target player_bridge nuvio-hdr-probe linux_hdr_session_test
 build/hdr-native/linux_hdr_session_test --expect-wayland=yes
+# Package static gate (any extracted DEB / AppImage payload; never runs the app):
+python3 -c 'import sys; sys.path.insert(0, "tools/linux/packaging"); import verify, pathlib; \
+  print(verify.check_hdr_probe(pathlib.Path(sys.argv[1])))' /path/to/opt/nuvio-desktop
+# Flatpak: the installed app's permissions must list both sockets.
+flatpak info --show-permissions com.nuvio.media.desktop | grep -E '^sockets='
 
 # 1. Read-only capability snapshot in the real session (unmapped surface only).
+#    Use the packaged helper: /opt/nuvio-desktop/lib/native/nuvio-hdr-probe (DEB),
+#    `flatpak run --command=/app/lib/nuvio-desktop/lib/native/nuvio-hdr-probe
+#    com.nuvio.media.desktop --probe-json` (Flatpak), or build/hdr-native/ (source).
 timeout --signal=TERM --kill-after=2s 20s \
   build/hdr-native/nuvio-hdr-probe --probe-json | python3 -m json.tool
 #    Expect probe_complete=true, preferred st2084_pq/bt2020 with max_nits > reference_nits,

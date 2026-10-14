@@ -204,6 +204,24 @@ def main():
         for text in ('Homebrew', '/home/developer/build', '/tmp/development'):
             mutation('path_' + text, lambda text=text: (root / 'lib/pkgconfig/mpv.pc').write_text(text))
         mutation('unexpected_executable', lambda: shutil.copy2(root / 'bin/ffprobe', root / 'bin/unexpected'))
+        # Build-only nuvio-hdr-probe inputs: exact files, and the scanner's builder
+        # library allowance must not extend to other tools or shipped libraries.
+        scanner = root / 'bin/wayland-scanner'
+        protocols = root / 'share/wayland-protocols'
+        mutation('missing_probe_vulkan_header', lambda: (root / 'include/vulkan/vulkan.h').unlink())
+        mutation('missing_probe_protocol_xml',
+                 lambda: (protocols / 'staging/color-management/color-management-v1.xml').unlink())
+        def unlisted_protocol():
+            target = protocols / 'stable/xdg-shell/xdg-shell.xml'
+            target.parent.mkdir(parents=True)
+            target.write_text('<protocol name="xdg_shell"/>\n')
+        mutation('unlisted_build_data', unlisted_protocol)
+        mutation('build_tool_unclassified_dependency',
+                 lambda: subprocess.run(['patchelf', '--add-needed', 'libxml2.so.2', str(scanner)], check=True))
+        mutation('build_tool_allowance_on_library',
+                 lambda: subprocess.run(['patchelf', '--add-needed', 'libexpat.so.1', str(lib)], check=True))
+        mutation('build_tool_allowance_on_mpv',
+                 lambda: subprocess.run(['patchelf', '--add-needed', 'libexpat.so.1', str(root / 'bin/mpv')], check=True))
 
         def substitute():
             (root / 'bin/mpv').unlink()

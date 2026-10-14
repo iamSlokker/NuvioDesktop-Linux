@@ -169,8 +169,12 @@ set_target_properties(linux_hdr_session_test PROPERTIES BUILD_RPATH "${MPV_LIBRA
 # Optional read-only HDR capability helper (nuvio-hdr-probe). Built only when the
 # Wayland client library, wayland-scanner, wayland-protocols >= 1.41 (colour
 # management) and Vulkan headers/loader are available. Without it the application
-# fails closed: the experimental HDR session is never selected.
+# fails closed: the experimental HDR session is never selected. Package builds
+# (NUVIO_PACKAGE_BUILD) require it, so a package never silently omits the helper.
 option(NUVIO_HDR_PROBE "Build the nuvio-hdr-probe capability helper when its dependencies exist" ON)
+if(NUVIO_PACKAGE_BUILD AND NOT NUVIO_HDR_PROBE)
+    message(FATAL_ERROR "NUVIO_PACKAGE_BUILD requires NUVIO_HDR_PROBE=ON")
+endif()
 set(NUVIO_WAYLAND_PROTOCOLS_DIR "" CACHE PATH "wayland-protocols pkgdatadir (>= 1.41)")
 set(NUVIO_VULKAN_INCLUDE_DIR "" CACHE PATH "Directory containing vulkan/vulkan.h")
 if(NUVIO_HDR_PROBE)
@@ -215,6 +219,10 @@ if(NUVIO_HDR_PROBE)
                 INSTALL_RPATH "$ORIGIN;$ORIGIN/../runtime/lib")
         endif()
         message(STATUS "nuvio-hdr-probe: enabled (${NUVIO_COLOR_MANAGEMENT_XML})")
+    elseif(NUVIO_PACKAGE_BUILD)
+        message(FATAL_ERROR "nuvio-hdr-probe is required for package builds: needs wayland-client, "
+            "wayland-scanner, wayland-protocols >= 1.41 (NUVIO_WAYLAND_PROTOCOLS_DIR) and Vulkan "
+            "headers (NUVIO_VULKAN_INCLUDE_DIR) plus the loader next to libmpv")
     else()
         message(STATUS "nuvio-hdr-probe: disabled (needs wayland-client, wayland-scanner, "
             "wayland-protocols >= 1.41 and Vulkan headers/loader); HDR session fails closed")

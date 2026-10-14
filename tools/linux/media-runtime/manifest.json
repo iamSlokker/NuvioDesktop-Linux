@@ -111,7 +111,7 @@
       "license_files": [
         "LICENSES/*"
       ],
-      "reason": "Matching Vulkan registry and compile interfaces; no vendor driver.",
+      "reason": "Matching Vulkan registry and compile interfaces; no vendor driver. The C headers are exported to the runtime's build-only include/ for nuvio-hdr-probe; never staged into packages.",
       "options": [],
       "patches": [],
       "incorporated_code": true
@@ -455,7 +455,7 @@
         "cursor/xcursor.c",
         "cursor/cursor-data.h"
       ],
-      "reason": "Wayland client/cursor libraries for mpv's native Wayland Vulkan context (mpv requires >= 1.21; the builder provides 1.20). Server/EGL libraries and wayland-scanner are build-only and not exported.",
+      "reason": "Wayland client/cursor libraries for mpv's native Wayland Vulkan context (mpv requires >= 1.21; the builder provides 1.20). Server/EGL libraries are not exported. wayland-scanner is exported only to the runtime's build-only bin/ for generating nuvio-hdr-probe protocol code; it is never staged into packages.",
       "options": [
         "-Dlibraries=true",
         "-Dscanner=true",
@@ -502,7 +502,7 @@
         "staging/ext-data-control/ext-data-control-v1.xml",
         "staging/color-management/color-management-v1.xml"
       ],
-      "reason": "Protocol XML generated into libmpv. >= 1.41 is required for mpv's color-management-v1 (HDR target feedback) support.",
+      "reason": "Protocol XML generated into libmpv and nuvio-hdr-probe. >= 1.41 is required for color-management-v1 (HDR target feedback). Only color-management-v1.xml is exported, as build-only data that packaging never stages.",
       "options": [
         "-Dtests=false"
       ],
@@ -707,13 +707,17 @@
     "lib/libmpv.so",
     "bin/mpv",
     "bin/ffmpeg",
-    "bin/ffprobe"
+    "bin/ffprobe",
+    "bin/wayland-scanner",
+    "include/vulkan/vulkan.h",
+    "share/wayland-protocols/staging/color-management/color-management-v1.xml"
   ],
   "artifact_contract": {
     "executables": {
       "bin/mpv": "mpv",
       "bin/ffmpeg": "FFmpeg",
-      "bin/ffprobe": "FFmpeg"
+      "bin/ffprobe": "FFmpeg",
+      "bin/wayland-scanner": "wayland"
     },
     "libraries": {
       "lib/libXpresent.so.1.0.0": {
@@ -836,7 +840,50 @@
       "include/mpv/client.h",
       "include/mpv/render.h",
       "include/mpv/render_gl.h",
-      "include/mpv/stream_cb.h"
-    ]
+      "include/mpv/stream_cb.h",
+      "include/vk_video/vulkan_video_codec_av1std.h",
+      "include/vk_video/vulkan_video_codec_av1std_decode.h",
+      "include/vk_video/vulkan_video_codec_av1std_encode.h",
+      "include/vk_video/vulkan_video_codec_h264std.h",
+      "include/vk_video/vulkan_video_codec_h264std_decode.h",
+      "include/vk_video/vulkan_video_codec_h264std_encode.h",
+      "include/vk_video/vulkan_video_codec_h265std.h",
+      "include/vk_video/vulkan_video_codec_h265std_decode.h",
+      "include/vk_video/vulkan_video_codec_h265std_encode.h",
+      "include/vk_video/vulkan_video_codec_vp9std.h",
+      "include/vk_video/vulkan_video_codec_vp9std_decode.h",
+      "include/vk_video/vulkan_video_codecs_common.h",
+      "include/vulkan/vk_icd.h",
+      "include/vulkan/vk_layer.h",
+      "include/vulkan/vk_platform.h",
+      "include/vulkan/vulkan.h",
+      "include/vulkan/vulkan_android.h",
+      "include/vulkan/vulkan_beta.h",
+      "include/vulkan/vulkan_core.h",
+      "include/vulkan/vulkan_directfb.h",
+      "include/vulkan/vulkan_fuchsia.h",
+      "include/vulkan/vulkan_ggp.h",
+      "include/vulkan/vulkan_ios.h",
+      "include/vulkan/vulkan_macos.h",
+      "include/vulkan/vulkan_metal.h",
+      "include/vulkan/vulkan_ohos.h",
+      "include/vulkan/vulkan_screen.h",
+      "include/vulkan/vulkan_ubm.h",
+      "include/vulkan/vulkan_vi.h",
+      "include/vulkan/vulkan_wayland.h",
+      "include/vulkan/vulkan_win32.h",
+      "include/vulkan/vulkan_xcb.h",
+      "include/vulkan/vulkan_xlib.h",
+      "include/vulkan/vulkan_xlib_xrandr.h"
+    ],
+    "build_data": [
+      "share/wayland-protocols/staging/color-management/color-management-v1.xml"
+    ],
+    "build_tool_needed": {
+      "bin/wayland-scanner": [
+        "libexpat.so.1"
+      ]
+    },
+    "build_only": "bin/, include/, lib/pkgconfig/ and build_data are SDK inputs for the bridge and nuvio-hdr-probe builds; packaging stages only libraries and share/ without build_data."
   }
 }

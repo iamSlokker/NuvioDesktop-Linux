@@ -98,6 +98,17 @@ recorded separately; application/native build inputs live in the pinned builder.
 
 ## Runtime and dependency boundary
 
+**Experimental HDR helper.** The canonical native build also compiles
+`lib/native/nuvio-hdr-probe` (required when `NUVIO_PACKAGE_BUILD=ON`) from the
+media runtime's build-only SDK area (pinned wayland-scanner, color-management-v1
+XML, Vulkan C headers; never staged) and runs `linux_hdr_session_test
+--expect-wayland=yes`. `verify.check_image` requires the helper with the bridge's
+RUNPATH and bundled libwayland-client/libvulkan resolution; Flatpak checks its
+closure against GNOME Platform and its presence in the exported bundle. Details,
+gates and the default-off toggle are in the
+[HDR design](../../../docs/linux-hdr10-design.md#packaging-implemented-ci-rebuild-pending);
+HDR output is unverified on HDR hardware.
+
 Canonical layout:
 
 ```text
@@ -105,7 +116,7 @@ bin/nuvio                  original jpackage launcher
 bin/nuvio-desktop          portable environment wrapper
 lib/app/                   application/dependency jars, build stamp
 lib/runtime/               bundled Java 17 runtime, including JAWT
-lib/native/                player_bridge, mpv and private media ELF closure
+lib/native/                player_bridge, nuvio-hdr-probe, mpv and private media ELF closure
 share/                     desktop/icon metadata, media provenance and licenses
 release-info.json          one revision/version identity for all formats
 ```
@@ -190,8 +201,10 @@ the SDK using the same manifest/patch policy instead of widening permissions.
 `build-init`/`build-finish` generate the standard application `metadata` manifest,
 also uploaded as `flatpak-metadata.ini`; `flatpak-provenance.json` records the
 pinned runtime/source inputs. X11/XWayland and IPC
-are required by current JAWT/Canvas/GTK overlay architecture; no native Wayland
-claim. Network supports streaming/APIs, PulseAudio supports audio, and `dri`
+are required by current JAWT/Canvas/GTK overlay architecture (`GDK_BACKEND=x11`).
+`--socket=wayland` is granted in addition, only for the default-off experimental
+HDR session (its capability probe and mpv's own Wayland window); it is not a
+native-Wayland embedding claim. Network supports streaming/APIs, PulseAudio supports audio, and `dri`
 provides normal GPU interfaces. Portals are available through Flatpak's standard
 filtered bus; only the existing MPRIS name ownership and ScreenSaver interface
 are additionally requested. No home/host filesystem, session/system-bus socket,

@@ -131,6 +131,8 @@ package/SDK dependencies; this tree does not make them disappear.
 
 Build-only: Meson, NASM, Bison, wayland-scanner, nv-codec-headers, Vulkan headers,
 wayland-protocols, CA bootstrap and the snapshot toolchain/development packages.
+(wayland-scanner, Vulkan C headers and color-management-v1.xml are exported to the
+runtime SDK area only; see "Runtime structure and linkage".)
 Copyright elements of the protocol XML compiled into libmpv are exported. No compiler or GPU driver is exported. Free Vulkan/nv-codec header notices are included because generated/inline
 interface code is incorporated; these are not proprietary driver licenses.
 The pinned hwdata PNP registry is a
@@ -278,11 +280,14 @@ trees. This backport does not implement shader policy or complete G07/G08.
 ```text
 runtime/
   bin/{mpv,ffmpeg,ffprobe}
+  bin/wayland-scanner       # build-only (nuvio-hdr-probe), never packaged
   include/mpv/{client.h,render.h,...}
+  include/{vulkan,vk_video}/*.h   # build-only Vulkan C headers (nuvio-hdr-probe)
   lib/libmpv.so -> libmpv.so.2 -> ...
   lib/<matching FFmpeg and selected private DSOs>
   lib/pkgconfig/<relative-prefix metadata>
   share/licenses/<private components>
+  share/wayland-protocols/staging/color-management/color-management-v1.xml  # build-only
   share/nuvio-media-runtime/
     config/{ffmpeg,mpv}.h   # Boolean definitions captured from this build
     validated.json         # Transaction-completion marker, not a signature
@@ -302,6 +307,17 @@ absolute development RPATH, glibc or proprietary GPU library is shipped.
 The dynamic mpv client `.pc` prefix is relative to `pcfiledir`; static-link SDK
 requirements are omitted because static linkage is not exported. Static archives, libtool files,
 CMake exports, Meson build metadata and downloaded archives are excluded.
+
+`bin/`, `include/`, `lib/pkgconfig/` and the manifest's `artifact_contract.build_data`
+are an SDK area for the Linux bridge build. The packaging bridge build also
+compiles the experimental HDR capability helper `nuvio-hdr-probe` from the exported
+pinned wayland-scanner 1.24.0, color-management-v1.xml (wayland-protocols 1.42) and
+Vulkan-Headers 1.4.363.0 C headers (exact files listed in the manifest), because the
+Ubuntu 22.04 builder's wayland-protocols/scanner are too old. Packaging stages only
+the contract libraries and `share/` without `build_data`. The scanner is the only
+ELF allowed a builder dependency outside `host_runtime`: `build_tool_needed` names
+`libexpat.so.1` for `bin/wayland-scanner` alone; the same NEEDED on any other ELF
+still fails the audit (`tests/test-runtime.py` mutations).
 
 Exact configure/compiler output stays in the external build logs. Distributable
 metadata records versions, options, package versions, hashes and sanitized build

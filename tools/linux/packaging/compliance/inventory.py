@@ -188,7 +188,8 @@ def maven_component(packaged, cache):
 
 def native_owner(path, media, engine, owner_rows, package_rows, versions):
     name = Path(path).name
-    if path == 'lib/native/libplayer_bridge.so':
+    # The bridge and the experimental HDR capability helper are built from application sources.
+    if path in ('lib/native/libplayer_bridge.so', 'lib/native/nuvio-hdr-probe'):
         return 'application'
     if path.startswith('lib/runtime/') or path == 'bin/nuvio' or name == 'libapplauncher.so':
         return 'temurin'

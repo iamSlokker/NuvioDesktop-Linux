@@ -104,8 +104,11 @@ def audit(root, build_dir=None):
     structurally_valid = not errors
     for record in records if structurally_valid else []:
         classifications = {}
+        # Build-only tools (never staged into packages) may need named builder libraries.
+        build_tool = set(POLICY['artifact_contract']['build_tool_needed'].get(record['file'], []))
         for dep in record['needed']:
-            classifications[dep] = 'private-built' if dep in sonames else 'host-runtime' if dep in allowed else 'UNKNOWN'
+            classifications[dep] = ('private-built' if dep in sonames else 'host-runtime' if dep in allowed
+                                    else 'build-tool-host' if dep in build_tool else 'UNKNOWN')
             if classifications[dep] == 'UNKNOWN': errors.append(f"Unclassified dependency {record['file']}: {dep}")
         record['dependency_classification'] = classifications
         try: resolved = run('ldd', str(root / record['file']))

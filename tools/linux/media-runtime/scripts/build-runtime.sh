@@ -172,6 +172,14 @@ mkdir -p "$runtime"/{bin,lib/pkgconfig,include/mpv,share/nuvio-media-runtime,sha
 cp -a /work/prefix/lib/*.so* "$runtime/lib/"
 cp -a /work/prefix/bin/{mpv,ffmpeg,ffprobe} "$runtime/bin/"
 cp -a /work/prefix/include/mpv/. "$runtime/include/mpv/"
+# Build-only SDK inputs for the bridge's nuvio-hdr-probe helper. Packaging stages
+# only contract libraries and share/ minus build_data, so neither the pinned
+# scanner, the Vulkan C headers nor the protocol XML ever reach a package.
+cp -a /work/prefix/bin/wayland-scanner "$runtime/bin/"
+while IFS= read -r file; do
+    install -D -m 0644 "/work/prefix/$file" "$runtime/$file"
+done < <(jq -r '(.artifact_contract.headers[] | select(startswith("include/mpv/") | not)),
+                .artifact_contract.build_data[]' "$MEDIA_MANIFEST")
 # Public development metadata is for the dynamic mpv client API only.
 # Static linkage is intentionally unsupported, so omit private SDK requirements.
 cp -a /work/prefix/lib/pkgconfig/mpv.pc "$runtime/lib/pkgconfig/"
