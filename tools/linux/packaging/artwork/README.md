@@ -1,7 +1,8 @@
 # Release artwork authoring
 
-This optional, headless authoring recipe creates six plain typographic SVG badges
-and four original synthetic setup illustrations. It is not an application or
+This optional, headless authoring recipe creates six plain typographic SVG badges,
+four original synthetic setup illustrations and the 47-file Linux package overlay
+described below. It is not an application or
 packaging runtime dependency. No previous image is an input. The fictitious titles,
 abstract shapes and preview layouts are authored in `GenerateReleaseArtwork.java`.
 No external artwork, film posters, system fonts or network requests are used.
@@ -39,13 +40,53 @@ license/notice bundled separately. Format names describe detected metadata;
 neither certification, trademark permission for old artwork, nor endorsement is
 claimed. Publication remains blocked by the separate rights/source/delivery review.
 
-## Narrow retained-byte exception
+## Linux package overlay (47 resources)
 
-The owner explicitly chose to retain Umbra's four active originals:
+By owner decision, the 47 provider/rating marks and award/hero badges whose
+imported rights are UNRESOLVED are not shipped in Linux packages or the Linux
+source tarball. The same recipe authors original MIT replacements, written to
+`linux-overlay/` in the output directory and committed under
+[`overlay/`](overlay) at their repository-relative paths, e.g.
+`overlay/composeApp/src/commonMain/composeResources/drawable/rating_imdb.png`.
+
+- Names and formats are unchanged: SVGs keep the original `width`/`height`/
+  `viewBox` attributes and contain only `svg`, `title`, `rect` and `path`
+  (Inter glyphs as outlines); PNGs keep their pixel sizes as 8-bit RGBA.
+  Kotlin is unchanged (`imageResource` rasters and literal `.png` hero names).
+- Provider/rating marks are neutral rounded plates with plain Inter text
+  (`IMDb`, `TMDB`, `TR`/`Trakt`, `LB`, `MC`, `MAL`, `KIT`, `SIMKL`, `TVDB`,
+  `MDB`, `IDB`, `DC`). Rotten Tomatoes/audience states use `RT`/`AS` with
+  green/slate circles, amber/grey squares and up/down/check glyphs; certified and
+  verified states use a generic rosette. No brand colors, logo geometry,
+  tomato or popcorn imagery.
+- Award/hero badges are generic cup trophies, laurels, medals, shields, stars,
+  screens, film frames, clocks and arrows, with `NOM`, `1ST`, `NEW` and `CULT`
+  where useful. No statuettes or festival/award logo likenesses. Each file has
+  distinct bytes (unique `<title>` or pixels). `hero_badge_director.svg` is drawn
+  for its actual use (studio/prestige) and `hero_badge_studio.svg` for director.
+
+`tools/linux/packaging/source_policy.py` (applied after `build.source_tree()`) substitutes each overlay file for its tracked
+target in the packaging source snapshot, records the overlay hash in
+`source-files.json`, and fails if a target is untracked or original bytes remain
+elsewhere in the snapshot. The composeApp originals are unchanged for upstream,
+Windows and macOS, where they remain UNRESOLVED. The packaged-artwork gate
+requires every replacement hash and rejects all 47 original byte sequences at any
+JAR path. Rows are in the bundled provenance under `linux_overlay`.
+
+After regenerating, compare `linux-overlay/` with the committed overlay:
+
+```sh
+diff -r build/artwork-review/linux-overlay tools/linux/packaging/artwork/overlay
+```
+
+The receipt's `overlay_files` must equal the provenance `authoring.toolchain`.
+`rating_tmdb.png` is a text mark by owner decision; TMDB's attribution terms may
+require its approved logo, which the owner must confirm separately.
+
+## Former retained-byte exception (superseded)
+
+The owner previously chose to retain Umbra's four active originals
 `hero_badge_win.png`, `hero_badge_nom.png`, `hero_badge_foreign.png` and
-`hero_badge_people_choice.png`. They are byte-identical at the pinned original
-and WIP revisions in the manifest. Eight deleted resources share those bytes.
-The gate therefore allows these hashes **only at the four exact original JAR
-resource paths**, rejects every deleted filename even with different contents,
-and rejects copies at other paths. The four originals remain **UNRESOLVED**.
-This exception preserves upstream behavior; it is not a redistribution grant.
+`hero_badge_people_choice.png` at their exact JAR paths. The Linux overlay now
+replaces them; their bytes are forbidden at every packaged path, like the other
+originals. Upstream builds still ship them unchanged.

@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "baseline_commit": "1555d7ea75c3777f854f4af1b2256c9ff2419cd9",
-  "scope": "Ten unused resource removals and ten original replacements only; other rights and source/delivery gates remain BLOCKED",
+  "scope": "Ten unused resource removals, ten original replacements and a 47-file Linux package overlay only; other rights and source/delivery gates remain BLOCKED",
   "license": "MIT",
   "copyright": "Copyright (c) 2026 NuvioDesktop-Linux contributors",
   "removed": [
@@ -542,62 +542,1379 @@
       }
     }
   ],
-  "retained_hash_exceptions": [
-    {
-      "resource": "composeApp/src/commonMain/composeResources/drawable/hero_badge_win.png",
-      "sha256": "0fad3e3f18dc9b77a2e8a9832fbe5268f9eaf8e6bdb5816ec7f29575c35befd9",
-      "bytes": 7348,
-      "status": "UNRESOLVED",
-      "reason": "Owner explicitly requested preserving Umbra originals; exact-path exception only, not a license grant",
-      "upstream_repository": "https://github.com/UmbraProjects/NuvioDesktop",
-      "upstream_branch": "windows-tv-adaptive",
-      "verified_upstream_commit": "a70cc3700570555abb3f165548a67dec7c7a5430",
-      "verified_wip_commit": "18537e3c85d7f365487abb6f7e7edb8a4432a081",
-      "comparison": "Byte-identical at both pinned upstream revisions and application baseline"
-    },
-    {
-      "resource": "composeApp/src/commonMain/composeResources/drawable/hero_badge_nom.png",
-      "sha256": "8f16e6996d5e6fcd139023ae476dadce07720e63510988635a8b67b5c2daa661",
-      "bytes": 7180,
-      "status": "UNRESOLVED",
-      "reason": "Owner explicitly requested preserving Umbra originals; exact-path exception only, not a license grant",
-      "upstream_repository": "https://github.com/UmbraProjects/NuvioDesktop",
-      "upstream_branch": "windows-tv-adaptive",
-      "verified_upstream_commit": "a70cc3700570555abb3f165548a67dec7c7a5430",
-      "verified_wip_commit": "18537e3c85d7f365487abb6f7e7edb8a4432a081",
-      "comparison": "Byte-identical at both pinned upstream revisions and application baseline"
-    },
-    {
-      "resource": "composeApp/src/commonMain/composeResources/drawable/hero_badge_foreign.png",
-      "sha256": "be8b3a52376381fbb5784fbe2e05e3ddd72521358a71da7586212331e7e3557b",
-      "bytes": 12701,
-      "status": "UNRESOLVED",
-      "reason": "Owner explicitly requested preserving Umbra originals; exact-path exception only, not a license grant",
-      "upstream_repository": "https://github.com/UmbraProjects/NuvioDesktop",
-      "upstream_branch": "windows-tv-adaptive",
-      "verified_upstream_commit": "a70cc3700570555abb3f165548a67dec7c7a5430",
-      "verified_wip_commit": "18537e3c85d7f365487abb6f7e7edb8a4432a081",
-      "comparison": "Byte-identical at both pinned upstream revisions and application baseline"
-    },
-    {
-      "resource": "composeApp/src/commonMain/composeResources/drawable/hero_badge_people_choice.png",
-      "sha256": "be8b3a52376381fbb5784fbe2e05e3ddd72521358a71da7586212331e7e3557b",
-      "bytes": 12701,
-      "status": "UNRESOLVED",
-      "reason": "Owner explicitly requested preserving Umbra originals; exact-path exception only, not a license grant",
-      "upstream_repository": "https://github.com/UmbraProjects/NuvioDesktop",
-      "upstream_branch": "windows-tv-adaptive",
-      "verified_upstream_commit": "a70cc3700570555abb3f165548a67dec7c7a5430",
-      "verified_wip_commit": "18537e3c85d7f365487abb6f7e7edb8a4432a081",
-      "comparison": "Byte-identical at both pinned upstream revisions and application baseline"
-    }
-  ],
+  "linux_overlay": {
+    "scope": "Linux packages and Linux source snapshot only; composeApp originals unchanged for upstream/other platforms",
+    "mechanism": "tools/linux/packaging/source_policy.py (applied after build.source_tree()) substitutes overlay bytes for each tracked target",
+    "superseded_retained_hash_exceptions": [
+      "composeApp/src/commonMain/composeResources/drawable/hero_badge_win.png",
+      "composeApp/src/commonMain/composeResources/drawable/hero_badge_nom.png",
+      "composeApp/src/commonMain/composeResources/drawable/hero_badge_foreign.png",
+      "composeApp/src/commonMain/composeResources/drawable/hero_badge_people_choice.png"
+    ],
+    "resources": [
+      {
+        "resource": "composeApp/src/commonMain/composeResources/drawable/discord_logo.svg",
+        "overlay": "tools/linux/packaging/artwork/overlay/composeApp/src/commonMain/composeResources/drawable/discord_logo.svg",
+        "status": "LINUX_OVERLAY_REPLACED",
+        "category": "provider-or-rating-mark",
+        "original": {
+          "sha256": "7135311268ca9363af6339b99f4884129d5243474a3ed1870ed6069df1681af1",
+          "bytes": 1193,
+          "introduced_commit": "95cc60003bc5ab696e1ac91375527c5555a7627c",
+          "category": "provider-or-rating-mark",
+          "status": "UNRESOLVED",
+          "source_references": [
+            "composeApp/src/desktopMain/kotlin/com/nuvio/app/features/settings/IntegrationLogoPainter.desktop.kt"
+          ]
+        },
+        "replacement": {
+          "sha256": "efe19d3ecd7c70aa9690abc1cffb59b24e1f95dbb9c7e0d0a895ee9a41623b51",
+          "bytes": 1437,
+          "license": "MIT",
+          "source": "tools/linux/packaging/artwork/GenerateReleaseArtwork.java",
+          "copyright": "Copyright (c) 2026 NuvioDesktop-Linux contributors",
+          "description": "DC text mark (Linux replacement); original Linux replacement, not an official logo or award mark"
+        },
+        "dimensions": {
+          "viewBox": "0 0 24 24"
+        }
+      },
+      {
+        "resource": "composeApp/src/commonMain/composeResources/drawable/hero_badge_best_picture.svg",
+        "overlay": "tools/linux/packaging/artwork/overlay/composeApp/src/commonMain/composeResources/drawable/hero_badge_best_picture.svg",
+        "status": "LINUX_OVERLAY_REPLACED",
+        "category": "award-or-hero-badge",
+        "original": {
+          "sha256": "0752195243f1fdce45b6faec68dd46a25ec67d0621671ebce72d137755f34af9",
+          "bytes": 3237,
+          "introduced_commit": "fd33f9d211b36283c99cafa85f5696fbdc0e2763",
+          "category": "award-or-hero-badge",
+          "status": "UNRESOLVED",
+          "source_references": [
+            "composeApp/src/commonMain/kotlin/com/nuvio/app/features/home/components/HomeHeroSection.kt"
+          ]
+        },
+        "replacement": {
+          "sha256": "74025dd1ca45898ad0712d0d02f7f094c270d4f0c4529d0fef0f369fad264a20",
+          "bytes": 1946,
+          "license": "MIT",
+          "source": "tools/linux/packaging/artwork/GenerateReleaseArtwork.java",
+          "copyright": "Copyright (c) 2026 NuvioDesktop-Linux contributors",
+          "description": "Top picture award (generic trophy); original Linux replacement, not an official logo or award mark"
+        },
+        "dimensions": {
+          "width": "100",
+          "height": "100",
+          "viewBox": "0 0 100 100"
+        }
+      },
+      {
+        "resource": "composeApp/src/commonMain/composeResources/drawable/hero_badge_binge_ready.svg",
+        "overlay": "tools/linux/packaging/artwork/overlay/composeApp/src/commonMain/composeResources/drawable/hero_badge_binge_ready.svg",
+        "status": "LINUX_OVERLAY_REPLACED",
+        "category": "award-or-hero-badge",
+        "original": {
+          "sha256": "830c6ebc944d367929b504be7253e320d72ed9257bd4f768b67519c91fba19bf",
+          "bytes": 5868,
+          "introduced_commit": "fd33f9d211b36283c99cafa85f5696fbdc0e2763",
+          "category": "award-or-hero-badge",
+          "status": "UNRESOLVED",
+          "source_references": [
+            "composeApp/src/commonMain/kotlin/com/nuvio/app/features/home/components/HomeHeroSection.kt"
+          ]
+        },
+        "replacement": {
+          "sha256": "567302ee278709db975c3038baf802994ac4781774c12621dbe861fc02ee2773",
+          "bytes": 1122,
+          "license": "MIT",
+          "source": "tools/linux/packaging/artwork/GenerateReleaseArtwork.java",
+          "copyright": "Copyright (c) 2026 NuvioDesktop-Linux contributors",
+          "description": "Binge ready (play and chevrons); original Linux replacement, not an official logo or award mark"
+        },
+        "dimensions": {
+          "width": "100",
+          "height": "100",
+          "viewBox": "0 0 100 100"
+        }
+      },
+      {
+        "resource": "composeApp/src/commonMain/composeResources/drawable/hero_badge_cult.svg",
+        "overlay": "tools/linux/packaging/artwork/overlay/composeApp/src/commonMain/composeResources/drawable/hero_badge_cult.svg",
+        "status": "LINUX_OVERLAY_REPLACED",
+        "category": "award-or-hero-badge",
+        "original": {
+          "sha256": "4c60bd54808c3109bc3f2cefc1e5e65e9a7d995962dcd436cae91b82e30d36fd",
+          "bytes": 1860,
+          "introduced_commit": "fd33f9d211b36283c99cafa85f5696fbdc0e2763",
+          "category": "award-or-hero-badge",
+          "status": "UNRESOLVED",
+          "source_references": [
+            "composeApp/src/commonMain/kotlin/com/nuvio/app/features/home/components/HomeHeroSection.kt"
+          ]
+        },
+        "replacement": {
+          "sha256": "61a8a11fbb7351cf83e3cf94d78b26047fb2824f2756ab478014fc6e495f1c97",
+          "bytes": 1788,
+          "license": "MIT",
+          "source": "tools/linux/packaging/artwork/GenerateReleaseArtwork.java",
+          "copyright": "Copyright (c) 2026 NuvioDesktop-Linux contributors",
+          "description": "Cult favourite (ring, CULT); original Linux replacement, not an official logo or award mark"
+        },
+        "dimensions": {
+          "width": "100",
+          "height": "100",
+          "viewBox": "0 0 100 100"
+        }
+      },
+      {
+        "resource": "composeApp/src/commonMain/composeResources/drawable/hero_badge_director.svg",
+        "overlay": "tools/linux/packaging/artwork/overlay/composeApp/src/commonMain/composeResources/drawable/hero_badge_director.svg",
+        "status": "LINUX_OVERLAY_REPLACED",
+        "category": "award-or-hero-badge",
+        "original": {
+          "sha256": "5d6d18ed3392d0176e5427fc7280edbff45c886185187719d955bd725f1653a7",
+          "bytes": 2195,
+          "introduced_commit": "fd33f9d211b36283c99cafa85f5696fbdc0e2763",
+          "category": "award-or-hero-badge",
+          "status": "UNRESOLVED",
+          "source_references": [
+            "composeApp/src/commonMain/kotlin/com/nuvio/app/features/home/components/HomeHeroSection.kt"
+          ]
+        },
+        "replacement": {
+          "sha256": "a8f695735f9d0e3acc6c518f16f4ee0d93984686ff964fa911a10a44219d7b41",
+          "bytes": 1100,
+          "license": "MIT",
+          "source": "tools/linux/packaging/artwork/GenerateReleaseArtwork.java",
+          "copyright": "Copyright (c) 2026 NuvioDesktop-Linux contributors",
+          "description": "Prestige studio (columned building); original Linux replacement, not an official logo or award mark"
+        },
+        "dimensions": {
+          "width": "100",
+          "height": "100",
+          "viewBox": "0 0 100 100"
+        }
+      },
+      {
+        "resource": "composeApp/src/commonMain/composeResources/drawable/hero_badge_emmy_nom.svg",
+        "overlay": "tools/linux/packaging/artwork/overlay/composeApp/src/commonMain/composeResources/drawable/hero_badge_emmy_nom.svg",
+        "status": "LINUX_OVERLAY_REPLACED",
+        "category": "award-or-hero-badge",
+        "original": {
+          "sha256": "8d9e261b4cb8db233d9076d7b7ccf7e04e8c6fa34f31f3c656775a8e3653c78c",
+          "bytes": 10588,
+          "introduced_commit": "fd33f9d211b36283c99cafa85f5696fbdc0e2763",
+          "category": "award-or-hero-badge",
+          "status": "UNRESOLVED",
+          "source_references": [
+            "composeApp/src/commonMain/kotlin/com/nuvio/app/features/home/components/HomeHeroSection.kt"
+          ]
+        },
+        "replacement": {
+          "sha256": "eaee79f1ac6cf2550c500fe9883fddbc45acae0096725550b2ae3c22a2edb77a",
+          "bytes": 2894,
+          "license": "MIT",
+          "source": "tools/linux/packaging/artwork/GenerateReleaseArtwork.java",
+          "copyright": "Copyright (c) 2026 NuvioDesktop-Linux contributors",
+          "description": "Television award nominee (screen and star, NOM); original Linux replacement, not an official logo or award mark"
+        },
+        "dimensions": {
+          "width": "100",
+          "height": "100",
+          "viewBox": "0 0 100 100"
+        }
+      },
+      {
+        "resource": "composeApp/src/commonMain/composeResources/drawable/hero_badge_emmy_win.svg",
+        "overlay": "tools/linux/packaging/artwork/overlay/composeApp/src/commonMain/composeResources/drawable/hero_badge_emmy_win.svg",
+        "status": "LINUX_OVERLAY_REPLACED",
+        "category": "award-or-hero-badge",
+        "original": {
+          "sha256": "e5715b6ee3ae9257df52ff61b673e9a88bf84875eb6410549ff0141dc112d1da",
+          "bytes": 10587,
+          "introduced_commit": "fd33f9d211b36283c99cafa85f5696fbdc0e2763",
+          "category": "award-or-hero-badge",
+          "status": "UNRESOLVED",
+          "source_references": [
+            "composeApp/src/commonMain/kotlin/com/nuvio/app/features/home/components/HomeHeroSection.kt"
+          ]
+        },
+        "replacement": {
+          "sha256": "12b353cf0b5c613331222b980638847945b79a2dd13ae12b9de35f889619794e",
+          "bytes": 1213,
+          "license": "MIT",
+          "source": "tools/linux/packaging/artwork/GenerateReleaseArtwork.java",
+          "copyright": "Copyright (c) 2026 NuvioDesktop-Linux contributors",
+          "description": "Television award winner (screen and star); original Linux replacement, not an official logo or award mark"
+        },
+        "dimensions": {
+          "width": "100",
+          "height": "100",
+          "viewBox": "0 0 100 100"
+        }
+      },
+      {
+        "resource": "composeApp/src/commonMain/composeResources/drawable/hero_badge_festival.svg",
+        "overlay": "tools/linux/packaging/artwork/overlay/composeApp/src/commonMain/composeResources/drawable/hero_badge_festival.svg",
+        "status": "LINUX_OVERLAY_REPLACED",
+        "category": "award-or-hero-badge",
+        "original": {
+          "sha256": "9adebf5ffd9a5075d9cbd3421ce8fab532bf066db75c0ea87d855cd8ce77aa04",
+          "bytes": 17370,
+          "introduced_commit": "fd33f9d211b36283c99cafa85f5696fbdc0e2763",
+          "category": "award-or-hero-badge",
+          "status": "UNRESOLVED",
+          "source_references": [
+            "composeApp/src/commonMain/kotlin/com/nuvio/app/features/home/components/HomeHeroSection.kt"
+          ]
+        },
+        "replacement": {
+          "sha256": "5cdf22b847ab26e9565b558e5f252e4dbc824e2b593efb942f6719e62a27994c",
+          "bytes": 10493,
+          "license": "MIT",
+          "source": "tools/linux/packaging/artwork/GenerateReleaseArtwork.java",
+          "copyright": "Copyright (c) 2026 NuvioDesktop-Linux contributors",
+          "description": "Festival selection (laurel and film frame); original Linux replacement, not an official logo or award mark"
+        },
+        "dimensions": {
+          "width": "100",
+          "height": "100",
+          "viewBox": "0 0 100 100"
+        }
+      },
+      {
+        "resource": "composeApp/src/commonMain/composeResources/drawable/hero_badge_foreign.png",
+        "overlay": "tools/linux/packaging/artwork/overlay/composeApp/src/commonMain/composeResources/drawable/hero_badge_foreign.png",
+        "status": "LINUX_OVERLAY_REPLACED",
+        "category": "award-or-hero-badge",
+        "original": {
+          "sha256": "be8b3a52376381fbb5784fbe2e05e3ddd72521358a71da7586212331e7e3557b",
+          "bytes": 12701,
+          "introduced_commit": "f1fc80bc1914d71f4e5e9eee11259521cea25469",
+          "category": "award-or-hero-badge",
+          "status": "UNRESOLVED",
+          "source_references": [
+            "composeApp/src/commonMain/kotlin/com/nuvio/app/features/home/components/HomeHeroSection.kt"
+          ]
+        },
+        "replacement": {
+          "sha256": "05ae74ffd55709615cd5ce98e630c8618a4ae2b522496afe92dcf179588a562c",
+          "bytes": 10015,
+          "license": "MIT",
+          "source": "tools/linux/packaging/artwork/GenerateReleaseArtwork.java",
+          "copyright": "Copyright (c) 2026 NuvioDesktop-Linux contributors",
+          "description": "Two generic speech bubbles with plain Inter A and Greek Omega; original Linux replacement, not an official logo or award mark"
+        },
+        "dimensions": {
+          "width": 423,
+          "height": 306,
+          "mode": "RGBA"
+        }
+      },
+      {
+        "resource": "composeApp/src/commonMain/composeResources/drawable/hero_badge_globe_nom.svg",
+        "overlay": "tools/linux/packaging/artwork/overlay/composeApp/src/commonMain/composeResources/drawable/hero_badge_globe_nom.svg",
+        "status": "LINUX_OVERLAY_REPLACED",
+        "category": "award-or-hero-badge",
+        "original": {
+          "sha256": "7ed00cdd149cbaf3f8529bac97a3c0a9b4afb9831e77c5585e6202541a019033",
+          "bytes": 5051,
+          "introduced_commit": "fd33f9d211b36283c99cafa85f5696fbdc0e2763",
+          "category": "award-or-hero-badge",
+          "status": "UNRESOLVED",
+          "source_references": [
+            "composeApp/src/commonMain/kotlin/com/nuvio/app/features/home/components/HomeHeroSection.kt"
+          ]
+        },
+        "replacement": {
+          "sha256": "573baac74557d4d7b21bff2a98ed386ef77fb27be2d3ccf59cfc25fc161d6e79",
+          "bytes": 10085,
+          "license": "MIT",
+          "source": "tools/linux/packaging/artwork/GenerateReleaseArtwork.java",
+          "copyright": "Copyright (c) 2026 NuvioDesktop-Linux contributors",
+          "description": "Major award nominee (laurel and star, NOM); original Linux replacement, not an official logo or award mark"
+        },
+        "dimensions": {
+          "width": "100",
+          "height": "100",
+          "viewBox": "0 0 100 100"
+        }
+      },
+      {
+        "resource": "composeApp/src/commonMain/composeResources/drawable/hero_badge_globe_win.svg",
+        "overlay": "tools/linux/packaging/artwork/overlay/composeApp/src/commonMain/composeResources/drawable/hero_badge_globe_win.svg",
+        "status": "LINUX_OVERLAY_REPLACED",
+        "category": "award-or-hero-badge",
+        "original": {
+          "sha256": "4192733fe949517005eab30707c2358a44f8655d0988446f11a91a05441e77df",
+          "bytes": 5054,
+          "introduced_commit": "fd33f9d211b36283c99cafa85f5696fbdc0e2763",
+          "category": "award-or-hero-badge",
+          "status": "UNRESOLVED",
+          "source_references": [
+            "composeApp/src/commonMain/kotlin/com/nuvio/app/features/home/components/HomeHeroSection.kt"
+          ]
+        },
+        "replacement": {
+          "sha256": "1aba17a1fe1977426d7bc933cf3636d2244b2352345fddb3e714b6be2b590fa6",
+          "bytes": 8678,
+          "license": "MIT",
+          "source": "tools/linux/packaging/artwork/GenerateReleaseArtwork.java",
+          "copyright": "Copyright (c) 2026 NuvioDesktop-Linux contributors",
+          "description": "Major award winner (laurel and star); original Linux replacement, not an official logo or award mark"
+        },
+        "dimensions": {
+          "width": "100",
+          "height": "100",
+          "viewBox": "0 0 100 100"
+        }
+      },
+      {
+        "resource": "composeApp/src/commonMain/composeResources/drawable/hero_badge_golden_bear.svg",
+        "overlay": "tools/linux/packaging/artwork/overlay/composeApp/src/commonMain/composeResources/drawable/hero_badge_golden_bear.svg",
+        "status": "LINUX_OVERLAY_REPLACED",
+        "category": "award-or-hero-badge",
+        "original": {
+          "sha256": "e6814b71d1983481653b59630c1c7430f8c18ce48dd2387d9e86405395df6345",
+          "bytes": 2582696,
+          "introduced_commit": "fd33f9d211b36283c99cafa85f5696fbdc0e2763",
+          "category": "award-or-hero-badge",
+          "status": "UNRESOLVED",
+          "source_references": [
+            "composeApp/src/commonMain/kotlin/com/nuvio/app/features/home/components/HomeHeroSection.kt"
+          ]
+        },
+        "replacement": {
+          "sha256": "34748b00ea06d4a09378cf73ea8aec4e50ffffadb9c208444a8a13663535cde2",
+          "bytes": 648,
+          "license": "MIT",
+          "source": "tools/linux/packaging/artwork/GenerateReleaseArtwork.java",
+          "copyright": "Copyright (c) 2026 NuvioDesktop-Linux contributors",
+          "description": "Festival top prize (hexagon and star); original Linux replacement, not an official logo or award mark"
+        },
+        "dimensions": {
+          "width": "100",
+          "height": "100",
+          "viewBox": "0 0 100 100"
+        }
+      },
+      {
+        "resource": "composeApp/src/commonMain/composeResources/drawable/hero_badge_golden_lion.svg",
+        "overlay": "tools/linux/packaging/artwork/overlay/composeApp/src/commonMain/composeResources/drawable/hero_badge_golden_lion.svg",
+        "status": "LINUX_OVERLAY_REPLACED",
+        "category": "award-or-hero-badge",
+        "original": {
+          "sha256": "5e109d3123688eb76fde8d99dd3d5e279f82011b8bd6dff83f059a702f1cb040",
+          "bytes": 8106,
+          "introduced_commit": "fd33f9d211b36283c99cafa85f5696fbdc0e2763",
+          "category": "award-or-hero-badge",
+          "status": "UNRESOLVED",
+          "source_references": [
+            "composeApp/src/commonMain/kotlin/com/nuvio/app/features/home/components/HomeHeroSection.kt"
+          ]
+        },
+        "replacement": {
+          "sha256": "04658e45cf27255b32c10b431d02fb2b6a40dd48d57c894ae5f27ec0f4980008",
+          "bytes": 695,
+          "license": "MIT",
+          "source": "tools/linux/packaging/artwork/GenerateReleaseArtwork.java",
+          "copyright": "Copyright (c) 2026 NuvioDesktop-Linux contributors",
+          "description": "Festival top prize (shield and star); original Linux replacement, not an official logo or award mark"
+        },
+        "dimensions": {
+          "width": "100",
+          "height": "100",
+          "viewBox": "0 0 100 100"
+        }
+      },
+      {
+        "resource": "composeApp/src/commonMain/composeResources/drawable/hero_badge_metacritic.svg",
+        "overlay": "tools/linux/packaging/artwork/overlay/composeApp/src/commonMain/composeResources/drawable/hero_badge_metacritic.svg",
+        "status": "LINUX_OVERLAY_REPLACED",
+        "category": "award-or-hero-badge",
+        "original": {
+          "sha256": "625f4bb46d43315617db667923bfc23e04d4a5132d8a1fd3b469d968e1f00236",
+          "bytes": 59180,
+          "introduced_commit": "fd33f9d211b36283c99cafa85f5696fbdc0e2763",
+          "category": "award-or-hero-badge",
+          "status": "UNRESOLVED",
+          "source_references": [
+            "composeApp/src/commonMain/kotlin/com/nuvio/app/features/home/components/HomeHeroSection.kt"
+          ]
+        },
+        "replacement": {
+          "sha256": "65b497d39cee5714bafa952cb5cd5f174ee2fdac2c848ebc44596f834ef76de1",
+          "bytes": 4472,
+          "license": "MIT",
+          "source": "tools/linux/packaging/artwork/GenerateReleaseArtwork.java",
+          "copyright": "Copyright (c) 2026 NuvioDesktop-Linux contributors",
+          "description": "High critic score (gauge); original Linux replacement, not an official logo or award mark"
+        },
+        "dimensions": {
+          "width": "100",
+          "height": "100",
+          "viewBox": "0 0 100 100"
+        }
+      },
+      {
+        "resource": "composeApp/src/commonMain/composeResources/drawable/hero_badge_mini_series.svg",
+        "overlay": "tools/linux/packaging/artwork/overlay/composeApp/src/commonMain/composeResources/drawable/hero_badge_mini_series.svg",
+        "status": "LINUX_OVERLAY_REPLACED",
+        "category": "award-or-hero-badge",
+        "original": {
+          "sha256": "e4f3260990846aa3d9b196d2b6c387c58d73d2d057bb0e6d797e9bae24ca7ddd",
+          "bytes": 2136,
+          "introduced_commit": "fd33f9d211b36283c99cafa85f5696fbdc0e2763",
+          "category": "award-or-hero-badge",
+          "status": "UNRESOLVED",
+          "source_references": [
+            "composeApp/src/commonMain/kotlin/com/nuvio/app/features/home/components/HomeHeroSection.kt"
+          ]
+        },
+        "replacement": {
+          "sha256": "56bcbf6e4172c741d2362ae1733485b82739ad72df8e461f609a0f5d60dd7d1b",
+          "bytes": 1122,
+          "license": "MIT",
+          "source": "tools/linux/packaging/artwork/GenerateReleaseArtwork.java",
+          "copyright": "Copyright (c) 2026 NuvioDesktop-Linux contributors",
+          "description": "Limited series (stacked episodes); original Linux replacement, not an official logo or award mark"
+        },
+        "dimensions": {
+          "width": "100",
+          "height": "100",
+          "viewBox": "0 0 100 100"
+        }
+      },
+      {
+        "resource": "composeApp/src/commonMain/composeResources/drawable/hero_badge_new_release.svg",
+        "overlay": "tools/linux/packaging/artwork/overlay/composeApp/src/commonMain/composeResources/drawable/hero_badge_new_release.svg",
+        "status": "LINUX_OVERLAY_REPLACED",
+        "category": "award-or-hero-badge",
+        "original": {
+          "sha256": "9a77df1e4e57bd151fcedf67fa38c2bcc89909f1ee30298a37eb5b8b8964c3af",
+          "bytes": 1561,
+          "introduced_commit": "fd33f9d211b36283c99cafa85f5696fbdc0e2763",
+          "category": "award-or-hero-badge",
+          "status": "UNRESOLVED",
+          "source_references": [
+            "composeApp/src/commonMain/kotlin/com/nuvio/app/features/home/components/HomeHeroSection.kt"
+          ]
+        },
+        "replacement": {
+          "sha256": "5a915ce49606b381bbcea66c2c1532f3335a68da0d7123d8d805b78cd6d67b0f",
+          "bytes": 1705,
+          "license": "MIT",
+          "source": "tools/linux/packaging/artwork/GenerateReleaseArtwork.java",
+          "copyright": "Copyright (c) 2026 NuvioDesktop-Linux contributors",
+          "description": "New release (starburst, NEW); original Linux replacement, not an official logo or award mark"
+        },
+        "dimensions": {
+          "width": "100",
+          "height": "100",
+          "viewBox": "0 0 100 100"
+        }
+      },
+      {
+        "resource": "composeApp/src/commonMain/composeResources/drawable/hero_badge_nom.png",
+        "overlay": "tools/linux/packaging/artwork/overlay/composeApp/src/commonMain/composeResources/drawable/hero_badge_nom.png",
+        "status": "LINUX_OVERLAY_REPLACED",
+        "category": "award-or-hero-badge",
+        "original": {
+          "sha256": "8f16e6996d5e6fcd139023ae476dadce07720e63510988635a8b67b5c2daa661",
+          "bytes": 7180,
+          "introduced_commit": "f1fc80bc1914d71f4e5e9eee11259521cea25469",
+          "category": "award-or-hero-badge",
+          "status": "UNRESOLVED",
+          "source_references": [
+            "composeApp/src/commonMain/kotlin/com/nuvio/app/features/home/components/HomeHeroSection.kt"
+          ]
+        },
+        "replacement": {
+          "sha256": "9fd1cdacfed1a93ef48bec3a7f26853aaf3b16471549ed2753566ee8cff63375",
+          "bytes": 19254,
+          "license": "MIT",
+          "source": "tools/linux/packaging/artwork/GenerateReleaseArtwork.java",
+          "copyright": "Copyright (c) 2026 NuvioDesktop-Linux contributors",
+          "description": "Generic silver ribbon medal with outlined star; no statuette; original Linux replacement, not an official logo or award mark"
+        },
+        "dimensions": {
+          "width": 316,
+          "height": 801,
+          "mode": "RGBA"
+        }
+      },
+      {
+        "resource": "composeApp/src/commonMain/composeResources/drawable/hero_badge_oscar_nom.svg",
+        "overlay": "tools/linux/packaging/artwork/overlay/composeApp/src/commonMain/composeResources/drawable/hero_badge_oscar_nom.svg",
+        "status": "LINUX_OVERLAY_REPLACED",
+        "category": "award-or-hero-badge",
+        "original": {
+          "sha256": "e6d55cdfc1823b7cea3410ae12c1465e10114819b3d48ae3a358c938fe33513d",
+          "bytes": 5756,
+          "introduced_commit": "fd33f9d211b36283c99cafa85f5696fbdc0e2763",
+          "category": "award-or-hero-badge",
+          "status": "UNRESOLVED",
+          "source_references": [
+            "composeApp/src/commonMain/kotlin/com/nuvio/app/features/home/components/HomeHeroSection.kt"
+          ]
+        },
+        "replacement": {
+          "sha256": "35ad47354a3435fa86df76af7bea8ef2fd666ea26a61ecbf88597b287334c2dd",
+          "bytes": 3643,
+          "license": "MIT",
+          "source": "tools/linux/packaging/artwork/GenerateReleaseArtwork.java",
+          "copyright": "Copyright (c) 2026 NuvioDesktop-Linux contributors",
+          "description": "Top picture nominee (generic trophy, NOM); original Linux replacement, not an official logo or award mark"
+        },
+        "dimensions": {
+          "width": "100",
+          "height": "100",
+          "viewBox": "0 0 100 100"
+        }
+      },
+      {
+        "resource": "composeApp/src/commonMain/composeResources/drawable/hero_badge_palme.svg",
+        "overlay": "tools/linux/packaging/artwork/overlay/composeApp/src/commonMain/composeResources/drawable/hero_badge_palme.svg",
+        "status": "LINUX_OVERLAY_REPLACED",
+        "category": "award-or-hero-badge",
+        "original": {
+          "sha256": "bd2c58429d16c12b8cdaed828427e0d12ddf4829d81e924a9a80448af5b6d95a",
+          "bytes": 5459,
+          "introduced_commit": "fd33f9d211b36283c99cafa85f5696fbdc0e2763",
+          "category": "award-or-hero-badge",
+          "status": "UNRESOLVED",
+          "source_references": [
+            "composeApp/src/commonMain/kotlin/com/nuvio/app/features/home/components/HomeHeroSection.kt"
+          ]
+        },
+        "replacement": {
+          "sha256": "13afedca34765a5d01b116c97e740fdc9c555c84cf73532b7b78a94efd77a088",
+          "bytes": 9480,
+          "license": "MIT",
+          "source": "tools/linux/packaging/artwork/GenerateReleaseArtwork.java",
+          "copyright": "Copyright (c) 2026 NuvioDesktop-Linux contributors",
+          "description": "Festival top prize (laurel, 1ST); original Linux replacement, not an official logo or award mark"
+        },
+        "dimensions": {
+          "width": "100",
+          "height": "100",
+          "viewBox": "0 0 100 100"
+        }
+      },
+      {
+        "resource": "composeApp/src/commonMain/composeResources/drawable/hero_badge_people_choice.png",
+        "overlay": "tools/linux/packaging/artwork/overlay/composeApp/src/commonMain/composeResources/drawable/hero_badge_people_choice.png",
+        "status": "LINUX_OVERLAY_REPLACED",
+        "category": "award-or-hero-badge",
+        "original": {
+          "sha256": "be8b3a52376381fbb5784fbe2e05e3ddd72521358a71da7586212331e7e3557b",
+          "bytes": 12701,
+          "introduced_commit": "f1fc80bc1914d71f4e5e9eee11259521cea25469",
+          "category": "award-or-hero-badge",
+          "status": "UNRESOLVED",
+          "source_references": [
+            "composeApp/src/commonMain/kotlin/com/nuvio/app/features/home/components/HomeHeroSection.kt"
+          ]
+        },
+        "replacement": {
+          "sha256": "173a0b08d34178f089b2273aab1f490f385c25fff7fb47a0b1343027efc4bceb",
+          "bytes": 11547,
+          "license": "MIT",
+          "source": "tools/linux/packaging/artwork/GenerateReleaseArtwork.java",
+          "copyright": "Copyright (c) 2026 NuvioDesktop-Linux contributors",
+          "description": "Three generic person silhouettes with star cut-out; original Linux replacement, not an official logo or award mark"
+        },
+        "dimensions": {
+          "width": 423,
+          "height": 306,
+          "mode": "RGBA"
+        }
+      },
+      {
+        "resource": "composeApp/src/commonMain/composeResources/drawable/hero_badge_release_status.svg",
+        "overlay": "tools/linux/packaging/artwork/overlay/composeApp/src/commonMain/composeResources/drawable/hero_badge_release_status.svg",
+        "status": "LINUX_OVERLAY_REPLACED",
+        "category": "award-or-hero-badge",
+        "original": {
+          "sha256": "f8d404df915d069630b047304dc72c4b973d8efa7953219557c03ab452a976f2",
+          "bytes": 2797,
+          "introduced_commit": "fd33f9d211b36283c99cafa85f5696fbdc0e2763",
+          "category": "award-or-hero-badge",
+          "status": "UNRESOLVED",
+          "source_references": [
+            "composeApp/src/commonMain/kotlin/com/nuvio/app/features/home/components/HomeHeroSection.kt"
+          ]
+        },
+        "replacement": {
+          "sha256": "3a9dc915869882711b3928eaaccf158ac9a7642cf75e8cd7f29817b718fd0df9",
+          "bytes": 1004,
+          "license": "MIT",
+          "source": "tools/linux/packaging/artwork/GenerateReleaseArtwork.java",
+          "copyright": "Copyright (c) 2026 NuvioDesktop-Linux contributors",
+          "description": "Not yet streaming (clock); original Linux replacement, not an official logo or award mark"
+        },
+        "dimensions": {
+          "width": "100",
+          "height": "100",
+          "viewBox": "0 0 100 100"
+        }
+      },
+      {
+        "resource": "composeApp/src/commonMain/composeResources/drawable/hero_badge_release_status_available.png",
+        "overlay": "tools/linux/packaging/artwork/overlay/composeApp/src/commonMain/composeResources/drawable/hero_badge_release_status_available.png",
+        "status": "LINUX_OVERLAY_REPLACED",
+        "category": "award-or-hero-badge",
+        "original": {
+          "sha256": "ba9fb4f652991f8ce9ae9f066490fbcb712a559b7eb6e36f3ba03355d2caff46",
+          "bytes": 7435,
+          "introduced_commit": "f1fc80bc1914d71f4e5e9eee11259521cea25469",
+          "category": "award-or-hero-badge",
+          "status": "UNRESOLVED",
+          "source_references": [
+            "composeApp/src/commonMain/kotlin/com/nuvio/app/features/home/components/HomeHeroSection.kt"
+          ]
+        },
+        "replacement": {
+          "sha256": "93f1156c5d7241e4d57b1ff759dbd2755792db9ab67fd1b3d510ea6a7f5ca275",
+          "bytes": 4349,
+          "license": "MIT",
+          "source": "tools/linux/packaging/artwork/GenerateReleaseArtwork.java",
+          "copyright": "Copyright (c) 2026 NuvioDesktop-Linux contributors",
+          "description": "Generic rounded panel with play triangle; original Linux replacement, not an official logo or award mark"
+        },
+        "dimensions": {
+          "width": 258,
+          "height": 323,
+          "mode": "RGBA"
+        }
+      },
+      {
+        "resource": "composeApp/src/commonMain/composeResources/drawable/hero_badge_short_film.svg",
+        "overlay": "tools/linux/packaging/artwork/overlay/composeApp/src/commonMain/composeResources/drawable/hero_badge_short_film.svg",
+        "status": "LINUX_OVERLAY_REPLACED",
+        "category": "award-or-hero-badge",
+        "original": {
+          "sha256": "77167c4752f72ba04bab0dc8485312c02e6e7d6b9ce3b4bfc2725a61c72418e6",
+          "bytes": 3003,
+          "introduced_commit": "fd33f9d211b36283c99cafa85f5696fbdc0e2763",
+          "category": "award-or-hero-badge",
+          "status": "UNRESOLVED",
+          "source_references": [
+            "composeApp/src/commonMain/kotlin/com/nuvio/app/features/home/components/HomeHeroSection.kt"
+          ]
+        },
+        "replacement": {
+          "sha256": "9e965c9b7eeb8032678c0bbf6bf357812b92eee3c1cb155a665d789998df272f",
+          "bytes": 3312,
+          "license": "MIT",
+          "source": "tools/linux/packaging/artwork/GenerateReleaseArtwork.java",
+          "copyright": "Copyright (c) 2026 NuvioDesktop-Linux contributors",
+          "description": "Short film (two-frame strip); original Linux replacement, not an official logo or award mark"
+        },
+        "dimensions": {
+          "width": "100",
+          "height": "100",
+          "viewBox": "0 0 100 100"
+        }
+      },
+      {
+        "resource": "composeApp/src/commonMain/composeResources/drawable/hero_badge_stinger.svg",
+        "overlay": "tools/linux/packaging/artwork/overlay/composeApp/src/commonMain/composeResources/drawable/hero_badge_stinger.svg",
+        "status": "LINUX_OVERLAY_REPLACED",
+        "category": "award-or-hero-badge",
+        "original": {
+          "sha256": "55370fbbcbcf7c71c54eae977a6031a8a136571f6df9e637c5f2b5b6798819b5",
+          "bytes": 674,
+          "introduced_commit": "bcd8f20d60bbc8e8e7797fe31647e3605c272b31",
+          "category": "award-or-hero-badge",
+          "status": "UNRESOLVED",
+          "source_references": [
+            "composeApp/src/commonMain/kotlin/com/nuvio/app/features/home/components/HomeHeroSection.kt"
+          ]
+        },
+        "replacement": {
+          "sha256": "d0c5636f0c7e1c9711b7e5a00e57680a0adc11dad54f7cd13a5a3026bff9febb",
+          "bytes": 1016,
+          "license": "MIT",
+          "source": "tools/linux/packaging/artwork/GenerateReleaseArtwork.java",
+          "copyright": "Copyright (c) 2026 NuvioDesktop-Linux contributors",
+          "description": "Scene after the credits (credit lines and play); original Linux replacement, not an official logo or award mark"
+        },
+        "dimensions": {
+          "width": "100",
+          "height": "100",
+          "viewBox": "0 0 100 100"
+        }
+      },
+      {
+        "resource": "composeApp/src/commonMain/composeResources/drawable/hero_badge_studio.svg",
+        "overlay": "tools/linux/packaging/artwork/overlay/composeApp/src/commonMain/composeResources/drawable/hero_badge_studio.svg",
+        "status": "LINUX_OVERLAY_REPLACED",
+        "category": "award-or-hero-badge",
+        "original": {
+          "sha256": "adc461f63f78efa3f9948bb78939c40939bbd01c9d7ec58ff3ff354f2d696f50",
+          "bytes": 2675,
+          "introduced_commit": "fd33f9d211b36283c99cafa85f5696fbdc0e2763",
+          "category": "award-or-hero-badge",
+          "status": "UNRESOLVED",
+          "source_references": [
+            "composeApp/src/commonMain/kotlin/com/nuvio/app/features/home/components/HomeHeroSection.kt"
+          ]
+        },
+        "replacement": {
+          "sha256": "e31b97873b1bdcb96be50e9b6ff2a8db0f2fc4ca30f26318d07bc2d1fe0699bd",
+          "bytes": 1154,
+          "license": "MIT",
+          "source": "tools/linux/packaging/artwork/GenerateReleaseArtwork.java",
+          "copyright": "Copyright (c) 2026 NuvioDesktop-Linux contributors",
+          "description": "Director spotlight (clapperboard); original Linux replacement, not an official logo or award mark"
+        },
+        "dimensions": {
+          "width": "100",
+          "height": "100",
+          "viewBox": "0 0 100 100"
+        }
+      },
+      {
+        "resource": "composeApp/src/commonMain/composeResources/drawable/hero_badge_trending.svg",
+        "overlay": "tools/linux/packaging/artwork/overlay/composeApp/src/commonMain/composeResources/drawable/hero_badge_trending.svg",
+        "status": "LINUX_OVERLAY_REPLACED",
+        "category": "award-or-hero-badge",
+        "original": {
+          "sha256": "e5310c45218cb462059d1eaa9b1d58a8978102587fce0a48bac6e43aa2e5bbf8",
+          "bytes": 1046,
+          "introduced_commit": "fd33f9d211b36283c99cafa85f5696fbdc0e2763",
+          "category": "award-or-hero-badge",
+          "status": "UNRESOLVED",
+          "source_references": [
+            "composeApp/src/commonMain/kotlin/com/nuvio/app/features/home/components/HomeHeroSection.kt"
+          ]
+        },
+        "replacement": {
+          "sha256": "f92061b3ba6c65a6e69201bbcdf27f07bf57b5c8209040e46144dd58b1e72a25",
+          "bytes": 873,
+          "license": "MIT",
+          "source": "tools/linux/packaging/artwork/GenerateReleaseArtwork.java",
+          "copyright": "Copyright (c) 2026 NuvioDesktop-Linux contributors",
+          "description": "Trending now (rising arrow); original Linux replacement, not an official logo or award mark"
+        },
+        "dimensions": {
+          "width": "100",
+          "height": "100",
+          "viewBox": "0 0 100 100"
+        }
+      },
+      {
+        "resource": "composeApp/src/commonMain/composeResources/drawable/hero_badge_true_story.svg",
+        "overlay": "tools/linux/packaging/artwork/overlay/composeApp/src/commonMain/composeResources/drawable/hero_badge_true_story.svg",
+        "status": "LINUX_OVERLAY_REPLACED",
+        "category": "award-or-hero-badge",
+        "original": {
+          "sha256": "1f139cfb071a7d60beef2a01f2fdd9d7ca3867f9dc747d7d92c54b5d93142f3b",
+          "bytes": 2211,
+          "introduced_commit": "fd33f9d211b36283c99cafa85f5696fbdc0e2763",
+          "category": "award-or-hero-badge",
+          "status": "UNRESOLVED",
+          "source_references": [
+            "composeApp/src/commonMain/kotlin/com/nuvio/app/features/home/components/HomeHeroSection.kt"
+          ]
+        },
+        "replacement": {
+          "sha256": "b8db761caa00c938f415fd836158fc6382582f4674ec19802dd36e6750605376",
+          "bytes": 999,
+          "license": "MIT",
+          "source": "tools/linux/packaging/artwork/GenerateReleaseArtwork.java",
+          "copyright": "Copyright (c) 2026 NuvioDesktop-Linux contributors",
+          "description": "Based on a true story (document and check); original Linux replacement, not an official logo or award mark"
+        },
+        "dimensions": {
+          "width": "100",
+          "height": "100",
+          "viewBox": "0 0 100 100"
+        }
+      },
+      {
+        "resource": "composeApp/src/commonMain/composeResources/drawable/hero_badge_win.png",
+        "overlay": "tools/linux/packaging/artwork/overlay/composeApp/src/commonMain/composeResources/drawable/hero_badge_win.png",
+        "status": "LINUX_OVERLAY_REPLACED",
+        "category": "award-or-hero-badge",
+        "original": {
+          "sha256": "0fad3e3f18dc9b77a2e8a9832fbe5268f9eaf8e6bdb5816ec7f29575c35befd9",
+          "bytes": 7348,
+          "introduced_commit": "f1fc80bc1914d71f4e5e9eee11259521cea25469",
+          "category": "award-or-hero-badge",
+          "status": "UNRESOLVED",
+          "source_references": [
+            "composeApp/src/commonMain/kotlin/com/nuvio/app/features/home/components/HomeHeroSection.kt"
+          ]
+        },
+        "replacement": {
+          "sha256": "63a85614fb7a5cd5bf05d934c8a23c21dd14771e402025900aea34f5a0697372",
+          "bytes": 19198,
+          "license": "MIT",
+          "source": "tools/linux/packaging/artwork/GenerateReleaseArtwork.java",
+          "copyright": "Copyright (c) 2026 NuvioDesktop-Linux contributors",
+          "description": "Generic gold ribbon medal with star cut-out; no statuette; original Linux replacement, not an official logo or award mark"
+        },
+        "dimensions": {
+          "width": 315,
+          "height": 801,
+          "mode": "RGBA"
+        }
+      },
+      {
+        "resource": "composeApp/src/commonMain/composeResources/drawable/introdb_favicon.png",
+        "overlay": "tools/linux/packaging/artwork/overlay/composeApp/src/commonMain/composeResources/drawable/introdb_favicon.png",
+        "status": "LINUX_OVERLAY_REPLACED",
+        "category": "provider-or-rating-mark",
+        "original": {
+          "sha256": "86c4d5d490754c40ec416dfd69478854a767a89ba40bcbb2d36ef286216373d9",
+          "bytes": 22040,
+          "introduced_commit": "38c882980c3cbe3b15bc9c3a0be47fb2c0d89d6e",
+          "category": "provider-or-rating-mark",
+          "status": "UNRESOLVED",
+          "source_references": [
+            "composeApp/src/desktopMain/kotlin/com/nuvio/app/features/settings/IntegrationLogoPainter.desktop.kt"
+          ]
+        },
+        "replacement": {
+          "sha256": "336c602c22e119fb00dc66ada5b4705facea2d7ebad8828444894f7a8f18fbaa",
+          "bytes": 5228,
+          "license": "MIT",
+          "source": "tools/linux/packaging/artwork/GenerateReleaseArtwork.java",
+          "copyright": "Copyright (c) 2026 NuvioDesktop-Linux contributors",
+          "description": "Neutral rounded plate with plain Inter text label; not the provider logo; original Linux replacement, not an official logo or award mark"
+        },
+        "dimensions": {
+          "width": 256,
+          "height": 256,
+          "mode": "RGBA"
+        }
+      },
+      {
+        "resource": "composeApp/src/commonMain/composeResources/drawable/kitsu_logo.png",
+        "overlay": "tools/linux/packaging/artwork/overlay/composeApp/src/commonMain/composeResources/drawable/kitsu_logo.png",
+        "status": "LINUX_OVERLAY_REPLACED",
+        "category": "provider-or-rating-mark",
+        "original": {
+          "sha256": "96d8f5b2b0e9269804bc2949ca75c939d60f389e3795de875c46d723c21fce16",
+          "bytes": 1757,
+          "introduced_commit": "fd33f9d211b36283c99cafa85f5696fbdc0e2763",
+          "category": "provider-or-rating-mark",
+          "status": "UNRESOLVED",
+          "source_references": [
+            "composeApp/src/desktopMain/kotlin/com/nuvio/app/features/settings/IntegrationLogoPainter.desktop.kt"
+          ]
+        },
+        "replacement": {
+          "sha256": "8a4a2748102aeb50f48e8df9c05811af5cf3b6cbce496e258d7f708c39f8d7c7",
+          "bytes": 739,
+          "license": "MIT",
+          "source": "tools/linux/packaging/artwork/GenerateReleaseArtwork.java",
+          "copyright": "Copyright (c) 2026 NuvioDesktop-Linux contributors",
+          "description": "Neutral rounded plate with plain Inter text label; not the provider logo; original Linux replacement, not an official logo or award mark"
+        },
+        "dimensions": {
+          "width": 48,
+          "height": 48,
+          "mode": "RGBA"
+        }
+      },
+      {
+        "resource": "composeApp/src/commonMain/composeResources/drawable/mdblist_logo.svg",
+        "overlay": "tools/linux/packaging/artwork/overlay/composeApp/src/commonMain/composeResources/drawable/mdblist_logo.svg",
+        "status": "LINUX_OVERLAY_REPLACED",
+        "category": "provider-or-rating-mark",
+        "original": {
+          "sha256": "43db5d3cdd2e33a3be129a0d0f8fb30e37b622300182cfad982726e28c151b01",
+          "bytes": 5525,
+          "introduced_commit": "993058825aa95d1fe8183f9dfae601a4bae50561",
+          "category": "provider-or-rating-mark",
+          "status": "UNRESOLVED",
+          "source_references": [
+            "composeApp/src/desktopMain/kotlin/com/nuvio/app/features/settings/IntegrationLogoPainter.desktop.kt"
+          ]
+        },
+        "replacement": {
+          "sha256": "f3f47e43fbc1e3dd2aac3d3fdd227371a3b365e1d5cfb600c35017d681736daf",
+          "bytes": 2149,
+          "license": "MIT",
+          "source": "tools/linux/packaging/artwork/GenerateReleaseArtwork.java",
+          "copyright": "Copyright (c) 2026 NuvioDesktop-Linux contributors",
+          "description": "MDB text mark (Linux replacement); original Linux replacement, not an official logo or award mark"
+        },
+        "dimensions": {
+          "viewBox": "0 0 200 200"
+        }
+      },
+      {
+        "resource": "composeApp/src/commonMain/composeResources/drawable/rating_audience_score.png",
+        "overlay": "tools/linux/packaging/artwork/overlay/composeApp/src/commonMain/composeResources/drawable/rating_audience_score.png",
+        "status": "LINUX_OVERLAY_REPLACED",
+        "category": "provider-or-rating-mark",
+        "original": {
+          "sha256": "1b2d988de627d46a2a1a020d051ce308831df1ac5d20ba724c07fac09828a4e7",
+          "bytes": 3530,
+          "introduced_commit": "5fcbd87522413f2a71c1fdbd71d3343f275895b0",
+          "category": "provider-or-rating-mark",
+          "status": "UNRESOLVED",
+          "source_references": [
+            "composeApp/src/commonMain/kotlin/com/nuvio/app/features/details/components/DetailMetaInfo.kt"
+          ]
+        },
+        "replacement": {
+          "sha256": "9fcee15d727c9261dd5f1d2f7238dfe2fd6c8d1c875b738170de308b8cd29398",
+          "bytes": 1004,
+          "license": "MIT",
+          "source": "tools/linux/packaging/artwork/GenerateReleaseArtwork.java",
+          "copyright": "Copyright (c) 2026 NuvioDesktop-Linux contributors",
+          "description": "Amber rounded square, plain Inter AS and up triangle; no popcorn imagery; original Linux replacement, not an official logo or award mark"
+        },
+        "dimensions": {
+          "width": 48,
+          "height": 48,
+          "mode": "RGBA"
+        }
+      },
+      {
+        "resource": "composeApp/src/commonMain/composeResources/drawable/rating_audience_stale.png",
+        "overlay": "tools/linux/packaging/artwork/overlay/composeApp/src/commonMain/composeResources/drawable/rating_audience_stale.png",
+        "status": "LINUX_OVERLAY_REPLACED",
+        "category": "provider-or-rating-mark",
+        "original": {
+          "sha256": "f2bed7c710d0fc7a8ab77462287a918e2147f0c281cefb2eec77b82697212ef6",
+          "bytes": 3256,
+          "introduced_commit": "b775bf5c36f1100a0ccec5502a252c2b866aa56f",
+          "category": "provider-or-rating-mark",
+          "status": "UNRESOLVED",
+          "source_references": [
+            "composeApp/src/commonMain/kotlin/com/nuvio/app/features/details/components/DetailMetaInfo.kt"
+          ]
+        },
+        "replacement": {
+          "sha256": "873d470d62c518489fa2a2ae7791d1ceee5575f3c3c0977b47b179e54b832358",
+          "bytes": 1001,
+          "license": "MIT",
+          "source": "tools/linux/packaging/artwork/GenerateReleaseArtwork.java",
+          "copyright": "Copyright (c) 2026 NuvioDesktop-Linux contributors",
+          "description": "Grey rounded square, plain Inter AS and down triangle; no popcorn imagery; original Linux replacement, not an official logo or award mark"
+        },
+        "dimensions": {
+          "width": 48,
+          "height": 48,
+          "mode": "RGBA"
+        }
+      },
+      {
+        "resource": "composeApp/src/commonMain/composeResources/drawable/rating_audience_verified_hot.png",
+        "overlay": "tools/linux/packaging/artwork/overlay/composeApp/src/commonMain/composeResources/drawable/rating_audience_verified_hot.png",
+        "status": "LINUX_OVERLAY_REPLACED",
+        "category": "provider-or-rating-mark",
+        "original": {
+          "sha256": "d15665d946c24a055453fdafc8b3e33c90b8fa0978862a6a328b0fc1134e0a44",
+          "bytes": 10015,
+          "introduced_commit": "b775bf5c36f1100a0ccec5502a252c2b866aa56f",
+          "category": "provider-or-rating-mark",
+          "status": "UNRESOLVED",
+          "source_references": [
+            "composeApp/src/commonMain/kotlin/com/nuvio/app/features/details/components/DetailMetaInfo.kt"
+          ]
+        },
+        "replacement": {
+          "sha256": "019bed432e1b2e3a137185be2b651643934a9a9ebea0a1869b11776b0fd5f266",
+          "bytes": 2103,
+          "license": "MIT",
+          "source": "tools/linux/packaging/artwork/GenerateReleaseArtwork.java",
+          "copyright": "Copyright (c) 2026 NuvioDesktop-Linux contributors",
+          "description": "Amber generic rosette, plain Inter AS and check; no popcorn imagery; original Linux replacement, not an official logo or award mark"
+        },
+        "dimensions": {
+          "width": 72,
+          "height": 72,
+          "mode": "RGBA"
+        }
+      },
+      {
+        "resource": "composeApp/src/commonMain/composeResources/drawable/rating_imdb.png",
+        "overlay": "tools/linux/packaging/artwork/overlay/composeApp/src/commonMain/composeResources/drawable/rating_imdb.png",
+        "status": "LINUX_OVERLAY_REPLACED",
+        "category": "provider-or-rating-mark",
+        "original": {
+          "sha256": "f29cfe197acfd0c3bb21c320970b2b0de6e22af912a3e15692838ba47b995bc8",
+          "bytes": 2424,
+          "introduced_commit": "5fcbd87522413f2a71c1fdbd71d3343f275895b0",
+          "category": "provider-or-rating-mark",
+          "status": "UNRESOLVED",
+          "source_references": [
+            "composeApp/src/commonMain/kotlin/com/nuvio/app/features/details/components/DetailMetaInfo.kt"
+          ]
+        },
+        "replacement": {
+          "sha256": "b902e7ac36be2c72bc20393967f816b779aa97aac5eefa7020432e98d5dbf220",
+          "bytes": 1597,
+          "license": "MIT",
+          "source": "tools/linux/packaging/artwork/GenerateReleaseArtwork.java",
+          "copyright": "Copyright (c) 2026 NuvioDesktop-Linux contributors",
+          "description": "Neutral rounded plate with plain Inter text label; not the provider logo; original Linux replacement, not an official logo or award mark"
+        },
+        "dimensions": {
+          "width": 95,
+          "height": 48,
+          "mode": "RGBA"
+        }
+      },
+      {
+        "resource": "composeApp/src/commonMain/composeResources/drawable/rating_letterboxd.png",
+        "overlay": "tools/linux/packaging/artwork/overlay/composeApp/src/commonMain/composeResources/drawable/rating_letterboxd.png",
+        "status": "LINUX_OVERLAY_REPLACED",
+        "category": "provider-or-rating-mark",
+        "original": {
+          "sha256": "ce620ae94742d80fa7d44d192e1b540a66afb721a55f3a855a2b629f211347fd",
+          "bytes": 1806,
+          "introduced_commit": "5fcbd87522413f2a71c1fdbd71d3343f275895b0",
+          "category": "provider-or-rating-mark",
+          "status": "UNRESOLVED",
+          "source_references": [
+            "composeApp/src/commonMain/kotlin/com/nuvio/app/features/details/components/DetailMetaInfo.kt"
+          ]
+        },
+        "replacement": {
+          "sha256": "5a8efe9667520197808208616083fd50e7e7eb7643f655f5c848d89361e60416",
+          "bytes": 738,
+          "license": "MIT",
+          "source": "tools/linux/packaging/artwork/GenerateReleaseArtwork.java",
+          "copyright": "Copyright (c) 2026 NuvioDesktop-Linux contributors",
+          "description": "Neutral rounded plate with plain Inter text label; not the provider logo; original Linux replacement, not an official logo or award mark"
+        },
+        "dimensions": {
+          "width": 48,
+          "height": 48,
+          "mode": "RGBA"
+        }
+      },
+      {
+        "resource": "composeApp/src/commonMain/composeResources/drawable/rating_metacritic.png",
+        "overlay": "tools/linux/packaging/artwork/overlay/composeApp/src/commonMain/composeResources/drawable/rating_metacritic.png",
+        "status": "LINUX_OVERLAY_REPLACED",
+        "category": "provider-or-rating-mark",
+        "original": {
+          "sha256": "43a85966fede74581889566ff699afa1e2e8c0597b02b66558ef7b21fda2990d",
+          "bytes": 4483,
+          "introduced_commit": "5fcbd87522413f2a71c1fdbd71d3343f275895b0",
+          "category": "provider-or-rating-mark",
+          "status": "UNRESOLVED",
+          "source_references": [
+            "composeApp/src/commonMain/kotlin/com/nuvio/app/features/details/components/DetailMetaInfo.kt"
+          ]
+        },
+        "replacement": {
+          "sha256": "7f64d44b37f8d82ac13f16481d3c69f2c3f2df0a2e00372aa5e1fb56b60b369f",
+          "bytes": 1027,
+          "license": "MIT",
+          "source": "tools/linux/packaging/artwork/GenerateReleaseArtwork.java",
+          "copyright": "Copyright (c) 2026 NuvioDesktop-Linux contributors",
+          "description": "Neutral rounded plate with plain Inter text label; not the provider logo; original Linux replacement, not an official logo or award mark"
+        },
+        "dimensions": {
+          "width": 48,
+          "height": 48,
+          "mode": "RGBA"
+        }
+      },
+      {
+        "resource": "composeApp/src/commonMain/composeResources/drawable/rating_myanimelist.svg",
+        "overlay": "tools/linux/packaging/artwork/overlay/composeApp/src/commonMain/composeResources/drawable/rating_myanimelist.svg",
+        "status": "LINUX_OVERLAY_REPLACED",
+        "category": "provider-or-rating-mark",
+        "original": {
+          "sha256": "ed1ffb87f725bf91dd9b0a7fcb428142bfa77984829844566819d4a5ec1248a8",
+          "bytes": 778,
+          "introduced_commit": "fd33f9d211b36283c99cafa85f5696fbdc0e2763",
+          "category": "provider-or-rating-mark",
+          "status": "UNRESOLVED",
+          "source_references": [
+            "composeApp/src/commonMain/kotlin/com/nuvio/app/features/details/components/DetailMetaInfo.kt"
+          ]
+        },
+        "replacement": {
+          "sha256": "f1b08fa4bb090105ab7f222be04a44da6b383bc636789e3fba8791a8900581ff",
+          "bytes": 1589,
+          "license": "MIT",
+          "source": "tools/linux/packaging/artwork/GenerateReleaseArtwork.java",
+          "copyright": "Copyright (c) 2026 NuvioDesktop-Linux contributors",
+          "description": "MAL text mark (Linux replacement); original Linux replacement, not an official logo or award mark"
+        },
+        "dimensions": {
+          "viewBox": "0 0 1024 1024"
+        }
+      },
+      {
+        "resource": "composeApp/src/commonMain/composeResources/drawable/rating_rotten_tomatoes.png",
+        "overlay": "tools/linux/packaging/artwork/overlay/composeApp/src/commonMain/composeResources/drawable/rating_rotten_tomatoes.png",
+        "status": "LINUX_OVERLAY_REPLACED",
+        "category": "provider-or-rating-mark",
+        "original": {
+          "sha256": "9356c03c12ec2de044bc57018f3846424ab41a5c6522e87d7152f51275fed861",
+          "bytes": 2319,
+          "introduced_commit": "5fcbd87522413f2a71c1fdbd71d3343f275895b0",
+          "category": "provider-or-rating-mark",
+          "status": "UNRESOLVED",
+          "source_references": [
+            "composeApp/src/commonMain/kotlin/com/nuvio/app/features/details/components/DetailMetaInfo.kt"
+          ]
+        },
+        "replacement": {
+          "sha256": "7cf8e76889f5cee5189e3b97c16bc0daf521868f986c4f80c0ac6d0d03404cf0",
+          "bytes": 1004,
+          "license": "MIT",
+          "source": "tools/linux/packaging/artwork/GenerateReleaseArtwork.java",
+          "copyright": "Copyright (c) 2026 NuvioDesktop-Linux contributors",
+          "description": "Green circle, plain Inter RT and up triangle (positive critic status); no tomato imagery; original Linux replacement, not an official logo or award mark"
+        },
+        "dimensions": {
+          "width": 48,
+          "height": 48,
+          "mode": "RGBA"
+        }
+      },
+      {
+        "resource": "composeApp/src/commonMain/composeResources/drawable/rating_rotten_tomatoes_certified.png",
+        "overlay": "tools/linux/packaging/artwork/overlay/composeApp/src/commonMain/composeResources/drawable/rating_rotten_tomatoes_certified.png",
+        "status": "LINUX_OVERLAY_REPLACED",
+        "category": "provider-or-rating-mark",
+        "original": {
+          "sha256": "659671568cd4b9bb227b95980608b23754ee735bd4e29f5cdf072a960383b0ba",
+          "bytes": 11117,
+          "introduced_commit": "b775bf5c36f1100a0ccec5502a252c2b866aa56f",
+          "category": "provider-or-rating-mark",
+          "status": "UNRESOLVED",
+          "source_references": [
+            "composeApp/src/commonMain/kotlin/com/nuvio/app/features/details/components/DetailMetaInfo.kt"
+          ]
+        },
+        "replacement": {
+          "sha256": "f470f60356e25b643f9b1c771cd6c4fe42884b0dff56d4e6e34e6c8049f46e64",
+          "bytes": 1865,
+          "license": "MIT",
+          "source": "tools/linux/packaging/artwork/GenerateReleaseArtwork.java",
+          "copyright": "Copyright (c) 2026 NuvioDesktop-Linux contributors",
+          "description": "Green generic rosette, plain Inter RT and check (certified status); no tomato imagery; original Linux replacement, not an official logo or award mark"
+        },
+        "dimensions": {
+          "width": 72,
+          "height": 72,
+          "mode": "RGBA"
+        }
+      },
+      {
+        "resource": "composeApp/src/commonMain/composeResources/drawable/rating_rotten_tomatoes_rotten.png",
+        "overlay": "tools/linux/packaging/artwork/overlay/composeApp/src/commonMain/composeResources/drawable/rating_rotten_tomatoes_rotten.png",
+        "status": "LINUX_OVERLAY_REPLACED",
+        "category": "provider-or-rating-mark",
+        "original": {
+          "sha256": "43d31dc5c85ec107eb4020cd367c5b5a6b4f59fd67d597cda58ba03f06621117",
+          "bytes": 3288,
+          "introduced_commit": "b775bf5c36f1100a0ccec5502a252c2b866aa56f",
+          "category": "provider-or-rating-mark",
+          "status": "UNRESOLVED",
+          "source_references": [
+            "composeApp/src/commonMain/kotlin/com/nuvio/app/features/details/components/DetailMetaInfo.kt"
+          ]
+        },
+        "replacement": {
+          "sha256": "30f0441c9c0960b530ca1839ee804bf7b126244e32e78c7921ee4d58d71e3e3e",
+          "bytes": 1007,
+          "license": "MIT",
+          "source": "tools/linux/packaging/artwork/GenerateReleaseArtwork.java",
+          "copyright": "Copyright (c) 2026 NuvioDesktop-Linux contributors",
+          "description": "Slate circle, plain Inter RT and down triangle (negative critic status); no tomato imagery; original Linux replacement, not an official logo or award mark"
+        },
+        "dimensions": {
+          "width": 48,
+          "height": 48,
+          "mode": "RGBA"
+        }
+      },
+      {
+        "resource": "composeApp/src/commonMain/composeResources/drawable/rating_tmdb.png",
+        "overlay": "tools/linux/packaging/artwork/overlay/composeApp/src/commonMain/composeResources/drawable/rating_tmdb.png",
+        "status": "LINUX_OVERLAY_REPLACED",
+        "category": "provider-or-rating-mark",
+        "original": {
+          "sha256": "1226a63ccb977c1e88e83444d1ecb6aee8290a76bf19c656b0065fb6887ff255",
+          "bytes": 5983,
+          "introduced_commit": "5fcbd87522413f2a71c1fdbd71d3343f275895b0",
+          "category": "provider-or-rating-mark",
+          "status": "UNRESOLVED",
+          "source_references": [
+            "composeApp/src/commonMain/kotlin/com/nuvio/app/features/details/components/DetailMetaInfo.kt",
+            "composeApp/src/desktopMain/kotlin/com/nuvio/app/features/settings/IntegrationLogoPainter.desktop.kt"
+          ]
+        },
+        "replacement": {
+          "sha256": "9d0c35021ef1242c780e4613e380ddb7132962204ef8590a2030f0f74cf33aac",
+          "bytes": 1166,
+          "license": "MIT",
+          "source": "tools/linux/packaging/artwork/GenerateReleaseArtwork.java",
+          "copyright": "Copyright (c) 2026 NuvioDesktop-Linux contributors",
+          "description": "Neutral rounded plate with plain Inter text label; not the provider logo; original Linux replacement, not an official logo or award mark"
+        },
+        "dimensions": {
+          "width": 67,
+          "height": 48,
+          "mode": "RGBA"
+        }
+      },
+      {
+        "resource": "composeApp/src/commonMain/composeResources/drawable/rating_trakt.png",
+        "overlay": "tools/linux/packaging/artwork/overlay/composeApp/src/commonMain/composeResources/drawable/rating_trakt.png",
+        "status": "LINUX_OVERLAY_REPLACED",
+        "category": "provider-or-rating-mark",
+        "original": {
+          "sha256": "0a1963a4169359a6e53de9d2ccd014d1cdc875efe9862c189b3b47eb6d49e97a",
+          "bytes": 4618,
+          "introduced_commit": "5fcbd87522413f2a71c1fdbd71d3343f275895b0",
+          "category": "provider-or-rating-mark",
+          "status": "UNRESOLVED",
+          "source_references": [
+            "composeApp/src/commonMain/kotlin/com/nuvio/app/features/details/components/DetailMetaInfo.kt"
+          ]
+        },
+        "replacement": {
+          "sha256": "da70350b2eb7bcae40d69d63467f9a0132a61a37bec0eaed5d4b0f732823c088",
+          "bytes": 720,
+          "license": "MIT",
+          "source": "tools/linux/packaging/artwork/GenerateReleaseArtwork.java",
+          "copyright": "Copyright (c) 2026 NuvioDesktop-Linux contributors",
+          "description": "Neutral rounded plate with plain Inter text label; not the provider logo; original Linux replacement, not an official logo or award mark"
+        },
+        "dimensions": {
+          "width": 48,
+          "height": 48,
+          "mode": "RGBA"
+        }
+      },
+      {
+        "resource": "composeApp/src/commonMain/composeResources/drawable/simkl_logo.png",
+        "overlay": "tools/linux/packaging/artwork/overlay/composeApp/src/commonMain/composeResources/drawable/simkl_logo.png",
+        "status": "LINUX_OVERLAY_REPLACED",
+        "category": "provider-or-rating-mark",
+        "original": {
+          "sha256": "21e9b04b51071cec1cc7b47aee82e84fd13261c3c9d83bc69bee64b1d47050e6",
+          "bytes": 4340,
+          "introduced_commit": "fd33f9d211b36283c99cafa85f5696fbdc0e2763",
+          "category": "provider-or-rating-mark",
+          "status": "UNRESOLVED",
+          "source_references": [
+            "composeApp/src/desktopMain/kotlin/com/nuvio/app/features/settings/IntegrationLogoPainter.desktop.kt"
+          ]
+        },
+        "replacement": {
+          "sha256": "f290a61ca285b578845b3202eb548f2909dedaa72db7697070910c32d3fe5b38",
+          "bytes": 4239,
+          "license": "MIT",
+          "source": "tools/linux/packaging/artwork/GenerateReleaseArtwork.java",
+          "copyright": "Copyright (c) 2026 NuvioDesktop-Linux contributors",
+          "description": "Neutral rounded plate with plain Inter text label; not the provider logo; original Linux replacement, not an official logo or award mark"
+        },
+        "dimensions": {
+          "width": 192,
+          "height": 192,
+          "mode": "RGBA"
+        }
+      },
+      {
+        "resource": "composeApp/src/commonMain/composeResources/drawable/trakt_logo_wordmark.svg",
+        "overlay": "tools/linux/packaging/artwork/overlay/composeApp/src/commonMain/composeResources/drawable/trakt_logo_wordmark.svg",
+        "status": "LINUX_OVERLAY_REPLACED",
+        "category": "provider-or-rating-mark",
+        "original": {
+          "sha256": "b53ed1ba6b94e8f2b509f997ee133f78a2a138acbeedd168c64d3dba0ed9b13b",
+          "bytes": 2747,
+          "introduced_commit": "64b72ce0847737a540d58af1b1241ee28c4125f0",
+          "category": "provider-or-rating-mark",
+          "status": "UNRESOLVED",
+          "source_references": [
+            "composeApp/src/desktopMain/kotlin/com/nuvio/app/features/trakt/TraktBrandPainter.desktop.kt"
+          ]
+        },
+        "replacement": {
+          "sha256": "3abfa9d9e7fab1170b6619b3c0f063fa47b20b7c4d19bd89e9c58cd09c5afe3d",
+          "bytes": 2117,
+          "license": "MIT",
+          "source": "tools/linux/packaging/artwork/GenerateReleaseArtwork.java",
+          "copyright": "Copyright (c) 2026 NuvioDesktop-Linux contributors",
+          "description": "Trakt text label (Linux replacement); original Linux replacement, not an official logo or award mark"
+        },
+        "dimensions": {
+          "viewBox": "0 0 104.55 45"
+        }
+      },
+      {
+        "resource": "composeApp/src/commonMain/composeResources/drawable/trakt_tv_favicon.svg",
+        "overlay": "tools/linux/packaging/artwork/overlay/composeApp/src/commonMain/composeResources/drawable/trakt_tv_favicon.svg",
+        "status": "LINUX_OVERLAY_REPLACED",
+        "category": "provider-or-rating-mark",
+        "original": {
+          "sha256": "5a7efddf459a87347842f37f1738c4b541c85de93a008365ff4af47f44b08563",
+          "bytes": 1660,
+          "introduced_commit": "64b72ce0847737a540d58af1b1241ee28c4125f0",
+          "category": "provider-or-rating-mark",
+          "status": "UNRESOLVED",
+          "source_references": [
+            "composeApp/src/desktopMain/kotlin/com/nuvio/app/features/trakt/TraktBrandPainter.desktop.kt",
+            "composeApp/src/desktopMain/kotlin/com/nuvio/app/features/settings/IntegrationLogoPainter.desktop.kt"
+          ]
+        },
+        "replacement": {
+          "sha256": "19236caf56eea31cf00fba8fbce8b69692a32a31fabf6d0c197b6eb0ba390dec",
+          "bytes": 995,
+          "license": "MIT",
+          "source": "tools/linux/packaging/artwork/GenerateReleaseArtwork.java",
+          "copyright": "Copyright (c) 2026 NuvioDesktop-Linux contributors",
+          "description": "TR text mark (Linux replacement); original Linux replacement, not an official logo or award mark"
+        },
+        "dimensions": {
+          "viewBox": "0 0 48 48"
+        }
+      },
+      {
+        "resource": "composeApp/src/commonMain/composeResources/drawable/tvdb_logo.png",
+        "overlay": "tools/linux/packaging/artwork/overlay/composeApp/src/commonMain/composeResources/drawable/tvdb_logo.png",
+        "status": "LINUX_OVERLAY_REPLACED",
+        "category": "provider-or-rating-mark",
+        "original": {
+          "sha256": "9edbcc405191b5c687bde857aa2f9a1841f85404eeda39964ccc8e5af03100a5",
+          "bytes": 12904,
+          "introduced_commit": "fd33f9d211b36283c99cafa85f5696fbdc0e2763",
+          "category": "provider-or-rating-mark",
+          "status": "UNRESOLVED",
+          "source_references": [
+            "composeApp/src/desktopMain/kotlin/com/nuvio/app/features/settings/IntegrationLogoPainter.desktop.kt"
+          ]
+        },
+        "replacement": {
+          "sha256": "db95ab2f3bc7cad60b17d701a917b0d31f6ae724aff84db1bde7d677c1c528bb",
+          "bytes": 7223,
+          "license": "MIT",
+          "source": "tools/linux/packaging/artwork/GenerateReleaseArtwork.java",
+          "copyright": "Copyright (c) 2026 NuvioDesktop-Linux contributors",
+          "description": "Neutral rounded plate with plain Inter text label; not the provider logo; original Linux replacement, not an official logo or award mark"
+        },
+        "dimensions": {
+          "width": 400,
+          "height": 216,
+          "mode": "RGBA"
+        }
+      }
+    ]
+  },
   "authoring": {
     "source": "tools/linux/packaging/artwork/GenerateReleaseArtwork.java",
     "driver": "tools/linux/packaging/artwork/generate.py",
     "recipe_sha256": {
-      "tools/linux/packaging/artwork/GenerateReleaseArtwork.java": "a380a778cc0989020e403a6272b4cc3ea28301cc25ed7609ab231319aca40081",
-      "tools/linux/packaging/artwork/generate.py": "7a3b265c6d38aca88c5a2fd57621ce8a9b0e2d16a3e4cd1d3b35792032165ab6"
+      "tools/linux/packaging/artwork/GenerateReleaseArtwork.java": "e59fb7481c2cac0cb7f9f9eeb67eed10091c92aa42288a1f8565afd4f28a4a05",
+      "tools/linux/packaging/artwork/generate.py": "95520d0c326f031cbd3c14232761d4d53b7db3fbdd7dd5971410011743e2d857"
     },
     "toolchain": {
       "scope": "Asset authoring only; no runtime, package or rights certification",
@@ -639,6 +1956,55 @@
         "setup_mode_basic.webp": "bc14348096b2d240fe51f8cea742a9a792f5d818eb81e10bd35c9f91439e1377",
         "setup_mode_tv.png": "02657c99d5d470df3c053f8209694617e144c3720eb82aa6ec45b32be6d39d71",
         "setup_mode_tv.webp": "d1580501ccaf7c5507c34925d224dfdb24743fa45d1feb1c11d01cb33760e7d8"
+      },
+      "overlay_files": {
+        "composeApp/src/commonMain/composeResources/drawable/discord_logo.svg": "efe19d3ecd7c70aa9690abc1cffb59b24e1f95dbb9c7e0d0a895ee9a41623b51",
+        "composeApp/src/commonMain/composeResources/drawable/hero_badge_best_picture.svg": "74025dd1ca45898ad0712d0d02f7f094c270d4f0c4529d0fef0f369fad264a20",
+        "composeApp/src/commonMain/composeResources/drawable/hero_badge_binge_ready.svg": "567302ee278709db975c3038baf802994ac4781774c12621dbe861fc02ee2773",
+        "composeApp/src/commonMain/composeResources/drawable/hero_badge_cult.svg": "61a8a11fbb7351cf83e3cf94d78b26047fb2824f2756ab478014fc6e495f1c97",
+        "composeApp/src/commonMain/composeResources/drawable/hero_badge_director.svg": "a8f695735f9d0e3acc6c518f16f4ee0d93984686ff964fa911a10a44219d7b41",
+        "composeApp/src/commonMain/composeResources/drawable/hero_badge_emmy_nom.svg": "eaee79f1ac6cf2550c500fe9883fddbc45acae0096725550b2ae3c22a2edb77a",
+        "composeApp/src/commonMain/composeResources/drawable/hero_badge_emmy_win.svg": "12b353cf0b5c613331222b980638847945b79a2dd13ae12b9de35f889619794e",
+        "composeApp/src/commonMain/composeResources/drawable/hero_badge_festival.svg": "5cdf22b847ab26e9565b558e5f252e4dbc824e2b593efb942f6719e62a27994c",
+        "composeApp/src/commonMain/composeResources/drawable/hero_badge_foreign.png": "05ae74ffd55709615cd5ce98e630c8618a4ae2b522496afe92dcf179588a562c",
+        "composeApp/src/commonMain/composeResources/drawable/hero_badge_globe_nom.svg": "573baac74557d4d7b21bff2a98ed386ef77fb27be2d3ccf59cfc25fc161d6e79",
+        "composeApp/src/commonMain/composeResources/drawable/hero_badge_globe_win.svg": "1aba17a1fe1977426d7bc933cf3636d2244b2352345fddb3e714b6be2b590fa6",
+        "composeApp/src/commonMain/composeResources/drawable/hero_badge_golden_bear.svg": "34748b00ea06d4a09378cf73ea8aec4e50ffffadb9c208444a8a13663535cde2",
+        "composeApp/src/commonMain/composeResources/drawable/hero_badge_golden_lion.svg": "04658e45cf27255b32c10b431d02fb2b6a40dd48d57c894ae5f27ec0f4980008",
+        "composeApp/src/commonMain/composeResources/drawable/hero_badge_metacritic.svg": "65b497d39cee5714bafa952cb5cd5f174ee2fdac2c848ebc44596f834ef76de1",
+        "composeApp/src/commonMain/composeResources/drawable/hero_badge_mini_series.svg": "56bcbf6e4172c741d2362ae1733485b82739ad72df8e461f609a0f5d60dd7d1b",
+        "composeApp/src/commonMain/composeResources/drawable/hero_badge_new_release.svg": "5a915ce49606b381bbcea66c2c1532f3335a68da0d7123d8d805b78cd6d67b0f",
+        "composeApp/src/commonMain/composeResources/drawable/hero_badge_nom.png": "9fd1cdacfed1a93ef48bec3a7f26853aaf3b16471549ed2753566ee8cff63375",
+        "composeApp/src/commonMain/composeResources/drawable/hero_badge_oscar_nom.svg": "35ad47354a3435fa86df76af7bea8ef2fd666ea26a61ecbf88597b287334c2dd",
+        "composeApp/src/commonMain/composeResources/drawable/hero_badge_palme.svg": "13afedca34765a5d01b116c97e740fdc9c555c84cf73532b7b78a94efd77a088",
+        "composeApp/src/commonMain/composeResources/drawable/hero_badge_people_choice.png": "173a0b08d34178f089b2273aab1f490f385c25fff7fb47a0b1343027efc4bceb",
+        "composeApp/src/commonMain/composeResources/drawable/hero_badge_release_status.svg": "3a9dc915869882711b3928eaaccf158ac9a7642cf75e8cd7f29817b718fd0df9",
+        "composeApp/src/commonMain/composeResources/drawable/hero_badge_release_status_available.png": "93f1156c5d7241e4d57b1ff759dbd2755792db9ab67fd1b3d510ea6a7f5ca275",
+        "composeApp/src/commonMain/composeResources/drawable/hero_badge_short_film.svg": "9e965c9b7eeb8032678c0bbf6bf357812b92eee3c1cb155a665d789998df272f",
+        "composeApp/src/commonMain/composeResources/drawable/hero_badge_stinger.svg": "d0c5636f0c7e1c9711b7e5a00e57680a0adc11dad54f7cd13a5a3026bff9febb",
+        "composeApp/src/commonMain/composeResources/drawable/hero_badge_studio.svg": "e31b97873b1bdcb96be50e9b6ff2a8db0f2fc4ca30f26318d07bc2d1fe0699bd",
+        "composeApp/src/commonMain/composeResources/drawable/hero_badge_trending.svg": "f92061b3ba6c65a6e69201bbcdf27f07bf57b5c8209040e46144dd58b1e72a25",
+        "composeApp/src/commonMain/composeResources/drawable/hero_badge_true_story.svg": "b8db761caa00c938f415fd836158fc6382582f4674ec19802dd36e6750605376",
+        "composeApp/src/commonMain/composeResources/drawable/hero_badge_win.png": "63a85614fb7a5cd5bf05d934c8a23c21dd14771e402025900aea34f5a0697372",
+        "composeApp/src/commonMain/composeResources/drawable/introdb_favicon.png": "336c602c22e119fb00dc66ada5b4705facea2d7ebad8828444894f7a8f18fbaa",
+        "composeApp/src/commonMain/composeResources/drawable/kitsu_logo.png": "8a4a2748102aeb50f48e8df9c05811af5cf3b6cbce496e258d7f708c39f8d7c7",
+        "composeApp/src/commonMain/composeResources/drawable/mdblist_logo.svg": "f3f47e43fbc1e3dd2aac3d3fdd227371a3b365e1d5cfb600c35017d681736daf",
+        "composeApp/src/commonMain/composeResources/drawable/rating_audience_score.png": "9fcee15d727c9261dd5f1d2f7238dfe2fd6c8d1c875b738170de308b8cd29398",
+        "composeApp/src/commonMain/composeResources/drawable/rating_audience_stale.png": "873d470d62c518489fa2a2ae7791d1ceee5575f3c3c0977b47b179e54b832358",
+        "composeApp/src/commonMain/composeResources/drawable/rating_audience_verified_hot.png": "019bed432e1b2e3a137185be2b651643934a9a9ebea0a1869b11776b0fd5f266",
+        "composeApp/src/commonMain/composeResources/drawable/rating_imdb.png": "b902e7ac36be2c72bc20393967f816b779aa97aac5eefa7020432e98d5dbf220",
+        "composeApp/src/commonMain/composeResources/drawable/rating_letterboxd.png": "5a8efe9667520197808208616083fd50e7e7eb7643f655f5c848d89361e60416",
+        "composeApp/src/commonMain/composeResources/drawable/rating_metacritic.png": "7f64d44b37f8d82ac13f16481d3c69f2c3f2df0a2e00372aa5e1fb56b60b369f",
+        "composeApp/src/commonMain/composeResources/drawable/rating_myanimelist.svg": "f1b08fa4bb090105ab7f222be04a44da6b383bc636789e3fba8791a8900581ff",
+        "composeApp/src/commonMain/composeResources/drawable/rating_rotten_tomatoes.png": "7cf8e76889f5cee5189e3b97c16bc0daf521868f986c4f80c0ac6d0d03404cf0",
+        "composeApp/src/commonMain/composeResources/drawable/rating_rotten_tomatoes_certified.png": "f470f60356e25b643f9b1c771cd6c4fe42884b0dff56d4e6e34e6c8049f46e64",
+        "composeApp/src/commonMain/composeResources/drawable/rating_rotten_tomatoes_rotten.png": "30f0441c9c0960b530ca1839ee804bf7b126244e32e78c7921ee4d58d71e3e3e",
+        "composeApp/src/commonMain/composeResources/drawable/rating_tmdb.png": "9d0c35021ef1242c780e4613e380ddb7132962204ef8590a2030f0f74cf33aac",
+        "composeApp/src/commonMain/composeResources/drawable/rating_trakt.png": "da70350b2eb7bcae40d69d63467f9a0132a61a37bec0eaed5d4b0f732823c088",
+        "composeApp/src/commonMain/composeResources/drawable/simkl_logo.png": "f290a61ca285b578845b3202eb548f2909dedaa72db7697070910c32d3fe5b38",
+        "composeApp/src/commonMain/composeResources/drawable/trakt_logo_wordmark.svg": "3abfa9d9e7fab1170b6619b3c0f063fa47b20b7c4d19bd89e9c58cd09c5afe3d",
+        "composeApp/src/commonMain/composeResources/drawable/trakt_tv_favicon.svg": "19236caf56eea31cf00fba8fbce8b69692a32a31fabf6d0c197b6eb0ba390dec",
+        "composeApp/src/commonMain/composeResources/drawable/tvdb_logo.png": "db95ab2f3bc7cad60b17d701a917b0d31f6ae724aff84db1bde7d677c1c528bb"
       }
     },
     "input_policy": "Only pinned Inter font bytes and original code geometry; no old images, external artwork, system fonts or network",
@@ -650,5 +2016,5 @@
     "generated_resources": "Fresh Compose generation and Kotlin compilation verify accessor absence is safe"
   },
   "license_sha256": "2e2f8ffd6a26df5690dc327a6f667d60cf12122461b2572ec568552eebabb88b",
-  "notice_sha256": "ce155cae7fc76e7c8b03e94c166f127735edfd2276badb572aec079b3981aac2"
+  "notice_sha256": "486ec9532c643f6478b53a5507b2ec871534c715072b829a3aa71548c501ecc5"
 }

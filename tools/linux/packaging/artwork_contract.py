@@ -10,6 +10,8 @@ HERE = Path(__file__).resolve().parent
 # that isn't there. Reviewed provenance then comes from NUVIO_REPOSITORY.
 CHECKOUT = next((parent for parent in HERE.parents if parent / 'tools/linux/packaging' == HERE), None)
 PREFIX = 'composeResources/nuvio.composeapp.generated.resources/'
+# Linux-only replacement bytes that build.py substitutes for tracked composeApp files.
+OVERLAY = HERE / 'artwork/overlay'
 
 
 def repository():
@@ -38,18 +40,35 @@ def packaged_path(resource):
     return resource.split('/desktopMain/resources/', 1)[1]
 
 
+def linux_overlay(release):
+    return release['linux_overlay']['resources']
+
+
 def release_rules():
     release = json.loads(release_provenance().read_text())
     removed_names = {row['filename'].casefold() for row in release['removed']}
+    replaced = release['replacements'] + linux_overlay(release)
+    # Every original, including the 47 Linux-overlay targets, is forbidden at any path.
     forbidden = {row['original']['sha256']: row['original']['bytes']
-                 for row in release['removed'] + release['replacements']}
-    exceptions = {packaged_path(row['resource']): row['sha256']
-                  for row in release['retained_hash_exceptions']}
+                 for row in release['removed'] + replaced}
     # Also reject a replacement copied/renamed into any other payload location.
-    replacements = {row['replacement']['sha256']: packaged_path(row['resource'])
-                    for row in release['replacements']}
-    sizes = set(forbidden.values()) | {row['replacement']['bytes'] for row in release['replacements']}
-    return removed_names, forbidden, exceptions, replacements, sizes
+    replacements = {row['replacement']['sha256']: packaged_path(row['resource']) for row in replaced}
+    if len(replacements) != len(replaced) or set(replacements) & set(forbidden):
+        raise ValueError('Release artwork replacements must have distinct, non-original bytes')
+    # Linux packages download the anime dataset at runtime; never redistribute its bytes.
+    dataset = json.loads(data_provenance().read_text())['dataset']
+    removed_names.add(dataset['resource'].casefold())
+    forbidden[dataset['sha256']] = dataset['bytes']
+    sizes = set(forbidden.values()) | {row['replacement']['bytes'] for row in replaced}
+    return removed_names, forbidden, replacements, sizes
+
+
+def linux_source(name):
+    """Checkout file whose bytes a Linux package carries at packaged path `name`."""
+    relative = ('composeApp/src/commonMain/composeResources/' + name.removeprefix(PREFIX)
+                if name.startswith(PREFIX) else 'composeApp/src/desktopMain/resources/' + name)
+    overlay = OVERLAY / relative
+    return overlay if overlay.is_file() else repository() / relative
 
 
 def expected_resources():
@@ -63,16 +82,21 @@ def expected_resources():
         if declared and digest != provenance[declared]:
             raise ValueError('Icon license/notice differs from pinned provenance: ' + filename)
         expected[PREFIX + 'files/licenses/NuvioIcons/' + filename] = digest
-    data = json.loads(DATA_PROVENANCE.read_text())
-    expected['anime-list-mini.json'] = data['dataset']['sha256']
+    # The dataset itself is downloaded at runtime; its attribution and licenses still ship.
     for filename in ('PROVENANCE.json', 'NOTICE.txt', 'ODBL-1.0.txt', 'DBCL-1.0.txt'):
         expected['anime-mapping/' + filename] = hashlib.sha256(
             DATA_PROVENANCE.with_name(filename).read_bytes()).hexdigest()
     release = json.loads(RELEASE_PROVENANCE.read_text())
     for row in release['replacements']:
         expected[packaged_path(row['resource'])] = row['replacement']['sha256']
-    for row in release['retained_hash_exceptions']:
-        expected[packaged_path(row['resource'])] = row['sha256']
+    if release.get('retained_hash_exceptions'):
+        raise ValueError('Retained original artwork exceptions are not allowed in Linux packages')
+    for row in linux_overlay(release):
+        if row['status'] != 'LINUX_OVERLAY_REPLACED' or row['overlay'] != 'tools/linux/packaging/artwork/overlay/' + row['resource']:
+            raise ValueError('Unexpected Linux artwork overlay row: ' + row['resource'])
+        if hashlib.sha256((OVERLAY / row['resource']).read_bytes()).hexdigest() != row['replacement']['sha256']:
+            raise ValueError('Linux artwork overlay differs from pinned provenance: ' + row['resource'])
+        expected[packaged_path(row['resource'])] = row['replacement']['sha256']
     for filename in ('LICENSE.txt', 'NOTICE.txt', 'PROVENANCE.json'):
         digest = hashlib.sha256(RELEASE_PROVENANCE.with_name(filename).read_bytes()).hexdigest()
         declared = {'LICENSE.txt': 'license_sha256', 'NOTICE.txt': 'notice_sha256'}.get(filename)
@@ -84,7 +108,7 @@ def expected_resources():
 
 def verify_packaged_artwork(image):
     expected = expected_resources()
-    removed_names, forbidden, exceptions, replacements, sizes = release_rules()
+    removed_names, forbidden, replacements, sizes = release_rules()
     seen = {}
     for jar in sorted((Path(image) / 'lib/app').glob('*.jar')):
         with zipfile.ZipFile(jar) as archive:
@@ -95,7 +119,7 @@ def verify_packaged_artwork(image):
                 digest = None
                 if entry.file_size in sizes:
                     digest = hashlib.sha256(archive.read(entry)).hexdigest()
-                    if digest in forbidden and exceptions.get(entry.filename) != digest:
+                    if digest in forbidden:
                         raise ValueError('Forbidden historical artwork bytes: ' + entry.filename)
                     if digest in replacements and replacements[digest] != entry.filename:
                         raise ValueError('Renamed/duplicate replacement artwork: ' + entry.filename)
@@ -110,6 +134,7 @@ def verify_packaged_artwork(image):
     if set(expected) != set(seen):
         raise ValueError('Missing reviewed artwork/data: ' + ', '.join(sorted(set(expected) - set(seen))))
     return {'replacement_icons': 7, 'replacement_quality_badges': 6, 'replacement_setup_previews': 4,
-            'removed_resources': 10, 'unresolved_exact_path_exceptions': 4, 'resources': seen,
+            'removed_resources': 10, 'linux_overlay_replacements': 47,
+            'unresolved_exact_path_exceptions': 0, 'resources': seen,
             'redistribution_assessment': 'BLOCKED',
-            'scope': 'Payload identity only; other artwork, dataset rights and source/delivery gates unresolved'}
+            'scope': 'Payload identity only; no rights clearance; dataset rights and source/delivery gates unresolved'}

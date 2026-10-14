@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- SPDX-License-Identifier: MIT; Copyright (c) 2026 NuvioDesktop-Linux contributors.
+     Original Linux package replacement; not an official logo, rating or award mark. Inter 4.1 outlines; see bundled OFL. -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100" height="100">
+  <title>Scene after the credits (credit lines and play)</title>
+  <path fill="#F3F5F8" d="M15.00 16.00C12.24 16.00 10.00 18.24 10.00 21.00C10.00 23.76 12.24 26.00 15.00 26.00L69.00 26.00C71.76 26.00 74.00 23.76 74.00 21.00C74.00 18.24 71.76 16.00 69.00 16.00ZM15.00 36.00C12.24 36.00 10.00 38.24 10.00 41.00C10.00 43.76 12.24 46.00 15.00 46.00L55.00 46.00C57.76 46.00 60.00 43.76 60.00 41.00C60.00 38.24 57.76 36.00 55.00 36.00ZM15.00 56.00C12.24 56.00 10.00 58.24 10.00 61.00C10.00 63.76 12.24 66.00 15.00 66.00L41.00 66.00C43.76 66.00 46.00 63.76 46.00 61.00C46.00 58.24 43.76 56.00 41.00 56.00Z"/>
+  <path fill="#5BD9C9" d="M58.00 52.00L58.00 90.00L90.00 71.00Z"/>
+</svg>

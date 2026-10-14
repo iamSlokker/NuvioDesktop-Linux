@@ -13,5 +13,11 @@ and notice are bundled at files/licenses/Inter/. The font is not relicensed.
 Format names are descriptive labels, not official Dolby/DTS or disc-format logos.
 No endorsement or new media capability is implied; existing detection is unchanged.
 The replacements do not license historical imports or other provider/award artwork.
-Four retained Umbra originals remain UNRESOLVED. The owner-approved package
-exception allows their exact bytes only at the four declared original paths.
+
+Linux packages and the Linux source snapshot additionally replace 47 provider/rating
+marks and award/hero badges with original MIT artwork authored by the same recipe
+and kept in tools/linux/packaging/artwork/overlay (PROVENANCE.json linux_overlay).
+Lettering is plain Inter text and shapes are generic geometry. They are not official
+provider, rating, festival or award logos, and no endorsement is implied. The
+upstream originals stay unchanged in composeApp for other platforms, where their
+rights remain UNRESOLVED; Linux packages do not distribute them.

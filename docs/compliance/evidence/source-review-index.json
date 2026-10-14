@@ -52,15 +52,15 @@
       "sha256": "4976e328fae49f0ca59f32aa4bfbe21fd283bb6016c58b4066f201dfc16411e9"
     },
     {
-      "bytes": 31875,
+      "bytes": 102051,
       "path": "composeApp/src/commonMain/composeResources/files/licenses/ReleaseArtwork/PROVENANCE.json",
-      "scope_limit": "Ten replacement identities, nine exclusions and four unresolved exact-path hash exceptions; not publication approval.",
-      "sha256": "608f0b7c73475e3213ede7335b39aa438a6876658ddae6075b5f084617ba187d"
+      "scope_limit": "Ten replacement identities, removals and 47 Linux-overlay replacement identities; no retained originals; not publication approval.",
+      "sha256": "1b63d6ca7abcb0a92085071ceab47b4ca4e33fac272d724d551c8bb525cbfa2a"
     },
     {
       "bytes": 6854,
       "path": "composeApp/src/desktopMain/resources/anime-mapping/PROVENANCE.json",
-      "scope_limit": "Exact bundled database/import identity and notices; original generation and merged-data rights unresolved.",
+      "scope_limit": "Exact database/import identity and notices; Linux packages download it at runtime; original generation and merged-data rights unresolved.",
       "sha256": "c37de9a42e098ed7c45504bf95127ddcfbe1760a1d27e0c769e8181d6f0c25f3"
     },
     {
@@ -70,16 +70,16 @@
       "sha256": "56c6f7653d9b4cf3b6ec94c654a8e5b90f3c7d64b5d3fde81e5a8cfbfef6f6bb"
     },
     {
-      "bytes": 14190,
+      "bytes": 19892,
       "path": "docs/compliance/artwork-data-closure.md",
-      "scope_limit": "Seventeen replacements, ten exclusions and exact anime import; 47 other artwork resources/data rights unresolved.",
-      "sha256": "13340bc79eb96c56df8af086d58fb1db61066af316ed488b2967e9502410d769"
+      "scope_limit": "Seventeen replacements, ten exclusions, exact anime import and 47-resource Linux package overlay; upstream originals and data rights unresolved.",
+      "sha256": "5ebdecfc97940d4507b7ceaf55c69f4f1f1018bfe4fe198faf4220b43f6e7e3a"
     },
     {
-      "bytes": 85964,
+      "bytes": 119938,
       "path": "docs/compliance/evidence/artwork-data-review.json",
       "scope_limit": "Current resource hashes and unresolved rights inventory, not grants or publication approval.",
-      "sha256": "e18328c3de6a6d40ceef2e6a675056940f0e45e1dbd947d2da329f71bf9c594f"
+      "sha256": "20ea6ea6522dcca174c633222ae254245a609a1a3dc818701465ba692f01d6b1"
     },
     {
       "bytes": 358949,
@@ -154,10 +154,10 @@
       "sha256": "74104e7fff194e6fb653c26e6793063d1dc44886dcc5cb3d12183f6afed43a03"
     },
     {
-      "bytes": 8220,
+      "bytes": 9003,
       "path": "docs/compliance/release-closure.md",
       "scope_limit": "Current font/notice correction and remaining gates; all formats remain blocked.",
-      "sha256": "9535fb59279ae37bd3f508ca80f019c7549006ed731cb50df99a505a46e06a46"
+      "sha256": "543e36d00699df0f9dbc4499fc1f57e1febfb5c0e0c59ab67e1696800ce3a997"
     },
     {
       "bytes": 11603,
@@ -166,28 +166,28 @@
       "sha256": "6865a5d51fffdee7b17d68f29fae1a17617c9ae75d086eea0e09f1b2f183a02e"
     },
     {
-      "bytes": 10488,
+      "bytes": 33670,
       "path": "tools/linux/packaging/artwork/GenerateReleaseArtwork.java",
-      "scope_limit": "Preferred editable form of ten new assets; only original geometry and pinned Inter inputs.",
-      "sha256": "a380a778cc0989020e403a6272b4cc3ea28301cc25ed7609ab231319aca40081"
+      "scope_limit": "Preferred editable form of ten new assets and the 47-file Linux overlay; only original geometry and pinned Inter inputs.",
+      "sha256": "e59fb7481c2cac0cb7f9f9eeb67eed10091c92aa42288a1f8565afd4f28a4a05"
     },
     {
-      "bytes": 3020,
+      "bytes": 5391,
       "path": "tools/linux/packaging/artwork/README.md",
-      "scope_limit": "Original artwork authoring/reproduction and limits of retained Umbra exception.",
-      "sha256": "74d2403271297dcb1ac7ce067a5754886ae914a8d539b3595a9b05a28bfa1aae"
+      "scope_limit": "Original artwork authoring/reproduction and Linux overlay scope.",
+      "sha256": "7ad6fbb8878b7d9af7f65536651105a40dba8991a798189410184453d03bdb5a"
     },
     {
-      "bytes": 2858,
+      "bytes": 3186,
       "path": "tools/linux/packaging/artwork/generate.py",
       "scope_limit": "Headless authoring driver; optional tooling, not a new app dependency.",
-      "sha256": "7a3b265c6d38aca88c5a2fd57621ce8a9b0e2d16a3e4cd1d3b35792032165ab6"
+      "sha256": "95520d0c326f031cbd3c14232761d4d53b7db3fbdd7dd5971410011743e2d857"
     },
     {
-      "bytes": 6358,
+      "bytes": 7904,
       "path": "tools/linux/packaging/artwork_contract.py",
       "scope_limit": "Future artwork/data payload gate; not legal clearance.",
-      "sha256": "1734a731c8bc6e0dfd796f80b1c333b51de6133deb7eb4b201c8191a9b814516"
+      "sha256": "f6f601882b691a7ff28dfc1303376ee4323e0c89d669cdb515832d6bd3aa7dec"
     },
     {
       "bytes": 4203,
@@ -208,10 +208,10 @@
       "sha256": "265ac1aee8ae5b1975740083d9574ffd519596ebcca766763d800c151a242ca7"
     },
     {
-      "bytes": 10003,
+      "bytes": 10093,
       "path": "tools/linux/packaging/compliance/review_index.py",
       "scope_limit": "Review-index byte bindings only; not a source cache or compliance verifier.",
-      "sha256": "5a65b3f83fd2a77f0e54b0cb20c4573ba1868e43de7ed9a68baf1f28a24c4800"
+      "sha256": "b88cf3366029a5b737006aeef347e9067a723228c8e3de88e50e47aaa6d903f0"
     },
     {
       "bytes": 14515,

@@ -95,6 +95,16 @@ Details: [platform source evidence](platform-source-evidence.md).
    build described below and need only review of its notices/relink kit. Do not repeat the completed 125 Maven, Temurin or 427 Ubuntu
    source-retention work. Complete the identified gaps and validate modified
    build/install procedures in disposable environments.
+   **Notice coverage update (2026-10-14):** all three formats now ship
+   `share/licenses/third-party/` from `tools/linux/packaging/notices/`: Skiko,
+   Skia m144-22f58c9fd4 and each library in the pinned skia-pack static set
+   (dng_sdk, expat, FreeType under FTL with its credit line, HarfBuzz, ICU,
+   libjpeg-turbo, libpng, libwebp, piex, Wuffs, zlib), ONNX Runtime with its
+   ThirdPartyNotices, quickjs-kt, QuickJS, c-vector and Jansi. Every text is taken
+   from the exact upstream revision recorded with its SHA256 in `manifest.json`;
+   `verify.py` fails DEB/AppImage/Flatpak when any is missing or altered. This
+   closes permissive notice coverage for those native components only. The
+   AppImage runtime's static inputs and any copyleft source/relink scope remain open.
 3. **Approve and test recipient source delivery.** Select a durable channel,
    access/retention policy and applicable delivery method. Build immutable
    per-artifact maps from the exact selected binaries and required retained

@@ -16,6 +16,7 @@ import pathlib
 
 from build import HERE, MEDIA, REPO, CONFIG, fetch, run, source_tree
 from webkit.builder_seed import load_seed
+import source_policy
 
 
 def canonical(args, work):
@@ -30,7 +31,7 @@ def canonical(args, work):
     with concurrent.futures.ThreadPoolExecutor(max_workers=4) as pool:
         for job in [pool.submit(fetch, spec, inputs / name) for name, spec in CONFIG['tools'].items()]:
             job.result()
-    info = source_tree(work / 'source', args.channel)
+    info = source_policy.apply(work / 'source', source_tree(work / 'source', args.channel))
     info['builder_image_id'] = image
     (work / 'source-info.json').write_text(json.dumps(info, indent=2) + '\n')
     (work / 'gradle').mkdir(exist_ok=True)

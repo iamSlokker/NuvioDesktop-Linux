@@ -1,0 +1,22 @@
+Nuvio Desktop for Linux - third-party native component notices
+
+The application JARs include native code that is not built by this project.
+The license texts for those components, taken from the exact upstream
+revisions recorded in manifest.json, are in the directories next to this file.
+
+skiko/       Skiko (JetBrains), Apache License 2.0; libskiko-linux-x64.so
+skia/        Skia m144-22f58c9fd4 and the libraries it links statically into
+             libskiko: dng_sdk, expat, FreeType, HarfBuzz, ICU, libjpeg-turbo,
+             libpng, libwebp, piex, Wuffs, zlib
+onnxruntime/ ONNX Runtime 1.31.0, MIT License, with its ThirdPartyNotices.txt
+quickjs-kt/  quickjs-kt (dokar3), Apache License 2.0; libquickjs.so
+quickjs/     QuickJS (Fabrice Bellard, Charlie Gordon), MIT License
+c-vector/    c-vector (Evan Teran), MIT License
+jansi/       Jansi 2.4.2, Apache License 2.0
+
+Portions of this software are copyright (c) The FreeType Project
+(www.freetype.org). All rights reserved. FreeType is used under the FreeType
+License (FTL); see skia/freetype/FTL.TXT.
+
+This product includes DNG technology under license by Adobe Systems
+Incorporated.

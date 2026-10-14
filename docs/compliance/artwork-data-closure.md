@@ -2,8 +2,11 @@
 
 **2026-10-14; latest correction baseline `1555d7ea75c3777f854f4af1b2256c9ff2419cd9`.**
 Seven missing-grant UI imports are replaced. The exact anime dump import revision
-is established. Other artwork permissions and the full database-generation and
-rights scope remain **BLOCKED**; this is evidence for review, not legal certification.
+is established. The 47 previously unresolved provider/rating and award/hero
+resources are replaced **in Linux packages only** by an original overlay (see
+[Linux package artwork overlay](#linux-package-artwork-overlay)). The full
+database-generation and rights scope, and every other release gate, remain
+**BLOCKED**; this is evidence for review, not legal certification.
 
 ## Seven UI vectors
 
@@ -67,7 +70,8 @@ use only pinned existing Inter fonts and original geometry. New geometry and
 illustrations are MIT; the unchanged font remains SIL OFL. This does not license
 historical imports or imply endorsement by format owners.
 
-**Owner-approved narrow exception:** eight removed resources share bytes with
+**Superseded for Linux packages by the overlay below.** Previous
+**owner-approved narrow exception:** eight removed resources share bytes with
 four active Umbra originals. The owner requested preserving `hero_badge_win.png`,
 `hero_badge_nom.png`, `hero_badge_foreign.png` and `hero_badge_people_choice.png`.
 They are byte-identical in `windows-tv-adaptive` at `a70cc370…` and the pinned WIP
@@ -93,9 +97,11 @@ Fresh Compose resource generation and Kotlin compilation confirm that the
 accessor was not needed. Actual dependency JARs in previous package images do
 not contain this filename, so the ban affects only the application's own copy.
 
-## Remaining packaged artwork
+## Remaining packaged artwork (upstream payload)
 
-[The machine-readable review](evidence/artwork-data-review.json) classifies each
+This section describes the composeApp originals, which upstream, Windows and macOS
+builds still ship. For Linux packages they are replaced; see the next section.
+[The machine-readable review](evidence/artwork-data-review.json) classified each
 of **47** remaining resources (20 provider/rating marks and 27 award/hero badges)
 by exact SHA256, introduction commit, actual code references and **UNRESOLVED**
 status. Separate maps record the ten removed and ten newly replaced resources.
@@ -127,6 +133,61 @@ Together with the previous seven UI replacements, the cumulative disposition is
 - The six former quality-mark imports and four embedded-artwork screenshots are
   replaced as described above. Previous bytes are forbidden in future application
   JARs, including renamed non-image copies. Historical binaries are unchanged.
+
+## Linux package artwork overlay
+
+**Owner decision (2026-10-14):** the 47 UNRESOLVED resources above (20
+provider/rating marks, 27 award/hero badges) must not be present in Linux
+packages or the Linux source tarball; Linux packages carry original replacement
+artwork instead. To keep Windows/macOS unchanged and upstream merges clean, the
+composeApp originals and all Kotlin are **not modified**.
+
+- **Replacements:** original MIT artwork authored by the existing
+  [Java2D recipe](../../tools/linux/packaging/artwork/GenerateReleaseArtwork.java)
+  with only the pinned Inter fonts and original geometry, committed under
+  [`tools/linux/packaging/artwork/overlay/`](../../tools/linux/packaging/artwork/overlay)
+  at the same repository-relative paths. Names and formats are unchanged; SVGs
+  keep their `width`/`height`/`viewBox` and contain only `svg`/`title`/`rect`/`path`;
+  PNGs keep their pixel sizes as RGBA. Provider/rating marks are neutral plates
+  with plain Inter text (`IMDb`, `TMDB`, `TR`, `Trakt`, `LB`, `MC`, `MAL`, …);
+  Rotten Tomatoes critic/audience states stay distinguishable by circle/square or
+  rosette shape, color and an up/down/check glyph, with no tomato/popcorn imagery.
+  Award/hero badges are generic trophies, laurels, medals, shields, stars,
+  screens, frames and clocks with short text (`NOM`, `1ST`, `NEW`, `CULT`); no
+  statuettes or festival/award logo likenesses. All 47 have distinct bytes.
+- **Substitution:** `tools/linux/packaging/source_policy.py`, applied after `build.source_tree()` by the seeded canonical build (`build.py` stays byte-identical for the pinned builder seed), copies each
+  overlay file over its tracked target in the packaging snapshot and records the
+  overlay SHA256 in `source-files.json` (and therefore `source_sha256`). It fails if
+  a target is not tracked or if original bytes remain anywhere else in the
+  snapshot. The overlay directory itself stays in the snapshot; the originals do
+  not, so the application JAR and source tarball carry only replacements.
+- **Provenance:** each row (original SHA256/bytes/introduction commit and
+  replacement SHA256/bytes/dimensions/MIT) is in the bundled
+  [ReleaseArtwork provenance](../../composeApp/src/commonMain/composeResources/files/licenses/ReleaseArtwork/PROVENANCE.json)
+  under `linux_overlay`; its NOTICE describes the overlay. The four former
+  retained-hash exceptions are removed.
+- **Gate:** `tools/linux/packaging/artwork_contract.py` requires every overlay
+  target's packaged path to carry its replacement hash, rejects all 47 original
+  byte sequences at any JAR path (including renamed copies), rejects renamed
+  replacement copies, and no longer allows any retained original.
+  It reports `linux_overlay_replacements: 47` and `unresolved_exact_path_exceptions: 0`.
+- **Disposition:** the machine-readable review records the 47 as
+  `LINUX_OVERLAY_REPLACED`, `unresolved: 0` for Linux packages, and
+  `unresolved_upstream_other_platforms: 47` because upstream/Windows/macOS still
+  ship the originals unchanged. No rights in the originals are claimed.
+
+**TMDB attribution (owner action):** `rating_tmdb.png` (also the TMDB integration
+settings icon) was replaced with a plain `TMDB` text mark per owner decision.
+TMDB's API terms may require its approved logo for attribution. Compliance with
+those terms must be confirmed by the owner; it is **not** claimed here.
+
+Validation for this change: all 47 overlay files reproduced byte-identically
+from the recipe on the recorded JDK 17.0.20.1, and the receipt equals the pinned
+provenance toolchain. A `desktopJar` built by Gradle from a `build.source_tree()`
+snapshot passed the packaged-artwork gate (75 pinned resources, 47 overlay
+replacements); the checkout JAR without the overlay is rejected. That JAR is a
+local development artifact, not a DEB/Flatpak/AppImage build. Contact-sheet
+review was offscreen only; no live GUI acceptance is claimed.
 
 ## Exact anime import recovered; generation/rights still incomplete
 
@@ -163,6 +224,25 @@ Current data has 8,229 IMDb, 8,512 TMDB, 7,499 TVDB, 7,434 season and 684 offset
 entries. Losing these is not a safe drop-in replacement. Copying unresolved
 crosswalks into a new dump would not clear the gap; live enrichment needs its own
 terms and retained responses. Therefore **no regeneration was performed**.
+
+## Linux packages download the anime dataset at runtime
+
+By owner decision, Linux release packages no longer redistribute
+`anime-list-mini.json`. `tools/linux/packaging/source_policy.py` (applied by the seeded
+canonical build; `build.py` stays byte-identical for the pinned builder seed)
+omits it from the packaging source snapshot, so it is absent from the application JAR and from
+`Nuvio-source-<commit>.tar.gz`; the package gate rejects its filename and its
+exact bytes anywhere in `lib/app/*.jar`. When the packaged resource is absent,
+`AnimeListDownload.kt` fetches the exact reviewed revision from
+`raw.githubusercontent.com/Fribb/anime-lists/4ddbccd…/anime-list-mini.json`,
+requires 5,862,205 bytes and SHA256 `cfcdee0d…deba`, and caches it under the
+app data directory (`$XDG_CONFIG_HOME/nuviohtpc/anime-mapping/`; Flatpak has
+network permission). A failed or tampered download is discarded and anime ID
+conversion falls back to the plain ID chain for that session. The ODbL/DbCL
+texts, NOTICE and PROVENANCE still ship because the data is still used.
+Windows/macOS builds and source checkouts are unchanged and keep the bundled
+copy. This avoids redistributing the dataset; it does not establish rights to
+use it, which remains the user's download from the public upstream.
 
 ## Validation and release boundary
 
@@ -203,7 +283,8 @@ baseline Git blobs; tests use synthetic old bytes instead of redistributing
 unlicensed imports as fixtures. The gate is not a rights grant or a new package
 build: other artwork and data/source/delivery blockers remain unchanged.
 
-DEB, Flatpak and AppImage remain **BLOCKED** by the enumerated artwork/data rights,
+DEB, Flatpak and AppImage remain **BLOCKED** by the enumerated data rights, owner
+confirmation of TMDB attribution,
 required native/static source/relink and recipient-delivery gates. The finite
 [release closure](release-closure.md) still applies. No binary publication, HDR,
 WebKit rebuild or SDR renderer change is part of this correction.

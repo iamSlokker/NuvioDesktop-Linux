@@ -93,7 +93,9 @@ properties, never a developer local.properties. Gradle wrapper and dependency
 artifacts must be retained separately for offline rebuilding. The top-level
 packaging orchestrator currently requires Git metadata omitted from this tar:
 check out the recorded Git commit and compare every recorded source byte before
-using its packaging commands. A fully offline snapshot-only packaging bootstrap
+using its packaging commands. Linux artwork overlay files under
+tools/linux/packaging/artwork/overlay replace their same-path composeApp targets
+in this snapshot, so those recorded hashes are the overlay bytes, not Git's. A fully offline snapshot-only packaging bootstrap
 is not supplied; do not represent this archive as a complete offline rebuild kit.
 
 Application-image build (after providing the documented verified dependencies):

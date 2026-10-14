@@ -195,6 +195,7 @@ class CanonicalSeedTest(unittest.TestCase):
                     kwargs['stdout'].close()
             def snapshot(destination, channel):
                 destination.mkdir()
+                (destination.parent / 'source-files.json').write_text('[]')
                 return dict(git_commit='c' * 40, source_date_epoch=1234, channel=channel)
             def fetch(spec, destination):
                 destination.parent.mkdir(parents=True, exist_ok=True)
