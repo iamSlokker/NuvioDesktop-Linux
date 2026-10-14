@@ -100,7 +100,9 @@ def build_image():
     first = next(line for line in (RECIPE / 'Containerfile').read_text().splitlines() if line.startswith('FROM '))
     if first != 'FROM ' + base:
         raise ValueError('Containerfile base differs from manifest pin')
-    subprocess.run(['podman', 'build', '--network=host', '--pull=missing', '--platform', 'linux/amd64',
+    # No --pull: podman 3.4 (Ubuntu 22.04 runners) only takes a boolean there, and
+    # every version's default pulls the digest-pinned base only when it is missing.
+    subprocess.run(['podman', 'build', '--network=host', '--platform', 'linux/amd64',
                     '--file', str(RECIPE / 'Containerfile'), '--tag', tag, str(RECIPE)], check=True,
                    stdout=subprocess.DEVNULL)
     return tag, subprocess.check_output(['podman', 'image', 'inspect', '--format', '{{.Id}}', tag], text=True).strip()
