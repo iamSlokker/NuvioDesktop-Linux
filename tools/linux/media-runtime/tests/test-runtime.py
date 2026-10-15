@@ -204,6 +204,24 @@ def main():
         for text in ('Homebrew', '/home/developer/build', '/tmp/development'):
             mutation('path_' + text, lambda text=text: (root / 'lib/pkgconfig/mpv.pc').write_text(text))
         mutation('unexpected_executable', lambda: shutil.copy2(root / 'bin/ffprobe', root / 'bin/unexpected'))
+        # Build-only nuvio-hdr-probe inputs: exact files, and the scanner's builder
+        # library allowance must not extend to other tools or shipped libraries.
+        scanner = root / 'bin/wayland-scanner'
+        protocols = root / 'share/wayland-protocols'
+        mutation('missing_probe_vulkan_header', lambda: (root / 'include/vulkan/vulkan.h').unlink())
+        mutation('missing_probe_protocol_xml',
+                 lambda: (protocols / 'staging/color-management/color-management-v1.xml').unlink())
+        def unlisted_protocol():
+            target = protocols / 'stable/xdg-shell/xdg-shell.xml'
+            target.parent.mkdir(parents=True)
+            target.write_text('<protocol name="xdg_shell"/>\n')
+        mutation('unlisted_build_data', unlisted_protocol)
+        mutation('build_tool_unclassified_dependency',
+                 lambda: subprocess.run(['patchelf', '--add-needed', 'libxml2.so.2', str(scanner)], check=True))
+        mutation('build_tool_allowance_on_library',
+                 lambda: subprocess.run(['patchelf', '--add-needed', 'libexpat.so.1', str(lib)], check=True))
+        mutation('build_tool_allowance_on_mpv',
+                 lambda: subprocess.run(['patchelf', '--add-needed', 'libexpat.so.1', str(root / 'bin/mpv')], check=True))
 
         def substitute():
             (root / 'bin/mpv').unlink()
@@ -219,6 +237,19 @@ def main():
                 path = root / 'share/nuvio-media-runtime' / filename
                 data = json.loads(path.read_text()); change(data); path.write_text(json.dumps(data))
             mutation(filename, mutate)
+        def without_wayland(key):
+            # Coherent metadata for an X11-only mpv must still fail closed.
+            metadata = root / 'share/nuvio-media-runtime'
+            header = metadata / 'config/mpv.h'
+            header.write_text(header.read_text().replace(f'#define {key} 1\n', f'#define {key} 0\n'))
+            for filename, field in (('compile-features.json', None), ('capabilities.json', 'config')):
+                data = json.loads((metadata / filename).read_text())
+                (data[field] if field else data)['mpv'][key] = '0'
+                (metadata / filename).write_text(json.dumps(data))
+        for key in ('HAVE_WAYLAND', 'HAVE_WAYLAND_PROTOCOLS_1_41'):
+            mutation('coherent_' + key.lower(), lambda key=key: without_wayland(key))
+        mutation('libmpv_without_color_management',
+                 lambda: lib.write_bytes(lib.read_bytes().replace(b'wp_color_manager_v1\0', b'wp_color_manxger_v1\0')))
         def hardware_claim():
             path = root / 'share/nuvio-media-runtime/capabilities.json'
             data = json.loads(path.read_text())

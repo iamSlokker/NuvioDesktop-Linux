@@ -57,7 +57,8 @@ def verify_inventory(root):
 def layout_errors(root):
     contract = POLICY['artifact_contract']
     links = contract['symlinks']
-    regular = set(contract['executables']) | set(contract['libraries']) | set(contract['headers'])
+    regular = (set(contract['executables']) | set(contract['libraries']) | set(contract['headers'])
+               | set(contract['build_data']))
     regular.add('lib/pkgconfig/mpv.pc')
     errors = []
     for rel in regular:

@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
 """Build current application sources in a verified canonical builder seed.
 
-Keep build.py byte-identical: existing seed receipts pin that driver too. This
-adapter uses the same native-build.sh, source snapshot, media audit and package
-checks, but selects the already verified immutable toolchain instead of creating
-a different image ID. It never accepts a prebuilt application or media runtime
-without the ordinary audit.
+Seed receipts pin build.py (a builder input), so changing it requires a new
+bootstrap seed. This adapter uses the same native-build.sh, source snapshot and
+Linux source policy (source_policy.apply, as build.native() does), media audit
+and package checks, but selects the already verified immutable toolchain instead
+of creating a different image ID. It never accepts a prebuilt application or
+media runtime without the ordinary audit.
 """
 import argparse
 import concurrent.futures

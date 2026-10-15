@@ -70,16 +70,16 @@
       "sha256": "56c6f7653d9b4cf3b6ec94c654a8e5b90f3c7d64b5d3fde81e5a8cfbfef6f6bb"
     },
     {
-      "bytes": 21588,
+      "bytes": 21623,
       "path": "docs/compliance/artwork-data-closure.md",
       "scope_limit": "Seventeen replacements, ten exclusions, exact anime import and 47-resource Linux package overlay; upstream originals and data rights unresolved.",
-      "sha256": "11a89bde0ab92c9c458d4cc4648650326af5c1cc094f7069e7cf78dcc727090b"
+      "sha256": "64999d7e5b10ae60799e5e60e050499c595207abf14916933e297ad0fc5bbe3d"
     },
     {
-      "bytes": 121480,
+      "bytes": 121545,
       "path": "docs/compliance/evidence/artwork-data-review.json",
       "scope_limit": "Current resource hashes and unresolved rights inventory, not grants or publication approval.",
-      "sha256": "cffcab70413103a5338e854d9a2a35c4e7258a997e6595694b4abf7e02b5bf2c"
+      "sha256": "922c947fab3c5665d37399a1ec7e6da8b11bce371818cbcc35e73572596bec61"
     },
     {
       "bytes": 358949,
@@ -160,10 +160,10 @@
       "sha256": "416346145f904add669b0ddedd6be0b6418095a074f642fcc8dd32f5a1fb87d5"
     },
     {
-      "bytes": 11603,
+      "bytes": 12531,
       "path": "docs/compliance/source-delivery-plan.md",
       "scope_limit": "Proposed delivery/retention design, not an approved offer or publication.",
-      "sha256": "6865a5d51fffdee7b17d68f29fae1a17617c9ae75d086eea0e09f1b2f183a02e"
+      "sha256": "fd5ad27151de847a95ecb9020b05b2e88f2f0563ae9d53f5c3000fb82749a163"
     },
     {
       "bytes": 43585,
@@ -172,10 +172,10 @@
       "sha256": "089967b668603a77d3e300420e60cc5f0d079ed03f301c23fd1d395083558b3b"
     },
     {
-      "bytes": 6807,
+      "bytes": 6889,
       "path": "tools/linux/packaging/artwork/README.md",
       "scope_limit": "Original artwork authoring/reproduction and Linux overlay scope.",
-      "sha256": "330705e4d9ccbc1013c88f8a04dc46f7bbdab33fa3303c126f20d5d3d29c7159"
+      "sha256": "c4202c58166072f691356a9803bfb4820c12e9ef1e71513e740541cde297a2f9"
     },
     {
       "bytes": 4002,
@@ -214,10 +214,10 @@
       "sha256": "e67f67c0f93a0aa3362dfa72f2ac6a2fe62db39701771f95169b4a88a627e8c3"
     },
     {
-      "bytes": 32263,
+      "bytes": 32391,
       "path": "tools/linux/packaging/compliance/inventory.py",
       "scope_limit": "Original package/source inventory verifier.",
-      "sha256": "80913878d7d760da61d06465d966295f686adfb5609aa485b2cc30bae3171d6c"
+      "sha256": "2cc3ac5977a1d8830b8fc7cc3314db2f328af515d20d380304e06203b013fce9"
     },
     {
       "bytes": 10447,

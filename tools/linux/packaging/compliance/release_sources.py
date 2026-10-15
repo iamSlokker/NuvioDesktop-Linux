@@ -49,20 +49,70 @@ def jdk_source_spec():
     return matches[0]
 
 
+def archive_member(tar, name):
+    """The single regular file `name` in a make_archive() tarball (stored as ./name)."""
+    found = [m for m in tar.getmembers() if m.name.removeprefix('./') == name]
+    if len(found) != 1 or not found[0].isfile():
+        raise ValueError('Expected one regular file in the WebKit source archive: ' + name)
+    return tar.extractfile(found[0]).read()
+
+
+def engine_builder_versions(work, runtime):
+    """Exact dpkg versions in the engine builder that assembled this AppImage.
+
+    webkit.stage refuses to assemble unless the container's own dpkg inventory
+    equals the engine generation's corresponding-source/webkit-builder-packages.tsv,
+    and webkit.stage.archive_source ships that file (engine/) with its
+    engine-build.json in the Nuvio-WebKit-source archive next to the AppImage.
+    """
+    archives = sorted((work / 'artifacts').glob('Nuvio-WebKit-source-*.tar.gz'))
+    if len(archives) != 1:
+        raise ValueError('Expected exactly one Nuvio-WebKit-source archive for the AppImage')
+    with tarfile.open(archives[0], 'r:gz') as tar:
+        record = json.loads(archive_member(tar, 'engine-build.json'))
+        table = archive_member(tar, 'engine/webkit-builder-packages.tsv')
+    if (record['builder_image_id'], record['recipe_identity']) != (runtime['builder_image_id'], runtime['recipe_identity']):
+        raise ValueError('WebKit source archive does not describe the AppImage engine')
+    if hashlib.sha256(table).hexdigest() != record['corresponding_source']['webkit-builder-packages.tsv']['sha256']:
+        raise ValueError('Engine builder package list does not match its build record')
+    versions = {}
+    for line in table.decode().splitlines():
+        package, tab, version = line.partition('\t')
+        if not tab or not package or not version or '\t' in version or versions.get(package, version) != version:
+            raise ValueError('Malformed engine builder package list: ' + line)
+        versions[package] = version
+    return versions
+
+
 def check_appimage_lock(work, lock):
-    """The Ubuntu source lock must describe the libraries actually bundled in this AppImage."""
+    """The Ubuntu source lock must cover the exact Ubuntu binaries bundled in this AppImage.
+
+    Bound by package version, not by builder image ID: a rebuilt engine builder
+    from the same pinned snapshot keeps every version (and its locked source);
+    any version change fails closed until the lock is regenerated.
+    """
     root = work / APPIMAGE_ROOT
     runtime = json.loads((root / 'share/nuvio-webkit/runtime.json').read_text())
-    if runtime['builder_image_id'] != lock['builder_image_id']:
-        raise ValueError('AppImage engine builder differs from the Ubuntu source lock; regenerate the lock')
     # packages.json lists the Ubuntu libraries actually copied into the AppImage. GTK and
     # WebKitGTK are the private patched builds; their source is Nuvio-WebKit-source-*.
-    bundled = set(json.loads((root / 'share/licenses/Ubuntu-AppImage/packages.json').read_text()))
-    locked = {binary['package'] for row in lock['source_packages'] for binary in row['binaries']}
-    missing = sorted(bundled - locked)
+    bundled = sorted(set(json.loads((root / 'share/licenses/Ubuntu-AppImage/packages.json').read_text())))
+    installed = engine_builder_versions(work, runtime)
+    locked = {}
+    for row in lock['source_packages']:
+        for binary in row['binaries']:
+            locked.setdefault(binary['package'], set()).add(binary['version'])
+    missing = [name for name in bundled if name not in locked]
     if missing:
         raise ValueError('Bundled Ubuntu packages without locked source: ' + ', '.join(missing))
-    return sorted(bundled)
+    unrecorded = [name for name in bundled if name not in installed]
+    if unrecorded:
+        raise ValueError('Bundled Ubuntu packages absent from the engine builder package list: ' + ', '.join(unrecorded))
+    different = [f'{name} {installed[name]} (locked {", ".join(sorted(locked[name]))})'
+                 for name in bundled if installed[name] not in locked[name]]
+    if different:
+        raise ValueError('Bundled Ubuntu package versions differ from the source lock; regenerate the lock: '
+                         + '; '.join(different))
+    return bundled
 
 
 def archive_ubuntu(lock, cache, output):

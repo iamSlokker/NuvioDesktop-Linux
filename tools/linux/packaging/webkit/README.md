@@ -208,9 +208,10 @@ origins remain rejected; seed origins remain restricted to `linux`.
 `canonical_from_seed.py` verifies and imports the same immutable canonical builder,
 then builds the current application commit through the existing `native-build.sh`.
 Private media is still rebuilt/audited, and source stamps, native/JVM tests, DEB
-verification and Flatpak export remain the ordinary pipeline. The small adapter
-keeps `build.py` unchanged because the existing bootstrap receipt pins its bytes;
-it does not loosen that receipt or accept a different builder with similar inputs.
+verification and Flatpak export remain the ordinary pipeline. Both paths apply the
+same Linux source policy (`source_policy.py`) to the snapshot. The bootstrap
+receipt pins `build.py`'s bytes, so any change to it requires a new bootstrap seed;
+the adapter does not loosen that receipt or accept a different builder with similar inputs.
 `webkit/import_candidate.py` verifies both archive hashes, extracts only safe engine
 entries, checks the current recipe, sandbox/build policy, inventory and matching
 canonical builder, then imports and verifies the exact assembly image. It publishes

@@ -1,4 +1,6 @@
 """Release source bundles and binary->source map; fixtures only, no network or packages."""
+import hashlib
+import io
 import json
 from pathlib import Path
 import sys
@@ -27,24 +29,76 @@ class ReleaseSourcesTest(unittest.TestCase):
                  inputs=[dict(filename='gtk.dsc', sha256='c' * 64, size=1, url='https://x')]),
             dict(binaries=[dict(package='libfoo1', version='1')],
                  inputs=[dict(filename='foo.dsc', sha256='d' * 64, size=1, url='https://x')])])
-        self.runtime(builder='b' * 64, packages=['libfoo1'])
+        self.runtime(packages=['libfoo1'])
+        self.engine({'libfoo1': '1', 'libgtk-3-0': '1', 'libunbundled0': '9'})
         for name in ('app.deb', 'app.flatpak', 'app.AppImage', 'Nuvio-source-aaaaaaaaaaaa.tar.gz',
-                     'Nuvio-WebKit-source-x.tar.gz', 'Nuvio-AppImage-runtime-source-y.tar.gz'):
+                     'Nuvio-AppImage-runtime-source-y.tar.gz'):
             (self.artifacts / name).write_bytes(name.encode())
 
-    def runtime(self, builder, packages):
+    def runtime(self, packages, builder='e' * 64, recipe='f' * 64):
+        # The AppImage engine identity deliberately differs from the lock's historical builder_image_id.
         root = self.work / rs.APPIMAGE_ROOT
-        (root / 'share/nuvio-webkit/runtime.json').write_text(json.dumps(dict(builder_image_id=builder)))
+        (root / 'share/nuvio-webkit/runtime.json').write_text(json.dumps(dict(builder_image_id=builder, recipe_identity=recipe)))
         (root / 'share/licenses/Ubuntu-AppImage/packages.json').write_text(json.dumps(packages))
 
-    def test_lock_must_match_the_appimage_engine_builder_and_cover_every_bundled_package(self):
+    def engine(self, versions, builder='e' * 64, recipe='f' * 64, table=None, name='Nuvio-WebKit-source-x.tar.gz'):
+        """A webkit.stage.archive_source()-shaped archive: ./engine-build.json + ./engine/webkit-builder-packages.tsv."""
+        for old in self.artifacts.glob('Nuvio-WebKit-source-*.tar.gz'):
+            old.unlink()
+        if table is None:
+            table = ''.join(f'{package}\t{version}\n' for package, version in sorted(versions.items())).encode()
+        record = dict(builder_image_id=builder, recipe_identity=recipe, corresponding_source={
+            'webkit-builder-packages.tsv': dict(sha256=hashlib.sha256(table).hexdigest(), mode=0o644)})
+        with tarfile.open(self.artifacts / name, 'w:gz') as tar:
+            for member, data in (('./engine-build.json', json.dumps(record).encode()),
+                                 ('./engine/webkit-builder-packages.tsv', table)):
+                info = tarfile.TarInfo(member); info.size = len(data)
+                tar.addfile(info, io.BytesIO(data))
+        return record
+
+    def test_bundled_ubuntu_versions_must_equal_locked_binary_versions(self):
         # Private GTK/WebKitGTK are covered by the WebKit source archive, not the Ubuntu lock.
+        # A different engine builder image ID is accepted when every version matches.
         self.assertEqual(['libfoo1'], rs.check_appimage_lock(self.work, self.lock))
-        self.runtime(builder='e' * 64, packages=['libfoo1'])
-        with self.assertRaisesRegex(ValueError, 'builder differs'):
+        self.engine({'libfoo1': '2'})
+        with self.assertRaisesRegex(ValueError, r'versions differ.*regenerate the lock: libfoo1 2 \(locked 1\)'):
             rs.check_appimage_lock(self.work, self.lock)
-        self.runtime(builder='b' * 64, packages=['libfoo1', 'libunlocked0'])
-        with self.assertRaisesRegex(ValueError, 'libunlocked0'):
+
+    def test_missing_package_in_lock_or_engine_builder_fails_closed(self):
+        self.runtime(packages=['libfoo1', 'libunlocked0'])
+        self.engine({'libfoo1': '1', 'libunlocked0': '1'})
+        with self.assertRaisesRegex(ValueError, 'without locked source: libunlocked0'):
+            rs.check_appimage_lock(self.work, self.lock)
+        self.runtime(packages=['libfoo1', 'libgtk-3-0'])
+        self.engine({'libfoo1': '1'})
+        with self.assertRaisesRegex(ValueError, 'absent from the engine builder package list: libgtk-3-0'):
+            rs.check_appimage_lock(self.work, self.lock)
+
+    def test_engine_version_evidence_must_belong_to_this_appimage(self):
+        for kwargs, error in ((dict(builder='b' * 64), 'does not describe the AppImage engine'),
+                              (dict(recipe='0' * 64), 'does not describe the AppImage engine'),
+                              (dict(table=b'libfoo1 1\n'), 'Malformed'),
+                              (dict(table=b'libfoo1\t1\nlibfoo1\t2\n'), 'Malformed')):
+            with self.subTest(kwargs=kwargs):
+                self.engine({'libfoo1': '1'}, **kwargs)
+                with self.assertRaisesRegex(ValueError, error):
+                    rs.check_appimage_lock(self.work, self.lock)
+        record = self.engine({'libfoo1': '1'})
+        with tarfile.open(self.artifacts / 'Nuvio-WebKit-source-x.tar.gz', 'w:gz') as tar:
+            for member, data in (('./engine-build.json', json.dumps(record).encode()),
+                                 ('./engine/webkit-builder-packages.tsv', b'libfoo1\t2\n')):
+                info = tarfile.TarInfo(member); info.size = len(data)
+                tar.addfile(info, io.BytesIO(data))
+        with self.assertRaisesRegex(ValueError, 'does not match its build record'):
+            rs.check_appimage_lock(self.work, self.lock)
+        self.engine({'libfoo1': '1'})
+        self.engine({'libfoo1': '1'}, name='Nuvio-WebKit-source-z.tar.gz')
+        (self.artifacts / 'Nuvio-WebKit-source-x.tar.gz').write_bytes(b'second archive')
+        with self.assertRaisesRegex(ValueError, 'exactly one'):
+            rs.check_appimage_lock(self.work, self.lock)
+        (self.artifacts / 'Nuvio-WebKit-source-x.tar.gz').unlink()
+        (self.artifacts / 'Nuvio-WebKit-source-z.tar.gz').unlink()
+        with self.assertRaisesRegex(ValueError, 'exactly one'):
             rs.check_appimage_lock(self.work, self.lock)
 
     def test_pinned_jdk_source_is_the_single_temurin_source_archive(self):
