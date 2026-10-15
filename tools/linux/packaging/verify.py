@@ -19,6 +19,7 @@ from onnx_contract import NATIVES as ONNX_NATIVES, verify_packaged_onnx
 from font_contract import verify_packaged_fonts
 from artwork_contract import verify_packaged_artwork
 from notice_contract import TARGET as NOTICE_TARGET, expected as notice_files, verify_packaged_notices
+from flatpak_bundle import check_unpublished_bundle
 
 FORBIDDEN = [b'/home/hmacedo', b'/var/home/hmacedo', b'/home/linuxbrew', b'/opt/homebrew',
              b'/source/', b'/work/prefix', b'/recipes/']
@@ -314,13 +315,18 @@ def artifacts(work, formats):
                 report['appimage_runtime'] = check_appimage_runtime(work, path, root)
                 (dest / 'appimage-audit.json').write_text(json.dumps(report, indent=2) + '\n')
         else:
+            info = json.loads((work / 'canonical/release-info.json').read_text())
+            ref = f'app/{info["application_id"]}/x86_64/{info["channel"]}'
+            # Header contract: unsigned CI output, no repo URL/key; only the
+            # owner-side signed rebundle subscribes installs to updates.
+            runtime_repo = json.loads((pathlib.Path(__file__).resolve().parent /
+                                       'flatpak-repo/repo.json').read_text())['runtime_repo']
+            bundle = check_unpublished_bundle(path, ref, runtime_repo)
             # Parse/import the actual bundle into a disposable repository, never
             # into a user's Flatpak installation. Rejects malformed static deltas.
             with tempfile.TemporaryDirectory(dir=work) as tmp:
                 subprocess.run(['ostree', '--repo=' + tmp, 'init', '--mode=archive-z2'], check=True)
                 subprocess.run(['flatpak', 'build-import-bundle', tmp, str(path)], check=True)
-                info = json.loads((work / 'canonical/release-info.json').read_text())
-                ref = f'app/{info["application_id"]}/x86_64/{info["channel"]}'
                 actual_info = subprocess.check_output(['ostree', '--repo=' + tmp, 'cat', ref,
                                                        '/files/lib/nuvio-desktop/release-info.json'])
                 if json.loads(actual_info) != info:
@@ -356,7 +362,7 @@ def artifacts(work, formats):
                 notices = verify_packaged_notices(image)
                 (dest / 'flatpak-audit.json').write_text(json.dumps(
                     dict(source=info, ref=ref, metadata=metadata.decode(), onnx=onnx, fonts=fonts, artwork=artwork,
-                         notices=notices, hdr_probe=hdr_probe), indent=2) + '\n')
+                         notices=notices, hdr_probe=hdr_probe, bundle=bundle), indent=2) + '\n')
             if not (work / 'flatpak-build/metadata').is_file():
                 raise ValueError('Missing exported Flatpak metadata')
     checksums = ''.join(hashlib.sha256(p.read_bytes()).hexdigest() + '  ' + p.name + '\n'

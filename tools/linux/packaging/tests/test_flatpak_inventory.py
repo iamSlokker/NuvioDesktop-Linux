@@ -11,6 +11,7 @@ from unittest.mock import patch
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1]))
 import verify
 import artwork_contract
+import flatpak_bundle
 import notice_contract
 
 
@@ -20,9 +21,13 @@ class FlatpakJarInventoryTest(unittest.TestCase):
         self.addCleanup(self.tmp.cleanup)
         self.work = pathlib.Path(self.tmp.name)
         (self.work / 'artifacts').mkdir()
-        (self.work / 'artifacts/Nuvio.flatpak').write_bytes(b'fixture' * 1024)
-        (self.work / 'canonical').mkdir()
         self.info = dict(application_id='com.example.NuvioFixture', channel='nightly')
+        runtime_repo = json.loads((pathlib.Path(verify.__file__).parent / 'flatpak-repo/repo.json').read_text())['runtime_repo']
+        # A real bundle header (unsigned CI contract) plus padding past the size floor.
+        (self.work / 'artifacts/Nuvio.flatpak').write_bytes(flatpak_bundle.fixture_bundle(
+            'app/com.example.NuvioFixture/x86_64/nightly', runtime_repo=('s', runtime_repo),
+            **{'deltas/fixture/0': ('ay', bytes(8192))}))
+        (self.work / 'canonical').mkdir()
         (self.work / 'canonical/release-info.json').write_text(json.dumps(self.info))
         self.jars = ['application.jar', 'onnx runtime.jar']
         directory = self.work / 'flatpak-build/files/lib/nuvio-desktop/lib/app'
@@ -74,7 +79,25 @@ class FlatpakJarInventoryTest(unittest.TestCase):
         onnx.assert_called_once()
         fonts.assert_called_once()
         artwork.assert_called_once()
-        self.assertTrue((self.work / 'artifacts/flatpak-audit.json').is_file())
+        report = json.loads((self.work / 'artifacts/flatpak-audit.json').read_text())
+        self.assertEqual('app/com.example.NuvioFixture/x86_64/nightly', report['bundle']['ref'])
+        self.assertIsNone(report['bundle']['origin'])
+
+    def test_ci_bundle_with_repository_link_or_key_is_rejected_before_import(self):
+        path = self.work / 'artifacts/Nuvio.flatpak'
+        ref = 'app/com.example.NuvioFixture/x86_64/nightly'
+        runtime_repo = json.loads((pathlib.Path(verify.__file__).parent / 'flatpak-repo/repo.json').read_text())['runtime_repo']
+        pad = {'deltas/fixture/0': ('ay', bytes(8192))}
+        for extra in [dict(origin=('s', 'https://example.invalid/repo/')), dict(gpg_keys=('ay', b'\x99\x00\x00')),
+                      dict(signatures=[b'sig']), dict()]:
+            with self.subTest(extra=sorted(extra)):
+                path.write_bytes(flatpak_bundle.fixture_bundle(ref, **dict(pad, runtime_repo=('s', runtime_repo)
+                                                                         if extra else ('s', 'https://other/x.flatpakrepo'), **extra)))
+                with patch.object(verify.subprocess, 'run') as run, \
+                        patch.object(verify.subprocess, 'check_output', side_effect=self.command_output):
+                    with self.assertRaisesRegex(ValueError, 'must not embed|runtime repository'):
+                        self.audit()
+                self.assertFalse(any('build-import-bundle' in call.args[0] for call in run.call_args_list))
 
     def test_extra_or_missing_bundle_jar_is_rejected_before_class_verification(self):
         for names in [self.jars + ['unexpected.jar'], self.jars[:1]]:

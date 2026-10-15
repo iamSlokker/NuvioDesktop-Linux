@@ -1,0 +1,15 @@
+{
+  "schema_version": 1,
+  "arch": "x86_64",
+  "branch": "stable",
+  "site_url": "https://iamslokker.github.io/NuvioDesktop-Linux/flatpak/",
+  "repo_url": "https://iamslokker.github.io/NuvioDesktop-Linux/flatpak/repo/",
+  "site_dir": "flatpak",
+  "remote_name": "nuvio",
+  "title": "Nuvio Desktop (Linux)",
+  "comment": "Signed Flatpak builds of the Nuvio Desktop Linux port",
+  "homepage": "https://github.com/iamSlokker/NuvioDesktop-Linux",
+  "runtime_repo": "https://dl.flathub.org/repo/flathub.flatpakrepo",
+  "public_key": "nuvio-flatpak.pub.gpg",
+  "prune_depth": 2
+}

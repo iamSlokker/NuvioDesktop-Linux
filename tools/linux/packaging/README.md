@@ -228,6 +228,118 @@ The build does not register remotes, install runtimes into user/system state, or
 change overrides. CI prepares a separate `FLATPAK_USER_DIR` and pins its runtime
 commit there; export/import verification uses disposable output repositories.
 
+## Self-hosted Flatpak repository (owner-signed)
+
+Flatpak updates come from a GPG-signed OSTree repository on GitHub Pages:
+`https://iamslokker.github.io/NuvioDesktop-Linux/flatpak/repo/` (configuration:
+[`flatpak-repo/repo.json`](flatpak-repo/repo.json)). Ref:
+`app/com.nuvio.media.desktop/x86_64/stable` (nightly builds export branch
+`nightly` and are never published). CI holds no signing secret; the owner signs locally.
+
+**CI bundles stay unsigned and unlinked.** `flatpak.py` adds only
+`--runtime-repo` (Flathub). A bundle that embeds `--gpg-keys` makes Flatpak
+require a signature on the bundled commit ("GPG verification enabled, but no
+signatures found"), so an unsigned CI bundle carrying the key cannot be installed;
+a repo URL without a key would subscribe installs to unverified updates.
+`verify.py` reads the bundle header (`flatpak_bundle.py`, no install) and
+rejects a CI bundle with a repo URL, key or signature.
+
+**Owner publish** (`flatpak_repo.py publish`, wrapped by
+[`flatpak-repo/publish-release.sh`](flatpak-repo/publish-release.sh)) takes the
+verified CI bundle and a local `gh-pages` checkout. It imports the exact CI
+commit into `flatpak/repo` (archive-z2), runs `flatpak build-sign` and
+`build-update-repo --gpg-sign --generate-static-deltas --prune --prune-depth=2`,
+then writes `nuvio.flatpakrepo`, `com.nuvio.media.desktop.flatpakref` (both
+carry the base64 key), the public key, `release.json`, `index.html`,
+`.nojekyll` and a `.gitignore` for OSTree scratch directories. Last, it writes a
+**signed rebundle** of the same commit with `--repo-url`, `--gpg-keys` and
+`--runtime-repo`. Installing that bundle creates a GPG-verified origin remote
+for the hosted repository. The release asset is this rebundle; `SOURCE-MAP.json`
+keeps the CI hash (`ci_sha256`) and the shared OSTree commit.
+
+It refuses: a missing/armored/secret/multi-key public key (fail closed until
+`flatpak-repo/nuvio-flatpak.pub.gpg` is committed), a signing key other than
+that key's full fingerprint, a non-`stable`/dirty/development build, release-info
+or commit timestamp mismatches, an embedded repo URL/key/runtime repo that
+differs, an already published commit, and anything not strictly newer by
+`(version_code, source_date_epoch)` (Flatpak also rejects chronologically older
+commits). It also refuses a file of 100 MiB or more (GitHub's push limit) and a
+site over 1 GB (the Pages limit). Verification is offline: the published
+`.flatpakrepo`/`.flatpakref`, with the URL rewritten to `file://`, are added to
+a disposable `FLATPAK_USER_DIR`/`FLATPAK_SYSTEM_DIR`. It then checks
+`remote-info` and a GPG-verified `install --no-deploy --no-deps`, and that the
+signed bundle installs (`--no-deps`) and creates the expected verified origin.
+The app is never run. `flatpak_repo.py verify` repeats these checks;
+`inspect BUNDLE` prints a bundle header.
+
+CI commits have no parent, so each publish makes the previous commit
+unreachable: `--prune` removes it and its deltas. The repository serves only the
+current release, plus a from-scratch delta. Updates still download only changed
+objects, but rollback is not served. The release hook commits `gh-pages` as a
+single orphan commit, so superseded objects do not accumulate in git history,
+and prints (never runs) the `git push --force-with-lease` for when the release
+goes public.
+
+### Owner one-time setup (not run by any tool or test)
+
+```sh
+# 1. Dedicated signing key in your own keyring (passphrase prompt), public key
+#    exported to the repo path, secret key + revocation certificate backed up.
+tools/linux/packaging/flatpak-repo/create-signing-key.sh --backup-dir /path/to/offline/backup
+git add tools/linux/packaging/flatpak-repo/nuvio-flatpak.pub.gpg   # commit via the normal branch flow
+
+# 2. Empty gh-pages branch in a separate small checkout (no history download).
+git init ~/nuvio-pages && cd ~/nuvio-pages
+git remote add origin git@github.com:iamSlokker/NuvioDesktop-Linux.git
+git switch --orphan gh-pages && git commit --allow-empty -m "Initialize GitHub Pages"
+git push -u origin gh-pages
+
+# 3. Enable Pages from gh-pages (use -X PUT if Pages already exists), then HTTPS.
+gh api -X POST repos/iamSlokker/NuvioDesktop-Linux/pages -f 'source[branch]=gh-pages' -f 'source[path]=/'
+gh api -X PUT repos/iamSlokker/NuvioDesktop-Linux/pages -F https_enforced=true
+```
+
+The key is RSA-4096, signing-only and **non-expiring**: clients keep the key from
+their `.flatpakrepo`/bundle, so an expiring or replaced key breaks updates until
+users re-add the remote. Keep the backup offline; never commit the secret export.
+
+### Per release
+
+After `prepare-assets.sh <run>` and before `gh release create` in `publish-draft.sh`:
+
+```sh
+tools/linux/packaging/flatpak-repo/publish-release.sh "$STAGE" ~/nuvio-pages <KEY-FINGERPRINT>
+```
+
+It requires the stage's bundle to match `SOURCE-MAP.json` and a clean `gh-pages`
+checkout. It replaces the staged `.flatpak` with the signed rebundle (the
+downloaded CI file is untouched) and regenerates both `SHA256SUMS`. When the
+GitHub release is published, run the printed `git push --force-with-lease`. If a
+later step fails before pushing, `git -C ~/nuvio-pages reset --hard origin/gh-pages`
+restores the published state. Rerunning without that reset fails with
+"already published".
+
+User commands (also on the generated `index.html`):
+
+```sh
+flatpak install --user https://iamslokker.github.io/NuvioDesktop-Linux/flatpak/com.nuvio.media.desktop.flatpakref
+# or
+flatpak remote-add --user --if-not-exists nuvio https://iamslokker.github.io/NuvioDesktop-Linux/flatpak/nuvio.flatpakrepo
+flatpak install --user nuvio com.nuvio.media.desktop
+```
+
+Earlier bundle installs (origin `desktop-origin`, no URL, GPG off) never update.
+Migrate once, keeping `~/.var/app/com.nuvio.media.desktop`: add the remote as
+above, then `flatpak install --user --reinstall nuvio com.nuvio.media.desktop//stable`.
+Flatpak drops the unused `desktop-origin` remote. Installing a new signed bundle
+also works after `flatpak uninstall --user com.nuvio.media.desktop`. Plain
+`--reinstall --bundle` keeps the old URL-less remote and does not migrate. A
+`nightly` bundle install is a separate branch; remove it with
+`flatpak uninstall --user com.nuvio.media.desktop//nightly`.
+Remote names: `nuvio` (`.flatpakref`/`.flatpakrepo`) or `desktop-origin`
+(signed bundle, reused if a remote with the same URL already exists). Updaters
+must use the installed ref's origin, not a fixed name.
+
 ## CI, licenses and acceptance
 
 [linux-packages.yml](../../../.github/workflows/linux-packages.yml) runs on manual
