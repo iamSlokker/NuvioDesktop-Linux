@@ -7,6 +7,8 @@
 #include "separate_audio.h"
 #include "http_recovery_events.h"
 #include "audio_passthrough_recovery.h"
+#include "player_session_options.h"
+#include "hdr_wayland_session.h"
 
 #include <algorithm>
 #include <atomic>
@@ -217,6 +219,8 @@ struct Player {
     LinuxHttpRecoveryEvents recoveryEvents; // Protected by operations, including seek issuance.
     LinuxAudioPassthroughRecovery audioRecovery; // Same operation lock and per-player lifetime.
     bool ownsX11Lifetime = false;
+    // Experimental native-Wayland HDR session: no Canvas, X11 lifetime, HUD or thumbnails.
+    bool hdrSession = false;
 
     void reserveX11Lifetime() {
         bool expected = false;
@@ -250,7 +254,11 @@ struct Player {
             if (status != JNI_OK && (!attached ||
                 vm->AttachCurrentThreadAsDaemon(reinterpret_cast<void **>(&env), nullptr) != JNI_OK))
                 throw std::runtime_error("Unable to acquire JVM environment for Linux player shutdown.");
-            {
+            if (hdrSession) {
+                // Wayland-only session: no X11 error handler, AWT lock or GTK overlay to
+                // serialise with. Its event thread is already joined.
+                mpv_terminate_destroy(mpv);
+            } else {
                 // The overlay is closed and the event thread joined: neither can
                 // require the EDT or acquire AWT's lock while we wait for GTK/mpv.
                 LinuxAwtX11Lifecycle awtLock(env);
@@ -394,8 +402,18 @@ struct Player {
                     if (event->reply_userdata == 1 && property)
                         reportShaderMedia(env, property->format == MPV_FORMAT_NODE
                             ? static_cast<mpv_node *>(property->data) : nullptr);
+                    if (hdrSession && property) reportHdrSessionProperty(env, event->reply_userdata, *property);
                     break;
                 }
+                case MPV_EVENT_CLIENT_MESSAGE:
+                    // Only the HDR session installs bindings; the embedded player ignores messages.
+                    if (hdrSession) {
+                        if (const auto code = linuxHdrKeyCode(*event)) emit(env, "linuxHdrKey", *code);
+                    }
+                    break;
+                case MPV_EVENT_LOG_MESSAGE:
+                    if (hdrSession && linuxHdrVoFailureLog(*event)) emit(env, "linuxHdrVoFailed");
+                    break;
                 case MPV_EVENT_FILE_LOADED:
                     if (translated.loaded) {
                         reportVideoParams(env);
@@ -409,6 +427,8 @@ struct Player {
                     if (translated.restarted) emit(env, "playbackRestart");
                     break;
                 case MPV_EVENT_SHUTDOWN:
+                    // An HDR window can be closed by its compositor; report it before stopping.
+                    if (hdrSession) emit(env, "linuxHdrSessionEnded");
                     stopping = true;
                     break;
                 default:
@@ -443,6 +463,17 @@ struct Player {
             lastShaderSize = packed;
             lastShaderMedia = media;
             emit(env, media, static_cast<double>(packed));
+        }
+    }
+
+    void reportHdrSessionProperty(JNIEnv *env, uint64_t reply, const mpv_event_property &property) {
+        if (reply == kLinuxHdrTargetParamsReply) {
+            emit(env, linuxHdrTargetEvent(property.format == MPV_FORMAT_NODE
+                ? static_cast<const mpv_node *>(property.data) : nullptr));
+        } else if (reply == kLinuxHdrVoConfiguredReply) {
+            const bool configured = property.format == MPV_FORMAT_FLAG && property.data &&
+                *static_cast<const int *>(property.data) != 0;
+            emit(env, "linuxHdrVoConfigured", configured ? 1.0 : 0.0);
         }
     }
 
@@ -766,6 +797,63 @@ extern "C" JNIEXPORT jint JNICALL JNI_OnLoad(JavaVM *, void *) {
     return JNI_VERSION_1_6;
 }
 
+namespace {
+// Shared by the embedded X11 player and the experimental HDR session. Each step keeps
+// the embedded player's original option values and ordering.
+void retainEventSink(JNIEnv *env, Player &player, jobject eventSink) {
+    player.sink = env->NewGlobalRef(eventSink);
+    if (!player.sink) throw std::runtime_error("Unable to retain native player event sink.");
+    jclass sinkClass = env->GetObjectClass(eventSink);
+    if (!sinkClass) throw std::runtime_error("Unable to read native player event sink class.");
+    player.onEvent = env->GetMethodID(sinkClass, "onPlayerEvent", "(Ljava/lang/String;D)V");
+    env->DeleteLocalRef(sinkClass);
+    if (!player.onEvent) throw std::runtime_error("Missing onPlayerEvent(String, Double).");
+}
+
+void applyPlaybackOptions(mpv_handle *mpv, const std::vector<std::string> &extraOptions,
+                          const std::string &source) {
+    // Vendor-neutral default; Replace/Full and unmarked options can override it.
+    option(mpv, "hwdec", "auto");
+    applyExtraMpvOptions(mpv, extraOptions, source);
+}
+
+void applyStartOptions(mpv_handle *mpv, bool playWhenReady, jlong initialPositionMs,
+                       double initialProgressFraction) {
+    option(mpv, "pause", playWhenReady ? "no" : "yes");
+    if (initialPositionMs > 0) {
+        option(mpv, "start", std::to_string(static_cast<double>(initialPositionMs) / 1000.0));
+    } else if (std::isfinite(initialProgressFraction) && initialProgressFraction > 0.0) {
+        option(mpv, "start", std::to_string(std::min(initialProgressFraction, 1.0) * 100.0) + "%");
+    }
+}
+
+template<class AfterInitialize>
+void initializeAndLoad(Player &player, const std::string &source, AfterInitialize afterInitialize) {
+    checkMpv(mpv_initialize(player.mpv), "mpv_initialize");
+    // SPDIF recovery needs mpv's exact verbose PCM-fallback marker. Other
+    // messages are discarded, never forwarded or written to a new log sink.
+    const char *recoveryLogLevel = player.stringProperty("audio-spdif").empty() ? "warn" : "v";
+    checkMpv(mpv_request_log_messages(player.mpv, recoveryLogLevel), "request recovery log events");
+    checkMpv(mpv_observe_property(player.mpv, 1, "video-params", MPV_FORMAT_NODE), "observe video-params");
+    afterInitialize();
+    const char *load[] = {"loadfile", source.c_str(), nullptr};
+    checkMpv(mpv_command(player.mpv, load), "loadfile");
+    std::promise<bool> attached;
+    auto ready = attached.get_future();
+    player.events = std::thread([raw = &player, attached = std::move(attached)]() mutable {
+        raw->pump(attached);
+    });
+    if (!ready.get()) throw std::runtime_error("Unable to attach Linux mpv event thread to JVM.");
+}
+
+jlong publishPlayer(const std::shared_ptr<Player> &player) {
+    jlong handle = nextHandle++;
+    std::lock_guard<std::mutex> lock(playersLock);
+    players.emplace(handle, player);
+    return handle;
+}
+}
+
 JNI_METHOD(jlong, create)(
     JNIEnv *env, jobject, jlong hostViewPtr, jstring sourceUrl, jstring sourceAudioUrl,
     jobjectArray headerLines, jboolean playWhenReady, jlong initialPositionMs,
@@ -785,59 +873,20 @@ JNI_METHOD(jlong, create)(
         player->reserveX11Lifetime();
         if (env->GetJavaVM(&player->vm) != JNI_OK) throw std::runtime_error("GetJavaVM failed.");
         LinuxAwtX11Lifecycle::prepare(env);
-        player->sink = env->NewGlobalRef(eventSink);
-        if (!player->sink) throw std::runtime_error("Unable to retain native player event sink.");
-        jclass sinkClass = env->GetObjectClass(eventSink);
-        if (!sinkClass) throw std::runtime_error("Unable to read native player event sink class.");
-        player->onEvent = env->GetMethodID(sinkClass, "onPlayerEvent", "(Ljava/lang/String;D)V");
-        env->DeleteLocalRef(sinkClass);
-        if (!player->onEvent) throw std::runtime_error("Missing onPlayerEvent(String, Double).");
+        retainEventSink(env, *player, eventSink);
         std::setlocale(LC_NUMERIC, "C");
         player->mpv = mpv_create();
         if (!player->mpv) throw std::runtime_error("mpv_create failed.");
 
-        // Vendor-neutral default; Replace/Full and unmarked options can override it.
-        option(player->mpv, "hwdec", "auto");
-        applyExtraMpvOptions(player->mpv, strings(env, extraMpvOptions), source);
+        applyPlaybackOptions(player->mpv, strings(env, extraMpvOptions), source);
         // These embedding/lifecycle boundaries must win over saved desktop options.
-        option(player->mpv, "config", "no");
-        option(player->mpv, "terminal", "no");
-        option(player->mpv, "osc", "no");
-        option(player->mpv, "input-default-bindings", "no");
-        option(player->mpv, "input-vo-keyboard", "no");
-        option(player->mpv, "input-cursor", "no");
-        option(player->mpv, "window-dragging", "no");
-        option(player->mpv, "stop-screensaver", "no");
-        option(player->mpv, "keep-open", "yes");
-        option(player->mpv, "idle", "yes");
-        option(player->mpv, "vo", "gpu-next");
-        option(player->mpv, "gpu-api", "vulkan");
-        option(player->mpv, "gpu-context", "x11vk");
-        option(player->mpv, "wid", std::to_string(hostViewPtr));
-        option(player->mpv, "pause", playWhenReady ? "no" : "yes");
-        if (initialPositionMs > 0) {
-            option(player->mpv, "start", std::to_string(static_cast<double>(initialPositionMs) / 1000.0));
-        } else if (std::isfinite(initialProgressFraction) && initialProgressFraction > 0.0) {
-            option(player->mpv, "start", std::to_string(std::min(initialProgressFraction, 1.0) * 100.0) + "%");
-        }
+        for (const auto &entry : linuxX11EmbeddingOptions(hostViewPtr)) option(player->mpv, entry.first.c_str(), entry.second);
+        applyStartOptions(player->mpv, playWhenReady == JNI_TRUE, initialPositionMs, initialProgressFraction);
         auto headers = strings(env, headerLines);
         headerOptions(player->mpv, headers);
         std::string audio = text(env, sourceAudioUrl);
         checkMpv(setLinuxSeparateAudio(player->mpv, audio), "audio-files");
-        checkMpv(mpv_initialize(player->mpv), "mpv_initialize");
-        // SPDIF recovery needs mpv's exact verbose PCM-fallback marker. Other
-        // messages are discarded, never forwarded or written to a new log sink.
-        const char *recoveryLogLevel = player->stringProperty("audio-spdif").empty() ? "warn" : "v";
-        checkMpv(mpv_request_log_messages(player->mpv, recoveryLogLevel), "request recovery log events");
-        checkMpv(mpv_observe_property(player->mpv, 1, "video-params", MPV_FORMAT_NODE), "observe video-params");
-        const char *load[] = {"loadfile", source.c_str(), nullptr};
-        checkMpv(mpv_command(player->mpv, load), "loadfile");
-        std::promise<bool> attached;
-        auto ready = attached.get_future();
-        player->events = std::thread([raw = player.get(), attached = std::move(attached)]() mutable {
-            raw->pump(attached);
-        });
-        if (!ready.get()) throw std::runtime_error("Unable to attach Linux mpv event thread to JVM.");
+        initializeAndLoad(*player, source, [] {});
         std::weak_ptr<Player> weak = player;
         player->controls = LinuxControlsOverlay::create(hostViewPtr, text(env, controlsPageUrl),
             [weak](const std::string &name, double value) {
@@ -858,10 +907,7 @@ JNI_METHOD(jlong, create)(
                     }
                 });
         }
-        jlong handle = nextHandle++;
-        std::lock_guard<std::mutex> lock(playersLock);
-        players.emplace(handle, player);
-        return handle;
+        return publishPlayer(player);
     });
 }
 
@@ -1105,3 +1151,178 @@ Java_com_nuvio_app_features_player_desktop_LinuxMprisNative_seekable(JNIEnv *env
 }
 // X11's mpv VO owns expose/resize/redraw, unlike the Windows D3D redraw workaround.
 JNI_METHOD(void, forceVideoRedraw)(JNIEnv *, jobject, jlong) {}
+
+// Experimental native-Wayland HDR session (Linux only). The session is an ordinary
+// Player in the shared handle table, so every existing NativePlayerBridge per-handle
+// method (position, seek, tracks, subtitles, volume, dispose) applies to it unchanged.
+#define LINUX_HDR_METHOD(type, name) extern "C" JNIEXPORT type JNICALL \
+    Java_com_nuvio_app_features_player_desktop_LinuxHdrSessionNative_##name
+
+LINUX_HDR_METHOD(jboolean, libmpvSupportsWayland)(JNIEnv *env, jobject) {
+    return guarded(env, [] {
+        static const bool supported = linuxLibmpvSupportsWaylandVk();
+        return supported ? JNI_TRUE : JNI_FALSE;
+    });
+}
+
+LINUX_HDR_METHOD(jlong, create)(
+    JNIEnv *env, jobject, jstring sourceUrl, jstring sourceAudioUrl, jobjectArray headerLines,
+    jlong initialPositionMs, jobjectArray extraMpvOptions, jobjectArray keyBindings,
+    jstring vulkanDevice, jstring oscScriptPath, jstring appId, jobject eventSink
+) {
+    return guarded(env, [&]() -> jlong {
+        std::string source = text(env, sourceUrl);
+        if (source.empty()) throw std::runtime_error("Linux HDR session source URL is empty.");
+        if (!eventSink) throw std::runtime_error("Native player event sink is required.");
+        // Never let a session without the compiled context fall back to another VO.
+        if (!linuxLibmpvSupportsWaylandVk())
+            throw std::runtime_error("The loaded libmpv has no Wayland Vulkan context.");
+        auto player = std::make_shared<Player>();
+        player->hdrSession = true;
+        if (env->GetJavaVM(&player->vm) != JNI_OK) throw std::runtime_error("GetJavaVM failed.");
+        retainEventSink(env, *player, eventSink);
+        std::setlocale(LC_NUMERIC, "C");
+        player->mpv = mpv_create();
+        if (!player->mpv) throw std::runtime_error("mpv_create failed.");
+
+        applyPlaybackOptions(player->mpv, strings(env, extraMpvOptions), source);
+        LinuxHdrSessionConfig config;
+        config.vulkanDevice = text(env, vulkanDevice);
+        config.appId = text(env, appId);
+        for (const auto &entry : linuxHdrSessionOptions(config)) option(player->mpv, entry.first.c_str(), entry.second);
+        // Always start paused: the application unpauses only after the session has
+        // configured its window and confirmed an HDR target, so audio never overlaps
+        // the paused embedded player it replaces.
+        applyStartOptions(player->mpv, false, initialPositionMs, 0.0);
+        const std::string osc = text(env, oscScriptPath);
+        if (!osc.empty()) {
+            // Cosmetic only: a libmpv without Lua or an unreadable script keeps playing.
+            const int result = mpv_set_option_string(player->mpv, "scripts", osc.c_str());
+            if (result < 0) std::fprintf(stderr, "Linux HDR OSC script: %s\n", mpv_error_string(result));
+        }
+        auto headers = strings(env, headerLines);
+        headerOptions(player->mpv, headers);
+        std::string audio = text(env, sourceAudioUrl);
+        checkMpv(setLinuxSeparateAudio(player->mpv, audio), "audio-files");
+        const auto bindings = strings(env, keyBindings);
+        initializeAndLoad(*player, source, [&] {
+            installLinuxHdrKeyBindings(player->mpv, bindings);
+            checkMpv(mpv_observe_property(player->mpv, kLinuxHdrTargetParamsReply, "video-target-params",
+                MPV_FORMAT_NODE), "observe video-target-params");
+            checkMpv(mpv_observe_property(player->mpv, kLinuxHdrVoConfiguredReply, "vo-configured",
+                MPV_FORMAT_FLAG), "observe vo-configured");
+        });
+        return publishPlayer(player);
+    });
+}
+
+LINUX_HDR_METHOD(void, scriptMessage)(JNIEnv *env, jobject, jlong handle, jobjectArray arguments) {
+    withPlayer(env, handle, [&](Player &p) {
+        if (!p.hdrSession) return;
+        auto values = strings(env, arguments);
+        std::vector<const char *> command{"script-message"};
+        for (const auto &value : values) command.push_back(value.c_str());
+        command.push_back(nullptr);
+        mpv_command(p.mpv, command.data());
+    });
+}
+
+LINUX_HDR_METHOD(void, showText)(JNIEnv *env, jobject, jlong handle, jstring message, jint durationMs) {
+    withPlayer(env, handle, [&](Player &p) {
+        if (!p.hdrSession) return;
+        // "$>" disables property expansion: a stream title must never be expanded.
+        const std::string value = "$>" + text(env, message);
+        const std::string duration = std::to_string(std::clamp<jint>(durationMs, 0, 10000));
+        const char *command[] = {"show-text", value.c_str(), duration.c_str(), nullptr};
+        mpv_command(p.mpv, command);
+    });
+}
+
+LINUX_HDR_METHOD(jboolean, isFocused)(JNIEnv *env, jobject, jlong handle) {
+    return withPlayer(env, handle, [](Player &p) -> jboolean {
+        // Unknown focus is not focus: a pad must not drive a session the user left.
+        return p.hdrSession && p.flag("focused", false);
+    });
+}
+
+namespace {
+struct LinuxExternalSubtitle {
+    int64_t sourceId = -1;
+    std::string filename;
+    std::string title;
+};
+
+std::vector<LinuxExternalSubtitle> externalSubtitles(Player &player) {
+    std::vector<LinuxExternalSubtitle> result;
+    const int64_t count = player.integer("track-list/count");
+    for (int64_t index = 0; index < count; ++index) {
+        std::string prefix = "track-list/" + std::to_string(index) + "/";
+        if (player.stringProperty((prefix + "type").c_str()) != "sub" ||
+            !player.flag((prefix + "external").c_str())) continue;
+        LinuxExternalSubtitle subtitle;
+        subtitle.sourceId = player.integer((prefix + "id").c_str(), -1);
+        subtitle.filename = player.stringProperty((prefix + "external-filename").c_str());
+        subtitle.title = player.stringProperty((prefix + "title").c_str());
+        if (subtitle.sourceId >= 0 && !subtitle.filename.empty()) result.push_back(std::move(subtitle));
+    }
+    return result;
+}
+
+int64_t externalSubtitleId(Player &player, const std::string &filename) {
+    const int64_t count = player.integer("track-list/count");
+    for (int64_t index = count - 1; index >= 0; --index) {
+        std::string prefix = "track-list/" + std::to_string(index) + "/";
+        if (player.stringProperty((prefix + "type").c_str()) == "sub" &&
+            player.flag((prefix + "external").c_str()) &&
+            player.stringProperty((prefix + "external-filename").c_str()) == filename)
+            return player.integer((prefix + "id").c_str(), -1);
+    }
+    return -1;
+}
+}
+
+// Copies the live user-visible playback choices from the embedded player to the HDR
+// session (or back): selected tracks, external subtitles, delays, speed, volume. Both
+// players play the same source, so internal track ids are identical.
+LINUX_HDR_METHOD(void, transferPlaybackState)(JNIEnv *env, jobject, jlong fromHandle, jlong toHandle) {
+    guarded(env, [&] {
+        auto from = playerFromHandle(fromHandle);
+        auto to = playerFromHandle(toHandle);
+        if (!from || !to || from == to) throw std::runtime_error("Linux HDR state transfer needs two live players.");
+        std::vector<LinuxExternalSubtitle> subtitles;
+        std::string aid, sid, secondary;
+        std::vector<std::pair<const char *, std::string>> values;
+        {
+            // Read one snapshot, then release: a slow subtitle download below must never
+            // block UI queries that still target the source player.
+            std::lock_guard<std::mutex> lock(from->operations);
+            if (!from->mpv || from->stopping) throw std::runtime_error("Linux native player is disposed.");
+            subtitles = externalSubtitles(*from);
+            aid = from->stringProperty("aid");
+            sid = from->stringProperty("sid");
+            secondary = from->stringProperty("secondary-sid");
+            for (const char *name : {"sub-delay", "audio-delay", "speed", "volume", "mute", "sub-visibility"})
+                values.emplace_back(name, from->stringProperty(name));
+        }
+        std::lock_guard<std::mutex> lock(to->operations);
+        if (!to->mpv || to->stopping) throw std::runtime_error("Linux native player is disposed.");
+        for (const auto &[name, value] : values) if (!value.empty()) to->property(name, value);
+        if (!aid.empty()) to->property("aid", aid);
+        auto mapped = [&](const std::string &id) -> std::string {
+            for (const auto &subtitle : subtitles) {
+                if (std::to_string(subtitle.sourceId) != id) continue;
+                const int64_t target = externalSubtitleId(*to, subtitle.filename);
+                return target >= 0 ? std::to_string(target) : "no";
+            }
+            return id;
+        };
+        for (const auto &subtitle : subtitles) {
+            if (externalSubtitleId(*to, subtitle.filename) >= 0) continue;
+            const char *command[] = {"sub-add", subtitle.filename.c_str(), "auto", subtitle.title.c_str(), nullptr};
+            const int result = mpv_command(to->mpv, command);
+            if (result < 0) std::fprintf(stderr, "Linux HDR subtitle transfer: %s\n", mpv_error_string(result));
+        }
+        if (!sid.empty()) to->property("sid", mapped(sid));
+        if (!secondary.empty()) to->property("secondary-sid", mapped(secondary));
+    });
+}

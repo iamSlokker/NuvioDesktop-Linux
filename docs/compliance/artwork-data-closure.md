@@ -156,7 +156,7 @@ composeApp originals and all Kotlin are **not modified**.
   Award/hero badges are generic trophies, laurels, medals, shields, stars,
   screens, frames and clocks with short text (`NOM`, `1ST`, `NEW`, `CULT`); no
   statuettes or festival/award logo likenesses. All 47 have distinct bytes.
-- **Substitution:** `tools/linux/packaging/source_policy.py`, applied after `build.source_tree()` by the seeded canonical build (`build.py` stays byte-identical for the pinned builder seed), copies each
+- **Substitution:** `tools/linux/packaging/source_policy.py`, applied once after `build.source_tree()` by both canonical builds (`build.py`'s bootstrap/seed-export path and the seeded `canonical_from_seed.py`), copies each
   overlay file over its tracked target in the packaging snapshot and records the
   overlay SHA256 in `source-files.json` (and therefore `source_sha256`). It fails if
   a target is not tracked or if original bytes remain anywhere else in the
@@ -249,8 +249,8 @@ terms and retained responses. Therefore **no regeneration was performed**.
 ## Linux packages download the anime dataset at runtime
 
 By owner decision, Linux release packages no longer redistribute
-`anime-list-mini.json`. `tools/linux/packaging/source_policy.py` (applied by the seeded
-canonical build; `build.py` stays byte-identical for the pinned builder seed)
+`anime-list-mini.json`. `tools/linux/packaging/source_policy.py` (applied by both canonical builds:
+`build.py`'s bootstrap/seed-export path and the seeded `canonical_from_seed.py`)
 omits it from the packaging source snapshot, so it is absent from the application JAR and from
 `Nuvio-source-<commit>.tar.gz`; the package gate rejects its filename and its
 exact bytes anywhere in `lib/app/*.jar`. When the packaged resource is absent,

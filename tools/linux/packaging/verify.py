@@ -63,6 +63,56 @@ def entries(root):
     return result
 
 
+# Experimental HDR capability helper, started by the app as a separate process.
+# It must resolve the bundled Wayland client and Vulkan loader through its own
+# RUNPATH (same layout as libplayer_bridge.so), never through the caller's
+# environment, and carry no build-only media SDK inputs alongside it.
+HDR_PROBE = 'lib/native/nuvio-hdr-probe'
+HDR_PROBE_RUNPATH = '$ORIGIN:$ORIGIN/../runtime/lib'
+HDR_PROBE_PRIVATE = ('libwayland-client.so.0', 'libvulkan.so.1')
+HDR_PROBE_NEEDED = frozenset(HDR_PROBE_PRIVATE + ('libstdc++.so.6', 'libgcc_s.so.1', 'libc.so.6', 'libm.so.6'))
+HDR_BUILD_ONLY = ('share/wayland-protocols', 'bin/wayland-scanner', 'include/vulkan', 'include/vk_video')
+
+
+def check_hdr_probe(root):
+    path = root / HDR_PROBE
+    if (path.is_symlink() or not path.is_file() or not os.access(path, os.X_OK)
+            or path.read_bytes()[:4] != b'\x7fELF'):
+        raise ValueError('Missing/non-executable HDR capability helper: ' + HDR_PROBE)
+    dynamic = subprocess.check_output(['readelf', '-d', str(path)], text=True)
+    needed = set(re.findall(r'\(NEEDED\).*?\[(.*?)\]', dynamic))
+    runpath = re.findall(r'\((?:RUNPATH|RPATH)\).*?\[(.*?)\]', dynamic)
+    if runpath != [HDR_PROBE_RUNPATH] or '(RPATH)' in dynamic:
+        raise ValueError('HDR capability helper RUNPATH differs from bundled native layout: ' + repr(runpath))
+    if not set(HDR_PROBE_PRIVATE) <= needed or not needed <= HDR_PROBE_NEEDED:
+        raise ValueError('Unexpected HDR capability helper dependencies: ' + repr(sorted(needed)))
+    env = {k: v for k, v in os.environ.items() if k not in ('LD_LIBRARY_PATH', 'LD_PRELOAD')}
+    linked = subprocess.check_output(['ldd', str(path)], text=True, env=env, stderr=subprocess.STDOUT)
+    if 'not found' in linked:
+        raise ValueError('Unresolved HDR capability helper dependency:\n' + linked)
+    resolved = dict(linked_paths(linked))
+    native = (root / 'lib/native').resolve()
+    for dep in HDR_PROBE_PRIVATE:
+        if dep not in resolved or not pathlib.Path(resolved[dep]).resolve().is_relative_to(native):
+            raise ValueError('HDR capability helper resolves ' + dep + ' outside the bundled runtime')
+    for relative in HDR_BUILD_ONLY:
+        if os.path.lexists(root / relative):
+            raise ValueError('Build-only media SDK input in image: ' + relative)
+    return dict(file=HDR_PROBE, needed=sorted(needed), runpath=runpath[0])
+
+
+def flatpak_hdr_probe(repository, ref):
+    """The exported bundle, not only staging, carries an executable helper."""
+    target = '/files/lib/nuvio-desktop/' + HDR_PROBE
+    listing = subprocess.check_output(['ostree', '--repo=' + str(repository), 'ls', ref, target], text=True)
+    fields = listing.strip().split(maxsplit=4)
+    # ostree ls: type+octal-mode, uid, gid, size, path (see flatpak_jar_names).
+    if (len(listing.strip().splitlines()) != 1 or len(fields) != 5 or fields[4] != target
+            or not re.fullmatch(r'-[0-7]{5}', fields[0]) or int(fields[0][1:], 8) & 0o7111 != 0o111):
+        raise ValueError('Missing/non-executable HDR capability helper in Flatpak bundle')
+    return dict(file=HDR_PROBE, mode=fields[0])
+
+
 def check_webkit_relocation(image, required=False):
     if (required or (image / 'lib/webkit2gtk-4.1').exists()
             or (image / 'lib/native/libwebkit2gtk-4.1.so.0').exists()
@@ -135,6 +185,7 @@ def check_image(root):
     fonts = verify_packaged_fonts(root)
     artwork = verify_packaged_artwork(root)
     notices = verify_packaged_notices(root)
+    hdr_probe = check_hdr_probe(root)
     info = json.loads((root / 'release-info.json').read_text())
     if not re.fullmatch('[a-f0-9]{40}', info['git_commit']):
         raise ValueError('Missing full source revision')
@@ -213,7 +264,7 @@ def check_image(root):
                     raise ValueError('Private media resolved outside image: ' + dep)
         elf_records.append(dict(file=rel, needed=needed))
     return dict(source=info, files=records, elf=elf_records, onnx=onnx, fonts=fonts, artwork=artwork,
-                notices=notices)
+                notices=notices, hdr_probe=hdr_probe)
 
 
 def check_appimage_runtime(work, appimage, root):
@@ -277,6 +328,7 @@ def artifacts(work, formats):
                 metadata = subprocess.check_output(['ostree', '--repo=' + tmp, 'cat', ref, '/metadata'])
                 if metadata != (work / 'flatpak-build/metadata').read_bytes():
                     raise ValueError('Flatpak exported metadata differs from inspected sandbox')
+                hdr_probe = flatpak_hdr_probe(tmp, ref)
                 # Inspect exported JAR bytes, not just the canonical input or
                 # release stamp: empty/inadvertently overridden defaults fail.
                 jars = sorted((work / 'flatpak-build/files/lib/nuvio-desktop/lib/app').glob('*.jar'))
@@ -304,7 +356,7 @@ def artifacts(work, formats):
                 notices = verify_packaged_notices(image)
                 (dest / 'flatpak-audit.json').write_text(json.dumps(
                     dict(source=info, ref=ref, metadata=metadata.decode(), onnx=onnx, fonts=fonts, artwork=artwork,
-                         notices=notices), indent=2) + '\n')
+                         notices=notices, hdr_probe=hdr_probe), indent=2) + '\n')
             if not (work / 'flatpak-build/metadata').is_file():
                 raise ValueError('Missing exported Flatpak metadata')
     checksums = ''.join(hashlib.sha256(p.read_bytes()).hexdigest() + '  ' + p.name + '\n'

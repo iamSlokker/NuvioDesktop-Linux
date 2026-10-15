@@ -75,7 +75,8 @@ def build(work):
                     '/usr/bin/sh', '-eu', '-c', '''
 unset DISPLAY WAYLAND_DISPLAY NUVIO_RUN_LIVE_DISPLAY_TESTS LD_PRELOAD
 export LD_LIBRARY_PATH=/app/lib/nuvio-desktop/lib/native:/app/lib/nuvio-desktop/lib/runtime/lib:/app/lib/nuvio-desktop/lib/runtime/lib/server${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}
-find /app/lib/nuvio-desktop/lib/native /app/lib/nuvio-desktop/lib/runtime -type f -name '*.so*' -exec sh -c '
+test -x /app/lib/nuvio-desktop/lib/native/nuvio-hdr-probe
+find /app/lib/nuvio-desktop/lib/native /app/lib/nuvio-desktop/lib/runtime -type f \\( -name '*.so*' -o -name nuvio-hdr-probe \\) -exec sh -c '
  for f do
    result=$(ldd "$f") || exit 1
    case "$result" in *"not found"*) printf "%s\\n%s\\n" "$f" "$result"; exit 1;; esac

@@ -55,6 +55,7 @@ class NativeArtworkGateTest(unittest.TestCase):
                     (extracted / 'AppRun').write_text('fixture'); (extracted / 'AppRun').chmod(0o755)
             with patch.object(verify.subprocess, 'run', side_effect=run), \
                     patch.object(verify, 'check_webkit_relocation'), \
+                    patch.object(verify, 'check_hdr_probe', return_value={}), \
                     patch.object(verify, 'verify_packaged_backend'), \
                     patch.object(verify, 'verify_packaged_onnx', return_value={}), \
                     patch.object(verify, 'verify_packaged_fonts', return_value={}), \

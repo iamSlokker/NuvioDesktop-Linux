@@ -20,14 +20,26 @@ offline=()
   --no-daemon --no-configuration-cache --no-build-cache --max-workers=2 \
   -Pkotlin.compiler.execution.strategy=in-process \
   '-Dorg.gradle.jvmargs=-Xmx4g -XX:MaxMetaspaceSize=1g -Dfile.encoding=UTF-8' "${offline[@]}"
+# nuvio-hdr-probe (required by NUVIO_PACKAGE_BUILD) uses the media runtime's
+# build-only SDK area: pinned wayland-scanner, color-management-v1.xml and Vulkan
+# headers/loader (the builder's wayland-protocols/scanner are too old). Only the
+# builder's wayland-client development interface comes from Ubuntu; at run time the
+# helper resolves the bundled libwayland-client/libvulkan through its RUNPATH.
 cmake -S composeApp/src/desktopMain/native/linux -B /output/native \
   -G Ninja -DCMAKE_BUILD_TYPE=Release -DMPV_ROOT=/media -DNUVIO_PACKAGE_BUILD=ON \
+  -DNUVIO_WAYLAND_SCANNER=/media/bin/wayland-scanner \
+  -DNUVIO_WAYLAND_PROTOCOLS_DIR=/media/share/wayland-protocols \
+  -DNUVIO_VULKAN_INCLUDE_DIR=/media/include -DNUVIO_VULKAN_LIBRARY=/media/lib/libvulkan.so \
+  -DCMAKE_C_FLAGS='-ffile-prefix-map=/source=. -fdebug-prefix-map=/source=.' \
   -DCMAKE_CXX_FLAGS='-ffile-prefix-map=/source=. -fdebug-prefix-map=/source=.'
 cmake --build /output/native --parallel "$NUVIO_BUILD_JOBS" \
-  --target player_bridge linux_separate_audio_test linux_http_recovery_test linux_audio_recovery_test
+  --target player_bridge nuvio-hdr-probe linux_separate_audio_test linux_http_recovery_test \
+  linux_audio_recovery_test linux_hdr_session_test
 /output/native/linux_separate_audio_test
 /output/native/linux_http_recovery_test
 /output/native/linux_audio_recovery_test
+# Display variables are unset above; the canonical runtime must report waylandvk.
+/output/native/linux_hdr_session_test --expect-wayland=yes
 python3 tools/linux/packaging/stage.py /output
 python3 tools/linux/packaging/verify.py image /output/canonical
 python3 tools/linux/packaging/formats.py /output --deb-only

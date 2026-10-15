@@ -22,10 +22,15 @@ merely to satisfy a checklist. The existing decoder patches and software fallbac
 remain; hardware-decoder availability and Vulkan presentation are distinct.
 
 HDR sources can be decoded and mapped to the existing SDR presentation path.
-**Genuine HDR10 display output is not implemented/accepted.** The packaged mpv
-has no compiled Wayland backend. Windows HDR UI compensation does not provide
-Linux HDR. See [the separate HDR design](linux-hdr10-design.md); forcing PQ or
-cropping the picture is not a supported workaround.
+**Genuine HDR10 display output is not accepted.** An experimental, default-off
+native-Wayland HDR session exists ("Experimental HDR (Wayland)"), but it is
+unverified on HDR hardware and inert in every package built so far, whose mpv has
+no compiled Wayland backend. The media recipe and packaging on the HDR branch add
+the Wayland-capable libmpv, the `nuvio-hdr-probe` helper and the Flatpak Wayland
+socket, pending a CI rebuild; every unmet prerequisite keeps the SDR player. Windows
+HDR UI compensation does not provide Linux HDR. See
+[the separate HDR design](linux-hdr10-design.md); forcing PQ or cropping the
+picture is not a supported workaround.
 
 Shared Umbra features include Calendar, library/discovery filters, TMDB grouping,
 higher-resolution backdrops, ONNX CPU hero framing, Ambient Adaptive, updated

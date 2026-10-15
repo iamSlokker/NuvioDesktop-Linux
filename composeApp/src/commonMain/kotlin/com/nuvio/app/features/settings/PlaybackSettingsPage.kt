@@ -1233,6 +1233,7 @@ private fun PlaybackSettingsSection(
                             modifier = Modifier.settingsScrollAnchor(SettingsScrollAnchor.HdrMode),
                             onSelected = PlayerSettingsRepository::setDesktopHdrMode,
                         )
+                        PlatformHdrSettingsRows(isTablet = isTablet)
                         SettingsGroupDivider(isTablet = isTablet)
                         SettingsChoiceRow(
                             title = stringResource(Res.string.settings_playback_desktop_color_profile),

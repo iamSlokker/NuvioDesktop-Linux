@@ -32,7 +32,7 @@ if(NOT EXISTS "${MPV_INCLUDE_DIR}/mpv/client.h" OR
     message(FATAL_ERROR "libmpv headers/library not found; set MPV_ROOT to the mpv installation prefix")
 endif()
 
-add_library(player_bridge SHARED player_bridge.cpp awt_view_resolver.cpp controls_overlay.cpp seek_thumbnails.cpp playback_inhibitor.cpp screensaver_idle.cpp mpris_session.cpp linux_gamepad.cpp window_chrome.cpp window_chrome_jni.cpp pip_geometry_jni.cpp)
+add_library(player_bridge SHARED player_bridge.cpp awt_view_resolver.cpp controls_overlay.cpp seek_thumbnails.cpp playback_inhibitor.cpp screensaver_idle.cpp mpris_session.cpp linux_gamepad.cpp window_chrome.cpp window_chrome_jni.cpp pip_geometry_jni.cpp hdr_wayland_session.cpp)
 # Optional X11 idle fallback. Wayland sessions never use an XWayland global idle estimate.
 find_path(XSS_INCLUDE_DIR NAMES X11/extensions/scrnsaver.h)
 if(XSS_INCLUDE_DIR)
@@ -154,3 +154,77 @@ add_executable(linux_pip_hud_visibility_test EXCLUDE_FROM_ALL tests/pip_hud_visi
 target_compile_features(linux_pip_hud_visibility_test PRIVATE cxx_std_17)
 target_compile_options(linux_pip_hud_visibility_test PRIVATE -Wall -Wextra -Werror)
 target_include_directories(linux_pip_hud_visibility_test PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}")
+
+# Experimental Wayland HDR session: option contracts, key routing, capability detection
+# and the bundled OSC script against real libmpv with null outputs; no display/GTK/JNI.
+add_executable(linux_hdr_session_test EXCLUDE_FROM_ALL tests/hdr_session_test.cpp hdr_wayland_session.cpp)
+target_compile_features(linux_hdr_session_test PRIVATE cxx_std_17)
+target_compile_options(linux_hdr_session_test PRIVATE -Wall -Wextra -Werror)
+target_compile_definitions(linux_hdr_session_test PRIVATE
+    NUVIO_HDR_OSC_SCRIPT="${CMAKE_CURRENT_SOURCE_DIR}/../../resources/player-scripts/linux-hdr-osc.lua")
+target_include_directories(linux_hdr_session_test PRIVATE "${MPV_INCLUDE_DIR}" "${CMAKE_CURRENT_SOURCE_DIR}")
+target_link_libraries(linux_hdr_session_test PRIVATE "${MPV_LIBRARY}")
+set_target_properties(linux_hdr_session_test PROPERTIES BUILD_RPATH "${MPV_LIBRARY_DIR}")
+
+# Optional read-only HDR capability helper (nuvio-hdr-probe). Built only when the
+# Wayland client library, wayland-scanner, wayland-protocols >= 1.41 (colour
+# management) and Vulkan headers/loader are available. Without it the application
+# fails closed: the experimental HDR session is never selected. Package builds
+# (NUVIO_PACKAGE_BUILD) require it, so a package never silently omits the helper.
+option(NUVIO_HDR_PROBE "Build the nuvio-hdr-probe capability helper when its dependencies exist" ON)
+if(NUVIO_PACKAGE_BUILD AND NOT NUVIO_HDR_PROBE)
+    message(FATAL_ERROR "NUVIO_PACKAGE_BUILD requires NUVIO_HDR_PROBE=ON")
+endif()
+set(NUVIO_WAYLAND_PROTOCOLS_DIR "" CACHE PATH "wayland-protocols pkgdatadir (>= 1.41)")
+set(NUVIO_VULKAN_INCLUDE_DIR "" CACHE PATH "Directory containing vulkan/vulkan.h")
+if(NUVIO_HDR_PROBE)
+    pkg_check_modules(NUVIO_WAYLAND_CLIENT IMPORTED_TARGET wayland-client)
+    find_program(NUVIO_WAYLAND_SCANNER NAMES wayland-scanner)
+    if(NOT NUVIO_WAYLAND_PROTOCOLS_DIR)
+        pkg_check_modules(NUVIO_WAYLAND_PROTOCOLS QUIET wayland-protocols>=1.41)
+        if(NUVIO_WAYLAND_PROTOCOLS_FOUND)
+            pkg_get_variable(NUVIO_WAYLAND_PROTOCOLS_DIR wayland-protocols pkgdatadir)
+        endif()
+    endif()
+    set(NUVIO_COLOR_MANAGEMENT_XML
+        "${NUVIO_WAYLAND_PROTOCOLS_DIR}/staging/color-management/color-management-v1.xml")
+    find_path(NUVIO_VULKAN_HEADERS NAMES vulkan/vulkan.h HINTS "${NUVIO_VULKAN_INCLUDE_DIR}" NO_CACHE)
+    find_library(NUVIO_VULKAN_LIBRARY NAMES vulkan HINTS "${MPV_LIBRARY_DIR}")
+    if(NUVIO_WAYLAND_CLIENT_FOUND AND NUVIO_WAYLAND_SCANNER AND NUVIO_WAYLAND_PROTOCOLS_DIR AND
+       EXISTS "${NUVIO_COLOR_MANAGEMENT_XML}" AND NUVIO_VULKAN_HEADERS AND NUVIO_VULKAN_LIBRARY)
+        set(NUVIO_HDR_GENERATED "${CMAKE_CURRENT_BINARY_DIR}/hdr-protocol")
+        file(MAKE_DIRECTORY "${NUVIO_HDR_GENERATED}")
+        add_custom_command(
+            OUTPUT "${NUVIO_HDR_GENERATED}/color-management-v1-client-protocol.h"
+                   "${NUVIO_HDR_GENERATED}/color-management-v1-protocol.c"
+            COMMAND "${NUVIO_WAYLAND_SCANNER}" client-header "${NUVIO_COLOR_MANAGEMENT_XML}"
+                    "${NUVIO_HDR_GENERATED}/color-management-v1-client-protocol.h"
+            COMMAND "${NUVIO_WAYLAND_SCANNER}" private-code "${NUVIO_COLOR_MANAGEMENT_XML}"
+                    "${NUVIO_HDR_GENERATED}/color-management-v1-protocol.c"
+            DEPENDS "${NUVIO_COLOR_MANAGEMENT_XML}"
+            VERBATIM)
+        enable_language(C)
+        add_executable(nuvio-hdr-probe nuvio_hdr_probe.cpp hdr_capability_probe.cpp
+            "${NUVIO_HDR_GENERATED}/color-management-v1-protocol.c")
+        target_compile_features(nuvio-hdr-probe PRIVATE cxx_std_17)
+        target_compile_options(nuvio-hdr-probe PRIVATE $<$<COMPILE_LANGUAGE:CXX>:-Wall -Wextra -Werror>)
+        target_include_directories(nuvio-hdr-probe PRIVATE "${NUVIO_HDR_GENERATED}")
+        target_include_directories(nuvio-hdr-probe SYSTEM PRIVATE "${NUVIO_VULKAN_HEADERS}")
+        target_link_libraries(nuvio-hdr-probe PRIVATE PkgConfig::NUVIO_WAYLAND_CLIENT "${NUVIO_VULKAN_LIBRARY}")
+        target_link_options(nuvio-hdr-probe PRIVATE "LINKER:-z,defs")
+        set_target_properties(nuvio-hdr-probe PROPERTIES BUILD_RPATH "$ORIGIN;${MPV_LIBRARY_DIR}")
+        if(NUVIO_PACKAGE_BUILD)
+            set_target_properties(nuvio-hdr-probe PROPERTIES
+                BUILD_WITH_INSTALL_RPATH YES
+                INSTALL_RPATH "$ORIGIN;$ORIGIN/../runtime/lib")
+        endif()
+        message(STATUS "nuvio-hdr-probe: enabled (${NUVIO_COLOR_MANAGEMENT_XML})")
+    elseif(NUVIO_PACKAGE_BUILD)
+        message(FATAL_ERROR "nuvio-hdr-probe is required for package builds: needs wayland-client, "
+            "wayland-scanner, wayland-protocols >= 1.41 (NUVIO_WAYLAND_PROTOCOLS_DIR) and Vulkan "
+            "headers (NUVIO_VULKAN_INCLUDE_DIR) plus the loader next to libmpv")
+    else()
+        message(STATUS "nuvio-hdr-probe: disabled (needs wayland-client, wayland-scanner, "
+            "wayland-protocols >= 1.41 and Vulkan headers/loader); HDR session fails closed")
+    endif()
+endif()

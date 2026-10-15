@@ -12,6 +12,20 @@ from fetch import CONFIG
 from notice_contract import stage_notices
 
 
+def remove_build_data(destination, contract):
+    """Build-only media SDK data (HDR probe protocol XML) never enters the image."""
+    share = destination / 'share'
+    for name in contract['build_data']:
+        path = destination / name
+        if not name.startswith('share/') or '..' in pathlib.PurePosixPath(name).parts:
+            raise ValueError('Unexpected media build-data location: ' + name)
+        path.unlink()
+        for parent in path.parents:
+            if parent == share or any(parent.iterdir()):
+                break
+            parent.rmdir()
+
+
 def stage(work, source=pathlib.Path('/source'), media=pathlib.Path('/media')):
     info = json.loads((work / 'source-info.json').read_text())
     app = source / 'composeApp/build/compose/binaries/main/app/nuvio'
@@ -29,11 +43,14 @@ def stage(work, source=pathlib.Path('/source'), media=pathlib.Path('/media')):
         if record['soname'] != src.name:
             (native / record['soname']).symlink_to(src.name)
     shutil.copy2(work / 'native/libplayer_bridge.so', native / 'libplayer_bridge.so')
+    # Experimental HDR capability helper; same RUNPATH layout as the bridge.
+    shutil.copy2(work / 'native/nuvio-hdr-probe', native / 'nuvio-hdr-probe')
     here = source / 'tools/linux/packaging'
     shutil.copy2(here / 'nuvio-desktop', destination / 'bin/nuvio-desktop')
     (destination / 'bin/nuvio-desktop').chmod(0o755)
     share = destination / 'share'
     shutil.copytree(media / 'share', share, dirs_exist_ok=True)
+    remove_build_data(destination, contract)
     licenses = share / 'licenses/Nuvio'
     licenses.mkdir(parents=True)
     shutil.copy2(source / 'LICENSE', licenses / 'COPYING')

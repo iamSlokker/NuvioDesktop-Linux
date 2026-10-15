@@ -150,6 +150,21 @@ internal class NativePlayerController(
 
     private val linuxPiPInput = LinuxPiPSurfaceInput.install(DesktopHostOs.current, host) { handlePlayerEvent("toggle", 0.0) }
 
+    // Experimental native-Wayland HDR session (Linux main player only; default-off setting).
+    @Volatile
+    private var linuxLastSnapshot: Pair<Long, Long>? = null // handle to position, for fallback.
+    private val linuxHdr = if (DesktopHostOs.current == DesktopHostOs.LINUX && !linuxHeroSurface) {
+        LinuxHdrSessionCoordinator(
+            host = LinuxHdrHost(),
+            environment = LinuxHdrSessionEnvironment,
+            worker = { name, block -> thread(isDaemon = true, name = name) { block() } },
+            ui = { block -> SwingUtilities.invokeLater(block) },
+            schedule = { delayMs, block ->
+                javax.swing.Timer(delayMs.toInt()) { block() }.apply { isRepeats = false; start() }
+            },
+        )
+    } else null
+
     @Volatile
     private var pendingSource: PendingSource? = null
     private val pendingMpvProperties = linkedMapOf<String, String>()
@@ -334,6 +349,7 @@ internal class NativePlayerController(
             linuxMpris = LinuxMprisPlayer(this, linuxMprisOwner()) { !disposed && handle != 0L }
         }
         linuxMpris?.sourceChanging(handle)
+        linuxHdr?.onAttach()
         pendingSource = pending
         lastSeekFailureTargetMs = null
         host.onPeerReady = { attachPending() }
@@ -542,6 +558,7 @@ internal class NativePlayerController(
         linuxHeroActive = false
         linuxHeroGeometry?.cancel()
         retainLinuxHeroPosition()
+        linuxHdr?.onPlayerReplaced()
         unpublishLinuxPlayerHandle()
     }
 
@@ -757,6 +774,7 @@ internal class NativePlayerController(
 
     /** Shows a transient pill in the controls overlay, e.g. when cycling a video preset. */
     fun showPresetPill(title: String, value: String, durationMs: Int? = null) {
+        if (linuxHdr?.showMessage("$title: $value") == true) return
         val current = handle.takeIf { it != 0L } ?: return
         val durationArg = durationMs?.let { ", $it" } ?: ""
         NativePlayerBridge.runJavaScript(
@@ -796,7 +814,9 @@ internal class NativePlayerController(
                 (event.component as? java.awt.Window ?: SwingUtilities.getWindowAncestor(event.component)) === window,
             dismissKey = AppShortcutsRepository.keyCode(AppShortcutAction.DismissOverlay),
         ) {
-            deliverLinuxPlayerEscape(handle, desktopPictureInPictureState.value, NativePlayerBridge::runJavaScript) {
+            // The HDR session has no WebKit HUD to close panels in; Escape is Back there.
+            val hudless = desktopPictureInPictureState.value || linuxHdr?.activeHdrHandle != null
+            deliverLinuxPlayerEscape(handle, hudless, NativePlayerBridge::runJavaScript) {
                 // Retain the shared toast/progress-flush/guarded-navigation/cleanup path.
                 dispatchKeyboardShortcut("back")
             }
@@ -820,12 +840,14 @@ internal class NativePlayerController(
         val next = modes[(modes.indexOf(current) + 1) % modes.size]
         PlayerSettingsRepository.setDesktopHdrMode(next)
         showPresetPill("HDR Mode", next.label)
+        linuxHdr?.onHdrModeChanged(next)
     }
 
     private fun selectDesktopHdrMode(index: Int) {
         DesktopHdrMode.entries.getOrNull(index)?.let { mode ->
             PlayerSettingsRepository.setDesktopHdrMode(mode)
             showPresetPill("HDR Mode", mode.label)
+            linuxHdr?.onHdrModeChanged(mode)
         }
     }
 
@@ -1115,6 +1137,7 @@ internal class NativePlayerController(
 
     private fun handlePlayerEvent(type: String, value: Double) {
         if (disposed) return
+        linuxHdr?.onPlayerEvent(type)
         if (type == "playbackRestart") {
             // First rendered frame of the replacement source. Deliver a message held across a
             // source switch (the failover "trying next source" pill) only now: showing it when
@@ -1391,6 +1414,7 @@ internal class NativePlayerController(
             val isPaused = NativePlayerBridge.isPaused(current)
             val positionMs = NativePlayerBridge.positionMs(current)
             val bufferedPositionMs = NativePlayerBridge.bufferedPositionMs(current)
+            if (linuxHdr != null) linuxLastSnapshot = current to positionMs
             updateMeteredPrefetchFreeze(
                 isPaused = isPaused,
                 isLoading = isLoading,
@@ -1413,6 +1437,7 @@ internal class NativePlayerController(
 
     fun dispose() {
         disposed = true
+        linuxHdr?.dispose()
         if (DesktopHostOs.current == DesktopHostOs.LINUX) linuxOwnership.cancel(this)
         linuxMpris?.close()
         linuxMpris = null
@@ -1824,6 +1849,157 @@ internal class NativePlayerController(
         return runCatching {
             json.decodeFromString<List<NativeMpvTrack>>(readJson(current))
         }.getOrDefault(emptyList())
+    }
+
+    /** Controller side of [LinuxHdrSessionCoordinator]; Linux main player only. */
+    private inner class LinuxHdrHost : LinuxHdrSessionCoordinator.Host {
+        private var gamepadSink: ((Int) -> Boolean)? = null
+
+        override fun generation(): Long = attachGeneration.get()
+
+        // Main-player attaches only (trailers never restore the persisted volume), never from PiP.
+        override fun sourceKey(): String? = pendingSource
+            ?.takeIf { it.restoreVolume && !disposed && !desktopPictureInPictureState.value }
+            ?.sourceUrl
+
+        override fun embeddedHandle(): Long = handle
+
+        override fun playbackPoint(handle: Long): LinuxHdrSessionCoordinator.PlaybackPoint? = runCatching {
+            LinuxHdrSessionCoordinator.PlaybackPoint(NativePlayerBridge.positionMs(handle), NativePlayerBridge.isPaused(handle))
+        }.getOrNull() ?: linuxLastSnapshot?.takeIf { it.first == handle }?.let {
+            LinuxHdrSessionCoordinator.PlaybackPoint(it.second, paused = false)
+        }
+
+        override fun setPaused(handle: Long, paused: Boolean) {
+            runCatching { NativePlayerBridge.setPaused(handle, paused) }
+        }
+
+        override fun createHdrSession(
+            request: LinuxHdrSessionCoordinator.StartRequest,
+            sink: NativePlayerEventSink,
+        ): Long = synchronized(nativeProcessLifecycleLock) {
+            val pending = pendingSource
+            if (disposed || pending == null || pending.sourceUrl != request.sourceKey ||
+                attachGeneration.get() != request.generation
+            ) return 0L
+            LinuxHdrSessionNative.create(
+                sourceUrl = withMpvFilenameHint(pending.sourceUrl, pending.mediaTitle),
+                sourceAudioUrl = pending.sourceAudioUrl,
+                headerLines = pending.headerLines.toTypedArray(),
+                initialPositionMs = request.positionMs,
+                // Same options as the embedded player; the HDR-mode target mapping last so it wins.
+                extraMpvOptions = (pending.extraMpvOptions + request.targetOptions).toTypedArray(),
+                keyBindings = linuxHdrMpvKeyBindingEntries(),
+                vulkanDevice = request.vulkanDevice,
+                oscScriptPath = LinuxHdrOsc.path,
+                appId = LINUX_HDR_APP_ID,
+                eventSink = sink,
+            )
+        }
+
+        override fun prepareHdrSession(hdrHandle: Long, embeddedHandle: Long) {
+            synchronized(pendingMpvProperties) {
+                pendingMpvProperties.forEach { (key, value) -> NativePlayerBridge.setMpvProperty(hdrHandle, key, value) }
+            }
+            lastResizeMode?.let { mode ->
+                NativePlayerBridge.setResizeMode(hdrHandle, when (mode) {
+                    PlayerResizeMode.Fit -> 0
+                    PlayerResizeMode.Fill -> 1
+                    PlayerResizeMode.Zoom -> 2
+                })
+            }
+            applyPendingSubtitleConfiguration(hdrHandle)
+            pendingSubtitleStyle?.let { applySubtitleStyle(hdrHandle, it) }
+            // Live choices last: tracks, external subtitles, delays, speed and volume.
+            LinuxHdrSessionNative.transferPlaybackState(embeddedHandle, hdrHandle)
+        }
+
+        override fun promoteHdrSession(hdrHandle: Long, embeddedHandle: Long, generation: Long): Boolean {
+            val promoted = synchronized(handleLock) {
+                if (disposed || attachGeneration.get() != generation || handle != embeddedHandle) {
+                    false
+                } else {
+                    linuxPendingDisposalHandles.add(embeddedHandle)
+                    handle = hdrHandle
+                    true
+                }
+            }
+            if (!promoted) return false
+            lastSentControlsStructureKey = null
+            lastSentMediaSessionKey = null
+            lastSentMpvMediaTitle = null
+            updateControls(controlsState)
+            AppShortcutsRepository.ensureLoaded()
+            val fullscreenKey = playerShortcutKeyCodeLabel(AppShortcutsRepository.keyCode(AppShortcutAction.ToggleFullscreen))
+            runCatching {
+                LinuxHdrSessionNative.scriptMessage(hdrHandle, arrayOf("nuvio-hdr-osc-hint",
+                    "Esc  Back     Space  Play/Pause     \u2190 \u2192  Seek     $fullscreenKey  Leave HDR"))
+            }
+            thread(isDaemon = true, name = "Nuvio-HDR-Retire") {
+                synchronized(nativeProcessLifecycleLock) { runCatching { drainLinuxPendingDisposals() } }
+            }
+            return true
+        }
+
+        override fun disposeDetachedHdrSession(hdrHandle: Long) {
+            thread(isDaemon = true, name = "Nuvio-HDR-Dispose") {
+                synchronized(nativeProcessLifecycleLock) { runCatching { NativePlayerBridge.dispose(hdrHandle) } }
+            }
+        }
+
+        override fun resumeEmbeddedPlayer(positionMs: Long, playWhenReady: Boolean) {
+            if (disposed) return
+            val pending = pendingSource ?: return
+            pendingSource = pending.copy(
+                initialPositionMs = positionMs.coerceAtLeast(0L),
+                initialProgressFraction = 0f,
+                playWhenReady = playWhenReady,
+            )
+            // The ordinary re-attach path retires the HDR handle and recreates the Canvas player.
+            attachPending()
+        }
+
+        override fun forwardPlayerEvent(type: String, value: Double) = handlePlayerEvent(type, value)
+
+        override fun handleHdrKey(hdrHandle: Long, code: Int) {
+            AppShortcutsRepository.ensureLoaded()
+            PlayerShortcutsRepository.ensureLoaded()
+            val action = linuxHdrInputAction(code, PlayerShortcutsRepository::actionForKeyCode, AppShortcutsRepository::keyCode)
+            when (action) {
+                is LinuxHdrInputAction.Event -> dispatchKeyboardShortcut(action.type, action.value)
+                LinuxHdrInputAction.Back -> dispatchKeyboardShortcut("back")
+                LinuxHdrInputAction.LeaveHdr -> linuxHdr?.leave("user left the HDR session")
+                LinuxHdrInputAction.CycleHdr -> cycleDesktopHdrMode()
+                LinuxHdrInputAction.SkipInterval -> triggerSkipIntervalIfAvailable()
+                LinuxHdrInputAction.ToggleDiagnostics -> runCatching { NativePlayerBridge.toggleStatsOverlay(hdrHandle) }
+                is LinuxHdrInputAction.Unavailable -> showHdrMessage(hdrHandle, "${action.label}: not available in the HDR session")
+                LinuxHdrInputAction.Ignored -> Unit
+            }
+        }
+
+        override fun setGamepadRoute(hdrHandle: Long?) {
+            gamepadSink?.let(LinuxHdrInputRoute::clear)
+            gamepadSink = null
+            if (hdrHandle == null) return
+            val sink: (Int) -> Boolean = { keyCode ->
+                // Only while the HDR window itself has focus; never drive Nuvio from another app.
+                val focused = runCatching { LinuxHdrSessionNative.isFocused(hdrHandle) }.getOrDefault(false)
+                if (focused) SwingUtilities.invokeLater {
+                    if (!disposed && handle == hdrHandle) handleHdrKey(hdrHandle, keyCode)
+                }
+                focused
+            }
+            gamepadSink = sink
+            LinuxHdrInputRoute.install(sink)
+        }
+
+        override fun applyHdrTargetOptions(hdrHandle: Long, options: List<Pair<String, String>>) {
+            options.forEach { (key, value) -> runCatching { NativePlayerBridge.setMpvProperty(hdrHandle, key, value) } }
+        }
+
+        override fun showHdrMessage(hdrHandle: Long, text: String) {
+            runCatching { LinuxHdrSessionNative.showText(hdrHandle, text, 2500) }
+        }
     }
 }
 

@@ -43,6 +43,8 @@ class FlatpakJarInventoryTest(unittest.TestCase):
         self.assertEqual('ostree', args[0])
         if args[2] == 'ls':
             self.assertTrue(kwargs['text'])
+            if args[-1].endswith('/lib/native/nuvio-hdr-probe'):
+                return '-00755 1000 1000 4096 ' + args[-1] + '\n'
             return self.listing
         self.assertEqual('cat', args[2])
         if args[-1].endswith('/release-info.json'):

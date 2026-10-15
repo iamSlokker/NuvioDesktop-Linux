@@ -83,6 +83,15 @@ incompatible distro SONAMEs; Xpresent is private because it is not installed on
 all XWayland desktops; bzip2 is private because Ubuntu/Fedora use different
 library SONAMEs; libdisplay-info supplies mpv's full DRM build path.
 
+Experimental HDR groundwork adds pinned Wayland 1.24.0 (client/cursor only),
+wayland-protocols 1.42, libxkbcommon 1.13.1 and build-only GNU Bison 3.8.2.
+They are built after every other dependency, immediately before mpv, so no
+earlier component is configured against them. mpv adds only `-Dwayland=enabled`;
+protocols >= 1.41 compile its color-management-v1 client. The builder's
+Wayland 1.20 cannot satisfy mpv's >= 1.21 requirement and has no Bison, hence
+source builds. Each new archive's signature/announcement/independent checksum
+evidence is recorded in its manifest `verification` entry.
+
 FFmpeg keeps broad software decoders, demuxers, parsers, network protocols and
 filters. libdav1d supplies real AV1 software decoding. OpenSSL supplies HTTPS.
 H.264, HEVC/Main10, VP9, AAC, AC-3/E-AC-3, PCM, Matroska, MP4, MPEG-TS and subtitle
@@ -99,13 +108,19 @@ uses GPL mpv; this is a license inventory, not legal certification.
 mpv enables shared libmpv, the diagnostic CLI, gpu-next/libplacebo, Vulkan,
 X11/x11vk/wid, LuaJIT/OSC, libass, ALSA/PulseAudio, CUDA hardware frames/interop,
 VAAPI-X11 and VAAPI-DRM/DRM. It exposes direct and copy modes supported by upstream.
+It also compiles the native Wayland Vulkan context (`waylandvk`); production still
+selects `x11vk`, so SDR playback paths are unchanged. Audit fails closed unless
+`HAVE_X11`, `HAVE_WAYLAND` and `HAVE_WAYLAND_PROTOCOLS_1_41` are set, both the
+CLI and an in-process libmpv option probe (no `mpv_initialize`, no display)
+accept `x11vk` and `waylandvk`, and libmpv contains the color-management
+interfaces. This is not HDR presentation evidence.
 Nothing in the build selects a vendor or forces copy-back globally.
 
 ## Private and platform boundary
 
 Private: FFmpeg libraries, libmpv, libplacebo, dav1d, libass, libunibreak, LuaJIT,
-libdisplay-info, bzip2, the generic Xpresent extension client, and the **generic**
-Vulkan loader. glslang is statically
+libdisplay-info, bzip2, the generic Xpresent extension client, libwayland-client/
+cursor, libxkbcommon, and the **generic** Vulkan loader. glslang is statically
 incorporated into libplacebo; its BSD-2/BSD-3/MIT/Apache notices are included.
 The Vulkan loader's incorporated cJSON MIT notice is exported separately.
 
@@ -114,8 +129,11 @@ font stack, OpenSSL/zlib/lcms2, audio interfaces, GTK/GLib/WebKitGTK, and actual
 GPU drivers. Exact allowed direct ELF SONAMEs are in the manifest. These are future
 package/SDK dependencies; this tree does not make them disappear.
 
-Build-only: Meson, NASM, nv-codec-headers, Vulkan headers, CA bootstrap and the
-snapshot toolchain/development packages. No compiler or GPU driver is exported. Free Vulkan/nv-codec header notices are included because generated/inline
+Build-only: Meson, NASM, Bison, wayland-scanner, nv-codec-headers, Vulkan headers,
+wayland-protocols, CA bootstrap and the snapshot toolchain/development packages.
+(wayland-scanner, Vulkan C headers and color-management-v1.xml are exported to the
+runtime SDK area only; see "Runtime structure and linkage".)
+Copyright elements of the protocol XML compiled into libmpv are exported. No compiler or GPU driver is exported. Free Vulkan/nv-codec header notices are included because generated/inline
 interface code is incorporated; these are not proprietary driver licenses.
 The pinned hwdata PNP registry is a
 builder-provided data input incorporated into libdisplay-info; its bytes are
@@ -262,11 +280,14 @@ trees. This backport does not implement shader policy or complete G07/G08.
 ```text
 runtime/
   bin/{mpv,ffmpeg,ffprobe}
+  bin/wayland-scanner       # build-only (nuvio-hdr-probe), never packaged
   include/mpv/{client.h,render.h,...}
+  include/{vulkan,vk_video}/*.h   # build-only Vulkan C headers (nuvio-hdr-probe)
   lib/libmpv.so -> libmpv.so.2 -> ...
   lib/<matching FFmpeg and selected private DSOs>
   lib/pkgconfig/<relative-prefix metadata>
   share/licenses/<private components>
+  share/wayland-protocols/staging/color-management/color-management-v1.xml  # build-only
   share/nuvio-media-runtime/
     config/{ffmpeg,mpv}.h   # Boolean definitions captured from this build
     validated.json         # Transaction-completion marker, not a signature
@@ -286,6 +307,17 @@ absolute development RPATH, glibc or proprietary GPU library is shipped.
 The dynamic mpv client `.pc` prefix is relative to `pcfiledir`; static-link SDK
 requirements are omitted because static linkage is not exported. Static archives, libtool files,
 CMake exports, Meson build metadata and downloaded archives are excluded.
+
+`bin/`, `include/`, `lib/pkgconfig/` and the manifest's `artifact_contract.build_data`
+are an SDK area for the Linux bridge build. The packaging bridge build also
+compiles the experimental HDR capability helper `nuvio-hdr-probe` from the exported
+pinned wayland-scanner 1.24.0, color-management-v1.xml (wayland-protocols 1.42) and
+Vulkan-Headers 1.4.363.0 C headers (exact files listed in the manifest), because the
+Ubuntu 22.04 builder's wayland-protocols/scanner are too old. Packaging stages only
+the contract libraries and `share/` without `build_data`. The scanner is the only
+ELF allowed a builder dependency outside `host_runtime`: `build_tool_needed` names
+`libexpat.so.1` for `bin/wayland-scanner` alone; the same NEEDED on any other ELF
+still fails the audit (`tests/test-runtime.py` mutations).
 
 Exact configure/compiler output stays in the external build logs. Distributable
 metadata records versions, options, package versions, hashes and sanitized build
