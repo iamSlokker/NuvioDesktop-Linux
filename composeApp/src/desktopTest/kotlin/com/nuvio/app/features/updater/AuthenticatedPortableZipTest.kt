@@ -58,6 +58,8 @@ internal object AuthenticatedPortableZipProbe {
         assertEquals("Linux", System.getProperty("os.name"))
         assertNull(System.getenv("DISPLAY"))
         assertNull(System.getenv("WAYLAND_DISPLAY"))
+        // This fixture covers the Windows portable-ZIP path; Linux hosts route to their own updater.
+        LinuxUpdater.isActive = false
         val updates = DesktopStorage.rootDir.resolve("updates").toFile()
         // Make the portable in-place layout eligible even on Linux. Reconnecting the old delta
         // branch must produce a Range request and fail this fixture, rather than silently skipping

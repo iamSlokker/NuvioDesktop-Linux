@@ -1099,7 +1099,7 @@ private fun settingsSearchEntries(
         icon = Icons.Rounded.AccountCircle,
     )
     if (AppUpdaterPlatform.isSupported) {
-        addRow(
+        if (com.nuvio.app.features.updater.nightlyChannelSelectable) addRow(
             page = SettingsPage.Account,
             key = "update-channel",
             title = resolve(Res.string.settings_updates_channel),

@@ -47,8 +47,25 @@ source revision first. Test in a disposable VM/user when practical.
 | Flatpak | Application payload plus separately pinned GNOME Platform; graphics extensions are supplied by Flatpak/host. Use a separately approved repo/bundle and an isolated installation for acceptance. | Remove the app through Flatpak; do not use data-deletion flags when preserving a profile. A retained app/runtime revision may be tested for rollback, but no guarantee of old-schema compatibility. |
 | AppImage | Standalone file with bundled Java/media and private patched WebKit/GTK/helpers; host graphics/ABI remain external. Keep the previous verified file and launch the new file with a disposable profile first. | Remove the file to remove the package; data is separate. Restore the prior file/profile snapshot together after a failed test. AppImage execution still needs the host's FUSE/extraction and namespace support. |
 
-Linux self-updating is not implemented. Windows's portable ZIP installer is not a
-Linux upgrade path. Do not hand-edit packaged libraries and keep claiming the old
+### In-app update notifications
+
+Linux builds check the Linux fork's own repository
+(`iamSlokker/NuvioDesktop-Linux`), stable channel only: the latest non-draft,
+non-prerelease release whose tag is exactly `vX.Y.Z`, offered only when newer than
+the running `VERSION_NAME`. The `vX.Y.Z-source` archive release is never offered,
+and the nightly channel picker is hidden. The installed format is detected at
+startup and only its asset (`NuvioDesktop-Linux-X.Y.Z-x86_64.AppImage`, `.deb` or
+`.flatpak`) is considered. Every download must match the SHA-256 digest GitHub
+publishes for that asset; without one, or on a mismatch, nothing is kept.
+
+| Detected install | What "Update" does |
+| --- | --- |
+| AppImage (`$APPIMAGE` names an existing file) | Downloads `.<asset>.part` next to the AppImage, verifies it, makes it executable and atomically renames it over `$APPIMAGE`, then offers **Restart now** (the existing Linux relaunch helper starts the new file). If that folder is not writable, or "Install Updates Automatically" is off, the verified file is saved to the XDG Downloads folder instead. |
+| DEB (launcher under `/opt/nuvio-desktop`) | Saves the verified package to the XDG Downloads folder and installs it through polkit: `pkexec apt-get install -y --allow-downgrades=no <file>` (`pkexec dpkg -i <file>` only without apt-get), then offers **Restart now**. If pkexec is missing, the polkit prompt is cancelled, the install fails, or automatic install is off, the package stays in Downloads and the dialog shows `sudo apt install ./<file>`. Nuvio never runs sudo. |
+| Flatpak (`FLATPAK_ID` or `/.flatpak-info`) | Nothing is downloaded; **Open release page** opens the release. Update through your software center or `flatpak update`. |
+| Anything else (source run, unpacked image) | Same as Flatpak: the release page only. |
+
+Windows's portable ZIP installer is never used on Linux. Do not hand-edit packaged libraries and keep claiming the old
 checksum/provenance. Preserve the WebKit Bubblewrap sandbox and its failure checks.
 Installation, runtime acceptance, source availability and release approval are
 separate gates for each format.
