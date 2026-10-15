@@ -33,9 +33,9 @@ import java.util.concurrent.TimeUnit
  *  - AppImage: download next to $APPIMAGE, verify, atomically rename over it, offer a restart.
  *  - DEB: download the verified package to the user's Downloads folder and install it through
  *    polkit (`pkexec apt-get install`), falling back to a manual `apt install` command.
- *  - Flatpak and anything unrecognised: nothing is downloaded; the dialog opens the release page.
- *    A portal-based Flatpak update (org.freedesktop.portal.Flatpak UpdateMonitor/Update) would
- *    become a further in-app branch of [LinuxUpdater.download] without changing anything shared.
+ *  - Flatpak: nothing is downloaded; the Flatpak portal updates the install from its own signed
+ *    remote (see LinuxFlatpakUpdate.kt), and the restart starts the newly deployed version.
+ *  - Anything unrecognised: nothing is downloaded; the dialog opens the release page.
  * Every download must match the SHA-256 digest GitHub publishes for the asset, or it is discarded.
  */
 
@@ -50,8 +50,8 @@ internal enum class LinuxInstallFormat(val assetExtension: String?) {
     Unknown(null),
     ;
 
-    /** Whether the update is downloaded and applied by Nuvio itself. */
-    val updatesInApp: Boolean get() = this == AppImage || this == Deb
+    /** Whether the update is applied from inside Nuvio (Flatpak through the Flatpak portal). */
+    val updatesInApp: Boolean get() = this != Unknown
 
     companion object {
         /** Where the DEB package installs the application image. */
@@ -158,8 +158,11 @@ internal sealed interface LinuxUpdateStatus {
 
     data object Installing : LinuxUpdateStatus
 
-    /** The new build is in place (AppImage replaced or package installed); a restart applies it. */
+    /** The new build is in place (AppImage replaced, package or Flatpak installed); a restart applies it. */
     data class Installed(val file: Path) : LinuxUpdateStatus
+
+    /** The Flatpak portal did not update this install; [commands] update it from a terminal. */
+    data class FlatpakNotUpdated(val result: FlatpakUpdateResult, val commands: String) : LinuxUpdateStatus
 
     /** Installed, but this process could not start the new one. */
     data class RestartFailed(val file: Path) : LinuxUpdateStatus
@@ -182,6 +185,10 @@ internal class LinuxUpdaterEnvironment(
     val inPlaceEnabled: () -> Boolean,
     val relaunch: () -> Boolean,
     val openPath: (Path) -> Unit,
+    val flatpakUpdater: FlatpakPortalUpdater = FlatpakPortalUpdater { error("The Flatpak portal is not available.") },
+    val flatpakInfo: () -> String? = { null },
+    /** Starts the newest deployed Flatpak version once this process exits. */
+    val relaunchLatestFlatpak: () -> Boolean = relaunch,
 )
 
 internal class LinuxUpdater(private val env: LinuxUpdaterEnvironment) {
@@ -201,11 +208,13 @@ internal class LinuxUpdater(private val env: LinuxUpdaterEnvironment) {
             _status.value = LinuxUpdateStatus.Idle
             try {
                 check(env.format.updatesInApp) { "This install is updated outside Nuvio." }
-                // Fail closed, as on Windows: no published digest, no download.
-                val sha256 = requireExpectedArchiveSha256(expectedSha256).lowercase()
                 require(LinuxReleaseRules.isAssetName(assetName, env.format)) {
                     "Update refused: $assetName is not a Linux ${env.format} release asset."
                 }
+                // The release's .flatpak only proves the version exists; the portal verifies the update.
+                if (env.format == LinuxInstallFormat.Flatpak) return@runCatching applyFlatpak(onProgress).toString()
+                // Fail closed, as on Windows: no published digest, no download.
+                val sha256 = requireExpectedArchiveSha256(expectedSha256).lowercase()
                 val download = VerifiedDownload(env.httpClient, assetUrl, assetName, sha256, onProgress)
                 when (env.format) {
                     LinuxInstallFormat.AppImage -> applyAppImage(download)
@@ -225,6 +234,7 @@ internal class LinuxUpdater(private val env: LinuxUpdaterEnvironment) {
             is LinuxUpdateStatus.Installed -> status.file
             is LinuxUpdateStatus.RestartFailed -> status.file
             is LinuxUpdateStatus.SavedForManualInstall -> status.file
+            is LinuxUpdateStatus.FlatpakNotUpdated -> FlatpakAppPath
             else -> null
         }
         check(file != null && file.toString() == path) { "The downloaded update file is missing." }
@@ -236,7 +246,8 @@ internal class LinuxUpdater(private val env: LinuxUpdaterEnvironment) {
         val file = (_status.value as? LinuxUpdateStatus.Installed)?.file
             ?: (_status.value as? LinuxUpdateStatus.RestartFailed)?.file
             ?: return
-        val started = runCatching { env.relaunch() }.getOrDefault(false)
+        val relaunch = if (env.format == LinuxInstallFormat.Flatpak) env.relaunchLatestFlatpak else env.relaunch
+        val started = runCatching { relaunch() }.getOrDefault(false)
         if (!started) _status.value = LinuxUpdateStatus.RestartFailed(file)
     }
 
@@ -257,6 +268,26 @@ internal class LinuxUpdater(private val env: LinuxUpdaterEnvironment) {
         val saved = saveVerifiedDownload(env.downloadsDirectory(), download, executable = true)
         _status.value = LinuxUpdateStatus.SavedForManualInstall(LinuxInstallFormat.AppImage, saved)
         return saved
+    }
+
+    private fun applyFlatpak(onProgress: (downloadedBytes: Long, totalBytes: Long?) -> Unit): Path {
+        val result = env.flatpakUpdater.update { percent -> onProgress(percent.toLong(), 100L) }
+        _status.value = if (result == FlatpakUpdateResult.Updated) {
+            LinuxUpdateStatus.Installed(FlatpakAppPath)
+        } else {
+            val installation = flatpakInstallationOption(env.flatpakInfo())
+            val appId = env.environment["FLATPAK_ID"]?.takeIf(String::isNotBlank) ?: FlatpakDefaultAppId
+            val permissionOnly = result is FlatpakUpdateResult.Failed && result.reason != FlatpakUpdateFailure.Other
+            LinuxUpdateStatus.FlatpakNotUpdated(
+                result,
+                if (permissionOnly) {
+                    "flatpak update $installation $appId"
+                } else {
+                    flatpakMigrationCommands(installation, appId)
+                },
+            )
+        }
+        return FlatpakAppPath
     }
 
     private fun applyDeb(download: VerifiedDownload): Path {
@@ -284,6 +315,9 @@ internal class LinuxUpdater(private val env: LinuxUpdaterEnvironment) {
         internal var isActive: Boolean = isLinuxOsName(System.getProperty("os.name"))
 
         val current: LinuxUpdater by lazy { LinuxUpdater(systemLinuxUpdaterEnvironment()) }
+
+        /** The sandbox's application mount: the "file" a Flatpak update replaces. */
+        val FlatpakAppPath: Path = Path.of("/app")
     }
 }
 
@@ -526,6 +560,9 @@ private fun systemLinuxUpdaterEnvironment(): LinuxUpdaterEnvironment {
         },
         inPlaceEnabled = AppUpdaterPlatform::isInPlaceUpdateEnabled,
         relaunch = LinuxDesktopRelaunch::relaunch,
+        flatpakUpdater = systemFlatpakPortalUpdater,
+        flatpakInfo = ::readFlatpakInfo,
+        relaunchLatestFlatpak = { LinuxDesktopRelaunch.relaunch(latestFlatpak = true) },
         openPath = { path ->
             val opener = findHostExecutable("xdg-open", environment)
                 ?: error("xdg-open is not available")

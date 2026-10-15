@@ -111,7 +111,7 @@ class LinuxAppUpdaterTest {
         assertEquals(LinuxInstallFormat.Unknown, detect(emptyMap(), null))
         assertTrue(LinuxInstallFormat.AppImage.updatesInApp)
         assertTrue(LinuxInstallFormat.Deb.updatesInApp)
-        assertFalse(LinuxInstallFormat.Flatpak.updatesInApp)
+        assertTrue(LinuxInstallFormat.Flatpak.updatesInApp)
         assertFalse(LinuxInstallFormat.Unknown.updatesInApp)
     }
 
@@ -261,17 +261,126 @@ class LinuxAppUpdaterTest {
     }
 
     @Test
-    fun flatpakAndUnknownInstallsNeverDownload() {
-        for (format in listOf(LinuxInstallFormat.Flatpak, LinuxInstallFormat.Unknown)) {
-            val result = runBlocking {
-                LinuxUpdater(environment(format)).download(
-                    "http://127.0.0.1:9/never",
-                    "NuvioDesktop-Linux-1.16.0-x86_64.flatpak",
-                    "a".repeat(64),
-                ) { _, _ -> }
-            }
-            assertTrue(result.isFailure)
+    fun unknownInstallsNeverDownload() {
+        val result = runBlocking {
+            LinuxUpdater(environment(LinuxInstallFormat.Unknown)).download(
+                "http://127.0.0.1:9/never",
+                "NuvioDesktop-Linux-1.16.0-x86_64.flatpak",
+                "a".repeat(64),
+            ) { _, _ -> }
         }
+        assertTrue(result.isFailure)
+    }
+
+    // --- Flatpak ------------------------------------------------------------------------------
+
+    @Test
+    fun flatpakUpdatesThroughThePortalAndRestartsIntoTheLatestDeployment() {
+        val progress = mutableListOf<Pair<Long, Long?>>()
+        var latestRelaunches = 0
+        val updater = LinuxUpdater(
+            environment(
+                LinuxInstallFormat.Flatpak,
+                flatpak = FlatpakPortalUpdater { onProgress ->
+                    onProgress(40)
+                    onProgress(100)
+                    FlatpakUpdateResult.Updated
+                },
+                latestFlatpak = { latestRelaunches++; true },
+            ),
+        )
+        // No digest and an unreachable URL: the portal, not an HTTP download, applies the update.
+        val path = runBlocking {
+            updater.download("http://127.0.0.1:9/never", "NuvioDesktop-Linux-1.16.0-x86_64.flatpak", null) { done, total ->
+                progress += done to total
+            }
+        }.getOrThrow()
+        assertEquals("/app", path)
+        assertEquals(listOf<Pair<Long, Long?>>(40L to 100L, 100L to 100L), progress)
+        assertEquals(LinuxUpdateStatus.Installed(Path.of("/app")), updater.status.value)
+        assertEquals(UpdateInstallOutcome.REVEALED, updater.install(path).getOrThrow())
+        updater.restart()
+        assertEquals(1, latestRelaunches, "A Flatpak restart must start the newly deployed version")
+    }
+
+    @Test
+    fun flatpakRefusesAssetsOfOtherFormatsBeforeCallingThePortal() {
+        val result = runBlocking {
+            LinuxUpdater(
+                environment(LinuxInstallFormat.Flatpak, flatpak = { error("The portal must not be called") }),
+            ).download("http://127.0.0.1:9/never", "NuvioDesktop-Linux-1.16.0-x86_64.deb", null) { _, _ -> }
+        }
+        assertTrue(result.exceptionOrNull()?.message.orEmpty().contains("not a Linux Flatpak"))
+    }
+
+    @Test
+    fun flatpakWithNothingNewerOffersTheOneTimeRepositoryLink() {
+        fun commandsFor(info: String?): String {
+            val updater = LinuxUpdater(
+                environment(
+                    LinuxInstallFormat.Flatpak,
+                    env = mapOf("FLATPAK_ID" to "com.nuvio.media.desktop"),
+                    flatpak = { FlatpakUpdateResult.NothingNewer },
+                    flatpakInfo = info,
+                ),
+            )
+            val path = runBlocking {
+                updater.download("http://127.0.0.1:9/never", "NuvioDesktop-Linux-1.16.0-x86_64.flatpak", null) { _, _ -> }
+            }.getOrThrow()
+            val status = updater.status.value as LinuxUpdateStatus.FlatpakNotUpdated
+            assertEquals(FlatpakUpdateResult.NothingNewer, status.result)
+            assertEquals(UpdateInstallOutcome.REVEALED, updater.install(path).getOrThrow())
+            return status.commands
+        }
+        assertEquals(
+            "flatpak remote-add --user --if-not-exists nuvio " +
+                "https://iamslokker.github.io/NuvioDesktop-Linux/flatpak/nuvio.flatpakrepo\n" +
+                "flatpak install --user --reinstall nuvio com.nuvio.media.desktop//stable",
+            commandsFor("[Instance]\napp-path=/home/u/.local/share/flatpak/app/com.nuvio.media.desktop/x86_64/stable/abc/files\n"),
+        )
+        val system = commandsFor("[Instance]\napp-path=/var/lib/flatpak/app/com.nuvio.media.desktop/x86_64/stable/abc/files\n")
+        assertTrue(system.lines().all { "--system" in it })
+        assertTrue(commandsFor(null).lines().all { "--user" in it })
+    }
+
+    @Test
+    fun flatpakPermissionRefusalsPointAtAPlainFlatpakUpdate() {
+        for (reason in listOf(FlatpakUpdateFailure.Denied, FlatpakUpdateFailure.NewPermissions)) {
+            val updater = LinuxUpdater(
+                environment(LinuxInstallFormat.Flatpak, flatpak = { FlatpakUpdateResult.Failed(reason, "no") }),
+            )
+            runBlocking {
+                updater.download("http://127.0.0.1:9/never", "NuvioDesktop-Linux-1.16.0-x86_64.flatpak", null) { _, _ -> }
+            }.getOrThrow()
+            val status = updater.status.value as LinuxUpdateStatus.FlatpakNotUpdated
+            assertEquals("flatpak update --user com.nuvio.media.desktop", status.commands)
+        }
+    }
+
+    @Test
+    fun portalResultsAndProgressAreMapped() {
+        assertEquals(FlatpakUpdateResult.Updated, flatpakUpdateResult(arrayOf("2", "", "")))
+        assertEquals(FlatpakUpdateResult.NothingNewer, flatpakUpdateResult(arrayOf("1", "", "")))
+        assertEquals(
+            FlatpakUpdateResult.Failed(FlatpakUpdateFailure.Denied, "Application update not allowed"),
+            flatpakUpdateResult(arrayOf("3", "org.freedesktop.DBus.Error.AccessDenied", "Application update not allowed")),
+        )
+        assertEquals(
+            FlatpakUpdateFailure.NewPermissions,
+            (flatpakUpdateResult(arrayOf(
+                "3", "org.freedesktop.DBus.Error.NotSupported",
+                "Self update not supported, new version requires new permissions",
+            )) as FlatpakUpdateResult.Failed).reason,
+        )
+        val unavailable = flatpakUpdateResult(arrayOf("-1", "", "")) as FlatpakUpdateResult.Failed
+        assertEquals(FlatpakUpdateFailure.Other, unavailable.reason)
+        assertTrue(unavailable.message.isNotBlank())
+        assertEquals(FlatpakUpdateFailure.Other, (flatpakUpdateResult(emptyArray()) as FlatpakUpdateResult.Failed).reason)
+
+        assertEquals(50, flatpakOverallPercent(op = 0, ops = 1, progress = 50))
+        assertEquals(75, flatpakOverallPercent(op = 1, ops = 2, progress = 50))
+        assertEquals(100, flatpakOverallPercent(op = 5, ops = 2, progress = 100))
+        assertEquals(30, flatpakOverallPercent(op = 0, ops = 0, progress = 30))
     }
 
     @Test
@@ -419,6 +528,9 @@ class LinuxAppUpdaterTest {
         inPlace: Boolean = true,
         runner: LinuxCommandRunner = LinuxCommandRunner { error("No command may run in this test") },
         relaunch: () -> Boolean = { error("No relaunch in this test") },
+        flatpak: FlatpakPortalUpdater = FlatpakPortalUpdater { error("No portal in this test") },
+        flatpakInfo: String? = null,
+        latestFlatpak: () -> Boolean = { error("No Flatpak relaunch in this test") },
     ) = LinuxUpdaterEnvironment(
         format = format,
         environment = env,
@@ -429,6 +541,9 @@ class LinuxAppUpdaterTest {
         inPlaceEnabled = { inPlace },
         relaunch = relaunch,
         openPath = { error("Nothing may be opened in this test") },
+        flatpakUpdater = flatpak,
+        flatpakInfo = { flatpakInfo },
+        relaunchLatestFlatpak = latestFlatpak,
     )
 
     private fun withPayloadServer(test: (url: String, payload: ByteArray) -> Unit) {

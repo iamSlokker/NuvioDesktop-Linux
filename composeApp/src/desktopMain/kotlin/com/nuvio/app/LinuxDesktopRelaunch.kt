@@ -7,11 +7,17 @@ import java.nio.file.Path
 
 /** Linux package wrappers establish the native runtime; never restart the bare jpackage binary. */
 internal object LinuxDesktopRelaunch {
-    internal data class Launcher(val path: Path, val flatpak: Boolean = false)
+    internal data class Launcher(val path: Path, val flatpak: Boolean = false, val latestFlatpak: Boolean = false)
 
-    fun relaunch(): Boolean {
+    /**
+     * [latestFlatpak] starts the newest deployed version in a new sandbox (after a Flatpak update);
+     * a plain restart inside this sandbox would keep running the old deployment.
+     */
+    fun relaunch(latestFlatpak: Boolean = false): Boolean {
         val environment = System.getenv()
-        val launcher = resolveLauncher(System.getProperty("jpackage.app-path"), environment) ?: return false
+        val launcher = resolveLauncher(System.getProperty("jpackage.app-path"), environment)
+            ?.let { if (latestFlatpak) latestFlatpakLauncher(it) ?: return false else it }
+            ?: return false
         return start(
             launcher = launcher,
             directory = DesktopStorage.rootDir,
@@ -42,6 +48,20 @@ internal object LinuxDesktopRelaunch {
         return packaged.resolveSibling("nuvio-desktop").takeIf(executable)?.let(::Launcher)
     }
 
+    internal fun latestFlatpakLauncher(
+        launcher: Launcher,
+        executable: (Path) -> Boolean = { Files.isRegularFile(it) && Files.isExecutable(it) },
+    ): Launcher? = launcher.takeIf { it.flatpak && executable(FlatpakSpawn) }?.copy(latestFlatpak = true)
+
+    /** The command the helper execs once this process has exited. */
+    internal fun command(launcher: Launcher): List<String> = if (launcher.latestFlatpak) {
+        listOf(FlatpakSpawn.toString(), "--latest-version", launcher.path.toString())
+    } else {
+        listOf(launcher.path.toString())
+    }
+
+    private val FlatpakSpawn: Path = Path.of("/usr/bin/flatpak-spawn")
+
     internal fun start(
         launcher: Launcher,
         directory: Path,
@@ -56,7 +76,7 @@ internal object LinuxDesktopRelaunch {
         try {
             Files.writeString(script, HelperScript)
             val process = ProcessBuilder(
-                "/bin/sh", script.toString(), parentPid.toString(), "40", launcher.path.toString(),
+                listOf("/bin/sh", script.toString(), parentPid.toString(), "40") + command(launcher),
             ).directory(directory.toFile())
                 .redirectInput(File("/dev/null"))
                 .redirectOutput(ProcessBuilder.Redirect.INHERIT)

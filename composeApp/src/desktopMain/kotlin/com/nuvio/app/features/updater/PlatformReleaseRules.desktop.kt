@@ -9,7 +9,10 @@ import nuvio.composeapp.generated.resources.updates_linux_appimage_saved
 import nuvio.composeapp.generated.resources.updates_linux_deb_install_failed
 import nuvio.composeapp.generated.resources.updates_linux_deb_saved
 import nuvio.composeapp.generated.resources.updates_linux_external_message
-import nuvio.composeapp.generated.resources.updates_linux_flatpak_message
+import nuvio.composeapp.generated.resources.updates_linux_flatpak_denied
+import nuvio.composeapp.generated.resources.updates_linux_flatpak_failed
+import nuvio.composeapp.generated.resources.updates_linux_flatpak_new_permissions
+import nuvio.composeapp.generated.resources.updates_linux_flatpak_nothing_newer
 import nuvio.composeapp.generated.resources.updates_linux_installed
 import nuvio.composeapp.generated.resources.updates_linux_installing
 import nuvio.composeapp.generated.resources.updates_linux_open_release_page
@@ -38,19 +41,13 @@ internal actual fun platformUpdatePrompt(
     val updater = LinuxUpdater.current
     val status by updater.status.collectAsState()
     val uriHandler = LocalUriHandler.current
+    val releasePage = update.releaseUrl
+        ?.takeIf { it.startsWith("${LinuxReleaseRules.projectUrl}/") }
+        ?: "${LinuxReleaseRules.projectUrl}/releases/latest"
 
     if (!updater.format.updatesInApp) {
-        val releasePage = update.releaseUrl
-            ?.takeIf { it.startsWith("${LinuxReleaseRules.projectUrl}/") }
-            ?: "${LinuxReleaseRules.projectUrl}/releases/latest"
         return PlatformUpdatePrompt(
-            message = stringResource(
-                if (updater.format == LinuxInstallFormat.Flatpak) {
-                    Res.string.updates_linux_flatpak_message
-                } else {
-                    Res.string.updates_linux_external_message
-                },
-            ),
+            message = stringResource(Res.string.updates_linux_external_message),
             actionLabel = stringResource(Res.string.updates_linux_open_release_page),
             action = { runCatching { uriHandler.openUri(releasePage) } },
         )
@@ -73,6 +70,19 @@ internal actual fun platformUpdatePrompt(
             message = stringResource(Res.string.updates_linux_restart_manually),
             actionLabel = stringResource(Res.string.updates_linux_restart_now),
             action = updater::restart,
+        )
+        is LinuxUpdateStatus.FlatpakNotUpdated -> PlatformUpdatePrompt(
+            message = when (val result = current.result) {
+                is FlatpakUpdateResult.Failed -> when (result.reason) {
+                    FlatpakUpdateFailure.Denied -> stringResource(Res.string.updates_linux_flatpak_denied)
+                    FlatpakUpdateFailure.NewPermissions -> stringResource(Res.string.updates_linux_flatpak_new_permissions)
+                    FlatpakUpdateFailure.Other -> stringResource(Res.string.updates_linux_flatpak_failed, result.message)
+                }
+                else -> stringResource(Res.string.updates_linux_flatpak_nothing_newer)
+            },
+            detail = current.commands,
+            actionLabel = stringResource(Res.string.updates_linux_open_release_page),
+            action = { runCatching { uriHandler.openUri(releasePage) } },
         )
         is LinuxUpdateStatus.SavedForManualInstall -> {
             val folder = current.file.parent.toString()

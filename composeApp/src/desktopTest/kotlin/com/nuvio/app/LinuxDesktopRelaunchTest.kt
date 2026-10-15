@@ -54,6 +54,20 @@ class LinuxDesktopRelaunchTest {
     }
 
     @Test
+    fun flatpakUpdateRestartStartsTheLatestDeploymentInANewSandbox() {
+        val flatpak = LinuxDesktopRelaunch.Launcher(Path.of("/app/bin/nuvio-desktop"), flatpak = true)
+        val latest = LinuxDesktopRelaunch.latestFlatpakLauncher(flatpak) { it == Path.of("/usr/bin/flatpak-spawn") }
+        assertEquals(
+            listOf("/usr/bin/flatpak-spawn", "--latest-version", "/app/bin/nuvio-desktop"),
+            LinuxDesktopRelaunch.command(assertNotNull(latest)),
+        )
+        assertEquals(listOf("/app/bin/nuvio-desktop"), LinuxDesktopRelaunch.command(flatpak))
+        assertNull(LinuxDesktopRelaunch.latestFlatpakLauncher(flatpak) { false }, "No flatpak-spawn, no restart")
+        val deb = LinuxDesktopRelaunch.Launcher(Path.of("/opt/nuvio-desktop/bin/nuvio-desktop"))
+        assertNull(LinuxDesktopRelaunch.latestFlatpakLauncher(deb) { true }, "Only a Flatpak launcher is respawned")
+    }
+
+    @Test
     fun developerAndInvalidLaunchesDoNotStartAnything() {
         assertNull(LinuxDesktopRelaunch.resolveLauncher(null, mapOf("APPIMAGE" to "/tmp/other.AppImage")) { true })
         assertNull(LinuxDesktopRelaunch.resolveLauncher("relative/nuvio", emptyMap()) { true })

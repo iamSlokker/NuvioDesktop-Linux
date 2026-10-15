@@ -32,7 +32,7 @@ if(NOT EXISTS "${MPV_INCLUDE_DIR}/mpv/client.h" OR
     message(FATAL_ERROR "libmpv headers/library not found; set MPV_ROOT to the mpv installation prefix")
 endif()
 
-add_library(player_bridge SHARED player_bridge.cpp awt_view_resolver.cpp controls_overlay.cpp seek_thumbnails.cpp playback_inhibitor.cpp screensaver_idle.cpp mpris_session.cpp linux_gamepad.cpp window_chrome.cpp window_chrome_jni.cpp pip_geometry_jni.cpp)
+add_library(player_bridge SHARED player_bridge.cpp awt_view_resolver.cpp controls_overlay.cpp seek_thumbnails.cpp playback_inhibitor.cpp screensaver_idle.cpp mpris_session.cpp linux_gamepad.cpp window_chrome.cpp window_chrome_jni.cpp pip_geometry_jni.cpp flatpak_update.cpp flatpak_update_jni.cpp)
 # Optional X11 idle fallback. Wayland sessions never use an XWayland global idle estimate.
 find_path(XSS_INCLUDE_DIR NAMES X11/extensions/scrnsaver.h)
 if(XSS_INCLUDE_DIR)
@@ -149,6 +149,12 @@ if(XSS_INCLUDE_DIR)
     target_include_directories(linux_screensaver_idle_probe SYSTEM PRIVATE "${XSS_INCLUDE_DIR}" "${X11_INCLUDE_DIR}" "${X11_PROTOCOL_INCLUDE_DIR}")
     target_link_libraries(linux_screensaver_idle_probe PRIVATE ${CMAKE_DL_LIBS} "${X11_LIBRARY}")
 endif()
+
+# Private-bus Flatpak portal update contract (tests/flatpak_update_test.py).
+add_executable(linux_flatpak_update_probe EXCLUDE_FROM_ALL tests/flatpak_update_probe.cpp flatpak_update.cpp)
+target_compile_features(linux_flatpak_update_probe PRIVATE cxx_std_17)
+target_compile_options(linux_flatpak_update_probe PRIVATE -Wall -Wextra -Werror)
+target_link_libraries(linux_flatpak_update_probe PRIVATE PkgConfig::GTK3)
 
 add_executable(linux_pip_hud_visibility_test EXCLUDE_FROM_ALL tests/pip_hud_visibility_test.cpp)
 target_compile_features(linux_pip_hud_visibility_test PRIVATE cxx_std_17)
