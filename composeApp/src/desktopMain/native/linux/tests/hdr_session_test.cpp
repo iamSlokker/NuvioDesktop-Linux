@@ -142,7 +142,15 @@ mpv_handle *headlessPlayer(const char *script) {
             return nullptr;
         }
     }
-    if (script) mpv_set_option_string(mpv, "scripts", script);
+    if (script) {
+        mpv_set_option_string(mpv, "scripts", script);
+        // Scripts start during mpv_initialize: subscribe first, or a fast script's
+        // load message (or load error) can be emitted before anyone listens.
+        if (mpv_request_log_messages(mpv, "info") < 0) {
+            mpv_terminate_destroy(mpv);
+            return nullptr;
+        }
+    }
     if (mpv_initialize(mpv) < 0) {
         mpv_terminate_destroy(mpv);
         return nullptr;
@@ -182,9 +190,8 @@ void realKeyRouting() {
 
 void oscScript(const char *script) {
     mpv_handle *mpv = headlessPlayer(script);
-    check(mpv != nullptr, "headless libmpv with OSC");
+    check(mpv != nullptr, "headless libmpv with OSC and log subscription");
     if (!mpv) return;
-    check(mpv_request_log_messages(mpv, "info") >= 0, "log request");
     bool ready = false;
     int errors = 0;
     auto pump = [&](std::chrono::milliseconds duration) {
