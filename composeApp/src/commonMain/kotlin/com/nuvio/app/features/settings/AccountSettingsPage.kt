@@ -422,6 +422,8 @@ private fun AccountSettingsBody(
                 isTablet = isTablet,
             ) {
                 SettingsGroup(isTablet = isTablet) {
+                    // Builds whose repository publishes no nightly have no channel to pick.
+                    if (com.nuvio.app.features.updater.nightlyChannelSelectable) {
                     // Not rememberSaveable: the desktop saveable registry has no saver for enums.
                     var channel by remember { mutableStateOf(AppUpdaterPlatform.getUpdateChannel()) }
                     SettingsChoiceRow(
@@ -452,6 +454,7 @@ private fun AccountSettingsBody(
                         },
                     )
                     SettingsGroupDivider(isTablet = isTablet)
+                    }
                     var autoInstall by rememberSaveable {
                         mutableStateOf(AppUpdaterPlatform.isInPlaceUpdateEnabled())
                     }

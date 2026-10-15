@@ -34,7 +34,7 @@ actual object AppUpdaterPlatform {
     private val store = DesktopStorage.store(updaterPreferencesName)
 
     actual val isSupported: Boolean =
-        System.getProperty("os.name").orEmpty().lowercase(Locale.ROOT).contains("win")
+        System.getProperty("os.name").orEmpty().lowercase(Locale.ROOT).contains("win") || LinuxUpdater.isActive
 
     actual fun getSupportedAbis(): List<String> {
         val arch = System.getProperty("os.arch").orEmpty().lowercase(Locale.ROOT)
@@ -49,7 +49,8 @@ actual object AppUpdaterPlatform {
     // Stable unless explicitly opted in, so an unreadable or missing value never silently moves
     // someone onto prerelease builds.
     actual fun getUpdateChannel(): UpdateChannel =
-        if (UpdateChannel.Nightly.name.equals(store.getString(updateChannelKey), ignoreCase = true)) {
+        // Linux releases publish no nightly channel, whatever a stamped build seeded here.
+        if (!LinuxUpdater.isActive && UpdateChannel.Nightly.name.equals(store.getString(updateChannelKey), ignoreCase = true)) {
             UpdateChannel.Nightly
         } else {
             UpdateChannel.Stable
@@ -121,7 +122,9 @@ actual object AppUpdaterPlatform {
         assetName: String,
         expectedSha256: String?,
         onProgress: (downloadedBytes: Long, totalBytes: Long?) -> Unit,
-    ): Result<String> = withContext(Dispatchers.IO) {
+    ): Result<String> = if (LinuxUpdater.isActive) {
+        LinuxUpdater.current.download(assetUrl, assetName, expectedSha256, onProgress)
+    } else withContext(Dispatchers.IO) {
         runCatching {
             require(assetName.endsWith(".zip", ignoreCase = true)) {
                 "This portable build only supports ZIP update archives."
@@ -209,7 +212,9 @@ actual object AppUpdaterPlatform {
      * we can't satisfy falls back to the original behaviour: reveal the archive so the user can
      * extract it manually.
      */
-    actual fun installDownloadedApk(path: String): Result<UpdateInstallOutcome> = runCatching {
+    actual fun installDownloadedApk(path: String): Result<UpdateInstallOutcome> = if (LinuxUpdater.isActive) {
+        LinuxUpdater.current.install(path)
+    } else runCatching {
         val archive = File(path)
         check(archive.isFile) { "The downloaded update archive is missing." }
 

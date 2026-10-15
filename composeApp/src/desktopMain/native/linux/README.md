@@ -478,3 +478,14 @@ It uses a private D-Bus daemon and PyGObject, covering standard/legacy paths, Mu
 missing/denied/timed-out services, service failure, invalid ranges and repeated
 open/query/close. Real compositor stacking, mixed DPI and native HUD input still need
 session validation; unit tests alone do not prove those behaviors.
+
+Flatpak in-app updates go through `flatpak_update.cpp` (Flatpak portal
+`UpdateMonitor.Update`; JNI in `flatpak_update_jni.cpp`). Its private-bus contract
+suite replays the portal's outcomes (updated, nothing newer, denied, silent, missing
+portal or bus) on a bus with no service directories, so no real portal is activated:
+
+```sh
+cmake --build composeApp/build/native/linux --target linux_flatpak_update_probe
+python3 composeApp/src/desktopMain/native/linux/tests/flatpak_update_test.py \
+  composeApp/build/native/linux/linux_flatpak_update_probe
+```

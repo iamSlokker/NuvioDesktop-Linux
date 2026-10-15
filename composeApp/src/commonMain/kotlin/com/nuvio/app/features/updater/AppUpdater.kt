@@ -209,7 +209,7 @@ private object AppUpdaterRepository {
             ?: release.name?.takeIf { it.isNotBlank() }
             ?: error(getString(Res.string.updates_release_missing_title))
 
-        val asset = selectBestPortableUpdateAsset(release.assets)
+        val asset = selectPlatformUpdateAsset(release)
             ?: error(getString(Res.string.updates_update_asset_missing))
 
         AppUpdate(
@@ -239,15 +239,16 @@ private object AppUpdaterRepository {
      * as a fallback for the case where the direct endpoint is the one that fails.
      */
     private suspend fun fetchChannelRelease(channel: UpdateChannel): GitHubReleaseDto? {
-        val releasesBase = "$gitHubApiBase/repos/$gitHubOwner/$gitHubRepo/releases"
+        val repository = platformReleaseRules?.repository ?: "$gitHubOwner/$gitHubRepo"
+        val releasesBase = "$gitHubApiBase/repos/$repository/releases"
         val directUrl = when (channel) {
             UpdateChannel.Stable -> "$releasesBase/latest"
             UpdateChannel.Nightly -> "$releasesBase/tags/$nightlyReleaseTag"
         }
 
-        fetchRelease(directUrl)?.takeIf { it.matchesChannel(channel) }?.let { return it }
+        fetchRelease(directUrl)?.takeIf { it.matchesPlatformChannel(channel) }?.let { return it }
 
-        return fetchReleaseList("$releasesBase?per_page=20").firstOrNull { it.matchesChannel(channel) }
+        return fetchReleaseList("$releasesBase?per_page=20").firstOrNull { it.matchesPlatformChannel(channel) }
     }
 
     /** A single release, or null when GitHub has none under that name (a 404 is not an error). */
@@ -740,6 +741,12 @@ fun AppUpdaterHost(
     if (visibleOverlay != StartupOverlayCoordinator.Overlay.Updater) return
 
     val tokens = MaterialTheme.nuvio
+    // Null on platforms that use the shared portable-update flow, which then renders unchanged.
+    val platformPrompt = platformUpdatePrompt(
+        update = state.update?.takeIf { state.isUpdateAvailable },
+        downloadedPath = state.downloadedApkPath,
+        isDownloading = state.isDownloading,
+    )
     val showPrimaryAction =
         state.showUnknownSourcesDialog || state.isDownloading || state.downloadedApkPath != null || state.isUpdateAvailable
 
@@ -797,6 +804,7 @@ fun AppUpdaterHost(
                     Text(
                         text = when {
                             state.showUnknownSourcesDialog -> stringResource(Res.string.updates_message_allow_installs)
+                            platformPrompt?.message != null -> platformPrompt.message
                             state.isDownloading -> stringResource(Res.string.updates_message_downloading)
                             state.downloadedApkPath != null &&
                                 state.update?.assetName?.endsWith(".zip", ignoreCase = true) == true ->
@@ -838,6 +846,17 @@ fun AppUpdaterHost(
                             style = MaterialTheme.typography.bodyMedium,
                             color = tokens.colors.danger,
                         )
+                    }
+
+                    platformPrompt?.detail?.let { detail ->
+                        androidx.compose.foundation.text.selection.SelectionContainer {
+                            Text(
+                                text = detail,
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = tokens.colors.textPrimary,
+                                fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace,
+                            )
+                        }
                     }
 
                     UpdateTargetCard(
@@ -934,13 +953,17 @@ fun AppUpdaterHost(
                     if (showPrimaryAction) {
                         Button(
                             onClick = {
+                                val platformAction = platformPrompt?.action
                                 when {
+                                    platformAction != null -> platformAction()
                                     state.showUnknownSourcesDialog -> controller.resumeInstallation()
                                     state.downloadedApkPath != null -> controller.installDownloadedUpdate()
                                     else -> controller.downloadUpdate()
                                 }
                             },
-                            enabled = if (state.showUnknownSourcesDialog || state.downloadedApkPath != null) {
+                            enabled = if (platformPrompt?.action != null) {
+                                !state.isDownloading
+                            } else if (state.showUnknownSourcesDialog || state.downloadedApkPath != null) {
                                 true
                             } else {
                                 !state.isChecking && !state.isDownloading && state.isUpdateAvailable
@@ -948,6 +971,7 @@ fun AppUpdaterHost(
                         ) {
                             Text(
                                 when {
+                                    platformPrompt?.actionLabel != null -> platformPrompt.actionLabel
                                     state.showUnknownSourcesDialog -> stringResource(Res.string.action_continue)
                                     state.downloadedApkPath != null &&
                                         state.update?.assetName?.endsWith(".zip", ignoreCase = true) == true ->
@@ -1113,7 +1137,7 @@ private fun UpdaterFooterLinks(modifier: Modifier = Modifier) {
             textDecoration = TextDecoration.Underline,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
-            modifier = Modifier.clickable { runCatching { uriHandler.openUri(NuvioHtpcRepoUrl) } },
+            modifier = Modifier.clickable { runCatching { uriHandler.openUri(platformReleaseRules?.projectUrl ?: NuvioHtpcRepoUrl) } },
         )
         Text(
             text = stringResource(Res.string.compose_about_open_logs_folder),
