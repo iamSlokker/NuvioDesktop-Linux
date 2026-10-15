@@ -52,8 +52,19 @@ source revision first. Test in a disposable VM/user when practical.
 | Flatpak | Application payload plus separately pinned GNOME Platform; graphics extensions are supplied by Flatpak/host. Use a separately approved repo/bundle and an isolated installation for acceptance. | Remove the app through Flatpak; do not use data-deletion flags when preserving a profile. A retained app/runtime revision may be tested for rollback, but no guarantee of old-schema compatibility. |
 | AppImage | Standalone file with bundled Java/media and private patched WebKit/GTK/helpers; host graphics/ABI remain external. Keep the previous verified file and launch the new file with a disposable profile first. | Remove the file to remove the package; data is separate. Restore the prior file/profile snapshot together after a failed test. AppImage execution still needs the host's FUSE/extraction and namespace support. |
 
-Linux self-updating is not implemented. Windows's portable ZIP installer is not a
-Linux upgrade path. Do not hand-edit packaged libraries and keep claiming the old
+Flatpak updates are designed to come from the owner-signed repository at
+`https://iamslokker.github.io/NuvioDesktop-Linux/flatpak/` once the owner has
+created the key and enabled Pages. Install or add it with the
+`.flatpakref`/`.flatpakrepo` there; then `flatpak update` or a software center
+updates in place. Only the signed release bundle, never a CI bundle, links to that
+repository. Existing bundle installs never update: run
+`flatpak remote-add --user --if-not-exists nuvio https://iamslokker.github.io/NuvioDesktop-Linux/flatpak/nuvio.flatpakrepo`,
+then `flatpak install --user --reinstall nuvio com.nuvio.media.desktop//stable`
+(the profile in `~/.var/app` is kept). The repository serves only the current
+release, so roll back with a retained bundle. See the
+[packaging README](../tools/linux/packaging/README.md#self-hosted-flatpak-repository-owner-signed).
+DEB/AppImage self-updating is not implemented. Windows's portable ZIP installer
+is not a Linux upgrade path. Do not hand-edit packaged libraries and keep claiming the old
 checksum/provenance. Preserve the WebKit Bubblewrap sandbox and its failure checks.
 Installation, runtime acceptance, source availability and release approval are
 separate gates for each format.
