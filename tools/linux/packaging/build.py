@@ -15,6 +15,7 @@ import subprocess
 import sys
 
 from fetch import CONFIG, fetch
+import source_policy
 
 HERE = pathlib.Path(__file__).resolve().parent
 REPO = HERE.parents[2]
@@ -107,7 +108,8 @@ def native(args, work):
     image = 'localhost/nuvio-package-builder:' + identity
     run('podman', 'build', '--network=host', '--file', HERE / 'Containerfile',
         '--build-arg', 'MEDIA_BUILDER_IMAGE=' + media_builder, '--tag', image, context)
-    info = source_tree(work / 'source', args.channel)
+    # Same Linux snapshot policy as canonical_from_seed.py (applied once, here).
+    info = source_policy.apply(work / 'source', source_tree(work / 'source', args.channel))
     info['builder_image_id'] = subprocess.check_output(['podman', 'image', 'inspect', '--format', '{{.Id}}', image], text=True).strip()
     (work / 'source-info.json').write_text(json.dumps(info, indent=2) + '\n')
     (work / 'gradle').mkdir(exist_ok=True)

@@ -68,7 +68,8 @@ TMDB's official attribution logo for `rating_tmdb.png`, all written to
   distinct bytes (unique `<title>` or pixels). `hero_badge_director.svg` is drawn
   for its actual use (studio/prestige) and `hero_badge_studio.svg` for director.
 
-`tools/linux/packaging/source_policy.py` (applied after `build.source_tree()`) substitutes each overlay file for its tracked
+`tools/linux/packaging/source_policy.py` (applied once after `build.source_tree()` by both
+canonical builds, `build.py` and the seeded `canonical_from_seed.py`) substitutes each overlay file for its tracked
 target in the packaging source snapshot, records the overlay hash in
 `source-files.json`, and fails if a target is untracked or original bytes remain
 elsewhere in the snapshot. The composeApp originals are unchanged for upstream,

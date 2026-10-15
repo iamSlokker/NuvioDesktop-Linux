@@ -1,8 +1,9 @@
 """Linux release policy for the packaging source snapshot.
 
-build.py must stay byte-identical because trusted builder seeds pin it, so the
-seeded canonical build applies this right after build.source_tree(). The
-snapshot is what Gradle packages and what Nuvio-source-<commit>.tar.gz ships.
+Both canonical builds apply this exactly once, right after build.source_tree():
+build.native() (the bootstrap path that exports a new builder seed) and the
+seeded canonical_from_seed.py. It is not idempotent and source_tree() never calls
+it. The snapshot is what Gradle packages and what Nuvio-source-<commit>.tar.gz ships.
 """
 import hashlib
 import json
