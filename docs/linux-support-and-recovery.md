@@ -61,7 +61,7 @@ publishes for that asset; without one, or on a mismatch, nothing is kept.
 | Detected install | What "Update" does |
 | --- | --- |
 | AppImage (`$APPIMAGE` names an existing file) | Downloads `.<asset>.part` next to the AppImage, verifies it, makes it executable and atomically renames it over `$APPIMAGE`, then offers **Restart now** (the existing Linux relaunch helper starts the new file). If that folder is not writable, or "Install Updates Automatically" is off, the verified file is saved to the XDG Downloads folder instead. |
-| DEB (launcher under `/opt/nuvio-desktop`) | Saves the verified package to the XDG Downloads folder and installs it through polkit: `pkexec apt-get install -y --allow-downgrades=no <file>` (`pkexec dpkg -i <file>` only without apt-get), then offers **Restart now**. If pkexec is missing, the polkit prompt is cancelled, the install fails, or automatic install is off, the package stays in Downloads and the dialog shows `sudo apt install ./<file>`. Nuvio never runs sudo. |
+| DEB (launcher under `/opt/nuvio-desktop`) | Saves the verified package to the XDG Downloads folder and installs it through polkit: `pkexec apt-get install -y <file>` (apt refuses downgrades with `-y`) (`pkexec dpkg -i <file>` only without apt-get), then offers **Restart now**. If pkexec is missing, the polkit prompt is cancelled, the install fails, or automatic install is off, the package stays in Downloads and the dialog shows `sudo apt install ./<file>`. Nuvio never runs sudo. |
 | Flatpak (`FLATPAK_ID` or `/.flatpak-info`) | Nothing is downloaded; **Open release page** opens the release. Update through your software center or `flatpak update`. |
 | Anything else (source run, unpacked image) | Same as Flatpak: the release page only. |
 

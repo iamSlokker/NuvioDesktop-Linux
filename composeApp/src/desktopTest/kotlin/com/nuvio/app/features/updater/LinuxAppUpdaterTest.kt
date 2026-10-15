@@ -310,7 +310,7 @@ class LinuxAppUpdaterTest {
         assertFalse(Files.isExecutable(saved))
         assertEquals(
             listOf(
-                listOf("/usr/bin/pkexec", "/usr/bin/apt-get", "install", "-y", "--allow-downgrades=no", saved.toString()),
+                listOf("/usr/bin/pkexec", "/usr/bin/apt-get", "install", "-y", saved.toString()),
             ),
             commands,
         )

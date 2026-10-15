@@ -385,7 +385,7 @@ internal fun linuxDebInstallCommand(deb: Path, findExecutable: (String) -> Path?
     val pkexec = findExecutable("pkexec") ?: return null to "pkexec"
     val file = deb.toAbsolutePath().normalize().toString()
     findExecutable("apt-get")?.let { aptGet ->
-        return listOf(pkexec.toString(), aptGet.toString(), "install", "-y", "--allow-downgrades=no", file) to null
+        return listOf(pkexec.toString(), aptGet.toString(), "install", "-y", file) to null
     }
     findExecutable("dpkg")?.let { dpkg -> return listOf(pkexec.toString(), dpkg.toString(), "-i", file) to null }
     return null to "apt-get"
