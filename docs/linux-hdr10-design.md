@@ -108,6 +108,13 @@ CI implications: the media recipe hash changes (new runtime generation required)
 the packaging builder identity and the immutable WebKit builder seed change; the
 AppImage assembly identity also changes (`verify.py`). A new bootstrap/seed export
 and a WebKit engine rebuild/import are expected before an all-format run passes.
+The bootstrap (`build.py --format deb`) now applies the same Linux source policy
+(`source_policy.py`: artwork overlay, runtime-downloaded anime dataset) as
+`canonical_from_seed.py`, so its artwork gate passes and the seed can be exported.
+Changing `build.py` is part of this seed refresh. The release source step binds the Ubuntu source lock to
+the bundled packages' exact versions rather than to the engine builder image ID,
+so the rebuilt engine builder needs no lock regeneration while the pinned
+snapshot is unchanged.
 
 ### Enabling the experimental session
 

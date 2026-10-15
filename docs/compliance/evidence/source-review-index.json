@@ -160,10 +160,10 @@
       "sha256": "416346145f904add669b0ddedd6be0b6418095a074f642fcc8dd32f5a1fb87d5"
     },
     {
-      "bytes": 11603,
+      "bytes": 12531,
       "path": "docs/compliance/source-delivery-plan.md",
       "scope_limit": "Proposed delivery/retention design, not an approved offer or publication.",
-      "sha256": "6865a5d51fffdee7b17d68f29fae1a17617c9ae75d086eea0e09f1b2f183a02e"
+      "sha256": "fd5ad27151de847a95ecb9020b05b2e88f2f0563ae9d53f5c3000fb82749a163"
     },
     {
       "bytes": 43585,

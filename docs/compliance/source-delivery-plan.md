@@ -124,6 +124,19 @@ their applicable licenses; a runtime source tar alone does not prove this.
 Temurin's retained `doc/building.md` and build scripts cover upstream building,
 but testing a modified runtime through jlink/jpackage remains separate.
 
+Each CI release run's `compliance/release_sources.py` binds the Ubuntu source lock
+to the built AppImage by **exact binary version**, not by builder image ID. For
+every package in the AppImage's `share/licenses/Ubuntu-AppImage/packages.json`, the
+version installed in the engine builder must equal a locked binary
+`{package, version}`. Those versions come from
+`engine/webkit-builder-packages.tsv` in the `Nuvio-WebKit-source-*` archive shipped
+next to the AppImage. Assembly already requires that file to equal the assembling
+container's own dpkg inventory. Its `engine-build.json` must match the AppImage's
+`runtime.json` engine identity and the file's recorded SHA256. A rebuilt builder
+from the same pinned snapshot therefore keeps the lock valid. A missing package or
+any different version fails the run until the lock is regenerated. The lock's
+`builder_image_id` stays historical provenance for its original derivation.
+
 ## Availability and existing recipients
 
 The proposed channel is a durable, versioned source download, explicitly linked
