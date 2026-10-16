@@ -386,6 +386,7 @@ fun main(args: Array<String>) {
             System.exit(0)
         }
     }
+    com.nuvio.app.core.storage.LinuxJavaPreferences.configure(com.nuvio.app.core.storage.DesktopStorage.rootDir)
     configureDesktopFileLogging()
     desktopPerfLoggingSource()?.let(com.nuvio.app.core.perf.PerfTelemetry::start)
     // Now that this copy owns the data directory and before any store is read: a settings import
