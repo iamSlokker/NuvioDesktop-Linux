@@ -33,7 +33,16 @@ internal object LinuxJavaPreferences {
         val userHome = Paths.get(System.getProperty("user.home").orEmpty())
         val root = prepareUserRoot(dataDir, userHome)
         System.setProperty(USER_ROOT_PROPERTY, root.toString())
+        // FileSystemPreferences writes to disk on a timer (30 s by default) and at a clean exit.
+        // Supabase rotates the refresh token on every refresh and revokes the old one, so a crash
+        // inside that window leaves a revoked token on disk and signs the user out.
+        if (System.getProperty(SYNC_INTERVAL_PROPERTY).isNullOrBlank()) {
+            System.setProperty(SYNC_INTERVAL_PROPERTY, SYNC_INTERVAL_SECONDS)
+        }
     }
+
+    private const val SYNC_INTERVAL_PROPERTY = "java.util.prefs.syncInterval"
+    private const val SYNC_INTERVAL_SECONDS = "5"
 
     internal fun prepareUserRoot(dataDir: Path, userHome: Path): Path {
         val root = dataDir.resolve("java-prefs")
