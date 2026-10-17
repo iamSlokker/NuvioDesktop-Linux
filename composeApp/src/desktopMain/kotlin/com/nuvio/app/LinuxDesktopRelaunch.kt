@@ -45,7 +45,10 @@ internal object LinuxDesktopRelaunch {
         if (!environment["FLATPAK_ID"].isNullOrBlank()) {
             return Path.of("/app/bin/nuvio-desktop").takeIf(executable)?.let { Launcher(it, flatpak = true) }
         }
-        return packaged.resolveSibling("nuvio-desktop").takeIf(executable)?.let(::Launcher)
+        // The runtime wrapper is bin/nuvio-desktop: beside jpackage's bin/nuvio, or one level up from
+        // a native image's lib/nuvio (NativeImageSupport points jpackage.app-path at the executable).
+        return packaged.parent?.resolveSibling("bin")?.resolve("nuvio-desktop")
+            ?.takeIf { it.isAbsolute && executable(it) }?.let(::Launcher)
     }
 
     internal fun latestFlatpakLauncher(

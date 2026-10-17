@@ -160,7 +160,7 @@ internal object NativeImageSupport {
         // sun.java2d.d3d=false, app version, ...) have to be applied here at run time instead.
         val appDir = File(exeDir, "app")
         runCatching {
-            File(appDir, "Nuvio.cfg").readLines()
+            (File(appDir, "Nuvio.cfg").takeIf(File::isFile) ?: File(appDir, "nuvio.cfg")).readLines() // nuvio.cfg: Linux
                 .map { it.trim() }
                 .filter { it.startsWith("java-options=-D") }
                 .map { it.removePrefix("java-options=-D").replace("\$APPDIR", appDir.absolutePath) }
