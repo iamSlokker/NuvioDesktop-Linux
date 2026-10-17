@@ -230,10 +230,13 @@ Java_com_nuvio_app_features_player_desktop_LinuxMprisNative_acquire(JNIEnv *env,
     auto s = std::make_unique<Service>();
     env->GetJavaVM(&s->vm);
     s->sink = env->NewGlobalRef(sink); s->lostCallback = env->NewGlobalRef(lost);
-    auto cls = env->GetObjectClass(sink);
-    s->command = env->GetMethodID(cls, "command", "(JLjava/lang/String;DLjava/lang/String;)V"); env->DeleteLocalRef(cls);
-    cls = env->GetObjectClass(lost);
-    s->run = env->GetMethodID(cls, "run", "()V"); env->DeleteLocalRef(cls);
+    // Interfaces by literal name, so native-image metadata can be generated for them.
+    auto cls = env->FindClass("com/nuvio/app/features/player/desktop/LinuxMprisCommandSink");
+    s->command = cls ? env->GetMethodID(cls, "command", "(JLjava/lang/String;DLjava/lang/String;)V") : nullptr;
+    if (cls) env->DeleteLocalRef(cls);
+    cls = env->FindClass("java/lang/Runnable");
+    s->run = cls ? env->GetMethodID(cls, "run", "()V") : nullptr;
+    if (cls) env->DeleteLocalRef(cls);
     if (!s->sink || !s->lostCallback || !s->command || !s->run) return 0;
     const auto busName = utf8(env, name);
     GError *error = nullptr;

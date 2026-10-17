@@ -803,7 +803,9 @@ namespace {
 void retainEventSink(JNIEnv *env, Player &player, jobject eventSink) {
     player.sink = env->NewGlobalRef(eventSink);
     if (!player.sink) throw std::runtime_error("Unable to retain native player event sink.");
-    jclass sinkClass = env->GetObjectClass(eventSink);
+    // The interface, not the sink's runtime class: native-image metadata is generated from
+    // FindClass literals (composeApp/native-image-linux/README.md).
+    jclass sinkClass = env->FindClass("com/nuvio/app/features/player/desktop/NativePlayerEventSink");
     if (!sinkClass) throw std::runtime_error("Unable to read native player event sink class.");
     player.onEvent = env->GetMethodID(sinkClass, "onPlayerEvent", "(Ljava/lang/String;D)V");
     env->DeleteLocalRef(sinkClass);
