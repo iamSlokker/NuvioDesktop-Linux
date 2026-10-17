@@ -361,7 +361,7 @@ kernel modules, install drivers or assume open/proprietary module flavor proves
 the presentation path.
 [NVIDIA 545.29.02 release notes](https://www.nvidia.com/en-us/drivers/details/215001/).
 
-The bundled Temurin 17/AWT X11 interface cannot become a native Wayland embedding
+The bundled Temurin 21/AWT X11 interface cannot become a native Wayland embedding
 by changing `GDK_BACKEND`. OpenJDK treats native Wayland as separate toolkit work;
 newer Wakefield/JetBrains runtime support does not establish compatibility for
 this project's pinned Java/Skiko/JAWT stack.

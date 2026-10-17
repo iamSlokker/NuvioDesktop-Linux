@@ -45,7 +45,7 @@ REFERENCES = {
     'tools/linux/packaging/fonts/inter-manifest.json': 'Official Inter release/source/font hashes; locally retained, not recipient delivery.',
     'tools/linux/packaging/font_contract.py': 'Future application JAR font/notice gate; not proof existing artifacts contain Inter.',
     'composeApp/src/desktopMain/resources/anime-mapping/PROVENANCE.json': 'Exact database/import identity and notices; Linux packages download it at runtime; original generation and merged-data rights unresolved.',
-    'composeApp/src/desktopMain/resources/player-shaders/LICENSE.md': 'Corrected MIT/Unlicense classification; all original shader bytes unchanged.',
+    'composeApp/src/desktopMain/resources/player-shaders/LICENSE.md': 'Corrected MIT/Unlicense classification and added the AMD CAS MIT notice; all original shader bytes unchanged.',
     'tools/linux/packaging/compliance/inventory.py': 'Original package/source inventory verifier.',
     'tools/linux/packaging/compliance/collect_media_sources.py': 'Strict private-media source collector; not whole-application source closure.',
     'tools/linux/packaging/compliance/dependency_sources.py': 'Offline retained dependency input verifier; no public availability claim.',

@@ -64,10 +64,10 @@
       "sha256": "c37de9a42e098ed7c45504bf95127ddcfbe1760a1d27e0c769e8181d6f0c25f3"
     },
     {
-      "bytes": 2014,
+      "bytes": 3379,
       "path": "composeApp/src/desktopMain/resources/player-shaders/LICENSE.md",
-      "scope_limit": "Corrected MIT/Unlicense classification; all original shader bytes unchanged.",
-      "sha256": "56c6f7653d9b4cf3b6ec94c654a8e5b90f3c7d64b5d3fde81e5a8cfbfef6f6bb"
+      "scope_limit": "Corrected MIT/Unlicense classification and added the AMD CAS MIT notice; all original shader bytes unchanged.",
+      "sha256": "2e469d78b39dcf336527c0acd0fe75fb482ddfbea5e5627fdfcdc7bc1e681b5e"
     },
     {
       "bytes": 21623,
@@ -82,10 +82,10 @@
       "sha256": "922c947fab3c5665d37399a1ec7e6da8b11bce371818cbcc35e73572596bec61"
     },
     {
-      "bytes": 358949,
+      "bytes": 358948,
       "path": "docs/compliance/evidence/dependency-source-retention.json",
       "scope_limit": "Local Maven/JDK/native/model evidence; JNI/static build closure and rights/notice review remain separate.",
-      "sha256": "f1bc0d78bc399fa30d25e909f320fe90be21eb509d4a643a843b68f831a6373f"
+      "sha256": "277e4b67e6d5fd57747f60989b9e54811a672b8cfa37fb9fb2000cb38e15695c"
     },
     {
       "bytes": 124072,
@@ -220,10 +220,10 @@
       "sha256": "2cc3ac5977a1d8830b8fc7cc3314db2f328af515d20d380304e06203b013fce9"
     },
     {
-      "bytes": 10447,
+      "bytes": 10480,
       "path": "tools/linux/packaging/compliance/review_index.py",
       "scope_limit": "Review-index byte bindings only; not a source cache or compliance verifier.",
-      "sha256": "df1ecc194af6aa0f456244550c70f9931b4d24c193ba6e8d12afe30c5267cde6"
+      "sha256": "585df0af00776dbd3e7afabe1fb51ebc22ee99276dee01101fb57a2db0c689bf"
     },
     {
       "bytes": 14772,

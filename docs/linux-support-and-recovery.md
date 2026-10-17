@@ -134,7 +134,7 @@ snapshot for failure tests and preserve logs without exposing credentials.
 
 ## Building and redistributing
 
-Use Java 17 and the existing
+Use Java 21 and the existing
 [source/media recipe](../tools/linux/media-runtime/README.md) and
 [canonical packaging pipeline](../tools/linux/packaging/README.md). Ordinary
 automated validation is headless; live window tests require separate explicit

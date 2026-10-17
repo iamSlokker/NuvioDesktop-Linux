@@ -39,6 +39,11 @@ see the end of this section); no release has been created or published.
 | `OpenJDK17U-jdk-sources_17.0.20.1_1.tar.gz` | `21e2a065d244ab048e737f21af5d1fc74daaeb6707de36477ead8db1dca71214` |
 | `SOURCE-MAP.json` | `2bbb74d887b4311523317fe6240347b530a718a81a4d55b6ca875072fb008761` |
 
+Builds after the bundled JDK moved to Temurin 21.0.12.1+1 emit
+`OpenJDK21U-jdk-sources_21.0.12.1_1.tar.gz`
+(`573057d03584ae793fb7ec9a14c76d826d9187a53efeefd99da47403a5308234`) in place of the
+Temurin 17 source asset listed above for this evidence build.
+
 The Actions artifact containing these files expires on 2027-01-12; it is evidence,
 not the recipient delivery channel.
 
