@@ -6,6 +6,7 @@ import hashlib
 import json
 import os
 import pathlib
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -270,6 +271,19 @@ class PackagingIntegrationTest(unittest.TestCase):
         commands = [line.strip() for line in hook.splitlines() if not line.strip().startswith(('#', 'echo'))]
         self.assertFalse([line for line in commands if 'push' in line])
         self.assertIn('--orphan', hook)
+
+    @unittest.skipUnless(shutil.which('ostree'), 'ostree is not installed')
+    def test_repo_from_a_git_checkout_regains_the_empty_ostree_directories(self):
+        with tempfile.TemporaryDirectory(prefix='nuvio-ostree-') as tmp:
+            repo = pathlib.Path(tmp) / 'repo'
+            subprocess.run(['ostree', '--repo=' + str(repo), 'init', '--mode=archive-z2'], check=True)
+            # What a gh-pages checkout holds: git keeps no empty directories.
+            for name in flatpak_repo.OSTREE_EMPTY_DIRS:
+                (repo / name).rmdir()
+            self.assertNotEqual(subprocess.run(['ostree', '--repo=' + str(repo), 'refs'],
+                                               capture_output=True).returncode, 0)
+            flatpak_repo.restore_empty_repo_dirs(repo)
+            self.assertEqual(flatpak_repo.repo_refs(repo), set())
 
     def test_key_helper_creates_exports_and_backs_up_in_a_disposable_keyring(self):
         with tempfile.TemporaryDirectory(prefix='nuvio-gpg-') as tmp:
