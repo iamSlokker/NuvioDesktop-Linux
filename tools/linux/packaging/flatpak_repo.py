@@ -321,6 +321,16 @@ def verify_signed_bundle(path, config, public_bytes, commit, work):
                 key_fingerprint=header['gpg_fingerprint'], signatures=header['signatures'])
 
 
+# Directories `ostree init` creates empty. The repo lives in the gh-pages git checkout, and git
+# does not track empty directories, so a fresh checkout lacks them and `ostree refs` fails.
+OSTREE_EMPTY_DIRS = ('extensions', 'objects', 'refs/heads', 'refs/mirrors', 'refs/remotes', 'state', 'tmp/cache')
+
+
+def restore_empty_repo_dirs(repo):
+    for name in OSTREE_EMPTY_DIRS:
+        (repo / name).mkdir(parents=True, exist_ok=True)
+
+
 def publish(args):
     config = load_config(args.config, args.allow_local_url)
     public_path = pathlib.Path(args.public_key or REPO_DIR / config['public_key'])
@@ -338,6 +348,7 @@ def publish(args):
             raise ValueError('%s is not an OSTree repository; pass --init for the first publish' % repo)
         repo.mkdir(parents=True, exist_ok=True)
         run('ostree', '--repo=' + str(repo), 'init', '--mode=archive-z2')
+    restore_empty_repo_dirs(repo)
     if output('ostree', '--repo=' + str(repo), 'config', 'get', 'core.mode') != 'archive-z2':
         raise ValueError('Pages repository must be an archive-z2 OSTree repository')
     work_root = pathlib.Path(args.work_dir).resolve() if args.work_dir else bundle.parent
