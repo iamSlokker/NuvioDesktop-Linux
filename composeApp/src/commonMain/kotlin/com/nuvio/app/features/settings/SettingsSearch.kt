@@ -41,6 +41,7 @@ import androidx.compose.material.icons.rounded.Lightbulb
 import androidx.compose.material.icons.rounded.Link
 import androidx.compose.material.icons.rounded.Notifications
 import androidx.compose.material.icons.rounded.Palette
+import androidx.compose.material.icons.rounded.Groups
 import androidx.compose.material.icons.rounded.People
 import androidx.compose.material.icons.rounded.PlayArrow
 import androidx.compose.material.icons.rounded.Search
@@ -298,6 +299,14 @@ private fun settingsSearchEntries(
         description = resolve(Res.string.compose_settings_root_account_description),
         category = accountCategory,
         icon = Icons.Rounded.AccountCircle,
+    )
+    addPage(
+        page = SettingsPage.WatchParty,
+        key = "watch-party",
+        title = resolve(Res.string.party_title),
+        description = resolve(Res.string.party_settings_description),
+        category = accountCategory,
+        icon = Icons.Rounded.Groups,
     )
     addPage(
         page = SettingsPage.TraktAuthentication,
@@ -1022,6 +1031,26 @@ private fun settingsSearchEntries(
             key = "metadata-cache",
             title = resolve(Res.string.settings_advanced_metadata_cache),
             description = resolve(Res.string.settings_advanced_metadata_cache_description),
+            pageLabel = advancedPage,
+            section = resolve(Res.string.settings_advanced_section_cache),
+            category = advancedCategory,
+            icon = Icons.Rounded.Tune,
+        )
+        addRow(
+            page = SettingsPage.Advanced,
+            key = "memory-use",
+            title = resolve(Res.string.settings_advanced_memory_use),
+            description = resolve(Res.string.settings_advanced_memory_use_description),
+            pageLabel = advancedPage,
+            section = resolve(Res.string.settings_advanced_section_cache),
+            category = advancedCategory,
+            icon = Icons.Rounded.Tune,
+        )
+        addRow(
+            page = SettingsPage.Advanced,
+            key = "home-catalog-cache",
+            title = resolve(Res.string.settings_advanced_home_catalog_cache),
+            description = resolve(Res.string.settings_advanced_home_catalog_cache_description),
             pageLabel = advancedPage,
             section = resolve(Res.string.settings_advanced_section_cache),
             category = advancedCategory,

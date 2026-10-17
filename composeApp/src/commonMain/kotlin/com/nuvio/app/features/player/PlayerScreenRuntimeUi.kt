@@ -407,6 +407,7 @@ internal fun PlayerScreenRuntime.RenderPlayerRuntimeUi() {
             bufferPreset = playerSettingsUiState.desktopBufferPreset,
             sourceUrl = activeSourceUrl,
             isTorrent = activeTorrentInfoHash != null,
+            seekrServiceOff = SeekrPreviews.serviceDisabled,
         ),
         seekrVttUrl = seekrTrack?.vttUrl.orEmpty(),
         seekrScale = seekrTrack?.scale ?: 1.0,
@@ -669,6 +670,7 @@ internal fun PlayerScreenRuntime.RenderPlayerRuntimeUi() {
             (nextEpisodeForControls?.hasAired == true && !manualSwitchIsNonSequential),
         playlistPeekTitle = playlistPeek.first,
         playlistPeekItems = playlistPeek.second,
+        party = rememberPartyControlsState(),
     )
 
     val gestureCallbacks = rememberSurfaceGestureCallbacks()
@@ -823,7 +825,10 @@ internal fun PlayerScreenRuntime.RenderPlayerRuntimeUi() {
                     ) {
                         lastMeaningfulPlaybackSnapshot = snapshot
                     }
-                    playbackSnapshot = snapshot
+                    // While the party sync nudges the speed by a few percent, report the party's
+                    // rate so the HUD and the party never see the nudge as a speed change.
+                    playbackSnapshot = if (partyRateNudge != null) snapshot.copy(playbackSpeed = partyBaseRate()) else snapshot
+                    playbackSnapshotMark = kotlin.time.TimeSource.Monotonic.markNow()
                     if (!snapshot.isLoading) initialLoadCompleted = true
                     if (!snapshot.isLoading && !defaultPlaybackSpeedApplied && !isProviderDiagnosticVideoPlayback) {
                         defaultPlaybackSpeedApplied = true
@@ -1065,6 +1070,9 @@ private fun PlayerScreenRuntime.RenderPlayerControls(displayedPositionMs: Long, 
 }
 
 private fun PlayerScreenRuntime.handlePlayerControlsAction(action: PlayerControlsAction): Boolean {
+    // Playback and seek actions normally fall through to mpv (return false). In a watch party they
+    // run here instead, so they can be shared with the party, or refused when only the host
+    // controls playback.
     when (action) {
         PlayerControlsAction.ToggleChrome -> {
             if (playerControlsLocked) {
@@ -1084,28 +1092,40 @@ private fun PlayerScreenRuntime.handlePlayerControlsAction(action: PlayerControl
             args.onBack()
         }
         PlayerControlsAction.TogglePlayback -> {
-            prepareTogglePlaybackForNativeFallback()
-            return false
+            if (isPartySynced) togglePlayback() else {
+                prepareTogglePlaybackForNativeFallback()
+                return false
+            }
         }
         PlayerControlsAction.KeyboardTogglePlayback -> {
-            prepareTogglePlaybackForNativeFallback(revealControls = false)
-            return false
+            if (isPartySynced) togglePlayback(revealControls = false) else {
+                prepareTogglePlaybackForNativeFallback(revealControls = false)
+                return false
+            }
         }
         PlayerControlsAction.SeekBack -> {
-            prepareSeekByForNativeFallback(-seekStepMs)
-            return false
+            if (isPartySynced) seekBy(-seekStepMs) else {
+                prepareSeekByForNativeFallback(-seekStepMs)
+                return false
+            }
         }
         PlayerControlsAction.KeyboardSeekBack -> {
-            prepareSeekByForNativeFallback(-seekStepMs, revealControls = false)
-            return false
+            if (isPartySynced) seekBy(-seekStepMs, revealControls = false) else {
+                prepareSeekByForNativeFallback(-seekStepMs, revealControls = false)
+                return false
+            }
         }
         PlayerControlsAction.SeekForward -> {
-            prepareSeekByForNativeFallback(seekStepMs)
-            return false
+            if (isPartySynced) seekBy(seekStepMs) else {
+                prepareSeekByForNativeFallback(seekStepMs)
+                return false
+            }
         }
         PlayerControlsAction.KeyboardSeekForward -> {
-            prepareSeekByForNativeFallback(seekStepMs, revealControls = false)
-            return false
+            if (isPartySynced) seekBy(seekStepMs, revealControls = false) else {
+                prepareSeekByForNativeFallback(seekStepMs, revealControls = false)
+                return false
+            }
         }
         PlayerControlsAction.ResizeMode -> cycleResizeMode()
         PlayerControlsAction.Speed -> cyclePlaybackSpeed()
@@ -1148,18 +1168,23 @@ private fun PlayerScreenRuntime.handlePlayerControlsAction(action: PlayerControl
         }
         PlayerControlsAction.HeroTrailerMute -> Unit
         PlayerControlsAction.DoubleTapSeekBack -> {
-            prepareDoubleTapSeekForNativeFallback(PlayerSeekDirection.Backward)
-            return false
+            if (isPartySynced) partyDoubleTapSeek(PlayerSeekDirection.Backward) else {
+                prepareDoubleTapSeekForNativeFallback(PlayerSeekDirection.Backward)
+                return false
+            }
         }
         PlayerControlsAction.DoubleTapSeekForward -> {
-            prepareDoubleTapSeekForNativeFallback(PlayerSeekDirection.Forward)
-            return false
+            if (isPartySynced) partyDoubleTapSeek(PlayerSeekDirection.Forward) else {
+                prepareDoubleTapSeekForNativeFallback(PlayerSeekDirection.Forward)
+                return false
+            }
         }
     }
     return true
 }
 
 private fun PlayerScreenRuntime.handlePlayerControlsEvent(type: String, value: Double): Boolean {
+    if (handlePartyControlsEvent(type, value)) return true
     when (type) {
         "revealChrome" -> {
             if (!playerControlsLocked) {
@@ -1297,10 +1322,8 @@ private fun PlayerScreenRuntime.handlePlayerControlsEvent(type: String, value: D
             autoPlaySelectedEpisode(previous)
         }
         "setPlaybackSpeed" -> {
-            val speed = value.toFloat().coerceIn(0.5f, 4f)
-            playerController?.setPlaybackSpeed(speed)
-            sessionPlaybackSpeed = speed
-            playbackSnapshot = playbackSnapshot.copy(playbackSpeed = speed)
+            if (partyBlocksControl()) return true
+            applyUserPlaybackSpeed(value.toFloat().coerceIn(0.5f, 4f))
         }
         "enableP2pForPlayerControls" -> enableP2pForPlayerControls()
         "cancelP2pForPlayerControls" -> {
@@ -1672,8 +1695,10 @@ private fun PlayerScreenRuntime.handlePlayerControlsScrubChange(positionMs: Long
 private fun PlayerScreenRuntime.handlePlayerControlsScrubFinished(positionMs: Long) {
     isScrubbingTimeline = false
     scrubbingPositionMs = null
-    playerController?.seekTo(positionMs)
+    val targetMs = if (isPartyControlLocked) ownSeekTarget(positionMs) ?: return else positionMs
+    playerController?.seekTo(targetMs)
     scheduleProgressSyncAfterSeek()
+    publishPartyPlayback(positionMs = targetMs)
 }
 
 private fun PlayerScreenRuntime.openInExternalPlayer() {
