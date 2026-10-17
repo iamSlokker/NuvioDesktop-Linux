@@ -1,0 +1,16 @@
+{
+  "resources": [
+    {
+      "glob": "jni/linux_x64/**"
+    },
+    {
+      "glob": "ai/onnxruntime/native/linux-x64/**"
+    },
+    {
+      "glob": "backdrop-framing/**"
+    },
+    {
+      "glob": "setup/**"
+    }
+  ]
+}
