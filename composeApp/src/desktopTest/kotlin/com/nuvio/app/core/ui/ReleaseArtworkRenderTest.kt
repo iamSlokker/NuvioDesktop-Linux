@@ -4,7 +4,6 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.ImageComposeScene
 import androidx.compose.ui.Modifier
@@ -13,12 +12,8 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.boundsInRoot
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.unit.Density
-import androidx.compose.ui.unit.dp
 import com.nuvio.app.core.build.PackagedResources
 import com.nuvio.app.features.home.HomeDisplayMode
-import com.nuvio.app.features.qualicache.QualityBadgeArt
-import com.nuvio.app.features.qualicache.QualityBadgeImage
-import com.nuvio.app.features.qualicache.QualityHighlight
 import com.nuvio.app.features.setup.setupModeScreenshotPainter
 import java.io.File
 import kotlin.math.abs
@@ -46,36 +41,6 @@ class ReleaseArtworkRenderTest {
                 assertTrue(image.readPixels(bitmap, 0, 0))
                 IntArray(image.width * image.height) { bitmap.getColor(it % image.width, it / image.width) }
             }
-        }
-    }
-
-    @Test fun sixRealQualityPaintersKeepInlineGeometryContrastAndDistinctSourceColorsAcrossDpi() {
-        for (highlight in QualityHighlight.entries) for (density in densities) {
-            var bounds = Rect.Zero
-            val width = (90 * density).roundToInt()
-            val height = (34 * density).roundToInt()
-            val scene = ImageComposeScene(width, height, Density(density)) {
-                Box(Modifier.padding(8.dp)) {
-                    Box(Modifier.onGloballyPositioned { bounds = it.boundsInRoot() }) {
-                        QualityBadgeImage(highlight, QualityBadgeArt.INLINE_HEIGHT)
-                    }
-                }
-            }
-            try {
-                val result = pixels(scene, "quality-${highlight.name}-$density")
-                assertTrue(abs(bounds.height - 18 * density) <= 1f, "$highlight/$density $bounds")
-                assertTrue(abs(bounds.width - 18 * QualityBadgeArt.artworkFor(highlight).aspectRatio * density) <= 1f)
-                val ink = result.filter { it ushr 24 > 100 }
-                val dark = ink.count { (it shr 16 and 255) < 100 && (it shr 8 and 255) < 100 && (it and 255) < 100 }
-                val light = ink.count { (it shr 16 and 255) > 200 && (it shr 8 and 255) > 170 }
-                assertTrue(dark > 15 * density * density, "$highlight lettering missing")
-                assertTrue(light > dark, "$highlight background/contrast missing")
-                val gold = ink.count { (it shr 16 and 255) > 200 && (it shr 8 and 255) > 170 && (it and 255) < 40 }
-                if (highlight == QualityHighlight.FourKBluRay) assertTrue(gold > 50 * density * density)
-                else assertEquals(0, gold, "$highlight changed source color")
-                assertEquals(0, result.first())
-                assertEquals(0, result.last())
-            } finally { scene.close() }
         }
     }
 

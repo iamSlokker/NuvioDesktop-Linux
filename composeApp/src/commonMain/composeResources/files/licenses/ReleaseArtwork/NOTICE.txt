@@ -1,30 +1,14 @@
 Release artwork, 2026
 Copyright (c) 2026 NuvioDesktop-Linux contributors
 
-Six original plain typographic quality badges and four synthetic setup previews
-are licensed under MIT (LICENSE.txt). Authoring source is included in
-tools/linux/packaging/artwork. No old artwork was traced or reused. The preview
-titles, abstract artwork and layouts are authored illustrations, not film images.
+Four synthetic setup previews (setup/setup_mode_*.webp) are licensed under MIT
+(LICENSE.txt). Authoring source is included in tools/linux/packaging/artwork. No
+old artwork was traced or reused. The preview titles, abstract artwork and layouts
+are authored illustrations, not film images.
 
 Typography uses unchanged Inter 4.1, Copyright 2020 The Inter Project Authors
 (https://github.com/rsms/inter), under SIL Open Font License 1.1. Its full license
 and notice are bundled at files/licenses/Inter/. The font is not relicensed.
 
-Format names are descriptive labels, not official Dolby/DTS or disc-format logos.
-No endorsement or new media capability is implied; existing detection is unchanged.
-The replacements do not license historical imports or other provider/award artwork.
-
-Linux packages and the Linux source snapshot additionally replace 47 provider/rating
-marks and award/hero badges, kept in tools/linux/packaging/artwork/overlay
-(PROVENANCE.json linux_overlay). 46 are original MIT artwork authored by the same
-recipe. Lettering is plain Inter text and shapes are generic geometry. They are not
-official provider, rating, festival or award logos, and no endorsement is implied.
-The upstream originals stay unchanged in composeApp for other platforms, where their
-rights remain UNRESOLVED; Linux packages do not distribute them.
-
-The exception is drawable/rating_tmdb.png: TMDB's official attribution logo
-("Primary full (blue)", https://www.themoviedb.org/about/logos-attribution),
-rendered unmodified from the vendored SVG with SHA-256
-d537fb228cf3ded904ef09b136fe3fec72548ebc1fea3fbbd1ad9e36364db38b. It is TMDB's
-logo, not MIT, and is used only to attribute TMDB as the source of data and images
-as TMDB's terms require. No endorsement or certification by TMDB is implied.
+All other badges, icons, logos and marks are the upstream Nuvio artwork, shipped
+unchanged; this notice and its MIT license do not cover them.

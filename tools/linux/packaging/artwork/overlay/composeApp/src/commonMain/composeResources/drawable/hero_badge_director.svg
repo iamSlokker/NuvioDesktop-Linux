@@ -1,7 +1,0 @@
-<?xml version="1.0" encoding="utf-8"?>
-<!-- SPDX-License-Identifier: MIT; Copyright (c) 2026 NuvioDesktop-Linux contributors.
-     Original Linux package replacement; not an official logo, rating or award mark. Inter 4.1 outlines; see bundled OFL. -->
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100" height="100">
-  <title>Prestige studio (columned building)</title>
-  <path fill="#F3F5F8" d="M50.00 10.00L8.00 34.00L12.00 34.00L12.00 40.00L88.00 40.00L88.00 34.00L92.00 34.00L50.00 10.00ZM19.00 42.00L19.00 76.00L27.00 76.00L27.00 42.00ZM37.00 42.00L37.00 76.00L45.00 76.00L45.00 42.00ZM55.00 42.00L55.00 76.00L63.00 76.00L63.00 42.00ZM73.00 42.00L73.00 76.00L81.00 76.00L81.00 42.00ZM12.00 78.00C10.90 78.00 10.00 78.90 10.00 80.00L10.00 82.00C10.00 83.10 10.90 84.00 12.00 84.00L88.00 84.00C89.10 84.00 90.00 83.10 90.00 82.00L90.00 80.00C90.00 78.90 89.10 78.00 88.00 78.00ZM8.00 86.00C6.90 86.00 6.00 86.90 6.00 88.00L6.00 91.00C6.00 92.10 6.90 93.00 8.00 93.00L92.00 93.00C93.10 93.00 94.00 92.10 94.00 91.00L94.00 88.00C94.00 86.90 93.10 86.00 92.00 86.00Z"/>
-</svg>

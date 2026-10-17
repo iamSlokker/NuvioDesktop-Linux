@@ -134,18 +134,17 @@ class FlatpakJarInventoryTest(unittest.TestCase):
     def test_exported_bundle_reaches_real_artwork_gate_instead_of_trusting_staging(self):
         payload = {}
         for name in artwork_contract.expected_resources():
-            # Linux packages carry the artwork overlay, never the upstream originals.
             payload[name] = artwork_contract.linux_source(name).read_bytes()
-        original = (artwork_contract.repository() /
-                    'composeApp/src/commonMain/composeResources/drawable/rating_imdb.png').read_bytes()
+        dataset = (artwork_contract.repository() /
+                   'composeApp/src/desktopMain/resources/anime-list-mini.json').read_bytes()
         for bad_export in (False, True, 'original'):
             content = dict(payload)
             if bad_export == 'original':
-                # An upstream original (here renamed) in the exported JAR must fail.
-                content['nested/renamed.bin'] = original
+                # The runtime-downloaded dataset (here renamed) in the exported JAR must fail.
+                content['nested/renamed.bin'] = dataset
             elif bad_export:
                 # Correct staging plus a forbidden asset in the actual exported JAR must fail.
-                content['nested/HERO_BADGE_MUST_SEE.PNG'] = b'new bytes'
+                content['nested/ANIME-LIST-MINI.JSON'] = b'new bytes'
             stream = io.BytesIO()
             with zipfile.ZipFile(stream, 'w') as jar:
                 for name, data in content.items(): jar.writestr(name, data)
@@ -168,9 +167,7 @@ class FlatpakJarInventoryTest(unittest.TestCase):
                 else:
                     self.audit()
                     report = json.loads((self.work / 'artifacts/flatpak-audit.json').read_text())
-                    self.assertEqual(10, report['artwork']['removed_resources'])
-                    self.assertEqual(47, report['artwork']['linux_overlay_replacements'])
-                    self.assertEqual(0, report['artwork']['unresolved_exact_path_exceptions'])
+                    self.assertEqual(4, report['artwork']['replacement_setup_previews'])
                     self.assertEqual('BLOCKED', report['artwork']['redistribution_assessment'])
 
 
