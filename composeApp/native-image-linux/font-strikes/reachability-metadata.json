@@ -1,0 +1,7 @@
+{
+  "reflection": [
+    {
+      "type": "java.lang.invoke.VarHandleSegmentAsFloatsAligned"
+    }
+  ]
+}
