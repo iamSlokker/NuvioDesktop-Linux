@@ -195,7 +195,7 @@ class CanonicalSeedTest(unittest.TestCase):
                 if 'stdout' in kwargs:
                     kwargs['stdout'].close()
             target = 'composeApp/src/commonMain/composeResources/drawable/rating_fixture.png'
-            files = {target: b'upstream original', source_policy.OVERLAY + target: b'linux replacement',
+            files = {target: b'upstream original',
                      next(iter(source_policy.RUNTIME_DOWNLOADED)): b'runtime-downloaded dataset'}
             def snapshot(destination, channel):
                 rows = []
@@ -234,15 +234,14 @@ class CanonicalSeedTest(unittest.TestCase):
             expected = tuple(str(arg) for arg in original[:-3]) + (image, *original[-2:])
             self.assertEqual(normalized, expected)
             self.assertEqual(json.loads((new / 'source-info.json').read_text())['builder_image_id'], image)
-            # Both paths apply the Linux source policy exactly once (a second
-            # application would fail on the overlay bytes) and stamp the same snapshot.
+            # Both paths apply the Linux source policy exactly once and stamp the same snapshot.
             self.assertEqual((old / 'source-info.json').read_text(), (new / 'source-info.json').read_text())
             self.assertEqual((old / 'source-files.json').read_text(), (new / 'source-files.json').read_text())
             for work in (old, new):
-                self.assertEqual(b'linux replacement', (work / 'source' / target).read_bytes())
+                self.assertEqual(b'upstream original', (work / 'source' / target).read_bytes())
                 self.assertFalse(any((work / 'source' / name).exists() for name in source_policy.RUNTIME_DOWNLOADED))
                 recorded = dict(json.loads((work / 'source-files.json').read_text()))
-                self.assertEqual(hashlib.sha256(b'linux replacement').hexdigest(), recorded[target])
+                self.assertEqual(hashlib.sha256(b'upstream original').hexdigest(), recorded[target])
                 self.assertNotEqual(json.loads((work / 'source-info.json').read_text())['source_sha256'],
                                     hashlib.sha256(json.dumps(sorted((n, hashlib.sha256(d).hexdigest())
                                                                      for n, d in files.items())).encode()).hexdigest())

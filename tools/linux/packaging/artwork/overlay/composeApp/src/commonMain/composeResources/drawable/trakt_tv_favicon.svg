@@ -1,8 +1,0 @@
-<?xml version="1.0" encoding="utf-8"?>
-<!-- SPDX-License-Identifier: MIT; Copyright (c) 2026 NuvioDesktop-Linux contributors.
-     Original Linux package replacement; not an official logo, rating or award mark. Inter 4.1 outlines; see bundled OFL. -->
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48">
-  <title>TR text mark (Linux replacement)</title>
-  <rect x="0.000" y="0.000" width="48.000" height="48.000" rx="24.000" fill="#D5DBE3"/>
-  <path fill="#1B2430" d="M10.560 18.900L10.560 16.281L23.173 16.281L23.173 18.900L18.458 18.900L18.458 31.719L15.285 31.719L15.285 18.900L10.560 18.900ZM25.348 31.719L25.348 16.281L31.369 16.281Q33.998 16.281 35.444 17.654Q36.890 19.026 36.890 21.304Q36.890 22.889 36.183 24.017Q35.480 25.141 34.154 25.698L37.440 31.719L33.939 31.719L30.994 26.205L28.507 26.205L28.507 31.719L25.348 31.719ZM28.507 23.649L30.789 23.649Q33.627 23.649 33.627 21.304Q33.627 20.134 32.927 19.514Q32.228 18.890 30.775 18.890L28.507 18.890L28.507 23.649Z"/>
-</svg>
