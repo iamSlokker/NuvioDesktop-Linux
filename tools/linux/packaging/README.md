@@ -25,7 +25,7 @@ tools, libraries or paths are inputs.
 
 ```sh
 env -u DISPLAY -u WAYLAND_DISPLAY -u NUVIO_RUN_LIVE_DISPLAY_TESTS \
-  JAVA_HOME=/path/to/temurin-17 PATH=/usr/bin:/bin \
+  JAVA_HOME=/path/to/temurin-21 PATH=/usr/bin:/bin \
   python3 tools/linux/packaging/build.py --format all --jobs 2
 ```
 
@@ -76,7 +76,7 @@ Desktop/icon metadata is shared; the existing icon is resized offscreen to 512px
 
 The media builder uses the existing digest-pinned Ubuntu 22.04/signed snapshot
 and GLIBC 2.35 / GLIBCXX 3.4.30 floor. Packaging extends that builder with
-GTK3/WebKitGTK4.1, verifies pinned Temurin 17.0.20.1+1 and CMake 3.31.6 inputs,
+GTK3/WebKitGTK4.1, verifies pinned Temurin 21.0.12.1+1 and CMake 3.31.6 inputs,
 and records complete package versions. AppImage tool **1.9.1** is SHA-256 pinned. The type-2
 runtime is not downloaded: `appimage_runtime.py build --output DIR` compiles it
 from pinned sources (`appimage-runtime/manifest.json`, digest-pinned Alpine,
@@ -115,7 +115,7 @@ Canonical layout:
 bin/nuvio                  original jpackage launcher
 bin/nuvio-desktop          portable environment wrapper
 lib/app/                   application/dependency jars, build stamp
-lib/runtime/               bundled Java 17 runtime, including JAWT
+lib/runtime/               bundled Java 21 runtime, including JAWT
 lib/native/                player_bridge, nuvio-hdr-probe, mpv and private media ELF closure
 share/                     desktop/icon metadata, media provenance and licenses
 release-info.json          one revision/version identity for all formats

@@ -32,6 +32,13 @@ data class ImageCacheSettings(
      * disk between launches; 0 keeps it for the session only. See LightweightMetaDiskCache.
      */
     val metadataCacheHours: Int = DefaultMetadataCacheHours,
+    /**
+     * How old a Home catalog row kept from a previous launch may be and still be shown while that
+     * launch refetches it; 0 keeps nothing between launches. See HomeCatalogDiskCache.
+     */
+    val homeCatalogCacheHours: Int = DefaultHomeCatalogCacheHours,
+    /** How much RAM the app may hold on to; see [MemoryUse]. Device-wide, like the rest. */
+    val memoryUse: MemoryUse = MemoryUse.Balanced,
 ) {
     val prewarmsAnything: Boolean
         get() = prewarmEnabled && (prewarmPosters || prewarmLogos || prewarmBackdrops)
@@ -41,6 +48,36 @@ data class ImageCacheSettings(
         val DiskCacheGbChoices = listOf(2, 5, 10, 20, 50)
         const val DefaultMetadataCacheHours = 24
         val MetadataCacheHoursChoices = listOf(0, 6, 24, 72, 168)
+        const val DefaultHomeCatalogCacheHours = 24
+        val HomeCatalogCacheHoursChoices = MetadataCacheHoursChoices
+    }
+}
+
+/**
+ * Memory use against smoothness, in the two places where the trade is real (2026-10-16 work):
+ *
+ *  - [idleGrowthMb] / [idleSlowGrowthMb]: how much the heap may grow before the native build's idle
+ *    collector frees it while nobody is touching the app (IdleHeapCollector). Lower keeps memory
+ *    down. It is deliberately NOT raised for Generous: an idle collection is invisible, and running
+ *    fewer of them only lets a natural one land mid-scroll instead.
+ *  - [largeArtworkEntries]: how many full-size hero backdrops stay decoded (~24-33 MB each), so
+ *    moving back over cards finds them in memory instead of re-decoding (~110-140 ms each).
+ *
+ * Applies at once; nothing here needs a restart.
+ */
+enum class MemoryUse(
+    val storageKey: String,
+    val idleGrowthMb: Int,
+    val idleSlowGrowthMb: Int,
+    val largeArtworkEntries: Int,
+) {
+    Lean("lean", idleGrowthMb = 24, idleSlowGrowthMb = 8, largeArtworkEntries = 4),
+    Balanced("balanced", idleGrowthMb = 48, idleSlowGrowthMb = 16, largeArtworkEntries = 6),
+    Generous("generous", idleGrowthMb = 48, idleSlowGrowthMb = 16, largeArtworkEntries = 10),
+    ;
+
+    companion object {
+        fun fromStorageKey(key: String?): MemoryUse? = entries.firstOrNull { it.storageKey == key }
     }
 }
 
@@ -78,6 +115,10 @@ internal expect object ImageCacheSettingsStorage {
     fun savePrewarmCollectionContents(value: Boolean)
     fun loadMetadataCacheHours(): Int?
     fun saveMetadataCacheHours(value: Int)
+    fun loadHomeCatalogCacheHours(): Int?
+    fun saveHomeCatalogCacheHours(value: Int)
+    fun loadMemoryUse(): String?
+    fun saveMemoryUse(value: String)
 
     /** Bytes the artwork cache currently holds on disk, or null before it has been opened. */
     fun usedBytes(): Long?
@@ -109,7 +150,18 @@ object ImageCacheSettingsRepository {
             metadataCacheHours = ImageCacheSettingsStorage.loadMetadataCacheHours()
                 ?.takeIf { it in ImageCacheSettings.MetadataCacheHoursChoices }
                 ?: defaults.metadataCacheHours,
+            homeCatalogCacheHours = ImageCacheSettingsStorage.loadHomeCatalogCacheHours()
+                ?.takeIf { it in ImageCacheSettings.HomeCatalogCacheHoursChoices }
+                ?: defaults.homeCatalogCacheHours,
+            memoryUse = MemoryUse.fromStorageKey(ImageCacheSettingsStorage.loadMemoryUse()) ?: defaults.memoryUse,
         )
+    }
+
+    fun setMemoryUse(value: MemoryUse) {
+        ensureLoaded()
+        if (_settings.value.memoryUse == value) return
+        _settings.value = _settings.value.copy(memoryUse = value)
+        ImageCacheSettingsStorage.saveMemoryUse(value.storageKey)
     }
 
     fun setDiskCacheGb(value: Int) {
@@ -159,6 +211,13 @@ object ImageCacheSettingsRepository {
         if (value !in ImageCacheSettings.MetadataCacheHoursChoices || _settings.value.metadataCacheHours == value) return
         _settings.value = _settings.value.copy(metadataCacheHours = value)
         ImageCacheSettingsStorage.saveMetadataCacheHours(value)
+    }
+
+    fun setHomeCatalogCacheHours(value: Int) {
+        ensureLoaded()
+        if (value !in ImageCacheSettings.HomeCatalogCacheHoursChoices || _settings.value.homeCatalogCacheHours == value) return
+        _settings.value = _settings.value.copy(homeCatalogCacheHours = value)
+        ImageCacheSettingsStorage.saveHomeCatalogCacheHours(value)
     }
 
     internal fun publishPrewarmStatus(status: ImageCachePrewarmStatus) {

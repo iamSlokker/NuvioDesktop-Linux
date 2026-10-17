@@ -366,6 +366,13 @@ private inline fun desktopStartupStep(name: String, block: () -> Unit) {
 }
 
 fun main(args: Array<String>) {
+    com.nuvio.app.core.build.NativeImageSupport.configureRuntime()
+    com.nuvio.app.core.build.NativeImageSupport.startSelfTestIfRequested()
+    // Build-time archive training (createDistributable): before anything else, so it touches no
+    // store, lock or log of the user's. Never returns.
+    if (com.nuvio.app.core.build.AppClassArchiveTraining.BuildArgument in args) {
+        com.nuvio.app.core.build.AppClassArchiveTraining.runForBuild()
+    }
     // A nuvio:// link the OS launched us with (see DesktopUrlScheme): handed to the running copy
     // if there is one, else opened here once the app is up.
     val launchUrl = args.map(String::trim).firstOrNull { it.startsWith("nuvio://", ignoreCase = true) }
@@ -388,11 +395,13 @@ fun main(args: Array<String>) {
     }
     com.nuvio.app.core.storage.LinuxJavaPreferences.configure(com.nuvio.app.core.storage.DesktopStorage.rootDir)
     configureDesktopFileLogging()
+    com.nuvio.app.core.build.JvmLeftoverCleanup.startIfNative()
     desktopPerfLoggingSource()?.let(com.nuvio.app.core.perf.PerfTelemetry::start)
     // Now that this copy owns the data directory and before any store is read: a settings import
     // staged by the previous session lands here (see applyPendingSettingsImport).
     com.nuvio.app.features.settings.applyPendingSettingsImport(com.nuvio.app.core.storage.DesktopStorage.rootDir)
-    DesktopUrlScheme.registerInBackground()
+    // Not from a nativeSmoke launch: it would point the user's nuvio:// links at the build folder.
+    if (!com.nuvio.app.core.build.NativeImageSupport.selfTestRequested) DesktopUrlScheme.registerInBackground()
     // Held as the pending link until the app's navigation is up to take it. Straight to the link
     // queue rather than handleAppUrl, whose Trakt-callback check loads profile stores this early.
     launchUrl?.let(com.nuvio.app.core.deeplink.AppDeepLinkRepository::handleUrl)
@@ -415,17 +424,21 @@ fun main(args: Array<String>) {
     )
     val desktopStartupStartedAt = System.currentTimeMillis()
     System.out.println("Info: (DesktopStartup) main entered")
-    // Before any window exists: Windows caches the process AppUserModelID early, and the media
+    // A launch without a usable class archive builds one in a short UI-less run and restarts,
+    // instead of being the user's slow session; see AppClassArchiveTraining. Returns at once
+    // otherwise.
+    com.nuvio.app.core.build.AppClassArchiveTraining.runIfNeeded()    // Before any window exists: Windows caches the process AppUserModelID early, and the media
     // session created later is labelled "Unknown app" without it.
     desktopStartupStep("app identity") {
         runCatching { com.nuvio.app.features.player.desktop.registerDesktopAppIdentity() }
     }
     // Immediately after: every millisecond of head start is a class the UI thread will not have
     // to load itself when Home first composes. Non-blocking; see StartupClassPreloader.
-    desktopStartupStep("startup class preload") { com.nuvio.app.core.build.StartupClassPreloader.start() }
-    // Same idea for the one native library Home's first composition loads: see warmPhysicalMemoryProbe.
+    desktopStartupStep("startup class preload") { com.nuvio.app.core.build.StartupClassPreloader.start() }    // Same idea for the one native library Home's first composition loads: see warmPhysicalMemoryProbe.
     desktopStartupStep("memory probe warm") { com.nuvio.app.core.ui.warmPhysicalMemoryProbe() }
     desktopStartupStep("configure renderer") { configureDesktopRenderer() }
+    limitSwingBackBuffer()
+    com.nuvio.app.core.ui.IdleHeapCollector.start()
     // Before the first Skia layer exists: the vsync properties this flips are read at layer
     // construction. Always reported, so a benchmark log can never be misread as a vsync-capped one.
     System.out.println(
@@ -885,6 +898,16 @@ fun main(args: Array<String>) {
                                     Toolkit.getDefaultToolkit().systemClipboard
                                         .getData(DataFlavor.stringFlavor) as? String
                                 }.getOrNull()?.trim().orEmpty()
+                                // A watch-party invite (the link alone, or the whole "join my
+                                // party" message) opens the Watch party page, not a stream.
+                                val partyInvite = clipboardText.split(Regex("\\s+")).firstOrNull { word ->
+                                    com.nuvio.app.core.deeplink.parseAppDeepLink(word) is
+                                        com.nuvio.app.core.deeplink.AppDeepLink.Party
+                                }
+                                if (partyInvite != null) {
+                                    com.nuvio.app.core.deeplink.handleAppUrl(partyInvite)
+                                    return@onKeyEvent true
+                                }
                                 val webStream = clipboardText.takeIf {
                                     it.startsWith("https://", ignoreCase = true) ||
                                         it.startsWith("http://", ignoreCase = true)
@@ -983,9 +1006,9 @@ fun main(args: Array<String>) {
                 PlatformPlayerSurface(
                     sourceUrl = smokePlayerUrl,
                     modifier = Modifier.fillMaxSize(),
-                    onControllerReady = {},
+                    onControllerReady = { println("Info: (PlayerSmoke) controller ready") },
                     onSnapshot = {},
-                    onError = {},
+                    onError = { error -> System.err.println("Error: (PlayerSmoke) $error") },
                 )
             }
         }
@@ -1003,6 +1026,9 @@ fun main(args: Array<String>) {
             runCatching { com.nuvio.app.features.details.LightweightMetaDiskCache.flushPendingWrites() }
         }
     }
+    // Home settings are encoded off the UI thread now; a change made just before exit is written
+    // here, before the stores flush below.
+    runCatching { com.nuvio.app.features.home.HomeCatalogSettingsRepository.flushPendingPersist() }
     // Every store coalesces its writes (DesktopStorage.flushAll), including the two caches just
     // flushed above. A shutdown hook does the same for exit paths that skip this function.
     runCatching { com.nuvio.app.core.storage.DesktopStorage.flushAll() }
@@ -1043,6 +1069,19 @@ private fun configureDesktopRenderer() {
             stored ?: DesktopRendererApi.D3D11
         }
         renderer?.let { System.setProperty("skiko.renderApi", it.skikoRenderApi) }
+    }
+}
+
+/**
+ * Caps Swing's double-buffer at 512x512. Compose draws through skiko's own surface, so Swing paints
+ * next to nothing, yet RepaintManager kept a window-sized back buffer for the whole session: 33 MB at
+ * 3840x2160 (heap dump, 2026-10-16). With `sun.java2d.d3d=false` that buffer is plain memory.
+ * Larger paints go through the capped buffer in tiles, so painting itself is unchanged.
+ */
+private fun limitSwingBackBuffer() {
+    runCatching {
+        javax.swing.RepaintManager.currentManager(null as java.awt.Component?)
+            .doubleBufferMaximumSize = java.awt.Dimension(512, 512)
     }
 }
 

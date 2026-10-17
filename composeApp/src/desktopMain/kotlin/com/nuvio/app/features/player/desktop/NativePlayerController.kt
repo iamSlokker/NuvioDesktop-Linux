@@ -34,6 +34,8 @@ import com.nuvio.app.features.player.PlayerControlsState
 import com.nuvio.app.features.player.PlayerEngineController
 import com.nuvio.app.features.player.PlayerChapter
 import com.nuvio.app.features.player.PlayerControlPlaylistItem
+import com.nuvio.app.features.player.PlayerControlPartyMember
+import com.nuvio.app.features.player.PlayerControlPartyState
 import com.nuvio.app.features.player.PlayerPlaybackSnapshot
 import com.nuvio.app.features.player.PlayerResizeMode
 import com.nuvio.app.features.player.PlayerShortcutAction
@@ -486,6 +488,7 @@ internal class NativePlayerController(
                         } else {
                             handle = newHandle
                             if (linux) linuxHandleSourceUrl = pending.sourceUrl
+                            if (linux && !linuxHeroSurface) NativePlayerBridge.runJavaScript(newHandle, LINUX_HUD_AUTO_HIDE_SCRIPT)
                             diagnosticsOverlayEnabled = false
                             true
                         }
@@ -805,6 +808,13 @@ internal class NativePlayerController(
         // Speed events pill themselves inside handlePlayerEvent, since the HUD sends them too.
     }
 
+    /** A key the Linux AWT dispatcher saw while the player owns the keyboard; see LinuxHudAutoHide.kt. */
+    fun revealLinuxHudForKey() {
+        if (disposed || linuxHeroSurface || DesktopHostOs.current != DesktopHostOs.LINUX) return
+        val current = handle.takeIf { it != 0L } ?: return
+        NativePlayerBridge.runJavaScript(current, LINUX_HUD_REVEAL_FOR_KEY_SCRIPT)
+    }
+
     fun dispatchLinuxEscapeKey(event: java.awt.event.KeyEvent): Boolean {
         if (disposed || linuxHeroSurface || DesktopHostOs.current != DesktopHostOs.LINUX) return false
         val window = SwingUtilities.getWindowAncestor(host)
@@ -991,7 +1001,9 @@ internal class NativePlayerController(
             choices = listOf(MpvChoice("Off", "no", isDefault = true), MpvChoice("On", "yes")),
         ),
         MpvOption(
-            key = "sharpen",
+            // Not mpv's `sharpen` (vo=gpu only, a no-op on gpu-next): the saved value picks a CAS
+            // strength that the video profile appends to the active shader chain.
+            key = DESKTOP_SHARPEN_OVERRIDE_KEY,
             label = "Sharpen",
             choices = listOf(
                 MpvChoice("Off", "0", isDefault = true),
@@ -1011,12 +1023,45 @@ internal class NativePlayerController(
             ),
         ),
         MpvOption(
-            // Loudness normalisation ("night mode"). Nothing else sets `af` on the main player.
+            // Added grain (deband-grain), not the grain an AV1 encode carries, which mpv always
+            // applies. Owned by the video profile; Light/Heavy need Deband, see selectMpvOption.
+            key = DESKTOP_FILM_GRAIN_OVERRIDE_KEY,
+            label = "Film grain",
+            choices = listOf(
+                MpvChoice("Default", "default", isDefault = true),
+                MpvChoice("None", DESKTOP_FILM_GRAIN_NONE),
+                MpvChoice("Light", DESKTOP_FILM_GRAIN_LIGHT),
+                MpvChoice("Heavy", DESKTOP_FILM_GRAIN_HEAVY),
+            ),
+        ),
+        MpvOption(
+            // target-contrast for SDR tone mapping. Owned by the video profile (HDR mode sets it).
+            key = DESKTOP_DISPLAY_PANEL_OVERRIDE_KEY,
+            label = "Display type",
+            choices = listOf(
+                MpvChoice("LCD", "lcd", isDefault = true),
+                MpvChoice("OLED", DESKTOP_DISPLAY_PANEL_OLED),
+            ),
+        ),
+        MpvOption(
+            // mpv's built-in frame-timing interpolation. Owned by the video profile so it can never
+            // run together with SVP.
+            key = DESKTOP_INTERPOLATION_OVERRIDE_KEY,
+            label = "Motion interpolation",
+            choices = listOf(MpvChoice("Off", "no", isDefault = true), MpvChoice("On", "yes")),
+        ),
+        MpvOption(
+            // Nothing else sets `af` on the main player. The filters are one chain, so each choice
+            // replaces the last. Loudness keeps its old value so a saved choice carries over.
             key = "af",
-            label = "Loudness normalize",
+            label = "Audio profile",
             choices = listOf(
                 MpvChoice("Off", "", isDefault = true),
-                MpvChoice("On", "dynaudnorm=f=150:g=15"),
+                MpvChoice("Loudness normalize", "dynaudnorm=f=150:g=15"),
+                MpvChoice("Night mode", "lavfi=[acompressor=ratio=3:threshold=-20dB:attack=20:release=300:makeup=4dB]"),
+                MpvChoice("Vocal clarity", "lavfi=[equalizer=f=300:t=q:w=1:g=-3,equalizer=f=2800:t=q:w=1:g=5]"),
+                MpvChoice("Bass boost", "lavfi=[bass=g=7:f=110:w=0.6]"),
+                MpvChoice("Less bass", "lavfi=[bass=g=-8:f=110:w=0.6]"),
             ),
         ),
     )
@@ -1055,14 +1100,52 @@ internal class NativePlayerController(
                         key = option.key,
                         value = if (choice.isDefault) null else choice.value,
                     )
-                    setMpvProperty(option.key, choice.value)
-                    showPresetPill(option.label, choice.label)
+                    applyMpvOptionSideEffects(option.key, choice.value)
+                    // Profile-owned rows are applied by the profile rebuild the override change
+                    // triggers; writing them here would only be overwritten.
+                    if (option.key !in DESKTOP_PROFILE_OWNED_OVERRIDE_KEYS) setMpvProperty(option.key, choice.value)
+                    showPresetPill(option.label, mpvOptionPillLabel(option.key, choice))
                     // Re-push so a kept-open menu reflects the new selection.
                     openMpvOptionsContextMenu()
                     return
                 }
                 flat += 1
             }
+        }
+    }
+
+    /** Keeps rows that depend on each other consistent; see the catalog notes. */
+    private fun applyMpvOptionSideEffects(key: String, value: String) {
+        val overrides = PlayerSettingsRepository.uiState.value.desktopMpvPropertyOverrides
+        val addsGrain = value == DESKTOP_FILM_GRAIN_LIGHT || value == DESKTOP_FILM_GRAIN_HEAVY
+        when {
+            // mpv adds grain inside the deband pass, so grain without deband does nothing.
+            key == DESKTOP_FILM_GRAIN_OVERRIDE_KEY && addsGrain && overrides["deband"] == "no" -> {
+                PlayerSettingsRepository.setDesktopMpvPropertyOverride(key = "deband", value = null)
+                setMpvProperty("deband", "yes")
+            }
+            key == "deband" && value == "no" &&
+                overrides[DESKTOP_FILM_GRAIN_OVERRIDE_KEY].let {
+                    it == DESKTOP_FILM_GRAIN_LIGHT || it == DESKTOP_FILM_GRAIN_HEAVY
+                } -> PlayerSettingsRepository.setDesktopMpvPropertyOverride(
+                    key = DESKTOP_FILM_GRAIN_OVERRIDE_KEY,
+                    value = null,
+                )
+            // Left at Off the profile writes nothing (a custom options line may own these), so
+            // undo the interpolation it had switched on.
+            key == DESKTOP_INTERPOLATION_OVERRIDE_KEY && value != "yes" ->
+                DESKTOP_INTERPOLATION_OFF.forEach { (property, setting) -> setMpvProperty(property, setting) }
+        }
+    }
+
+    /** Says when a choice is saved but held back, so a row that seems to do nothing explains itself. */
+    private fun mpvOptionPillLabel(key: String, choice: MpvChoice): String {
+        if (key != DESKTOP_INTERPOLATION_OVERRIDE_KEY || choice.value != "yes") return choice.label
+        val settings = PlayerSettingsRepository.uiState.value
+        return when {
+            settings.desktopAudioPassthroughEnabled -> "On (off during audio passthrough)"
+            settings.desktopAnimeSvpEnabled -> "On (off while SVP runs)"
+            else -> choice.label
         }
     }
 
@@ -2277,7 +2360,9 @@ private fun buildDesktopUserMpvOptions(initialPlaybackSpeed: Float): List<String
         // Curated overrides from the "Advanced (mpv)" menu, before the raw options box so a
         // hand-typed line can still win over a menu selection for the same property.
         if (useNuvioOptions) {
-            settings.desktopMpvPropertyOverrides.forEach { (key, value) -> add("$key=$value") }
+            settings.desktopMpvPropertyOverrides.forEach { (key, value) ->
+                if (key !in DESKTOP_PROFILE_OWNED_OVERRIDE_KEYS) add("$key=$value")
+            }
         }
         if (settings.desktopMpvConfigMode != DesktopMpvConfigMode.Off) {
             settings.desktopCustomMpvOptions.lineSequence()
@@ -2436,7 +2521,8 @@ internal fun payloadExcerptAroundFailure(payload: String, message: String): Stri
     )
 }
 
-private fun PlayerControlsState.toControlsJson(
+// internal (not private) so ControlsJsonGuardTest can check whole payloads, not just samples.
+internal fun PlayerControlsState.toControlsJson(
     appFullscreenKeyCode: Int,
     playerShortcutKeyCodes: Map<String, Int>,
     skipIntervalKeyLabel: String,
@@ -2803,6 +2889,8 @@ private fun PlayerControlsState.toControlsJson(
         append(',')
         appendJsonArrayField("playlistPeekItems", playlistPeekItems) { appendPlaylistPeekItemJson(it) }
         append(',')
+        appendJsonPartyField("party", party)
+        append(',')
         appendJsonField("showSubmitIntro", showSubmitIntro)
         append(',')
         appendJsonField("showVideoSettings", showVideoSettings)
@@ -2956,6 +3044,74 @@ private fun StringBuilder.appendJsonField(name: String, value: Double) {
 
 private fun StringBuilder.appendJsonField(name: String, value: Long) {
     append('"').append(name).append("\":").append(value)
+}
+
+private fun StringBuilder.appendJsonPartyField(name: String, party: PlayerControlPartyState) {
+    append('"').append(name).append("\":{")
+    appendJsonField("available", party.available)
+    append(',')
+    appendJsonField("active", party.active)
+    append(',')
+    appendJsonField("openPanelToken", party.openPanelToken)
+    append(',')
+    appendJsonField("busy", party.busy)
+    append(',')
+    appendJsonField("connected", party.connected)
+    append(',')
+    appendJsonField("isHost", party.isHost)
+    append(',')
+    appendJsonField("canControl", party.canControl)
+    append(',')
+    appendJsonField("hostOnly", party.hostOnly)
+    append(',')
+    appendJsonField("sharing", party.sharing)
+    append(',')
+    appendJsonField("canShareStream", party.canShareStream)
+    append(',')
+    appendJsonField("sameMedia", party.sameMedia)
+    append(',')
+    appendJsonField("code", party.code)
+    append(',')
+    appendJsonField("pillMessage", party.pillMessage)
+    append(',')
+    appendJsonField("behindTitle", party.behindTitle)
+    append(',')
+    appendJsonField("elsewhereTitle", party.elsewhereTitle)
+    append(',')
+    appendJsonField("startNote", party.startNote)
+    append(',')
+    appendJsonArrayField("members", party.members) { appendPartyMemberJson(it) }
+    append(',')
+    append("\"labels\":{")
+    party.labels.entries.forEachIndexed { index, (key, value) ->
+        if (index > 0) append(',')
+        appendJsonField(key, value)
+    }
+    append("}}")
+}
+
+private fun StringBuilder.appendPartyMemberJson(member: PlayerControlPartyMember) {
+    append('{')
+    appendJsonField("index", member.index)
+    append(',')
+    appendJsonField("name", member.name)
+    append(',')
+    appendJsonField("initials", member.initials)
+    append(',')
+    appendJsonField("color", member.color)
+    append(',')
+    appendJsonField("avatarUrl", member.avatarUrl)
+    append(',')
+    appendJsonField("status", member.status)
+    append(',')
+    appendJsonField("presence", member.presence)
+    append(',')
+    appendJsonField("isHost", member.isHost)
+    append(',')
+    appendJsonField("isSelf", member.isSelf)
+    append(',')
+    appendJsonField("canRemove", member.canRemove)
+    append('}')
 }
 
 private fun StringBuilder.appendPlaylistPeekItemJson(item: PlayerControlPlaylistItem) {

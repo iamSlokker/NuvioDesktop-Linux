@@ -49,12 +49,17 @@ class BundledNoticesTest(unittest.TestCase):
     def test_shader_notice_preserves_the_actual_fourteen_mit_two_unlicense_split(self):
         directory = RESOURCES / 'player-shaders'
         public_domain = {'Anime4K_AutoDownscalePre_x2.glsl', 'Anime4K_AutoDownscalePre_x4.glsl'}
+        amd_cas = 'Nuvio_CAS_Sharpen.glsl'
         shaders = sorted(directory.glob('*.glsl'))
-        self.assertEqual(len(shaders), 16)
+        self.assertEqual(len(shaders), 17)
         mit = []
         for shader in shaders:
             text = shader.read_text()
-            if shader.name in public_domain:
+            if shader.name == amd_cas:
+                self.assertIn('Copyright (c) 2020 Advanced Micro Devices, Inc.', text)
+                self.assertIn('Permission is hereby granted', text)
+                self.assertIn('THE SOFTWARE IS PROVIDED "AS IS"', text)
+            elif shader.name in public_domain:
                 self.assertIn('This is free and unencumbered software released into the public domain.', text)
                 self.assertIn('For more information, please refer to <https://unlicense.org>', text)
                 self.assertNotIn('Permission is hereby granted', text)
@@ -69,6 +74,8 @@ class BundledNoticesTest(unittest.TestCase):
         for name in public_domain:
             self.assertIn(name, notice)
         self.assertIn('MIT notice below\ndoes not replace those terms', notice)
+        self.assertIn(amd_cas, notice)
+        self.assertIn('Copyright (c) 2020 Advanced Micro Devices, Inc.', notice)
 
 
 if __name__ == '__main__':

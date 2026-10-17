@@ -431,7 +431,7 @@ needed. Use the task-local `--rerun` flag: native output changes can otherwise
 leave Gradle reporting a cached test result.
 
 ```sh
-export JAVA_HOME="$HOME/.local/jdks/temurin-17" # Or your existing Java 17.
+export JAVA_HOME="$HOME/.local/jdks/temurin-21" # Or your existing Java 21.
 export PATH="$JAVA_HOME/bin:$PATH"           # Existing CMake/Ninja must be on PATH.
 export MPV_ROOT="$(realpath build/linux-media-runtime/runtime)"
 # Set CMAKE_PREFIX_PATH only if existing X11 development discovery needs it.

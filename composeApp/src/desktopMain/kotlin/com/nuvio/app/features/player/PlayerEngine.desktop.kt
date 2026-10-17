@@ -28,6 +28,15 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.runtime.CompositionLocalProvider
 import com.nuvio.app.core.ui.LocalNuvioBaseDensity
 import com.nuvio.app.features.player.desktop.DesktopAnimeShaders
+import com.nuvio.app.features.player.desktop.DESKTOP_DISPLAY_PANEL_OVERRIDE_KEY
+import com.nuvio.app.features.player.desktop.DESKTOP_FILM_GRAIN_OVERRIDE_KEY
+import com.nuvio.app.features.player.desktop.DESKTOP_INTERPOLATION_OVERRIDE_KEY
+import com.nuvio.app.features.player.desktop.DESKTOP_SHARPEN_OVERRIDE_KEY
+import com.nuvio.app.features.player.desktop.desktopDebandGrain
+import com.nuvio.app.features.player.desktop.desktopInterpolationProperties
+import com.nuvio.app.features.player.desktop.desktopTargetContrast
+import com.nuvio.app.features.player.desktop.desktopCasSharpness
+import com.nuvio.app.features.player.desktop.desktopShaderChainWithSharpen
 import com.nuvio.app.features.player.desktop.DesktopAnimeSvp
 import com.nuvio.app.features.player.desktop.DesktopCustomShaders
 import com.nuvio.app.features.player.desktop.DesktopWindowGeometryDiagnostics
@@ -242,6 +251,20 @@ private fun NativePlayerSurface(
         }
     }
 
+    // The attach below waits on a full-size paint. If Windows never sends one (seen on re-entering
+    // the player: 17s stall until a focus change exposed the window), stop waiting once the surface
+    // is on screen at full size.
+    LaunchedEffect(host, hostFirstFullSizePaintComplete.value) {
+        if (hostFirstFullSizePaintComplete.value) return@LaunchedEffect
+        while (true) {
+            delay(250L)
+            if (host.notifyFullSizeIfReady()) {
+                PlaybackStartTrace.markStartupDetail("surfacePaint:fallback")
+                return@LaunchedEffect
+            }
+        }
+    }
+
     LaunchedEffect(controller) {
         controller.setControlCallbacks(
             onAction = { action -> latestOnPlayerControlsAction.value(action) },
@@ -350,6 +373,7 @@ private fun NativePlayerSurface(
             }
             val focusOwner = KeyboardFocusManager.getCurrentKeyboardFocusManager().focusOwner
             if (focusOwner is JTextComponent) return@KeyEventDispatcher false
+            if (DesktopHostOs.current == DesktopHostOs.LINUX) controller.revealLinuxHudForKey()
             // Media keys are deliberately NOT handled here. A KeyEventDispatcher only sees keys
             // routed to a focused Nuvio window, which defeats the point of a media key; they are
             // owned by the Windows media session in player_bridge.cpp and arrive as the
@@ -922,9 +946,10 @@ private fun NativePlayerSurface(
                         val shader = linuxShaderProfile(settings, isAnimeContent, media?.size,
                             media?.confirmedSdr == true)
                         if (shader == null) lastLinuxShaderChain = null
-                        else if (shader.chain != lastLinuxShaderChain) {
+                        else if ("${shader.shaderOpts}|${shader.chain}" != lastLinuxShaderChain) {
+                            controller.setMpvProperty("glsl-shader-opts", shader.shaderOpts)
                             controller.setMpvProperty("glsl-shaders", shader.chain)
-                            lastLinuxShaderChain = shader.chain
+                            lastLinuxShaderChain = "${shader.shaderOpts}|${shader.chain}"
                         }
                         val shaderLabel = shader?.label
                         controller.setPlaybackInfo(
@@ -1001,6 +1026,7 @@ private fun NativePlayerSurface(
                         animeSvpSessionForced = settings.desktopAnimeSvpSessionForced,
                         isAnime = isAnimeContent,
                         isHdr = isHdr,
+                        displayHdr = videoState.displayHdr,
                         sourceSize = videoState.sourceSize,
                         skipShadersOnUltraHdSources = settings.desktopAnimeSkipUltraHdEnabled,
                         nvidiaRtxSuperResolutionEnabled = settings.nvidiaRtxSuperResolutionEnabled,
@@ -1236,14 +1262,17 @@ private data class DesktopVideoProfileState(
  * The mpv output-target properties for each desktop HDR mode, in application order. Also
  * reused, for its HDR-capable modes only, by the experimental Linux Wayland HDR session.
  */
-internal fun desktopHdrTargetMpvProperties(hdrMode: DesktopHdrMode): List<Pair<String, String>> = when (hdrMode) {
+internal fun desktopHdrTargetMpvProperties(
+    hdrMode: DesktopHdrMode,
+    displayPanel: String? = null,
+): List<Pair<String, String>> = when (hdrMode) {
     DesktopHdrMode.Auto -> listOf(
         "target-colorspace-hint" to "auto",
         "target-colorspace-hint-mode" to "target",
         "target-prim" to "auto",
         "target-trc" to "auto",
         "target-peak" to "auto",
-        "target-contrast" to "auto",
+        "target-contrast" to desktopTargetContrast(displayPanel, "auto"),
     )
     // Force an SDR BT.709/BT.1886 target. Merely disabling the colorspace hint does
     // not request HDR-to-SDR conversion and was effectively a no-op on HDR desktops.
@@ -1253,7 +1282,7 @@ internal fun desktopHdrTargetMpvProperties(hdrMode: DesktopHdrMode): List<Pair<S
         "target-prim" to "bt.709",
         "target-trc" to "bt.1886",
         "target-peak" to "203",
-        "target-contrast" to "1000",
+        "target-contrast" to desktopTargetContrast(displayPanel, "1000"),
     )
     // Source mode signals the source metadata to the compositor/display and is mpv's
     // traditional HDR passthrough path.
@@ -1263,7 +1292,7 @@ internal fun desktopHdrTargetMpvProperties(hdrMode: DesktopHdrMode): List<Pair<S
         "target-prim" to "auto",
         "target-trc" to "auto",
         "target-peak" to "auto",
-        "target-contrast" to "auto",
+        "target-contrast" to desktopTargetContrast(displayPanel, "auto"),
     )
 }
 
@@ -1274,7 +1303,9 @@ private fun applyDesktopVideoProfile(
     customGrade: DesktopColorGrade,
     isHdr: Boolean?,
 ) {
-    desktopHdrTargetMpvProperties(hdrMode).forEach { (key, value) -> controller.setMpvProperty(key, value) }
+    val displayPanel = PlayerSettingsRepository.uiState.value
+        .desktopMpvPropertyOverrides[DESKTOP_DISPLAY_PANEL_OVERRIDE_KEY]
+    desktopHdrTargetMpvProperties(hdrMode, displayPanel).forEach { (key, value) -> controller.setMpvProperty(key, value) }
     // Color-preset equalizer values adopted from Stremio-Kai by allecsc, used with
     // permission and attribution. The desktop player already mirrors Stremio-Kai's mpv
     // rendering pipeline (gpu-next, spline36/lanczos/mitchell scaling, sigmoid upscaling,
@@ -1488,11 +1519,15 @@ internal fun desktopActiveAnimeMode(
 internal fun shouldEnableDesktopRtxTrueHdr(
     enabled: Boolean,
     isHdr: Boolean?,
+    displayHdr: Boolean?,
     isEffectivelyAnime: Boolean,
     animeOptIn: Boolean,
     animeLayerActive: Boolean,
 ): Boolean = enabled &&
     isHdr == false &&
+    // True HDR outputs BT.2020/PQ, which breaks the colours on an SDR desktop. Unknown counts as
+    // off, like isHdr; player_bridge.cpp applies the same gate at FILE_LOADED.
+    displayHdr == true &&
     !animeLayerActive &&
     (!isEffectivelyAnime || animeOptIn)
 
@@ -1505,6 +1540,7 @@ private fun applyDesktopAnimeProfile(
     animeSvpSessionForced: Boolean,
     isAnime: Boolean,
     isHdr: Boolean?,
+    displayHdr: Boolean?,
     sourceSize: DesktopVideoSourceSize? = null,
     skipShadersOnUltraHdSources: Boolean = true,
     nvidiaRtxSuperResolutionEnabled: Boolean = false,
@@ -1591,6 +1627,7 @@ private fun applyDesktopAnimeProfile(
     val trueHdrActive = shouldEnableDesktopRtxTrueHdr(
         enabled = nvidiaRtxHdrEnabled,
         isHdr = isHdr,
+        displayHdr = displayHdr,
         isEffectivelyAnime = isEffectivelyAnime,
         animeOptIn = nvidiaRtxHdrAnimeEnabled,
         animeLayerActive = svpActive,
@@ -1598,6 +1635,7 @@ private fun applyDesktopAnimeProfile(
     val trueHdrActiveWithoutSvp = shouldEnableDesktopRtxTrueHdr(
         enabled = nvidiaRtxHdrEnabled,
         isHdr = isHdr,
+        displayHdr = displayHdr,
         isEffectivelyAnime = isEffectivelyAnime,
         animeOptIn = nvidiaRtxHdrAnimeEnabled,
         animeLayerActive = false,
@@ -1616,14 +1654,23 @@ private fun applyDesktopAnimeProfile(
         desktopRtxVideoFilter(vsrActiveWithoutSvp, trueHdrActiveWithoutSvp, nvidiaRtxSuperResolutionScale)
     } else ""
 
+    // Advanced (mpv) menu rows this profile owns. Interpolation is decided here because this is
+    // where SVP is decided: mpv's own interpolation must never run on top of it.
+    val advancedOverrides = PlayerSettingsRepository.uiState.value.desktopMpvPropertyOverrides
+    val filmGrain = advancedOverrides[DESKTOP_FILM_GRAIN_OVERRIDE_KEY]
+    desktopInterpolationProperties(
+        choice = advancedOverrides[DESKTOP_INTERPOLATION_OVERRIDE_KEY],
+        svpActive = svpActive,
+        audioPassthrough = PlayerSettingsRepository.uiState.value.desktopAudioPassthroughEnabled,
+    ).forEach { (key, value) -> controller.setMpvProperty(key, value) }
+
     if (customShaderChain.isNotEmpty()) {
         controller.setMpvProperty("scale", "ewa_lanczos")
         controller.setMpvProperty("cscale", "ewa_lanczos")
         controller.setMpvProperty("scale-blur", "1.05")
         controller.setMpvProperty("deband-threshold", "45")
-        controller.setMpvProperty("deband-grain", "20")
-        controller.setMpvProperty("glsl-shaders", customShaderChain)
-
+        controller.setMpvProperty("deband-grain", desktopDebandGrain(filmGrain, "20"))
+        controller.setDesktopShaderChain(customShaderChain)
 
         controller.setSvpBypassVideoFilters("")
         controller.setMpvProperty(
@@ -1640,8 +1687,8 @@ private fun applyDesktopAnimeProfile(
 
     if (effectivePreset == null) {
         // Restore the bridge's baseline live-action rendering (see startMpv in player_bridge.cpp).
-        controller.setMpvProperty("glsl-shaders", "")
-        
+        controller.setDesktopShaderChain("")
+
         // Restore the standard D3D11VA hardware decoder so d3d11vpp (RTX features) works.
         // However, if SVP is active, we MUST use a copy-back decoder for the CPU filter.
         
@@ -1656,7 +1703,7 @@ private fun applyDesktopAnimeProfile(
         controller.setMpvProperty("cscale", "lanczos")
         controller.setMpvProperty("scale-blur", "0.0")
         controller.setMpvProperty("deband-threshold", "35")
-        controller.setMpvProperty("deband-grain", "0")
+        controller.setMpvProperty("deband-grain", desktopDebandGrain(filmGrain, "0"))
         controller.forceVideoRedraw()
         // Say so rather than showing nothing: an anime title playing with no shader row looks like
         // the setting failed, and this is the one case where that is a deliberate decision. Named
@@ -1674,9 +1721,9 @@ private fun applyDesktopAnimeProfile(
     controller.setMpvProperty("cscale", "ewa_lanczos")
     controller.setMpvProperty("scale-blur", "1.05")
     controller.setMpvProperty("deband-threshold", "45")
-    controller.setMpvProperty("deband-grain", "20")
+    controller.setMpvProperty("deband-grain", desktopDebandGrain(filmGrain, "20"))
 
-    controller.setMpvProperty("glsl-shaders", DesktopAnimeShaders.shaderChain(effectivePreset))
+    controller.setDesktopShaderChain(DesktopAnimeShaders.shaderChain(effectivePreset))
 
     // hqdn3d temporal/spatial denoise (Kai's standard anime VF). Skipped on HDR to avoid the heavier
     // filter chain fighting the tonemap path, matching Kai's denoise removal for HDR anime.
@@ -1705,6 +1752,20 @@ private fun applyDesktopAnimeProfile(
         shaderLabel = "Anime4K ${effectivePreset.label}".withTrueHdrSuffix(shaderTrueHdrVf.isNotEmpty()),
         svpActive = svpActive,
     )
+}
+
+/**
+ * Every `glsl-shaders` write in the profile goes through here so the Sharpen menu's CAS pass rides
+ * on whichever chain is active (none, Anime4K or a custom shader). Opts before shaders, so the
+ * chain never compiles once with a stale strength.
+ */
+private fun NativePlayerController.setDesktopShaderChain(chain: String) {
+    val sharpness = desktopCasSharpness(
+        PlayerSettingsRepository.uiState.value.desktopMpvPropertyOverrides[DESKTOP_SHARPEN_OVERRIDE_KEY],
+    )
+    val (shaders, opts) = desktopShaderChainWithSharpen(chain, sharpness)
+    setMpvProperty("glsl-shader-opts", opts)
+    setMpvProperty("glsl-shaders", shaders)
 }
 
 /** Shader labels say when True HDR is stacked on them, since it changes the look outright. */

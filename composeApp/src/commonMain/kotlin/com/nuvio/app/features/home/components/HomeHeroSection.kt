@@ -1,10 +1,11 @@
 package com.nuvio.app.features.home.components
 
-import com.nuvio.app.features.tmdb.fullSizeTmdbBackdrop
+import androidx.compose.ui.layout.onSizeChanged
 import coil3.SingletonImageLoader
 import coil3.compose.LocalPlatformContext
 import coil3.request.ImageRequest
 import coil3.size.Scale
+import com.nuvio.app.core.ui.rememberHeroLogoModel
 import com.nuvio.app.core.ui.nuvioDitheredVerticalGradient
 import com.nuvio.app.core.ui.HdrFadeCorrected
 import com.nuvio.app.core.ui.RecompositionProbe
@@ -63,6 +64,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.snapshotFlow
@@ -823,16 +825,27 @@ private fun HeroBackdropImage(
     // background wash) already does.
     // A TMDB backdrop is asked for at full size whatever size the addon supplied (see
     // fullSizeTmdbBackdrop); the poster fallback is left alone.
-    val model = fullSizeTmdbBackdrop(item.banner?.takeIf(String::isNotBlank))
-        ?: item.poster?.takeIf(String::isNotBlank)
+    val model = heroBackdropModel(item)
+    // The prefetcher decodes neighbouring backdrops at this slot's size.
+    val slotModifier = modifier.onSizeChanged { size ->
+        if (size.width > 0 && size.height > 0) HeroBackdropPrefetcher.slotSizePx.value = size.width to size.height
+    }
+    // Diagnostic (2026-10-16, "ghost" double images in the hero): logs when the SAME title's
+    // backdrop image changes, e.g. the addon's art replaced by TMDB's after enrichment, which the
+    // crossfade then blends with the outgoing title. One line per change, never per frame.
+    val backdropSwapTracker = remember { HeroBackdropSwapTracker() }
+    SideEffect { backdropSwapTracker.observe(item, model) }
 
     val homeCatalogSettings by HomeCatalogSettingsRepository.uiState.collectAsStateWithLifecycle()
     val crossfadeMillis = homeCatalogSettings.heroBackdropCrossfadeMillis
-    if (crossfade && crossfadeMillis > 0) {
+    // Auto-framing goes through the crossfade even when the fade is off (0 ms = a cut): the layer
+    // keeps the previous backdrop up until the new one has its crop, instead of drawing the new
+    // picture at the fallback crop and moving it a moment later (2026-10-17, crossfade at 0).
+    if (crossfade && (crossfadeMillis > 0 || framingPriorBias != null)) {
         HeroBackdropCrossfade(
             model = model,
             durationMillis = crossfadeMillis,
-            modifier = modifier,
+            modifier = slotModifier,
         ) { current, onResolved ->
             HeroBackdropImageLayer(
                 model = current,
@@ -851,12 +864,31 @@ private fun HeroBackdropImage(
     HeroBackdropImageLayer(
         model = model,
         contentDescription = contentDescription,
-        modifier = modifier,
+        modifier = slotModifier,
         alignment = alignment,
         contentScale = contentScale,
         onImageLoaded = onImageLoaded,
         framingPriorBias = framingPriorBias,
     )
+}
+
+/** See the diagnostic in [HeroBackdropImage]. */
+private class HeroBackdropSwapTracker {
+    private var lastKey: String? = null
+    private var lastModel: String? = null
+
+    fun observe(item: MetaPreview, model: String?) {
+        val key = "${item.type}:${item.id}"
+        if (key == lastKey && model != lastModel) {
+            heroImageLog.i {
+                "backdrop swap for same title $key: " +
+                    "${lastModel?.safeImageUrlForLog() ?: "none"} -> ${model?.safeImageUrlForLog() ?: "none"} " +
+                    "(poster fallback=${model != null && model == item.poster})"
+            }
+        }
+        lastKey = key
+        lastModel = model
+    }
 }
 
 /**
@@ -925,8 +957,10 @@ internal fun HeroBackdropCrossfade(
                         // screen is the backdrop underneath.
                         snapshotFlow { layer.resolved }.first { it }
                         if (layer.hasArtwork) {
+                            com.nuvio.app.core.ui.UiMotion.markBusy(durationMillis.toLong())
                             layer.alpha.animateTo(1f, tween(durationMillis))
                         } else {
+                            com.nuvio.app.core.ui.UiMotion.markBusy(durationMillis.toLong())
                             // Resolved with nothing to draw: artwork that 404s, or an item that has
                             // none. Raising this layer would do nothing at all, since it paints
                             // nothing, so the fade has to be the one underneath going out - or the
@@ -1142,10 +1176,12 @@ private fun FramedHeroBackdropImageLayer(
 }
 
 /**
- * How long a new backdrop's fade-in may wait for its analysis (~100-200ms on a desktop CPU).
- * Past this it fades in at the fallback crop and eases over when the analysis finishes.
+ * How long a new backdrop's fade-in may wait for its analysis (~100-200ms on the JVM build;
+ * 238-516ms, mean 262, on the native build, 2026-10-17). Past this it fades in at the fallback
+ * crop and eases over when the analysis finishes. Only the first sighting of a backdrop waits:
+ * the result is cached in memory and on disk.
  */
-private const val FramingResolveWaitMillis = 450L
+private const val FramingResolveWaitMillis = 700L
 private const val FramingSettleMillis = 350
 
 @Composable
@@ -2233,30 +2269,6 @@ private fun DesktopHeroContentBlock(
     val interactionSource = remember { MutableInteractionSource() }
     var logoLoadError by remember(item.type, item.id, item.logo) { mutableStateOf(false) }
     val logoUrl = item.logo?.takeIf { it.isNotBlank() && !logoLoadError }
-    // TEMPORARY (hero race diagnosis) — remove with logHeroPick. Reports what the slot actually
-    // paints, not merely the logo value: the first version of this probe printed TITLE-TEXT
-    // whenever logo was null, which is also true while the slot is deliberately held blank, so it
-    // could not see whether the hold was working. Text completeness rides along so a
-    // partially-enriched frame (ratings present, genres/synopsis missing) is visible too.
-    LaunchedEffect(
-        item.type,
-        item.id,
-        item.logo,
-        item.heroMetadataPending,
-        item.genres.size,
-        item.description,
-    ) {
-        co.touchlab.kermit.Logger.withTag("HeroLogoRace").d {
-            val slot = when {
-                !item.logo.isNullOrBlank() -> "logo:" + item.logo!!.takeLast(26)
-                item.heroMetadataPending -> "BLANK-HELD"
-                else -> "TITLE-TEXT"
-            }
-            "t=${com.nuvio.app.features.home.heroProbeMs()} RENDER ${item.type}:${item.id} slot=$slot " +
-                "genres=${item.genres.size} hasDescr=${!item.description.isNullOrBlank()} " +
-                "year=${item.releaseInfo ?: "-"} runtime=${item.runtime ?: "-"}"
-        }
-    }
     // A resume prompt puts its two actions on the hero itself rather than on buttons: left click
     // resumes, right click dismisses. The buttons they replace sat at the bottom of the metadata
     // column, so they inherited its layout — they appeared before the metadata they were positioned
@@ -2353,17 +2365,24 @@ private fun DesktopHeroContentBlock(
             }
 
             if (logoUrl != null) {
+                // Adaptive and Basic centre the logo in the space above the cast row, so a wide,
+                // short logo no longer sits on the cast with the space above it empty, and a tall
+                // one grows evenly both ways. TV Mode keeps it on the cast row: its slot is a
+                // weighted remainder whose height varies with the rows below, and a centred logo
+                // would drift with it. The margins are trimmed first (rememberHeroLogoModel), or
+                // a logo's baked-in padding would decide its position instead.
+                val logoAlignment = if (immersiveBudget != null) Alignment.BottomStart else Alignment.CenterStart
                 Box(
                     modifier = logoSlotModifier,
-                    contentAlignment = Alignment.BottomStart,
+                    contentAlignment = logoAlignment,
                 ) {
                     AsyncImage(
-                        model = logoUrl,
+                        model = rememberHeroLogoModel(logoUrl),
                         contentDescription = item.name,
                         modifier = Modifier
                             .fillMaxWidth(desktopHeroLogoWidthFraction(layout))
                             .fillMaxHeight(),
-                        alignment = Alignment.BottomStart,
+                        alignment = logoAlignment,
                         contentScale = ContentScale.Fit,
                         clipToBounds = false,
                         onError = { state ->
@@ -3257,7 +3276,7 @@ private fun compactHeroMetaParts(item: MetaPreview): List<String> =
         }
         item.genres.firstOrNull()
             ?.takeIf(String::isNotBlank)
-            ?.let(::add)
+            ?.let { add(heroGenreDisplayText(it)) }
         item.releaseInfo
             ?.takeIf(String::isNotBlank)
             ?.let(::formatReleaseDateForDisplay)
@@ -3272,6 +3291,23 @@ private fun desktopHeroGenreText(
     includeAgeRating: Boolean = true,
 ): String = desktopHeroGenreParts(item, showExtendedMetadata, showReleaseMetadata, includeAgeRating)
     .joinToString(" • ") { it.text }
+
+/**
+ * A genre as the hero shows it: each word capitalised. Some sources send genres in lower case
+ * ("action", "science fiction"), which read as a typo beside the year and runtime. Only first
+ * letters are raised, so names already styled ("Sci-Fi & Fantasy", "TV Movie") come through
+ * unchanged. Display only: the genre itself, which hover cards and filters match on, is untouched.
+ */
+internal fun heroGenreDisplayText(genre: String): String {
+    val text = genre.trim()
+    return buildString(text.length) {
+        var startOfWord = true
+        for (character in text) {
+            append(if (startOfWord && character.isLetter()) character.uppercaseChar() else character)
+            startOfWord = character == ' ' || character == '-' || character == '/' || character == '&'
+        }
+    }
+}
 
 /** One entry of the hero's genre line; [genre] is set on the entries that are genres. */
 private data class HeroGenrePart(val text: String, val genre: String? = null)
@@ -3289,7 +3325,7 @@ private fun desktopHeroGenreParts(
     includeAgeRating: Boolean = true,
 ): List<HeroGenrePart> {
     val values = buildList {
-        item.genres.take(3).filter(String::isNotBlank).forEach { add(HeroGenrePart(it, genre = it)) }
+        item.genres.take(3).filter(String::isNotBlank).forEach { add(HeroGenrePart(heroGenreDisplayText(it), genre = it)) }
         if (showReleaseMetadata) {
             item.releaseInfo
                 ?.takeIf(String::isNotBlank)

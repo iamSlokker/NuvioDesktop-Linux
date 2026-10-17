@@ -223,6 +223,7 @@ internal object DesktopSingleInstanceProcessProbe {
     private fun describe(link: AppDeepLink?): String = when (link) {
         is AppDeepLink.Meta -> "META:${link.type}:${link.id}"
         AppDeepLink.Downloads -> "DOWNLOADS"
+        is AppDeepLink.Party -> "PARTY:${link.code}"
         null -> "NONE"
     }
 }

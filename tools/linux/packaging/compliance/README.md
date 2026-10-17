@@ -241,7 +241,7 @@ remain unchanged; these additions take effect only in a future authorized build.
 
 ```sh
 env -u DISPLAY -u WAYLAND_DISPLAY -u NUVIO_RUN_LIVE_DISPLAY_TESTS \
-  JAVA_HOME=/path/to/temurin-17 PYTHONDONTWRITEBYTECODE=1 \
+  JAVA_HOME=/path/to/temurin-21 PYTHONDONTWRITEBYTECODE=1 \
   python3 -m unittest discover -s tools/linux/packaging/tests -v
 git diff --check
 ```
