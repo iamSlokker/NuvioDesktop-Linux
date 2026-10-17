@@ -945,9 +945,10 @@ private fun NativePlayerSurface(
                         val shader = linuxShaderProfile(settings, isAnimeContent, media?.size,
                             media?.confirmedSdr == true)
                         if (shader == null) lastLinuxShaderChain = null
-                        else if (shader.chain != lastLinuxShaderChain) {
+                        else if ("${shader.shaderOpts}|${shader.chain}" != lastLinuxShaderChain) {
+                            controller.setMpvProperty("glsl-shader-opts", shader.shaderOpts)
                             controller.setMpvProperty("glsl-shaders", shader.chain)
-                            lastLinuxShaderChain = shader.chain
+                            lastLinuxShaderChain = "${shader.shaderOpts}|${shader.chain}"
                         }
                         val shaderLabel = shader?.label
                         controller.setPlaybackInfo(
