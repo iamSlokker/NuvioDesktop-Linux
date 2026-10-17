@@ -127,6 +127,7 @@ internal object NativeImageSupport {
                 }
                 outcome.getOrThrow()
             }
+            if (com.nuvio.app.features.player.desktop.DesktopHostOs.current == com.nuvio.app.features.player.desktop.DesktopHostOs.LINUX) LinuxNativeSelfTest.run(::probe)
             println("Info: (NativeSelfTest) done passed=$passed failed=$failed")
         }.apply { name = "nuvio-native-selftest"; isDaemon = true }.start()
     }
