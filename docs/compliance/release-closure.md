@@ -1,5 +1,7 @@
 # Release preparation: font and notice closure
 
+**2026-10-17 owner decision:** the Linux build now ships Umbra's original artwork unchanged, as upstream; only the four setup previews remain fork replacements. See [Owner decision 2026-10-17](artwork-data-closure.md#owner-decision-2026-10-17-upstream-artwork). The artwork statements below are historical.
+
 **2026-10-13 — reviewable correction; public redistribution remains BLOCKED.**
 Base: `linux` at `a5adf33bda9fee1273d7d6cd8f1ad629464feb05`.
 Later [artwork/data follow-up](artwork-data-closure.md), based on `805797ed`,
