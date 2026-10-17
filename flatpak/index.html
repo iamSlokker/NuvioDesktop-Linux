@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Nuvio Desktop (Linux) Flatpak repository</title>
+<style>
+:root { color-scheme: light dark; --bg: #fff; --fg: #1d1d1f; --muted: #5f6368; --code: #f2f2f4; }
+@media (prefers-color-scheme: dark) { :root { --bg: #141416; --fg: #ececf1; --muted: #a0a0aa; --code: #24242a; } }
+body { background: var(--bg); color: var(--fg); font: 16px/1.5 system-ui, sans-serif; margin: 0 auto; max-width: 46rem; padding: 1.5rem 1rem; }
+pre { background: var(--code); border-radius: 6px; overflow-x: auto; padding: .75rem; }
+code, pre { font-family: ui-monospace, monospace; font-size: .9rem; }
+.muted { color: var(--muted); }
+</style>
+</head>
+<body>
+<h1>Nuvio Desktop (Linux)</h1>
+<p>Signed Flatpak builds of the Nuvio Desktop Linux port. Current stable release: <strong>1.15.2</strong>
+(source <code>7fea1a709676</code>, OSTree commit <code>220bc1fb45a4</code>).</p>
+<h2>Install</h2>
+<pre>flatpak install --user https://iamslokker.github.io/NuvioDesktop-Linux/flatpak/com.nuvio.media.desktop.flatpakref</pre>
+<p>Or add the repository, then install from it:</p>
+<pre>flatpak remote-add --user --if-not-exists nuvio https://iamslokker.github.io/NuvioDesktop-Linux/flatpak/nuvio.flatpakrepo
+flatpak install --user nuvio com.nuvio.media.desktop</pre>
+<p>Updates then arrive through <code>flatpak update</code>, GNOME Software/Discover, or the app's update prompt.
+The GNOME Platform runtime comes from Flathub.</p>
+<h2>Moving from a downloaded .flatpak bundle</h2>
+<p>Bundles from earlier releases were not linked to this repository and never update.
+Uninstall once (your profile in <code>~/.var/app/com.nuvio.media.desktop</code> is kept), then install as above:</p>
+<pre>flatpak uninstall --user com.nuvio.media.desktop
+flatpak install --user https://iamslokker.github.io/NuvioDesktop-Linux/flatpak/com.nuvio.media.desktop.flatpakref</pre>
+<h2>Signing key</h2>
+<p>Commits and the repository summary are signed with
+<a href="nuvio-flatpak.pub.gpg">this key</a>, fingerprint
+<code>D05F4C300FAE392F429A056C5D7BCA5A777858D3</code>.</p>
+<p class="muted">Source and other formats: <a href="https://github.com/iamSlokker/NuvioDesktop-Linux">https://github.com/iamSlokker/NuvioDesktop-Linux</a></p>
+</body>
+</html>

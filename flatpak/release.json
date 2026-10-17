@@ -1,0 +1,9 @@
+{
+  "ref": "app/com.nuvio.media.desktop/x86_64/stable",
+  "commit": "220bc1fb45a46a04aa79326e48456e0f88eb51f6d378eb7e798e40d04a51796d",
+  "version": "1.15.2",
+  "version_code": 28,
+  "git_commit": "7fea1a7096763e542f2f31cb7b5f4fa66099c80a",
+  "source_date_epoch": 1792193832,
+  "key_fingerprint": "D05F4C300FAE392F429A056C5D7BCA5A777858D3"
+}
