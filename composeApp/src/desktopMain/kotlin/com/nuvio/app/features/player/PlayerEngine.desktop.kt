@@ -373,6 +373,7 @@ private fun NativePlayerSurface(
             }
             val focusOwner = KeyboardFocusManager.getCurrentKeyboardFocusManager().focusOwner
             if (focusOwner is JTextComponent) return@KeyEventDispatcher false
+            if (DesktopHostOs.current == DesktopHostOs.LINUX) controller.revealLinuxHudForKey()
             // Media keys are deliberately NOT handled here. A KeyEventDispatcher only sees keys
             // routed to a focused Nuvio window, which defeats the point of a media key; they are
             // owned by the Windows media session in player_bridge.cpp and arrive as the

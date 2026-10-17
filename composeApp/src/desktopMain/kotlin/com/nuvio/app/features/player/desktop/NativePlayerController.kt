@@ -488,6 +488,7 @@ internal class NativePlayerController(
                         } else {
                             handle = newHandle
                             if (linux) linuxHandleSourceUrl = pending.sourceUrl
+                            if (linux && !linuxHeroSurface) NativePlayerBridge.runJavaScript(newHandle, LINUX_HUD_AUTO_HIDE_SCRIPT)
                             diagnosticsOverlayEnabled = false
                             true
                         }
@@ -805,6 +806,13 @@ internal class NativePlayerController(
             showVolumePillFromNative()
         }
         // Speed events pill themselves inside handlePlayerEvent, since the HUD sends them too.
+    }
+
+    /** A key the Linux AWT dispatcher saw while the player owns the keyboard; see LinuxHudAutoHide.kt. */
+    fun revealLinuxHudForKey() {
+        if (disposed || linuxHeroSurface || DesktopHostOs.current != DesktopHostOs.LINUX) return
+        val current = handle.takeIf { it != 0L } ?: return
+        NativePlayerBridge.runJavaScript(current, LINUX_HUD_REVEAL_FOR_KEY_SCRIPT)
     }
 
     fun dispatchLinuxEscapeKey(event: java.awt.event.KeyEvent): Boolean {
