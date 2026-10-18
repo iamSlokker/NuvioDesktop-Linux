@@ -12,3 +12,8 @@ Linux counterparts of upstream's Windows-only globs in `../../native-image/resou
   (`externalDesktopResources`). The Linux packages keep them in the jar, so the image must carry
   them. Probe: "backdrop framing models"; the setup screenshots show on first run; the anime ID
   mapping (`AnimeIdMappingStorage`) loads the dataset like upstream, with no download.
+- `com/sun/swing/internal/plaf/{basic,metal}/resources/*_*.properties` (module `java.desktop`):
+  Swing's `UIDefaults` probes a `.properties` variant of its locale bundles (`basic_en_US`, ...)
+  before using the compiled `basic`/`metal` classes. The files do not exist; registering the
+  globs only makes the probe a normal miss instead of a QA-build report (owner's signed-in QA
+  build, 2026-10-18).

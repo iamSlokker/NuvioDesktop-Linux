@@ -14,6 +14,14 @@
     },
     {
       "glob": "anime-list-mini.json"
+    },
+    {
+      "module": "java.desktop",
+      "glob": "com/sun/swing/internal/plaf/basic/resources/basic_*.properties"
+    },
+    {
+      "module": "java.desktop",
+      "glob": "com/sun/swing/internal/plaf/metal/resources/metal_*.properties"
     }
   ]
 }

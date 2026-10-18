@@ -1,0 +1,24 @@
+{
+  "reflection": [
+    {
+      "type": "org.jetbrains.skiko.redrawer.LinuxOpenGLRedrawer",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "org.jetbrains.skiko.redrawer.AWTRedrawer",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "org.jetbrains.skiko.context.OpenGLContextHandler",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "org.jetbrains.skiko.context.JvmContextHandler",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "org.jetbrains.skiko.context.ContextHandler",
+      "allDeclaredFields": true
+    }
+  ]
+}
