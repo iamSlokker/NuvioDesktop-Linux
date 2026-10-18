@@ -488,6 +488,7 @@ internal class NativePlayerController(
                         } else {
                             handle = newHandle
                             if (linux) linuxHandleSourceUrl = pending.sourceUrl
+                            if (linux && !linuxHeroSurface) NativePlayerBridge.runJavaScript(newHandle, LINUX_PLAYER_MENU_SCRIPT)
                             diagnosticsOverlayEnabled = false
                             true
                         }
@@ -1142,6 +1143,8 @@ internal class NativePlayerController(
     }
 
     fun cycleDesktopAnimeSvpMode() {
+        // Linux has no SVP (see LinuxPlayerMenu.kt); a pill saying "On" would be a lie.
+        if (DesktopHostOs.current == DesktopHostOs.LINUX) return
         val current = PlayerSettingsRepository.uiState.value.desktopAnimeSvpEnabled
         val next = !current
         PlayerSettingsRepository.setDesktopAnimeSvpEnabled(next)

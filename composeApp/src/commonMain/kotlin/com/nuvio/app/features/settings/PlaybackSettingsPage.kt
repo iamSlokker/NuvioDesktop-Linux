@@ -1447,6 +1447,8 @@ private fun PlaybackSettingsSection(
                                 modifier = Modifier.settingsScrollAnchor(SettingsScrollAnchor.AnimeSkipUltraHd),
                                 onCheckedChange = PlayerSettingsRepository::setDesktopAnimeSkipUltraHdEnabled,
                             )
+                            // SVP needs VapourSynth and SVP's Windows-only plugins.
+                            if (isWindows) {
                             SettingsGroupDivider(isTablet = isTablet)
                             SettingsSwitchRow(
                                 title = stringResource(Res.string.settings_playback_desktop_anime_svp),
@@ -1466,6 +1468,7 @@ private fun PlaybackSettingsSection(
                                     modifier = Modifier.settingsScrollAnchor(SettingsScrollAnchor.AnimeSvpOverlay),
                                     onCheckedChange = PlayerSettingsRepository::setDesktopAnimeSvpDebugOverlayEnabled,
                                 )
+                            }
                             }
                         }
                         SettingsGroupDivider(isTablet = isTablet)
