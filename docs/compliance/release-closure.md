@@ -130,6 +130,18 @@ Details: [platform source evidence](platform-source-evidence.md).
 | Flatpak | Same as DEB; the GNOME runtime is installed separately from Flathub and is not part of the bundle | **PENDING MANUAL PUBLICATION** |
 | AppImage | Same as DEB; source-built runtime with notices, source archive and relink kit, plus WebKit/GTK and Ubuntu library sources, verified in run 38538334113 (historical artifacts: original runtime inputs unresolved, do not redistribute) | **PENDING MANUAL PUBLICATION** |
 
+**Native-image packages (2026-10-18, not yet built in CI):** packages from the
+native-image change ship GraalVM CE 25.0.2's native executable and emitted JDK
+libraries instead of Temurin and the application JARs. Their source assets change
+accordingly: `SOURCE-MAP.json` lists the pinned graal, labs-openjdk and mx archives
+and `Nuvio-native-image-inputs-*.tar` instead of the Temurin source;
+`share/licenses/GraalVM/` replaces `share/licenses/Java/`, and the input JARs'
+notice files ship under `share/licenses/jar-notices/`
+([retention](dependency-source-retention.md#graalvm-ce-2502-native-image-packages)).
+The DEB/Flatpak/AppImage gates above describe the JVM releases; the first native
+CI run needs the same review (current Maven set, GraalVM notices, recipient source
+delivery) before publication. The builder OCI keeps Temurin as its build JDK.
+
 These are evidence boundaries, not legal certification. No permissions or
 license exemptions were invented, and no historical package/source receipt was
 rewritten to describe a new binary.

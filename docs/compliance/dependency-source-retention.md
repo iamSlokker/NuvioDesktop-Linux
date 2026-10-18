@@ -48,6 +48,49 @@ retain the required original license/copyright/NOTICE text, applicable source
 forms and build instructions, and cover incorporated native components. Do not
 publish the local cache as a supposedly complete source offering.
 
+## GraalVM CE 25.0.2 (native-image packages)
+
+Since the native-image packages, DEB/Flatpak/AppImage contain no JVM and no JAR:
+`lib/nuvio` is the GraalVM native executable (application, Maven JARs, the JDK class
+library and Substrate VM compiled together) and `lib/*.so` plus
+`lib/runtime/lib/libjawt.so` are JDK libraries native-image emitted or copied
+unchanged. GraalVM CE is GPLv2 with the Classpath Exception (`LICENSE.txt`); its
+`LICENSE.txt`, `LICENSE_NATIVEIMAGE.txt`, `THIRD_PARTY_LICENSE.txt`, `release` and
+the per-module `legal/` tree ship under `share/licenses/GraalVM/`, hash-bound by
+`share/nuvio-native-image/inputs.json`. The receipt's `graalvm` record pins:
+
+- Binary: `graalvm-community-jdk-25.0.2_linux-x64_bin.tar.gz`, SHA256
+  `e0be791c8fda4d03b6b0a0cb824fef3149736170057b3a515252b44419606af0` (equal to the
+  official `.sha256` release asset, which is retained). `release`: IMPLEMENTOR
+  `GraalVM Community`, `25.0.2+10-jvmci-b01`.
+- Source, the commits that `release` records (upstream publishes no source bundle;
+  `lib/src.zip` and `lib/svm/*.src.zip` are Java-only):
+
+| Archive (codeload) | Commit | Bytes | SHA256 |
+| --- | --- | --- | --- |
+| oracle/graal (tags jdk-25.0.2, vm-25.0.2, graal-25.0.2) | `981ecb6e1be6bf4591a6dd24b48ea053221209f5` | 46,012,969 | `b578f3da475b0c53988c7dd8162447fea16098f42bf432d50ea83d93043a0f01` |
+| graalvm/labs-openjdk (tag 25.0.2+10-jvmci-b01) | `2ea5f0bb564c9bf42ce06a65d96fb7941ebfd6d2` | 119,452,242 | `9c06ed0dd5e1e30819eb0b90b9e2965aca74195a3ca4cbc3638c8de948c32c25` |
+| graalvm/mx (tag 7.54.6.1, graal's `common.json` mx_version) | `7d659b9a1955418558b9374ac5ff08bc7f426ff2` | 633,052 | `8b4d5da89895a6b1511cd1ce765f24b3535afd3e14964df655d3a8ae0d5210fb` |
+
+`compliance/release_sources.py` fetches these three archives by hash and lists them
+for every package in `SOURCE-MAP.json`, together with `Nuvio-native-image-inputs-*.tar`
+(the exact input JARs, path-free arguments and metadata hashes native-image used,
+i.e. what rebuilding or relinking the executable with a modified library needs).
+
+Boundaries: `release` records the labs-openjdk tree as dirty (`2ea5f0bb564c+`) and
+the `labsjdk-builder` recipe (`730f35899d04557d42cb3ac8b3e2f74088a66c62`) is not
+public, as with the temurin-build recipe this is upstream evidence only; there is no
+independent source-to-binary attestation. FreeType and zlib are not in GraalVM's
+`legal/`: `libfontmanager.so` needs the system `libfreetype.so.6` and the executable
+and `libsplashscreen.so` need `libz.so.1`. The DEB depends on `libfreetype6`/`zlib1g`
+(plus `libxi6`, `libxrender1`, `libxtst6` for `libawt_xawt.so` and `libasound2` for
+`libjsound.so`), the AppImage bundles the Ubuntu builds under its Ubuntu source lock,
+and the Flatpak uses GNOME Platform's.
+
+Temurin below remains the **build** JDK (Gradle, Kotlin, jpackage) in the builder OCI
+and the runtime of the earlier JVM releases; no native-image package contains it, so
+its source is no longer a package asset. Its receipt stays for the builder-OCI scope.
+
 ## Temurin 21.0.12.1+1
 
 The builder pin moved from Temurin 17.0.20.1+1 to 21.0.12.1+1 when upstream set

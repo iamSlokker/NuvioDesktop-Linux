@@ -26,7 +26,7 @@ reports local review only, not source-delivery or redistribution approval.
 | --- | --- |
 | [Original inventory](linux-third-party-inventory.json) | Actual DEB/Flatpak/AppImage hashes, all inspected payloads, original/distributed JAR bytes, exact original application Git blobs, WebKit/GTK sources and patches |
 | [Original CI receipt](evidence/run-38397205286.json) | Outer artifact digest, run/source identity, existing source archive hashes, local media source archive, FFmpeg signer and source-access limits |
-| [Dependency retention](evidence/dependency-source-retention.json) | Exact original Maven binary → POM/module → source SHA256, signed full Temurin source/SBOM and build scripts, native root sources, model and font evidence |
+| [Dependency retention](evidence/dependency-source-retention.json) | Exact original Maven binary → POM/module → source SHA256, signed full Temurin source/SBOM and build scripts (builder OCI and JVM releases), GraalVM CE 25.0.2 binary and graal/labs-openjdk/mx source pins (native-image packages), native root sources, model and font evidence |
 | [Ubuntu source lock](evidence/ubuntu-source-lock.json) | Actual AppImage package owner → exact binary/source version → Ubuntu-signed source index → each `.dsc`, original and Debian source input SHA256 |
 | [Platform source evidence](evidence/platform-source-retention.json) | Exact AppImage runtime source/static input pins and GNOME runtime commit → upstream build recipe, with unresolved gaps |
 | [OCI package evidence](evidence/oci-ubuntu-packages.json) | Separately scoped full installed-package inventory in the immutable engine and canonical seed; does not certify every OCI layer/file |
@@ -66,7 +66,9 @@ the exact engine/media identities:
   recipes/                      exact application/media/engine/package build inputs
   media/                        existing strict source collection
   jvm/                          verified source JARs, POM/module evidence, notices
-  jdk/                          full source, build scripts, SBOM/signature evidence
+  native-image/                 exact input JARs, arguments and metadata hashes (relink)
+  jdk/                          GraalVM CE source (graal, labs-openjdk, mx) for packages;
+                                Temurin source/scripts/SBOM for the builder OCI
   native/                       required Skia/ONNX/QuickJS/Jansi source/build closure
   webkit-gtk/                   existing verified source collection and patches
   ubuntu/                       signed-index evidence, source lock and original inputs
@@ -121,8 +123,12 @@ normal integrity gates. Do not disable sandboxing, forge receipts or directly
 mutate a verified image and reuse its old audit. AppImage static runtime and other
 static/native combinations need reviewed relink materials/instructions under
 their applicable licenses; a runtime source tar alone does not prove this.
-Temurin's retained `doc/building.md` and build scripts cover upstream building,
-but testing a modified runtime through jlink/jpackage remains separate.
+Native-image packages compile the application, Maven JARs and the JDK class library
+into `lib/nuvio`; `Nuvio-native-image-inputs-*.tar` carries the exact inputs and
+arguments needed to rebuild it with a modified library, but a modified-library
+rebuild has not been tested. Building a modified GraalVM from the pinned graal,
+labs-openjdk and mx sources is upstream's documented mx procedure, likewise untested
+here. Temurin's retained `doc/building.md` and build scripts cover the build JDK.
 
 Each CI release run's `compliance/release_sources.py` binds the Ubuntu source lock
 to the built AppImage by **exact binary version**, not by builder image ID. For

@@ -76,10 +76,10 @@
       "sha256": "07d1a07c006756eb4ee25aaa2ceaad81174ae621f1e2d530c287a19d951ec4d8"
     },
     {
-      "bytes": 358948,
+      "bytes": 364920,
       "path": "docs/compliance/evidence/dependency-source-retention.json",
       "scope_limit": "Local Maven/JDK/native/model evidence; JNI/static build closure and rights/notice review remain separate.",
-      "sha256": "277e4b67e6d5fd57747f60989b9e54811a672b8cfa37fb9fb2000cb38e15695c"
+      "sha256": "b759e5a0c43fcdc03f70708435f002c1d14945101a5470bae20bc95ed8476aeb"
     },
     {
       "bytes": 124072,
@@ -142,22 +142,22 @@
       "sha256": "8334c710d76557e6d7ec42717584e6ae0dc4753920dd943410a3acebce73a0ed"
     },
     {
-      "bytes": 10276,
+      "bytes": 11107,
       "path": "docs/compliance/modified-build-and-install.md",
       "scope_limit": "Concrete current entry points, not tested complete offline rebuild or installation acceptance.",
-      "sha256": "74104e7fff194e6fb653c26e6793063d1dc44886dcc5cb3d12183f6afed43a03"
+      "sha256": "431524dcd7bc7b10b55e55da0713f5bb3ee07dc0aea70d80f5d2e5cc4f1f667b"
     },
     {
-      "bytes": 9754,
+      "bytes": 10608,
       "path": "docs/compliance/release-closure.md",
       "scope_limit": "Current font/notice correction and remaining gates; all formats remain blocked.",
-      "sha256": "1aaeed45011c6c1408060f4b123204c97764f6b2ac5651096b043e039299e853"
+      "sha256": "a4646ea43f51f6f40336469fb8fbedb1be2b35b87cc6acc823852c5ca5322c49"
     },
     {
-      "bytes": 12531,
+      "bytes": 13164,
       "path": "docs/compliance/source-delivery-plan.md",
       "scope_limit": "Proposed delivery/retention design, not an approved offer or publication.",
-      "sha256": "fd5ad27151de847a95ecb9020b05b2e88f2f0563ae9d53f5c3000fb82749a163"
+      "sha256": "0cfb05513b3e3cf542556ce51bb10d93d18675006ef000157e0eb423e990cc9d"
     },
     {
       "bytes": 7355,
@@ -178,10 +178,10 @@
       "sha256": "13f5b5360bd540c55f4b882c078025d7085b53aebfc803cad2cb9954239ffb1b"
     },
     {
-      "bytes": 5926,
+      "bytes": 6055,
       "path": "tools/linux/packaging/artwork_contract.py",
       "scope_limit": "Future artwork/data payload gate; not legal clearance.",
-      "sha256": "8c6273454af7ab5e9f96349b83fdc230b78bfce1e4c33a2fc11e85f29c3f3f14"
+      "sha256": "4bee3bef91611e9eefb5605ab8e557ddb5f020776db537b62acc62ed6233ebb3"
     },
     {
       "bytes": 4460,
@@ -196,10 +196,10 @@
       "sha256": "e67f67c0f93a0aa3362dfa72f2ac6a2fe62db39701771f95169b4a88a627e8c3"
     },
     {
-      "bytes": 32391,
+      "bytes": 36426,
       "path": "tools/linux/packaging/compliance/inventory.py",
       "scope_limit": "Original package/source inventory verifier.",
-      "sha256": "2cc3ac5977a1d8830b8fc7cc3314db2f328af515d20d380304e06203b013fce9"
+      "sha256": "328ff038f5615adb43a2d46fc68fca36e40fbbbbbf7396941d1ec74f36fd302e"
     },
     {
       "bytes": 9942,
@@ -214,10 +214,10 @@
       "sha256": "2b7a28b15d31a007adfcb1bd2dc1c214fcfc1670fe49bc54b0e9e93fb4b37b1f"
     },
     {
-      "bytes": 2151,
+      "bytes": 2270,
       "path": "tools/linux/packaging/font_contract.py",
       "scope_limit": "Future application JAR font/notice gate; not proof existing artifacts contain Inter.",
-      "sha256": "4aeae1fc6b939d79a03b5c86274aac57bcbd88970bc0a22775835f846dbde361"
+      "sha256": "30c9ae8c7b7d5f8924bfa2be3e1e3647a319629df67a6bc3586f769e2d1218b4"
     },
     {
       "bytes": 2702,

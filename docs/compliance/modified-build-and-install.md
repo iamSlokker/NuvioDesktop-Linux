@@ -17,8 +17,10 @@ output directory and OS account/VM; leave any installed Nuvio and its data alone
    retained bytes with `compliance/inventory.py`. The tar alone does not contain
    the Git metadata used by `packaging/build.py`; do not synthesize a new Git
    commit and label it the original. Make modifications only after verification.
-3. Supply the pinned Temurin JDK, wrapper/Gradle dependencies, private media
-   runtime, immutable packaging builder and, where needed, verified WebKit engine.
+3. Supply the pinned Temurin build JDK, the pinned GraalVM CE 25.0.2 (both in
+   `tools/linux/packaging/config.json`; the packaging builder installs them),
+   wrapper/Gradle dependencies, private media runtime, immutable packaging builder
+   and, where needed, verified WebKit engine.
    Exact receipts and offline source checks are in the
    [source-delivery plan](source-delivery-plan.md) and
    [tool instructions](../../tools/linux/packaging/compliance/README.md).
@@ -114,11 +116,20 @@ runtime is a separate statically linked executable: its unknown original Alpine
 input revisions are still a blocker for a complete verified runtime rebuild and
 any applicable relink material. No arbitrary replacement is endorsed here.
 
-For modified Temurin/JDK or native JAR dependencies, the retained upstream build
-recipes provide starting inputs, but this project has not validated replacement
-through jlink/jpackage or the complete JNI build graph. Record those as incomplete
-procedures until tested. A sources JAR containing precompiled native objects is
-not sufficient by itself.
+Packages built since the native-image change contain no JVM or JAR: the
+application, its Maven JARs and the JDK class library are compiled into `lib/nuvio`
+by GraalVM native-image. To rebuild or relink it with a modified application or
+library, start from the matching `Nuvio-native-image-inputs-*.tar` (the exact input
+JARs and `inputs.json`: path-free native-image arguments, metadata file hashes and
+the GraalVM release), replace the JAR, and rerun
+`./gradlew :composeApp:createLinuxNativeDistributable -Pnuvio.graalvm.home=...` (or
+`build.py --format deb`, which also runs the native smoke gate) as described in
+`composeApp/native-image-linux/README.md`. A modified GraalVM is built from the
+pinned graal/labs-openjdk/mx sources with mx; this project has not tested that.
+For native JAR dependencies, the retained upstream build recipes provide starting
+inputs, but the complete JNI build graph has not been validated. Record those as
+incomplete procedures until tested. A sources JAR containing precompiled native
+objects is not sufficient by itself.
 
 ## Recipient delivery and remaining hard blockers
 
