@@ -149,6 +149,34 @@
       "sha256": "a09b34752b87038a4ff09d850812bb874fcd892b42a01d2f26882ae401458f4c",
       "size": 5548,
       "url": "https://youtrack.jetbrains.com/api/issues/WRS-2431?fields=idReadable,summary,description,comments(text,author(fullName),created)"
+    },
+    {
+      "expected_sha256_origin": "locally computed; tags jdk-25.0.2, vm-25.0.2 and graal-25.0.2 name this commit, as the binary release file does",
+      "path": "graalvm/graal-981ecb6e1be6bf4591a6dd24b48ea053221209f5.tar.gz",
+      "sha256": "b578f3da475b0c53988c7dd8162447fea16098f42bf432d50ea83d93043a0f01",
+      "size": 46012969,
+      "url": "https://codeload.github.com/oracle/graal/tar.gz/981ecb6e1be6bf4591a6dd24b48ea053221209f5"
+    },
+    {
+      "expected_sha256_origin": "locally computed; tag 25.0.2+10-jvmci-b01 peels to this commit, which the binary release file abbreviates",
+      "path": "graalvm/labs-openjdk-2ea5f0bb564c9bf42ce06a65d96fb7941ebfd6d2.tar.gz",
+      "sha256": "9c06ed0dd5e1e30819eb0b90b9e2965aca74195a3ca4cbc3638c8de948c32c25",
+      "size": 119452242,
+      "url": "https://codeload.github.com/graalvm/labs-openjdk/tar.gz/2ea5f0bb564c9bf42ce06a65d96fb7941ebfd6d2"
+    },
+    {
+      "expected_sha256_origin": "locally computed; tag 7.54.6.1, the mx_version pinned by oracle/graal common.json at that commit",
+      "path": "graalvm/mx-7d659b9a1955418558b9374ac5ff08bc7f426ff2.tar.gz",
+      "sha256": "8b4d5da89895a6b1511cd1ce765f24b3535afd3e14964df655d3a8ae0d5210fb",
+      "size": 633052,
+      "url": "https://codeload.github.com/graalvm/mx/tar.gz/7d659b9a1955418558b9374ac5ff08bc7f426ff2"
+    },
+    {
+      "expected_sha256_origin": "official GitHub release asset",
+      "path": "graalvm/graalvm-community-jdk-25.0.2_linux-x64_bin.tar.gz.sha256",
+      "sha256": "eee6d773dcd8ee3abf3b25935029687064b082a38a4e4f5824de01ac27c18c7d",
+      "size": 64,
+      "url": "https://github.com/graalvm/graalvm-ce-builds/releases/download/jdk-25.0.2/graalvm-community-jdk-25.0.2_linux-x64_bin.tar.gz.sha256"
     }
   ],
   "audit_package_commit": "fce98dc1633b51f813c20965e05941c2745beb8c",
@@ -188,6 +216,67 @@
     "required_action": "Obtain exact redistribution grant, or separately review and accept a licensed replacement across Compose and WebKit HUD, remove original bundled font bytes in future packages; selecting a system font at runtime alone does not remove redistribution.",
     "staff_statement_date": "2023-08-01",
     "staff_statement_summary": "JetBrains Sans was not released open source and use was limited to Writerside; subsequent staff responses report no public-release update."
+  },
+  "graalvm": {
+    "binary": {
+      "sha256": "e0be791c8fda4d03b6b0a0cb824fef3149736170057b3a515252b44419606af0",
+      "url": "https://github.com/graalvm/graalvm-ce-builds/releases/download/jdk-25.0.2/graalvm-community-jdk-25.0.2_linux-x64_bin.tar.gz"
+    },
+    "license_evidence": [
+      "LICENSE.txt: GPLv2 with the Classpath Exception (UPL for Graal.js, BSD for Sulong; neither is in lib/nuvio)",
+      "LICENSE_NATIVEIMAGE.txt (also lib/svm/), THIRD_PARTY_LICENSE.txt and the per-module legal/ tree",
+      "Shipped under share/licenses/GraalVM in every package, hash-bound by share/nuvio-native-image/inputs.json"
+    ],
+    "observations": [
+      "Binary SHA256 equals the official .sha256 release asset; IMPLEMENTOR is GraalVM Community (Enterprise jmods listed in MODULES are ~600-byte placeholders).",
+      "Upstream publishes no source bundle for the CE builds; lib/src.zip and lib/svm/*.src.zip are Java-only, so the pinned commits are the corresponding source.",
+      "SOURCE records the labs-openjdk tree as dirty (2ea5f0bb564c+); the labsjdk-builder recipe 730f35899d04557d42cb3ac8b3e2f74088a66c62 is not public (upstream evidence only, like the temurin-build recipe).",
+      "libfontmanager.so needs the system libfreetype.so.6 and the executable/libsplashscreen need libz.so.1: neither is in GraalVM legal/; DEB depends on libfreetype6/zlib1g, the AppImage bundles the Ubuntu builds under its Ubuntu source lock, Flatpak uses GNOME Platform."
+    ],
+    "release": {
+      "GRAALVM_VERSION": "25.0.2",
+      "IMPLEMENTOR": "GraalVM Community",
+      "JAVA_RUNTIME_VERSION": "25.0.2+10-jvmci-b01",
+      "JAVA_VERSION": "25.0.2",
+      "SOURCE": ".:git:2ea5f0bb564c+ labsjdk-builder:730f35899d04557d42cb3ac8b3e2f74088a66c62 compiler:981ecb6e1be6bf4591a6dd24b48ea053221209f5 espresso-shared:981ecb6e1be6bf4591a6dd24b48ea053221209f5 regex:981ecb6e1be6bf4591a6dd24b48ea053221209f5 sdk:981ecb6e1be6bf4591a6dd24b48ea053221209f5 substratevm:981ecb6e1be6bf4591a6dd24b48ea053221209f5 truffle:981ecb6e1be6bf4591a6dd24b48ea053221209f5 vm:981ecb6e1be6bf4591a6dd24b48ea053221209f5"
+    },
+    "remaining": [
+      "Recipient-facing source offer and hosting (source-delivery-plan.md).",
+      "No independent source-to-binary attestation of the upstream GraalVM build.",
+      "Statically incorporated third-party code in the emitted JDK libraries follows legal/; review it like the Temurin JDK."
+    ],
+    "scope": "Packages ship the native executable and its JDK libraries (no JVM). The GraalVM toolchain itself is only in the builder OCI.",
+    "source": {
+      "graal": {
+        "commit": "981ecb6e1be6bf4591a6dd24b48ea053221209f5",
+        "covers": "Substrate VM (native-image builder and runtime linked into lib/nuvio), Graal compiler, SDK (org.graalvm.nativeimage/word/collections, UPL), Truffle, regex, vm suite",
+        "path": "graalvm/graal-981ecb6e1be6bf4591a6dd24b48ea053221209f5.tar.gz",
+        "repository": "https://github.com/oracle/graal",
+        "tags": [
+          "jdk-25.0.2",
+          "vm-25.0.2",
+          "graal-25.0.2"
+        ]
+      },
+      "labs-openjdk": {
+        "commit": "2ea5f0bb564c9bf42ce06a65d96fb7941ebfd6d2",
+        "covers": "JDK class library compiled into lib/nuvio, and the emitted JDK libraries (libawt*, libfontmanager, libjava, liblcms, libmlib_image, libsplashscreen, libjavajpeg, libjsound, libjawt) with their bundled third-party code",
+        "path": "graalvm/labs-openjdk-2ea5f0bb564c9bf42ce06a65d96fb7941ebfd6d2.tar.gz",
+        "repository": "https://github.com/graalvm/labs-openjdk",
+        "tags": [
+          "25.0.2+10-jvmci-b01"
+        ]
+      },
+      "mx": {
+        "commit": "7d659b9a1955418558b9374ac5ff08bc7f426ff2",
+        "covers": "GraalVM build tool (scripts used to control compilation)",
+        "path": "graalvm/mx-7d659b9a1955418558b9374ac5ff08bc7f426ff2.tar.gz",
+        "repository": "https://github.com/graalvm/mx",
+        "tags": [
+          "7.54.6.1"
+        ]
+      }
+    }
   },
   "inventory_sha256": "3e01d1cb3618173a284a0e3246513f56a11ed929a93806c5694f5c7b5a0d50d3",
   "jdk": {
@@ -233,6 +322,7 @@
         "sha256": "ae4bc8a180d9ed792fc30621301794f5b2f54faaaa390e638a5093bc2a0b5efd"
       }
     ],
+    "scope_note": "Since the native-image packages, Temurin is the build JDK (Gradle, Kotlin, jpackage) inside the builder OCI only; no package contains it. Its source stays retained for that OCI scope and for the earlier JVM releases.",
     "source_archive_sha256": "573057d03584ae793fb7ec9a14c76d826d9187a53efeefd99da47403a5308234",
     "source_revision": "https://github.com/adoptium/jdk21u/commit/1c417fbfc2f70ab03a565b0af0a5a3c6f5e15ad6",
     "source_signature": {

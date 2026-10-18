@@ -3,12 +3,16 @@
 Writes, next to the packages in <work>/artifacts:
   Nuvio-media-source-<commit12>.tar.gz          FFmpeg/mpv/libplacebo/... inputs and recipes
   Nuvio-AppImage-Ubuntu-source-<commit12>.tar   exact Ubuntu sources of libraries bundled in the AppImage
-  OpenJDK<N>U-jdk-sources_<version>.tar.gz      Temurin source for the bundled Java runtime
+  graal-<commit>.tar.gz, labs-openjdk-<commit>.tar.gz, mx-<commit>.tar.gz
+                                                GraalVM CE source (Substrate VM, compiler, JDK, build
+                                                tool) for the native executable and its JDK libraries
   SOURCE-MAP.json                               every package -> the source assets that cover it
 
 The application and private WebKit/GTK source archives are already produced by
 formats.py/webkit.stage. All inputs are verified against pinned hashes; nothing
 here is uploaded. This is the delivery mechanism, not a legal determination.
+Packages no longer contain Temurin (it is only the build JDK inside the builder
+OCI, a separately reviewed scope), so its source is no longer a package asset.
 """
 import argparse
 import hashlib
@@ -40,13 +44,20 @@ def sha(path):
     return digest.hexdigest()
 
 
-def jdk_source_spec():
+GRAALVM_SOURCES = ('graal-', 'labs-openjdk-', 'mx-')
+
+
+def graalvm_source_specs():
+    """The pinned GraalVM CE source archives (oracle/graal, graalvm/labs-openjdk, graalvm/mx)."""
     rows = json.loads(RETENTION.read_text())['additional_retained_inputs']
-    matches = [row for row in rows if row['path'].startswith('temurin/OpenJDK')
-               and 'U-jdk-sources_' in row['path'] and row['path'].endswith('.tar.gz')]
-    if len(matches) != 1:
-        raise ValueError('Expected exactly one pinned Temurin source archive')
-    return matches[0]
+    specs = []
+    for prefix in GRAALVM_SOURCES:
+        matches = [row for row in rows if row['path'].startswith('graalvm/' + prefix)
+                   and row['path'].endswith('.tar.gz') and row['url'].startswith('https://codeload.github.com/')]
+        if len(matches) != 1:
+            raise ValueError('Expected exactly one pinned GraalVM source archive: ' + prefix)
+        specs.append(matches[0])
+    return specs
 
 
 def archive_member(tar, name):
@@ -133,8 +144,8 @@ def build(work, media_cache, ubuntu_cache, offline=False):
     collect_media(PACKAGING.parent / 'media-runtime', Path(media_cache), media)
     produced['media'] = media
 
-    jdk = jdk_source_spec()
-    produced['jdk'] = fetch(dict(url=jdk['url'], sha256=jdk['sha256']), artifacts / Path(jdk['path']).name)
+    produced['graalvm'] = [fetch(dict(url=spec['url'], sha256=spec['sha256']), artifacts / Path(spec['path']).name)
+                           for spec in graalvm_source_specs()]
 
     appimage = sorted(artifacts.glob('*.AppImage'))
     if appimage:
@@ -150,7 +161,12 @@ def build(work, media_cache, ubuntu_cache, offline=False):
     application = artifacts / f'Nuvio-source-{commit}.tar.gz'
     webkit = sorted(artifacts.glob('Nuvio-WebKit-source-*.tar.gz'))
     runtime = sorted(artifacts.glob('Nuvio-AppImage-runtime-source-*.tar.gz'))
-    common = [application, produced['media'], produced['jdk']]
+    # The exact JARs/arguments native-image compiled: what rebuilding or relinking the
+    # executable with a modified library needs, next to the corresponding sources.
+    native_inputs = sorted(artifacts.glob('Nuvio-native-image-inputs-*.tar'))
+    if len(native_inputs) != 1:
+        raise ValueError('Expected exactly one Nuvio-native-image-inputs archive')
+    common = [application, produced['media'], *produced['graalvm'], native_inputs[0]]
     packages = {}
     for pattern, kind in (('*.deb', 'deb'), ('*.flatpak', 'flatpak'), ('*.AppImage', 'appimage')):
         for package in sorted(artifacts.glob(pattern)):
@@ -166,7 +182,12 @@ def build(work, media_cache, ubuntu_cache, offline=False):
         packages=packages, appimage_ubuntu_binaries=bundled,
         not_included=dict(
             flatpak_runtime='org.gnome.Platform is installed separately from Flathub and is not part of the bundle',
-            maven='All 125 packaged Maven JARs are Apache-2.0 or MIT; their notices ship in the JARs and share/licenses',
+            maven='Maven JARs are compiled into the native executable, not shipped. Their notice files ship under '
+                  'share/licenses/jar-notices; the exact input JARs, native-image arguments and metadata hashes are in '
+                  'Nuvio-native-image-inputs-*.tar. The last reviewed set (125 JARs) was Apache-2.0 or MIT; '
+                  'the current set needs the same review',
+            graalvm='GraalVM CE 25.0.2 sources are the pinned upstream commits; upstream publishes no source bundle and '
+                    'its labsjdk-builder recipe is not public (see dependency-source-retention.md)',
             notices='License texts for every bundled component ship inside each package under share/licenses'),
         instructions='docs/compliance/modified-build-and-install.md in the application source archive')
     (artifacts / 'SOURCE-MAP.json').write_text(json.dumps(source_map, indent=2, sort_keys=True) + '\n')
