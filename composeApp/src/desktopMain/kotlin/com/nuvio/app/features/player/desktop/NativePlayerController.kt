@@ -1166,6 +1166,15 @@ internal class NativePlayerController(
     }
 
     /** Escape while the submission toast is asking something dismisses it instead of leaving. */
+    /**
+     * The "Escape goes windowed first" shortcut option: in fullscreen (not PiP) Escape leaves
+     * fullscreen instead of the player. Already windowed, Escape closes the player as usual.
+     */
+    fun escapeShouldGoWindowed(): Boolean =
+        PlayerShortcutsRepository.escWindowedFirst() &&
+            desktopAppFullscreenState.value &&
+            !desktopPictureInPictureState.value
+
     fun dismissSkipSubmitToastIfShown(): Boolean {
         if (!controlsState.skipSubmitToastDismissible) return false
         dispatchKeyboardShortcut("skipSubmitDismiss", 0.0)
@@ -1366,6 +1375,14 @@ internal class NativePlayerController(
                 }
             }
             "toggleFullscreen" -> toggleDesktopAppFullscreen(SwingUtilities.getWindowAncestor(host))
+            // The HUD's Escape (with nothing of its own to close). The back button still sends "back".
+            "escapeBack" -> {
+                if (escapeShouldGoWindowed()) {
+                    toggleDesktopAppFullscreen(SwingUtilities.getWindowAncestor(host))
+                } else {
+                    handlePlayerEvent("back", value)
+                }
+            }
             "pictureInPicture" -> {
                 val actionHandled = onAction(PlayerControlsAction.PictureInPicture)
                 if (!actionHandled) setDesktopPictureInPicture(!desktopPictureInPictureState.value, SwingUtilities.getWindowAncestor(host))
@@ -3250,6 +3267,12 @@ private fun StringBuilder.appendEpisodeItemJson(item: PlayerControlEpisodeItem) 
     appendJsonField("isCurrent", item.isCurrent)
     append(',')
     appendJsonField("isWatched", item.isWatched)
+    if (item.fillerKind.isNotEmpty()) {
+        append(',')
+        appendJsonField("fillerKind", item.fillerKind)
+        append(',')
+        appendJsonField("fillerLabel", item.fillerLabel)
+    }
     append('}')
 }
 
