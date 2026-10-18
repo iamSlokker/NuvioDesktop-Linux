@@ -127,6 +127,7 @@ internal object NativeImageSupport {
                 }
                 outcome.getOrThrow()
             }
+            if (com.nuvio.app.features.player.desktop.DesktopHostOs.current == com.nuvio.app.features.player.desktop.DesktopHostOs.LINUX) LinuxNativeSelfTest.run(::probe)
             println("Info: (NativeSelfTest) done passed=$passed failed=$failed")
         }.apply { name = "nuvio-native-selftest"; isDaemon = true }.start()
     }
@@ -160,7 +161,7 @@ internal object NativeImageSupport {
         // sun.java2d.d3d=false, app version, ...) have to be applied here at run time instead.
         val appDir = File(exeDir, "app")
         runCatching {
-            File(appDir, "Nuvio.cfg").readLines()
+            (File(appDir, "Nuvio.cfg").takeIf(File::isFile) ?: File(appDir, "nuvio.cfg")).readLines() // nuvio.cfg: Linux
                 .map { it.trim() }
                 .filter { it.startsWith("java-options=-D") }
                 .map { it.removePrefix("java-options=-D").replace("\$APPDIR", appDir.absolutePath) }

@@ -51,6 +51,12 @@ class LinuxDesktopRelaunchTest {
             LinuxDesktopRelaunch.resolveLauncher("/app/lib/nuvio-desktop/bin/nuvio", mapOf("FLATPAK_ID" to "test")) { true },
         )
         assertNull(LinuxDesktopRelaunch.resolveLauncher(packaged, emptyMap()) { it.toString() == packaged })
+        // Native image: jpackage.app-path is the executable in lib/, the wrapper stays in bin/.
+        assertEquals(
+            Path.of("/opt/nuvio-desktop/bin/nuvio-desktop"),
+            LinuxDesktopRelaunch.resolveLauncher("/opt/nuvio-desktop/lib/nuvio", emptyMap()) { true }?.path,
+        )
+        assertNull(LinuxDesktopRelaunch.resolveLauncher("/nuvio", emptyMap()) { true })
     }
 
     @Test

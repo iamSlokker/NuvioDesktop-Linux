@@ -20,7 +20,9 @@ jobjectArray toJava(JNIEnv *env, const nuvio::flatpak::UpdateResult &result) {
 extern "C" JNIEXPORT jobjectArray JNICALL
 Java_com_nuvio_app_features_updater_LinuxFlatpakPortalNative_update(JNIEnv *env, jobject, jobject callback,
                                                                      jint idleTimeoutMs) {
-    auto onProgress = env->GetMethodID(env->GetObjectClass(callback), "onProgress", "(III)V");
+    // The interface by literal name, so native-image metadata can be generated for it.
+    auto callbackClass = env->FindClass("com/nuvio/app/features/updater/LinuxFlatpakProgressCallback");
+    auto onProgress = callbackClass ? env->GetMethodID(callbackClass, "onProgress", "(III)V") : nullptr;
     if (!onProgress) {
         env->ExceptionClear();
         nuvio::flatpak::UpdateResult missing;

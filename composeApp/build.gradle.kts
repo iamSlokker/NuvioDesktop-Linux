@@ -1936,7 +1936,8 @@ compose.desktop {
 // kill leftover java.exe (a Kotlin daemon has been seen at 5 GB).
 // ---------------------------------------------------------------------------------------------
 val nativeImageInputsDir = layout.projectDirectory.dir("native-image")
-val nativeJvmAppImageDir = layout.buildDirectory.dir("compose/binaries/main/app/Nuvio")
+// Linux: the lowercase jpackage image keeps app/ under lib/ (native-image-linux.gradle.kts).
+val nativeJvmAppImageDir = layout.buildDirectory.dir(if (isLinuxHost) "compose/binaries/main/app/nuvio/lib" else "compose/binaries/main/app/Nuvio")
 val nativeImageWorkDir = layout.buildDirectory.dir("native-image/work")
 val nativeImageDistDir = layout.buildDirectory.dir("native-image/Nuvio")
 val nativeImageReleaseDir = layout.buildDirectory.dir("native-image/release")
@@ -2016,7 +2017,10 @@ fun isRunningFrom(exe: File): Boolean {
 val nativeImageGeneratedDir = layout.buildDirectory.dir("native-image/generated")
 val nativeJniSources = fileTree("src/desktopMain/native") {
     include("windows/**/*.cpp", "windows/**/*.c", "nuvio-engine/**/*.cpp", "nuvio-engine/**/*.c")
+    if (isLinuxHost) setIncludes(listOf("linux/*.cpp", "linux/*.h")) // linux/tests/ has no app JNI
 }
+// The Linux native-image tasks (linuxNativeCompile, createLinuxNativeDistributable, ...).
+apply(from = "native-image-linux.gradle.kts")
 
 /** One `reflection` entry of a reachability-metadata.json. */
 class NativeMetadataEntry(val type: String) {

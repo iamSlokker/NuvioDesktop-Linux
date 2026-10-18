@@ -70,7 +70,7 @@ struct Lease {
         if (!monitoring.load()) { g_main_loop_quit(loop); return; }
         JNIEnv *env = nullptr;
         if (vm->AttachCurrentThreadAsDaemon(reinterpret_cast<void **>(&env), nullptr) != JNI_OK) return;
-        auto cls = env->GetObjectClass(callback);
+        auto cls = env->FindClass("java/lang/Runnable"); // Literal: native-image metadata is generated from it.
         auto run = cls ? env->GetMethodID(cls, "run", "()V") : nullptr;
         if (run) env->CallVoidMethod(callback, run);
         if (env->ExceptionCheck()) env->ExceptionClear();
