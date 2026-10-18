@@ -1132,6 +1132,10 @@ JNI_METHOD(void, updateControls)(JNIEnv *env, jobject, jlong handle, jstring jso
 JNI_METHOD(void, runJavaScript)(JNIEnv *env, jobject, jlong handle, jstring script) {
     withPlayer(env, handle, [&](Player &p) { if (p.controls) p.controls->runJavaScript(text(env, script)); });
 }
+// Upstream's Windows keep-awake request, called on every desktop while a video plays. Linux keeps
+// the display awake from the same keepScreenAwake flag through LinuxPlaybackInhibition (portal or
+// logind), so this succeeds without doing anything rather than failing to link on each play/pause.
+JNI_METHOD(jboolean, setWindowsDisplaySleepInhibited)(JNIEnv *, jobject, jboolean) { return JNI_TRUE; }
 // controls.js emits cursorVisibility, which the shared Kotlin controller routes here.
 JNI_METHOD(void, setCursorHidden)(JNIEnv *env, jobject, jlong handle, jboolean hidden) {
     withPlayer(env, handle, [&](Player &p) { if (p.controls) p.controls->setCursorHidden(hidden); });
