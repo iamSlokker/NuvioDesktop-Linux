@@ -3493,13 +3493,13 @@
       "glob": "composeResources/nuvio.composeapp.generated.resources/drawable/app_wordmark_text.png"
     },
     {
-      "glob": "composeResources/nuvio.composeapp.generated.resources/font/inter_bold.ttf"
+      "glob": "composeResources/nuvio.composeapp.generated.resources/font/jetbrains_sans_bold.ttf"
     },
     {
-      "glob": "composeResources/nuvio.composeapp.generated.resources/font/inter_regular.ttf"
+      "glob": "composeResources/nuvio.composeapp.generated.resources/font/jetbrains_sans_regular.ttf"
     },
     {
-      "glob": "composeResources/nuvio.composeapp.generated.resources/font/inter_semibold.ttf"
+      "glob": "composeResources/nuvio.composeapp.generated.resources/font/jetbrains_sans_semibold.ttf"
     },
     {
       "glob": "composeResources/nuvio.composeapp.generated.resources/values/strings.commonMain.cvr"

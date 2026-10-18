@@ -35,8 +35,6 @@ REFERENCES = {
     'docs/compliance/evidence/artwork-data-review.json': 'Current resource hashes and unresolved rights inventory, not grants or publication approval.',
     'tools/linux/packaging/artwork_contract.py': 'Future artwork/data payload gate; not legal clearance.',
     'docs/compliance/evidence/release-closure-validation-2026-10-13.json': 'Local development JAR and focused validation; not final package or release acceptance.',
-    'tools/linux/packaging/fonts/inter-manifest.json': 'Official Inter release/source/font hashes; locally retained, not recipient delivery.',
-    'tools/linux/packaging/font_contract.py': 'Future application JAR font/notice gate; not proof existing artifacts contain Inter.',
     'composeApp/src/desktopMain/resources/anime-mapping/PROVENANCE.json': 'Exact database/import identity and attribution notices; original generation and merged-data rights unresolved.',
     'composeApp/src/desktopMain/resources/player-shaders/LICENSE.md': 'Corrected MIT/Unlicense classification and added the AMD CAS MIT notice; all original shader bytes unchanged.',
     'tools/linux/packaging/compliance/inventory.py': 'Original package/source inventory verifier.',

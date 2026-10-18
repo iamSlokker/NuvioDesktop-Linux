@@ -83,7 +83,6 @@ class NativeArtworkGateTest(unittest.TestCase):
                     patch.object(verify, 'check_webkit_relocation'), \
                     patch.object(verify, 'check_hdr_probe', return_value={}), \
                     patch.object(verify, 'verify_packaged_onnx', return_value={'files': {ONNX_FIXTURE: 'fixture'}}), \
-                    patch.object(verify, 'verify_packaged_fonts', return_value={'resources': {}}), \
                     patch.object(verify, 'check_appimage_runtime', return_value={}):
                 verify.artifacts(work, kind)
             return json.loads((work / ('artifacts/' + kind + '-audit.json')).read_text())

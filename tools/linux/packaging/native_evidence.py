@@ -2,7 +2,7 @@
 
 Packages ship lib/nuvio (the native executable) and the JDK libraries
 native-image emits, never application JARs or a JVM. The JAR contracts
-(client_config, font/onnx/artwork) therefore run on the exact native-image
+(client_config, onnx/artwork) therefore run on the exact native-image
 input JARs, which `record()` retains next to the build as evidence:
 
   <work>/native-image/inputs/*.jar        the classpath native-image compiled

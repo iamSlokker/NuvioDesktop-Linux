@@ -16,7 +16,6 @@ from compliance.inventory import verify_appimage_runtime
 from webkit.stage import linked_paths
 from client_config import verify_native_backend, verify_packaged_backend
 from onnx_contract import NATIVES as ONNX_NATIVES, verify_packaged_onnx
-from font_contract import MANIFEST as FONT_MANIFEST, verify_packaged_fonts
 from artwork_contract import release_rules, verify_packaged_artwork
 from notice_contract import TARGET as NOTICE_TARGET, expected as notice_files, verify_packaged_notices
 from flatpak_bundle import check_unpublished_bundle
@@ -169,7 +168,7 @@ def flatpak_tree(repository, ref):
     return tree
 
 
-def check_native_payloads(root, native, embedded, onnx, fonts, artwork):
+def check_native_payloads(root, native, embedded, onnx, artwork):
     """Reviewed JAR payloads are embedded verbatim in lib/nuvio; removed ones are not.
 
     The contracts above checked them in the exact input JARs; native-image's report
@@ -177,7 +176,7 @@ def check_native_payloads(root, native, embedded, onnx, fonts, artwork):
     The anime-mapping notices are not app resources; they ship as files instead.
     """
     anime = {name for name in artwork['resources'] if name.startswith('anime-mapping/')}
-    names = (set(onnx['files']) | set(fonts['resources']) | set(artwork['resources'])) - anime
+    names = (set(onnx['files']) | set(artwork['resources'])) - anime
     payloads = {}
     for jar in native.jars:
         with zipfile.ZipFile(jar) as archive:
@@ -193,8 +192,7 @@ def check_native_payloads(root, native, embedded, onnx, fonts, artwork):
         if (path.is_symlink() or not path.is_file()
                 or hashlib.sha256(path.read_bytes()).hexdigest() != artwork['resources'][name]):
             raise ValueError('Missing/different anime-mapping notice: ' + str(path.relative_to(root)))
-    removed = {item['filename'].casefold() for item in json.loads(FONT_MANIFEST.read_text())['removed_fonts']}
-    removed |= release_rules()[0]
+    removed = release_rules()[0]
     for name in embedded:
         if pathlib.PurePosixPath(name).name.casefold() in removed:
             raise ValueError('Removed font/artwork/dataset embedded in the native image: ' + name)
@@ -261,9 +259,8 @@ def check_image(root, evidence, require_smoke=False, smoke_identity=False):
     verify_packaged_backend(root, native.jars)
     backend = verify_native_backend(native.executable)
     onnx = verify_packaged_onnx(root, check_abi, native.jars)
-    fonts = verify_packaged_fonts(root, native.jars)
     artwork = verify_packaged_artwork(root, native.jars)
-    payloads = check_native_payloads(root, native, embedded, onnx, fonts, artwork)
+    payloads = check_native_payloads(root, native, embedded, onnx, artwork)
     notices = verify_packaged_notices(root)
     hdr_probe = check_hdr_probe(root)
     info = json.loads((root / 'release-info.json').read_text())
@@ -325,7 +322,7 @@ def check_image(root, evidence, require_smoke=False, smoke_identity=False):
                 if not pathlib.Path(path).resolve().is_relative_to(root):
                     raise ValueError('Private media resolved outside image: ' + dep)
         elf_records.append(dict(file=rel, needed=needed))
-    return dict(source=info, files=records, elf=elf_records, onnx=onnx, fonts=fonts, artwork=artwork,
+    return dict(source=info, files=records, elf=elf_records, onnx=onnx, artwork=artwork,
                 notices=notices, hdr_probe=hdr_probe, native_image=native_summary(native, module_resources),
                 backend=backend, native_payloads=payloads, smoke=smoke)
 
@@ -455,9 +452,8 @@ def artifacts(work, formats):
                 verify_packaged_backend(image, native.jars)
                 backend = verify_native_backend(native.executable)
                 onnx = verify_packaged_onnx(image, check_abi, native.jars)
-                fonts = verify_packaged_fonts(image, native.jars)
                 artwork = verify_packaged_artwork(image, native.jars)
-                payloads = check_native_payloads(image, native, embedded, onnx, fonts, artwork)
+                payloads = check_native_payloads(image, native, embedded, onnx, artwork)
                 smoke = native_evidence.check_smoke(evidence, image)
                 for name in notice_files():
                     target = image / NOTICE_TARGET / name
@@ -466,7 +462,7 @@ def artifacts(work, formats):
                         FLATPAK_IMAGE + '/' + str(NOTICE_TARGET / name)]))
                 notices = verify_packaged_notices(image)
                 (dest / 'flatpak-audit.json').write_text(json.dumps(
-                    dict(source=info, ref=ref, metadata=metadata.decode(), onnx=onnx, fonts=fonts, artwork=artwork,
+                    dict(source=info, ref=ref, metadata=metadata.decode(), onnx=onnx, artwork=artwork,
                          notices=notices, hdr_probe=hdr_probe, bundle=bundle, backend=backend,
                          native_image=native_summary(native, module_resources), native_payloads=payloads,
                          smoke=smoke, native_image_evidence=evidence_archive), indent=2) + '\n')

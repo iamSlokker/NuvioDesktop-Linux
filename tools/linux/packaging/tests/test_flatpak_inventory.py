@@ -91,8 +91,7 @@ class FlatpakNativeInventoryTest(unittest.TestCase):
     def audit(self):
         with patch.object(verify.subprocess, 'run'), \
                 patch.object(verify.subprocess, 'check_output', side_effect=self.command_output), \
-                patch.object(verify, 'verify_packaged_onnx', return_value={'files': {}}), \
-                patch.object(verify, 'verify_packaged_fonts', return_value={'resources': {}}):
+                patch.object(verify, 'verify_packaged_onnx', return_value={'files': {}}):
             verify.artifacts(self.work, 'flatpak')
         return json.loads((self.work / 'artifacts/flatpak-audit.json').read_text())
 

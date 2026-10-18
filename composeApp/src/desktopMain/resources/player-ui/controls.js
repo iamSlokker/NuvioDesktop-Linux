@@ -580,7 +580,7 @@ let appliedCombinedUserScale = null;
 let appliedScaleSignature = "";
 // The HUD's own font stack, and what --nuvio-ui-font falls back to when no app font is set. Kept
 // here as well as in controls.css because the canvas measurements below cannot read a CSS variable.
-const DEFAULT_UI_FONT_STACK = '"Nuvio Inter", "Inter", "Segoe UI", sans-serif';
+const DEFAULT_UI_FONT_STACK = '"Nuvio JetBrains Sans", "JetBrains Sans", "Segoe UI", sans-serif';
 let uiFontStack = DEFAULT_UI_FONT_STACK;
 
 // A family the app resolved against the host's installed fonts, so it is quoted and used as-is;
