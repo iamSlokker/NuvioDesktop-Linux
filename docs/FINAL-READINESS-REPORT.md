@@ -2,6 +2,8 @@
 
 ## 2026-10-14 update (supersedes the status lines below)
 
+**2026-10-17 owner decision:** the Linux build now ships Umbra's original artwork unchanged, as upstream; only the four setup previews remain fork replacements. See [Owner decision 2026-10-17](compliance/artwork-data-closure.md#owner-decision-2026-10-17-upstream-artwork). The artwork statements below are historical.
+
 This is a technical/compliance-engineering review, not legal certification or
 authority to publish. The 2026-10-13 report below is kept unchanged as the
 evidence of that date.

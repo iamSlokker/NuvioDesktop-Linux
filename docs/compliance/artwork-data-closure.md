@@ -1,5 +1,45 @@
 # Artwork and anime mapping closure
 
+## Owner decision 2026-10-17: upstream artwork
+
+The owner decided that the Linux build ships exactly Umbra's original
+artwork and symbols, the same as upstream (UmbraProjects ships these files in its
+own GitHub releases; this fork distributes only through GitHub releases and a
+self-hosted Flatpak repository). The earlier replacements were a conservative
+choice for unresolved rights, not a GitHub requirement. Now:
+
+- the seven UI vectors, six `quality_badge_*.svg`, nine removed `hero_badge_*.png`
+  and `compose-multiplatform.xml` match upstream bytes again in `composeApp`;
+- the 47-file Linux package overlay is no longer applied or kept, so packages and
+  the Linux source tarball carry upstream bytes;
+- only the four setup previews (`setup/setup_mode_*.webp`) stay as the fork's MIT
+  replacements, with the bundled ReleaseArtwork NOTICE/PROVENANCE and the
+  authoring recipe trimmed to them;
+- `artwork_contract.py` still pins the setup previews, ReleaseArtwork notices and
+  anime-mapping notices, rejects the runtime-downloaded anime dataset, and no
+  longer requires or forbids any other artwork.
+
+The rights status of the upstream artwork is unchanged (not verified). The
+artwork sections below are the dated 2026-10-14 audit of the superseded
+replacement policy; the anime dataset sections remain current.
+
+### Restoring the fork-made artwork
+
+If a DMCA or trademark notice arrives, the fork-made replacements can return.
+The last commit that had them is `e860388fa230dccc42addd48ed6418ba59292a93`
+(`e860388fa`). The change is self-contained in the commit
+`fix(linux): ship upstream artwork instead of fork-made replacements` (`2608d3e52`
+when authored; find it by subject if history was rewritten). `git revert` it,
+then refresh `docs/compliance/evidence/source-review-index.json` with
+`tools/linux/packaging/compliance/review_index.py`. Paths involved:
+`tools/linux/packaging/artwork/overlay/` (47 files) and `artwork/vendor/tmdb/`, the
+source drawables under `composeApp/src/commonMain/composeResources/drawable/`,
+`files/licenses/NuvioIcons/` and `files/licenses/ReleaseArtwork/`, the overlay logic in
+`tools/linux/packaging/source_policy.py`, the gate `tools/linux/packaging/artwork_contract.py`,
+the recipe `tools/linux/packaging/artwork/` and the related Python/Kotlin tests.
+
+## 2026-10-14 audit (superseded artwork policy)
+
 **2026-10-14; latest correction baseline `1555d7ea75c3777f854f4af1b2256c9ff2419cd9`.**
 Seven missing-grant UI imports are replaced. The exact anime dump import revision
 is established. The 47 previously unresolved provider/rating and award/hero
@@ -22,7 +62,7 @@ history and bounded source search; this does not assert that no grant could exis
 
 The replacements are original elementary vector constructions under MIT,
 with the full copyright/license, notice and
-[per-asset provenance](../../composeApp/src/commonMain/composeResources/files/licenses/NuvioIcons/PROVENANCE.json)
+per-asset provenance (`files/licenses/NuvioIcons/PROVENANCE.json`, removed 2026-10-17; see `e860388fa`)
 bundled in Compose resources. Original/new SHA256, original Git blob/import
 commit, dimensions, actual use and license are recorded for each asset.
 
@@ -146,7 +186,7 @@ composeApp originals and all Kotlin are **not modified**.
   [Java2D recipe](../../tools/linux/packaging/artwork/GenerateReleaseArtwork.java)
   with only the pinned Inter fonts and original geometry, plus TMDB's official
   attribution logo for `rating_tmdb.png` (below), committed under
-  [`tools/linux/packaging/artwork/overlay/`](../../tools/linux/packaging/artwork/overlay)
+  `tools/linux/packaging/artwork/overlay/` (removed 2026-10-17; see `e860388fa`)
   at the same repository-relative paths. Names and formats are unchanged; SVGs
   keep their `width`/`height`/`viewBox` and contain only `svg`/`title`/`rect`/`path`;
   PNGs keep their pixel sizes as RGBA. Provider/rating marks are neutral plates
@@ -187,7 +227,7 @@ logos you can use within your application." The "Primary full (blue)" SVG
 ([source](https://www.themoviedb.org/assets/v4/logos/v2/blue_square_2-d537fb228cf3ded904ef09b136fe3fec72548ebc1fea3fbbd1ad9e36364db38b.svg),
 SHA-256 `d537fb228cf3ded904ef09b136fe3fec72548ebc1fea3fbbd1ad9e36364db38b`,
 retrieved 2026-10-14) is vendored unmodified with a notice at
-[`tools/linux/packaging/artwork/vendor/tmdb/`](../../tools/linux/packaging/artwork/vendor/tmdb/README.md);
+`tools/linux/packaging/artwork/vendor/tmdb/` (removed 2026-10-17; see `e860388fa`);
 its 185.04×133.4 viewBox matches the 67×48 slot. The recipe renders it
 reproducibly (uniform scale, transparent centering padding; no recolor, stretch or
 crop) and refuses any other SVG bytes. Its provenance row records license

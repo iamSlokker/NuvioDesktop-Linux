@@ -46,16 +46,10 @@
   "status": "LOCAL_REVIEW_ONLY",
   "supplements": [
     {
-      "bytes": 9409,
-      "path": "composeApp/src/commonMain/composeResources/files/licenses/NuvioIcons/PROVENANCE.json",
-      "scope_limit": "Original/replacement icon identities and new MIT grant only; no retroactive license.",
-      "sha256": "4976e328fae49f0ca59f32aa4bfbe21fd283bb6016c58b4066f201dfc16411e9"
-    },
-    {
-      "bytes": 103420,
+      "bytes": 9563,
       "path": "composeApp/src/commonMain/composeResources/files/licenses/ReleaseArtwork/PROVENANCE.json",
-      "scope_limit": "Ten replacement identities, removals and 47 Linux-overlay replacement identities; no retained originals; not publication approval.",
-      "sha256": "82c7b1d07f3e1535a97cccecc636ebd869c9720aaa8c6f1e4c311177523e9836"
+      "scope_limit": "Four setup-preview replacement identities and MIT grant only; not publication approval.",
+      "sha256": "8b8e57dbe6c7872db29a58af7c1cad4020efa01bf92a3851dcd443b41311174b"
     },
     {
       "bytes": 6854,
@@ -70,16 +64,16 @@
       "sha256": "2e469d78b39dcf336527c0acd0fe75fb482ddfbea5e5627fdfcdc7bc1e681b5e"
     },
     {
-      "bytes": 21623,
+      "bytes": 23928,
       "path": "docs/compliance/artwork-data-closure.md",
-      "scope_limit": "Seventeen replacements, ten exclusions, exact anime import and 47-resource Linux package overlay; upstream originals and data rights unresolved.",
-      "sha256": "64999d7e5b10ae60799e5e60e050499c595207abf14916933e297ad0fc5bbe3d"
+      "scope_limit": "Owner decision 2026-10-17 to ship upstream artwork (four setup-preview replacements remain), superseded replacement audit and exact anime import; upstream artwork and data rights unresolved.",
+      "sha256": "317dfa77c9f1b6465dffa63eb2051abbb5d587003785e90ae5d83d1a90bc9b10"
     },
     {
-      "bytes": 121545,
+      "bytes": 122226,
       "path": "docs/compliance/evidence/artwork-data-review.json",
       "scope_limit": "Current resource hashes and unresolved rights inventory, not grants or publication approval.",
-      "sha256": "922c947fab3c5665d37399a1ec7e6da8b11bce371818cbcc35e73572596bec61"
+      "sha256": "07d1a07c006756eb4ee25aaa2ceaad81174ae621f1e2d530c287a19d951ec4d8"
     },
     {
       "bytes": 358948,
@@ -154,10 +148,10 @@
       "sha256": "74104e7fff194e6fb653c26e6793063d1dc44886dcc5cb3d12183f6afed43a03"
     },
     {
-      "bytes": 9446,
+      "bytes": 9754,
       "path": "docs/compliance/release-closure.md",
       "scope_limit": "Current font/notice correction and remaining gates; all formats remain blocked.",
-      "sha256": "416346145f904add669b0ddedd6be0b6418095a074f642fcc8dd32f5a1fb87d5"
+      "sha256": "1aaeed45011c6c1408060f4b123204c97764f6b2ac5651096b043e039299e853"
     },
     {
       "bytes": 12531,
@@ -166,40 +160,28 @@
       "sha256": "fd5ad27151de847a95ecb9020b05b2e88f2f0563ae9d53f5c3000fb82749a163"
     },
     {
-      "bytes": 43585,
+      "bytes": 7355,
       "path": "tools/linux/packaging/artwork/GenerateReleaseArtwork.java",
-      "scope_limit": "Preferred editable form of ten new assets and the 47-file Linux overlay; original geometry, pinned Inter inputs and the pinned vendored TMDB logo only.",
-      "sha256": "089967b668603a77d3e300420e60cc5f0d079ed03f301c23fd1d395083558b3b"
+      "scope_limit": "Preferred editable form of the four setup previews; original geometry and pinned Inter inputs only.",
+      "sha256": "d1393f4787b2e9a089c0dff75c0883a3685af9ece153c589720ed9670cbe7a3c"
     },
     {
-      "bytes": 6889,
+      "bytes": 2968,
       "path": "tools/linux/packaging/artwork/README.md",
-      "scope_limit": "Original artwork authoring/reproduction and Linux overlay scope.",
-      "sha256": "c4202c58166072f691356a9803bfb4820c12e9ef1e71513e740541cde297a2f9"
+      "scope_limit": "Setup-preview authoring/reproduction and how to restore the fork-made artwork.",
+      "sha256": "2e66fee01ce55c908ae54f64e7ab0fca75b7643cdbb5799ac9ce88ac01000014"
     },
     {
-      "bytes": 4002,
+      "bytes": 2866,
       "path": "tools/linux/packaging/artwork/generate.py",
       "scope_limit": "Headless authoring driver; optional tooling, not a new app dependency.",
-      "sha256": "5accf84be8d3a3645b83f89ff14a8d01d843e8eca156f27dd09d02a40f15167a"
+      "sha256": "13f5b5360bd540c55f4b882c078025d7085b53aebfc803cad2cb9954239ffb1b"
     },
     {
-      "bytes": 1411,
-      "path": "tools/linux/packaging/artwork/vendor/tmdb/README.md",
-      "scope_limit": "TMDB logo source page/URL/hash/retrieval date and attribution-only notice.",
-      "sha256": "0a1785f86ee81e61e99ca31d8ee868a34c98d1873164b235a55ef380fd89a8d4"
-    },
-    {
-      "bytes": 2577,
-      "path": "tools/linux/packaging/artwork/vendor/tmdb/blue_square_2.svg",
-      "scope_limit": "Unmodified official TMDB attribution logo; TMDB mark under TMDB attribution terms, not MIT; no endorsement claimed.",
-      "sha256": "d537fb228cf3ded904ef09b136fe3fec72548ebc1fea3fbbd1ad9e36364db38b"
-    },
-    {
-      "bytes": 8889,
+      "bytes": 5926,
       "path": "tools/linux/packaging/artwork_contract.py",
       "scope_limit": "Future artwork/data payload gate; not legal clearance.",
-      "sha256": "4abd2207dc8a7a108f754c5f9b513b948df63e850fe5052d847647e173d9f4c7"
+      "sha256": "8c6273454af7ab5e9f96349b83fdc230b78bfce1e4c33a2fc11e85f29c3f3f14"
     },
     {
       "bytes": 4460,
@@ -220,10 +202,10 @@
       "sha256": "2cc3ac5977a1d8830b8fc7cc3314db2f328af515d20d380304e06203b013fce9"
     },
     {
-      "bytes": 10480,
+      "bytes": 9942,
       "path": "tools/linux/packaging/compliance/review_index.py",
       "scope_limit": "Review-index byte bindings only; not a source cache or compliance verifier.",
-      "sha256": "585df0af00776dbd3e7afabe1fb51ebc22ee99276dee01101fb57a2db0c689bf"
+      "sha256": "fa38cf639cc951a104ce3a0e166ded805b27ee388a032cead98a98f04ff312e3"
     },
     {
       "bytes": 14772,

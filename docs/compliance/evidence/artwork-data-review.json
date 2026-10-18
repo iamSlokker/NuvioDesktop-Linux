@@ -1,6 +1,11 @@
 {
   "schema_version": 1,
   "recorded_date": "2026-10-14",
+  "superseded_by_owner_decision": {
+    "date": "2026-10-17",
+    "decision": "Owner decision: the Linux build ships Umbra's original artwork unchanged, exactly as upstream (and as UmbraProjects ships it in its own GitHub releases). The 7 replacement UI vectors and 6 quality badges are reverted to upstream bytes, the 10 removed resources are restored, and the 47-file Linux package overlay is no longer applied or kept. Only the 4 setup-preview replacements remain. The rest of this record is the dated 2026-10-14 audit and describes the superseded replacement policy; its counts are historical.",
+    "restore_fork_artwork_from": "e860388fa230dccc42addd48ed6418ba59292a93"
+  },
   "baseline_commit": "1555d7ea75c3777f854f4af1b2256c9ff2419cd9",
   "scope": "Current packaged provider/rating, hero/award, format marks and setup previews; approved Nuvio branding excluded from modification. Linux package dispositions; upstream/Windows/macOS payloads unchanged",
   "redistribution_status": "BLOCKED",
