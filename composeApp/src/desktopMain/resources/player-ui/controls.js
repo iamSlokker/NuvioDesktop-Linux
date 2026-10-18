@@ -693,10 +693,7 @@ function updateViewportUiScale() {
 const prefersReducedMotion = window.matchMedia &&
   window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 const modalTransitionMs = prefersReducedMotion ? 1 : 240;
-// The host may shorten the fade and let any key bring the chrome back; see
-// window.nuvioConfigureChromeAutoHide. Unconfigured hosts keep these defaults.
-let chromeAutoHideDelayMs = 5500;
-let chromeRevealsOnKey = false;
+const chromeAutoHideDelayMs = 5500;
 const chromeActivityThrottleMs = 300;
 const chromeInteractionSelector = [
   "button",
@@ -5763,22 +5760,6 @@ const revealChromeForPlaybackInteraction = () => {
   send("revealChrome", 0);
 };
 
-window.nuvioConfigureChromeAutoHide = (delayMs, revealsOnKey) => {
-  const delay = Number(delayMs);
-  if (Number.isFinite(delay) && delay >= 1000) chromeAutoHideDelayMs = delay;
-  chromeRevealsOnKey = Boolean(revealsOnKey);
-  clearChromeAutoHideTimer();
-  syncChromeAutoHideTimer(isOpeningOverlayActive());
-};
-
-// A key press from the host's own key path (the page itself lacks focus there): shows the chrome
-// when hidden and restarts its fade either way.
-window.nuvioRevealChromeForKey = () => {
-  if (!chromeRevealsOnKey || isHeroTrailerSurface || state.heroTrailerMode) return;
-  if (state.pictureInPictureActive || playbackErrorText()) return;
-  revealChromeForPlaybackInteraction();
-};
-
 const clearPressedButton = () => {
   if (!pressedButton) return;
   pressedButton.classList.remove("is-pressed");
@@ -6852,7 +6833,6 @@ document.addEventListener("keydown", event => {
   if (activeModal || isTextEntryTarget(event.target)) {
     return;
   }
-  window.nuvioRevealChromeForKey();
   const command = shortcutCommandForEvent(event);
   if (!command) {
     return;
