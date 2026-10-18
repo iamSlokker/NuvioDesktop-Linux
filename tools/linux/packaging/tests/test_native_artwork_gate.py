@@ -16,9 +16,14 @@ import native_fixture
 import notice_contract
 import verify
 
+# A reviewed payload of another contract (ONNX), so the embedding check has a subject
+# whatever the artwork/data rules currently pin.
+ONNX_FIXTURE = 'backdrop-framing/fixture.onnx'
+
 
 def artwork_jar(bad):
     entries = {name: artwork_contract.linux_source(name).read_bytes() for name in artwork_contract.expected_resources()}
+    entries[ONNX_FIXTURE] = b'fixture onnx model, reviewed by the onnx contract'
     entries[client_config.CONFIG_CLASS] = native_fixture.supabase_class()
     if bad:
         entries['nested/anime-list-mini.json'] = b'runtime-downloaded dataset'
@@ -30,7 +35,7 @@ class NativeArtworkGateTest(unittest.TestCase):
         jars = {'application.jar': artwork_jar(bad)}
         embedded = [name for name in jars['application.jar']
                     if not name.startswith('anime-mapping/') and not name.endswith('.class')
-                    and (embed_all or 'setup/' not in name)]
+                    and (embed_all or name != ONNX_FIXTURE)]
         anime = {name: artwork_contract.data_provenance().with_name(name).read_bytes()
                  for name in native_evidence.ANIME_FILES}
         image, evidence, _ = native_fixture.make(root, jars=jars, embedded=embedded, anime=anime)
@@ -77,7 +82,7 @@ class NativeArtworkGateTest(unittest.TestCase):
             with patch.object(verify.subprocess, 'run', side_effect=run), \
                     patch.object(verify, 'check_webkit_relocation'), \
                     patch.object(verify, 'check_hdr_probe', return_value={}), \
-                    patch.object(verify, 'verify_packaged_onnx', return_value={'files': {}}), \
+                    patch.object(verify, 'verify_packaged_onnx', return_value={'files': {ONNX_FIXTURE: 'fixture'}}), \
                     patch.object(verify, 'verify_packaged_fonts', return_value={'resources': {}}), \
                     patch.object(verify, 'check_appimage_runtime', return_value={}):
                 verify.artifacts(work, kind)
@@ -87,7 +92,7 @@ class NativeArtworkGateTest(unittest.TestCase):
         for kind in ('deb', 'appimage'):
             with self.subTest(kind=kind):
                 report = self.audit(kind)
-                self.assertEqual(4, report['artwork']['replacement_setup_previews'])
+                self.assertEqual(4, report['artwork']['replacement_payloads'])
                 self.assertEqual('BLOCKED', report['artwork']['redistribution_assessment'])
                 self.assertEqual(4, report['native_payloads']['anime_notice_files'])
                 self.assertEqual('PASS', report['smoke']['status'])

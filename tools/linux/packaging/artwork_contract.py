@@ -25,31 +25,10 @@ def data_provenance():
     return repository() / 'composeApp/src/desktopMain/resources/anime-mapping/PROVENANCE.json'
 
 
-def release_provenance():
-    return repository() / 'composeApp/src/commonMain/composeResources/files/licenses/ReleaseArtwork/PROVENANCE.json'
-
-
 def packaged_path(resource):
     if '/composeResources/' in resource:
         return PREFIX + resource.split('/composeResources/', 1)[1]
     return resource.split('/desktopMain/resources/', 1)[1]
-
-
-def release_rules():
-    release = json.loads(release_provenance().read_text())
-    replaced = release['replacements']
-    # The replaced setup-preview originals are forbidden at any path.
-    forbidden = {row['original']['sha256']: row['original']['bytes'] for row in replaced}
-    # Also reject a replacement copied/renamed into any other payload location.
-    replacements = {row['replacement']['sha256']: packaged_path(row['resource']) for row in replaced}
-    if len(replacements) != len(replaced) or set(replacements) & set(forbidden):
-        raise ValueError('Release artwork replacements must have distinct, non-original bytes')
-    # Linux packages download the anime dataset at runtime; never redistribute its bytes.
-    dataset = json.loads(data_provenance().read_text())['dataset']
-    removed_names = {dataset['resource'].casefold()}
-    forbidden[dataset['sha256']] = dataset['bytes']
-    sizes = set(forbidden.values()) | {row['replacement']['bytes'] for row in replaced}
-    return removed_names, forbidden, replacements, sizes
 
 
 def linux_source(name):
@@ -59,22 +38,74 @@ def linux_source(name):
     return repository() / relative
 
 
-def expected_resources():
-    DATA_PROVENANCE, RELEASE_PROVENANCE = data_provenance(), release_provenance()
-    expected = {}
-    # The dataset itself is downloaded at runtime; its attribution and licenses still ship.
-    for filename in ('PROVENANCE.json', 'NOTICE.txt', 'ODBL-1.0.txt', 'DBCL-1.0.txt'):
-        expected['anime-mapping/' + filename] = hashlib.sha256(
-            DATA_PROVENANCE.with_name(filename).read_bytes()).hexdigest()
+# Linux-only payload rules, one function per resource family so each can be dropped on its
+# own (git revert of the commit that removes it brings it back). Each returns a dict:
+#   expected     {packaged name: sha256} that must ship exactly once with these bytes
+#   forbidden    {sha256: size} whose bytes must not ship under any name
+#   removed      {casefolded basename} that must not ship
+#   replacements {sha256: (packaged name, size)} pinned bytes allowed only at that name
+RULES = []
+
+
+def rule(function):
+    RULES.append(function)
+    return function
+
+
+def release_provenance():
+    return repository() / 'composeApp/src/commonMain/composeResources/files/licenses/ReleaseArtwork/PROVENANCE.json'
+
+
+@rule
+def setup_preview_rules():
+    """The four fork-made setup previews: pinned replacement bytes, the replaced originals forbidden."""
+    RELEASE_PROVENANCE = release_provenance()
     release = json.loads(RELEASE_PROVENANCE.read_text())
-    for row in release['replacements']:
-        expected[packaged_path(row['resource'])] = row['replacement']['sha256']
+    replaced = release['replacements']
+    # The replaced setup-preview originals are forbidden at any path.
+    forbidden = {row['original']['sha256']: row['original']['bytes'] for row in replaced}
+    # Also reject a replacement copied/renamed into any other payload location.
+    replacements = {row['replacement']['sha256']: (packaged_path(row['resource']), row['replacement']['bytes'])
+                    for row in replaced}
+    if len(replacements) != len(replaced) or set(replacements) & set(forbidden):
+        raise ValueError('Release artwork replacements must have distinct, non-original bytes')
+    expected = {packaged_path(row['resource']): row['replacement']['sha256'] for row in replaced}
     for filename in ('LICENSE.txt', 'NOTICE.txt', 'PROVENANCE.json'):
         digest = hashlib.sha256(RELEASE_PROVENANCE.with_name(filename).read_bytes()).hexdigest()
         declared = {'LICENSE.txt': 'license_sha256', 'NOTICE.txt': 'notice_sha256'}.get(filename)
         if declared and digest != release[declared]:
             raise ValueError('Release artwork license/notice differs from pinned provenance: ' + filename)
         expected[PREFIX + 'files/licenses/ReleaseArtwork/' + filename] = digest
+    return dict(expected=expected, forbidden=forbidden, removed=set(), replacements=replacements)
+
+
+@rule
+def anime_dataset_rules():
+    """Linux packages download the anime dataset at runtime; never redistribute its bytes."""
+    dataset = json.loads(data_provenance().read_text())['dataset']
+    return dict(expected={}, forbidden={dataset['sha256']: dataset['bytes']},
+                removed={dataset['resource'].casefold()}, replacements={})
+
+
+def release_rules():
+    removed_names, forbidden, replacements = set(), {}, {}
+    for rules in [function() for function in RULES]:
+        removed_names |= rules['removed']
+        forbidden.update(rules['forbidden'])
+        replacements.update(rules['replacements'])
+    sizes = set(forbidden.values()) | {size for _, size in replacements.values()}
+    return removed_names, forbidden, {digest: name for digest, (name, _) in replacements.items()}, sizes
+
+
+def expected_resources():
+    DATA_PROVENANCE = data_provenance()
+    expected = {}
+    # Attribution and licenses of the anime dataset always ship.
+    for filename in ('PROVENANCE.json', 'NOTICE.txt', 'ODBL-1.0.txt', 'DBCL-1.0.txt'):
+        expected['anime-mapping/' + filename] = hashlib.sha256(
+            DATA_PROVENANCE.with_name(filename).read_bytes()).hexdigest()
+    for function in RULES:
+        expected.update(function()['expected'])
     return expected
 
 
@@ -105,7 +136,7 @@ def verify_packaged_artwork(image, jars=None):
                 seen[entry.filename] = digest
     if set(expected) != set(seen):
         raise ValueError('Missing reviewed artwork/data: ' + ', '.join(sorted(set(expected) - set(seen))))
-    return {'replacement_setup_previews': len(replacements), 'resources': seen,
+    return {'replacement_payloads': len(replacements), 'resources': seen,
             'upstream_artwork': 'Badges, icons, logos and marks ship upstream bytes unchanged (owner decision 2026-10-17)',
             'redistribution_assessment': 'BLOCKED',
             'scope': 'Payload identity only; no rights clearance; dataset rights and source/delivery gates unresolved'}

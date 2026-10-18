@@ -82,8 +82,8 @@ class ArtworkContractTest(unittest.TestCase):
     def test_actual_pinned_previews_data_and_notices_pass_without_claiming_rights_clearance(self):
         self.jar(self.payload)
         report = contract.verify_packaged_artwork(self.root)
-        self.assertEqual(11, len(report['resources']))
-        self.assertEqual(4, report['replacement_setup_previews'])
+        self.assertEqual(set(self.payload), set(report['resources']))
+        self.assertEqual(4, report['replacement_payloads'])
         self.assertEqual('BLOCKED', report['redistribution_assessment'])
 
     def test_missing_tampered_old_or_duplicate_packaged_resources_fail(self):
