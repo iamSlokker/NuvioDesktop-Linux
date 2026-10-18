@@ -206,9 +206,19 @@ jobs:
           sudo dpkg --audit
           sudo dpkg -V nuvio-desktop
           test -x /usr/bin/nuvio-desktop
-          test -s /opt/nuvio-desktop/lib/runtime/lib/server/libjvm.so
+          # GraalVM native image only: no JVM and no application JAR.
+          test -x /opt/nuvio-desktop/lib/nuvio
+          test -s /opt/nuvio-desktop/share/nuvio-native-image/inputs.json
+          test ! -e /opt/nuvio-desktop/lib/runtime/lib/server
+          [[ -z "$(find /opt/nuvio-desktop -name '*.jar' -type f -print -quit)" ]]
           test -s /opt/nuvio-desktop/lib/native/libplayer_bridge.so
           test -s /opt/nuvio-desktop/lib/native/libmpv.so.2
+          # The DEB's Depends must cover the executable and the JDK libraries it emitted
+          # (lib/ last only so libjawt.so finds libawt.so, as the running executable provides).
+          for f in /opt/nuvio-desktop/lib/nuvio /opt/nuvio-desktop/lib/*.so /opt/nuvio-desktop/lib/runtime/lib/libjawt.so; do
+            out=$(LD_LIBRARY_PATH=/opt/nuvio-desktop/lib/native:/opt/nuvio-desktop/lib/runtime/lib:/opt/nuvio-desktop/lib ldd "$f")
+            if grep -q 'not found' <<<"$out"; then echo "$f"; echo "$out"; exit 1; fi
+          done
           echo "DEB Ubuntu 22.04 smoke test PASSED"
       - name: Prepare isolated pinned Flatpak runtime
         id: flatpak_runtime
@@ -349,7 +359,7 @@ jobs:
             echo '| --- | --- |'
             echo "| DEB static verification | $DEB_RESULT |"
             echo "| DEB Ubuntu install | $DEB_SMOKE_RESULT |"
-            echo "| Canonical image and DEB build | $NATIVE_RESULT |"
+            echo "| Canonical native image, smoke gate and DEB build | $NATIVE_RESULT |"
             echo "| Private WebKit and AppImage | $APPIMAGE_RESULT |"
             echo "| Flatpak runtime preparation | $FLATPAK_RUNTIME_RESULT |"
             echo "| Flatpak export and static verification | $FLATPAK_RESULT |"
