@@ -37,6 +37,8 @@ val linuxNativeInputsDir = layout.projectDirectory.dir("native-image-linux")
 val linuxNativeUpstreamInputsDir = layout.projectDirectory.dir("native-image")
 val linuxNativeGeneratedDir = layout.buildDirectory.dir("native-image/generated")
 val linuxJvmImageDir = layout.buildDirectory.dir("compose/binaries/main/app/nuvio")
+val linuxSerializationMetadataDir = layout.buildDirectory.dir("native-image-linux/generated-serialization")
+val linuxAwtJniMetadataDir = layout.buildDirectory.dir("native-image-linux/generated-awt-jni")
 val linuxNativeWorkDir = layout.buildDirectory.dir("native-image-linux/work")
 val linuxNativeDistDir = layout.buildDirectory.dir("native-image-linux/nuvio")
 val linuxNativeSmokeScript = layout.projectDirectory.file("scripts/linux-native-smoke.py")
@@ -108,15 +110,116 @@ fun linuxPodman(image: String, mounts: List<Pair<File, String>>, workDir: File, 
         add(image)
     }
 
+// Every class the app's jars mark @Serializable, and its Companion, open to the reflection
+// kotlinx.serialization uses to find a serializer: an object's INSTANCE and serializer(), or a
+// Companion's serializer(). Upstream's generator covers only classes with an X$$serializer, so
+// objects (navigation routes such as TabsRoute), sealed bases and enums relied on a trace reaching
+// them; a native build crashed right after sign-in when none had (2026-10-18).
+val generateLinuxSerializationMetadata = tasks.register("generateLinuxSerializationMetadata") {
+    group = "native image"
+    description = "Registers every @Serializable class of the app's jars for kotlinx.serialization's reflection."
+    notCompatibleWithConfigurationCache("Reads the jpackage image's jars.")
+    enabled = linuxNativeHost
+    dependsOn("createDistributable")
+    val jars = linuxJvmImageDir.map { image -> fileTree(image.dir("lib/app")) { include("*.jar") } }
+    inputs.files(jars)
+    outputs.dir(linuxSerializationMetadataDir)
+    doLast {
+        val marker = "Lkotlinx/serialization/Serializable;".toByteArray(Charsets.US_ASCII)
+        fun ByteArray.contains(needle: ByteArray): Boolean =
+            (0..size - needle.size).any { start -> needle.indices.all { this[start + it] == needle[it] } }
+        val classes = sortedSetOf<String>()
+        val names = HashSet<String>()
+        jars.get().files.forEach { jar ->
+            java.util.zip.ZipFile(jar).use { zip ->
+                zip.entries().asSequence()
+                    .filter { it.name.startsWith("com/nuvio/") && it.name.endsWith(".class") }
+                    .forEach { entry ->
+                        val name = entry.name.removeSuffix(".class").replace('/', '.')
+                        names += name
+                        if (!name.endsWith("\$\$serializer") && zip.getInputStream(entry).use { it.readBytes() }.contains(marker)) {
+                            classes += name
+                        }
+                    }
+            }
+        }
+        val types = classes.flatMap { listOf(it, "$it\$Companion") }.filter { it in names }.toSortedSet()
+        val entries = types.joinToString(",\n") { type ->
+            "    {\"type\": \"$type\", \"allDeclaredConstructors\": true, \"allDeclaredMethods\": true, " +
+                "\"allDeclaredFields\": true, \"allPublicMethods\": true}"
+        }
+        val out = linuxSerializationMetadataDir.get().asFile.apply { deleteRecursively(); mkdirs() }
+        // UTF-8 without a BOM (native-image refuses one).
+        out.resolve("reachability-metadata.json").writeText("{\n  \"reflection\": [\n$entries\n  ]\n}\n", Charsets.UTF_8)
+        logger.lifecycle("Linux serialization metadata: ${classes.size} @Serializable classes, ${types.size} types -> $out")
+    }
+}
+
+// JNI access for the JDK's own desktop libraries, read from the GraalVM in use: every class whose
+// native methods these libraries implement (their Java_* exports, which read the class's own
+// fields and methods) and every class their C code names (FindClass literals, field and method
+// signatures). A trace only covers the paths its machine took: on a desktop with PipeWire, AWT's
+// screencast setup looks up sun/awt/screencast/TokenStorage at start-up, which no container run
+// reached, and the image died before its first window (2026-10-18).
+val generateLinuxAwtJniMetadata = tasks.register("generateLinuxAwtJniMetadata") {
+    group = "native image"
+    description = "Registers the JDK desktop libraries' JNI classes, read from the GraalVM in use."
+    notCompatibleWithConfigurationCache("Reads the GraalVM home.")
+    enabled = linuxNativeHost
+    outputs.dir(linuxAwtJniMetadataDir)
+    doLast {
+        val graal = linuxGraalVmHome()
+        val libraries = listOf("libawt", "libawt_xawt", "libawt_headless", "libfontmanager", "libjawt",
+            "libjavajpeg", "libjsound", "liblcms", "libmlib_image", "libsplashscreen")
+            .map { graal.resolve("lib/$it.so") }.filter { it.isFile }
+        val listing = ProcessBuilder(graal.resolve("bin/jimage").absolutePath, "list", graal.resolve("lib/modules").absolutePath)
+            .redirectErrorStream(true).start().inputStream.bufferedReader().readLines()
+        // jimage list: "Module: <name>" headers, then indented "<path>.class" lines.
+        val jdkClasses = HashSet<String>()
+        var module = ""
+        listing.forEach { line ->
+            if (line.startsWith("Module: ")) module = line.removePrefix("Module: ").trim()
+            else if (line.trim().endsWith(".class") && !line.trim().endsWith("module-info.class") &&
+                (module.startsWith("java.") || module.startsWith("jdk."))) jdkClasses += line.trim().removeSuffix(".class")
+        }
+        fun mangle(name: String) = name.replace("_", "_1").replace("$", "_00024").replace('/', '_')
+        val byMangled = jdkClasses.associateBy(::mangle)
+        val found = sortedSetOf<String>()
+        val path = Regex("""[a-z][a-z0-9]*(?:/[A-Za-z0-9_$]+)+""")
+        libraries.forEach { library ->
+            // Printable runs: .dynstr holds the Java_* exports, .rodata the class names.
+            Regex("""[ -~]{5,}""").findAll(String(library.readBytes(), Charsets.ISO_8859_1)).forEach { run ->
+                val text = run.value
+                Regex("""Java_([A-Za-z0-9_]+)""").findAll(text).forEach { symbol ->
+                    val body = symbol.groupValues[1]
+                    // The class is the longest prefix ending at a '_' that names a JDK class.
+                    (body.indices.reversed()).firstOrNull { i -> body[i] == '_' && body.substring(0, i) in byMangled }
+                        ?.let { i -> found += byMangled.getValue(body.substring(0, i)) }
+                }
+                path.findAll(text).map { it.value }.filter { it in jdkClasses }.forEach { found += it }
+            }
+        }
+        val entries = found.joinToString(",\n") { name ->
+            "    {\"type\": \"${name.replace('/', '.')}\", \"jniAccessible\": true, \"allDeclaredConstructors\": true, " +
+                "\"allDeclaredMethods\": true, \"allDeclaredFields\": true}"
+        }
+        val out = linuxAwtJniMetadataDir.get().asFile.apply { deleteRecursively(); mkdirs() }
+        out.resolve("reachability-metadata.json").writeText("{\n  \"reflection\": [\n$entries\n  ]\n}\n", Charsets.UTF_8)
+        logger.lifecycle("Linux AWT JNI metadata: ${found.size} JDK classes from ${libraries.size} libraries -> $out")
+    }
+}
+
 val linuxNativeCompile = tasks.register<Exec>("linuxNativeCompile") {
     group = "native image"
     description = "Compiles createDistributable's jars into the native Linux executable with GraalVM native-image."
     notCompatibleWithConfigurationCache("Runs host-local GraalVM native-image, optionally in a container.")
     enabled = linuxNativeHost
-    dependsOn("createDistributable", "generateNativeMetadata")
+    dependsOn("createDistributable", "generateNativeMetadata", generateLinuxSerializationMetadata, generateLinuxAwtJniMetadata)
     inputs.dir(linuxNativeInputsDir)
     inputs.dir(linuxNativeUpstreamInputsDir)
     inputs.dir(linuxNativeGeneratedDir)
+    inputs.dir(linuxSerializationMetadataDir)
+    inputs.dir(linuxAwtJniMetadataDir)
     inputs.files(linuxJvmImageDir.map { image -> fileTree(image.dir("lib/app")) { include("*.jar", "nuvio.cfg") } })
     inputs.property("march", linuxNativeMarch)
     inputs.property("qa", linuxNativeQa)
@@ -130,13 +233,16 @@ val linuxNativeCompile = tasks.register<Exec>("linuxNativeCompile") {
         val cfg = readLinuxJvmImageConfig(appDir)
         val version = cfg.javaOptions.firstOrNull { it.startsWith("-Djpackage.app-version=") }
             ?.substringAfter('=') ?: throw GradleException("nuvio.cfg has no -Djpackage.app-version")
-        // The Linux trace and topics first, then upstream's topics: they are shared JDK/library
-        // knowledge (fonts, swing, onnxruntime, ...). Upstream's agent/ is a Windows trace.
+        // The Linux trace and topics first, then upstream's trace and topics. Upstream's agent/ was
+        // recorded on Windows, but signed in: it holds the app's own reflection (navigation route
+        // serializers, ...) that a signed-out Linux trace never reaches. Its Windows-only JDK
+        // classes are absent from the Linux image and native-image skips them with a warning.
         val linuxRoot = linuxNativeInputsDir.asFile
         val upstreamRoot = linuxNativeUpstreamInputsDir.asFile
         fun topics(root: File) = root.listFiles { file -> file.isDirectory && file.name != "agent" }.orEmpty().sortedBy { it.name }
-        val metadataDirs = listOf(linuxRoot.resolve("agent")).filter { it.isDirectory } +
-            topics(linuxRoot) + topics(upstreamRoot) + linuxNativeGeneratedDir.get().asFile
+        val metadataDirs = listOf(linuxRoot.resolve("agent"), upstreamRoot.resolve("agent")).filter { it.isDirectory } +
+            topics(linuxRoot) + topics(upstreamRoot) + linuxNativeGeneratedDir.get().asFile +
+            linuxSerializationMetadataDir.get().asFile + linuxAwtJniMetadataDir.get().asFile
         val args = buildList {
             add("-J-Xmx$linuxNativeBuilderHeap")
             add("-H:ConfigurationFileDirectories=" + metadataDirs.joinToString(",") { it.absolutePath })
