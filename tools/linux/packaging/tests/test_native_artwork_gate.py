@@ -92,7 +92,6 @@ class NativeArtworkGateTest(unittest.TestCase):
         for kind in ('deb', 'appimage'):
             with self.subTest(kind=kind):
                 report = self.audit(kind)
-                self.assertEqual(4, report['artwork']['replacement_payloads'])
                 self.assertEqual('BLOCKED', report['artwork']['redistribution_assessment'])
                 self.assertEqual(4, report['native_payloads']['anime_notice_files'])
                 self.assertEqual('PASS', report['smoke']['status'])

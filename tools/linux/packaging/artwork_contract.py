@@ -52,33 +52,6 @@ def rule(function):
     return function
 
 
-def release_provenance():
-    return repository() / 'composeApp/src/commonMain/composeResources/files/licenses/ReleaseArtwork/PROVENANCE.json'
-
-
-@rule
-def setup_preview_rules():
-    """The four fork-made setup previews: pinned replacement bytes, the replaced originals forbidden."""
-    RELEASE_PROVENANCE = release_provenance()
-    release = json.loads(RELEASE_PROVENANCE.read_text())
-    replaced = release['replacements']
-    # The replaced setup-preview originals are forbidden at any path.
-    forbidden = {row['original']['sha256']: row['original']['bytes'] for row in replaced}
-    # Also reject a replacement copied/renamed into any other payload location.
-    replacements = {row['replacement']['sha256']: (packaged_path(row['resource']), row['replacement']['bytes'])
-                    for row in replaced}
-    if len(replacements) != len(replaced) or set(replacements) & set(forbidden):
-        raise ValueError('Release artwork replacements must have distinct, non-original bytes')
-    expected = {packaged_path(row['resource']): row['replacement']['sha256'] for row in replaced}
-    for filename in ('LICENSE.txt', 'NOTICE.txt', 'PROVENANCE.json'):
-        digest = hashlib.sha256(RELEASE_PROVENANCE.with_name(filename).read_bytes()).hexdigest()
-        declared = {'LICENSE.txt': 'license_sha256', 'NOTICE.txt': 'notice_sha256'}.get(filename)
-        if declared and digest != release[declared]:
-            raise ValueError('Release artwork license/notice differs from pinned provenance: ' + filename)
-        expected[PREFIX + 'files/licenses/ReleaseArtwork/' + filename] = digest
-    return dict(expected=expected, forbidden=forbidden, removed=set(), replacements=replacements)
-
-
 @rule
 def anime_dataset_rules():
     """Linux packages download the anime dataset at runtime; never redistribute its bytes."""

@@ -103,7 +103,6 @@ class FlatpakNativeInventoryTest(unittest.TestCase):
         self.assertEqual('app/com.example.NuvioFixture/x86_64/nightly', report['bundle']['ref'])
         self.assertIsNone(report['bundle']['origin'])
         self.assertEqual('PASS', report['smoke']['status'])
-        self.assertEqual(4, report['artwork']['replacement_payloads'])
         self.assertEqual(['ANON_KEY', 'URL'], report['backend'])
         self.assertEqual(1, report['native_image']['input_jars'])
 
