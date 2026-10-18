@@ -83,6 +83,13 @@ target_include_directories(linux_controls_paint_probe PRIVATE "${CMAKE_CURRENT_S
 target_link_libraries(linux_controls_paint_probe PRIVATE Threads::Threads PkgConfig::GTK3
     PkgConfig::WEBKITGTK "${X11_LIBRARY}")
 
+add_executable(linux_cursor_hide_probe EXCLUDE_FROM_ALL
+    tests/cursor_hide_probe.cpp controls_overlay.cpp window_chrome.cpp)
+target_compile_features(linux_cursor_hide_probe PRIVATE cxx_std_17)
+target_include_directories(linux_cursor_hide_probe PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}" "${X11_INCLUDE_DIR}")
+target_link_libraries(linux_cursor_hide_probe PRIVATE Threads::Threads PkgConfig::GTK3
+    PkgConfig::WEBKITGTK "${X11_LIBRARY}" Xfixes)
+
 # Real-libmpv separate-audio regression probe: null outputs, no display/GTK/JNI.
 add_executable(linux_separate_audio_test EXCLUDE_FROM_ALL tests/separate_audio_test.cpp)
 target_compile_features(linux_separate_audio_test PRIVATE cxx_std_17)
