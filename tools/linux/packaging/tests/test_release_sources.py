@@ -32,7 +32,7 @@ class ReleaseSourcesTest(unittest.TestCase):
         self.runtime(packages=['libfoo1'])
         self.engine({'libfoo1': '1', 'libgtk-3-0': '1', 'libunbundled0': '9'})
         for name in ('app.deb', 'app.flatpak', 'app.AppImage', 'Nuvio-source-aaaaaaaaaaaa.tar.gz',
-                     'Nuvio-AppImage-runtime-source-y.tar.gz'):
+                     'Nuvio-AppImage-runtime-source-y.tar.gz', 'Nuvio-native-image-inputs-aaaaaaaaaaaa.tar'):
             (self.artifacts / name).write_bytes(name.encode())
 
     def runtime(self, packages, builder='e' * 64, recipe='f' * 64):
@@ -101,20 +101,30 @@ class ReleaseSourcesTest(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'exactly one'):
             rs.check_appimage_lock(self.work, self.lock)
 
-    def test_pinned_jdk_source_is_the_single_temurin_source_archive(self):
-        spec = rs.jdk_source_spec()
-        # Same Temurin release as the JDK the builder pins and bundles.
-        jdk = json.loads((rs.PACKAGING / 'config.json').read_text())['tools']['jdk']
-        self.assertEqual(spec['url'].rsplit('/', 1)[0], jdk['url'].rsplit('/', 1)[0])
-        self.assertTrue(spec['url'].startswith('https://github.com/adoptium/temurin'))
-        self.assertRegex(spec['sha256'], '^[0-9a-f]{64}$')
-        self.assertTrue(spec['path'].endswith('.tar.gz') and 'jdk-sources' in spec['path'])
+    def test_pinned_graalvm_sources_are_the_commits_the_pinned_binary_names(self):
+        specs = rs.graalvm_source_specs()
+        self.assertEqual(3, len(specs))
+        retention = json.loads(rs.RETENTION.read_text())
+        graalvm = retention['graalvm']
+        # The binary the builder pins, and the commits its release file records.
+        self.assertEqual(json.loads((rs.PACKAGING / 'config.json').read_text())['tools']['graalvm'], graalvm['binary'])
+        commits = {spec['path'].split('/', 1)[1].rsplit('-', 1)[1].removesuffix('.tar.gz') for spec in specs}
+        self.assertEqual({graalvm['source']['graal']['commit'], graalvm['source']['labs-openjdk']['commit'],
+                          graalvm['source']['mx']['commit']}, commits)
+        self.assertIn('compiler:' + graalvm['source']['graal']['commit'], graalvm['release']['SOURCE'])
+        self.assertTrue(graalvm['release']['SOURCE'].startswith('.:git:' + graalvm['source']['labs-openjdk']['commit'][:12]))
+        for spec in specs:
+            self.assertTrue(spec['url'].startswith('https://codeload.github.com/'))
+            self.assertTrue(spec['url'].endswith(spec['path'].rsplit('-', 1)[1].removesuffix('.tar.gz')))
+            self.assertRegex(spec['sha256'], '^[0-9a-f]{64}$')
+        # Temurin no longer ships in a package: its source is no longer a package asset.
+        self.assertFalse(hasattr(rs, 'jdk_source_spec'))
 
     def test_source_map_binds_each_package_to_existing_source_assets(self):
         def media(recipe, cache, output):
             output.write_bytes(b'media source')
         def fetch(spec, output):
-            Path(output).write_bytes(b'jdk source'); return Path(output)
+            Path(output).write_bytes(spec['url'].encode()); return Path(output)
         def archive(lock, cache, output):
             output.write_bytes(b'ubuntu source')
         with patch.object(rs, 'collect_media', side_effect=media), patch.object(rs, 'fetch', side_effect=fetch), \
@@ -127,8 +137,10 @@ class ReleaseSourcesTest(unittest.TestCase):
         self.assertEqual({'app.deb', 'app.flatpak', 'app.AppImage'}, set(written['packages']))
         names = lambda package: {s['name'] for s in written['packages'][package]['sources']}
         common = {'Nuvio-source-aaaaaaaaaaaa.tar.gz', 'Nuvio-media-source-aaaaaaaaaaaa.tar.gz',
-                  Path(rs.jdk_source_spec()['path']).name}
+                  'Nuvio-native-image-inputs-aaaaaaaaaaaa.tar',
+                  *(Path(spec['path']).name for spec in rs.graalvm_source_specs())}
         self.assertEqual(common, names('app.deb'))
+        self.assertFalse(any('jdk-sources' in name for name in names('app.deb')))
         self.assertEqual(common, names('app.flatpak'))
         self.assertEqual(common | {'Nuvio-WebKit-source-x.tar.gz', 'Nuvio-AppImage-runtime-source-y.tar.gz',
                                    'Nuvio-AppImage-Ubuntu-source-aaaaaaaaaaaa.tar'},

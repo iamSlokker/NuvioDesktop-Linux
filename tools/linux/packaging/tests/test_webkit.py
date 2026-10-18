@@ -267,13 +267,15 @@ class WebKitBuildTest(unittest.TestCase):
                 p = root / 'bin' / name
                 p.write_text('#!/bin/sh\nprintf "%s\\n" "$@"\n')
                 p.chmod(0o755)
-            (root / 'bin/nuvio').write_text('#!/bin/sh\nset -eu\n'
+            (root / 'lib').mkdir(parents=True, exist_ok=True)
+            # The native executable the launcher runs (lib/nuvio), not the bin/nuvio script.
+            (root / 'lib/nuvio').write_text('#!/bin/sh\nset -eu\n'
                 '[ "$WEBKIT_FORCE_SANDBOX" = 1 ]\n'
                 '[ "$GST_PLUGIN_SCANNER_1_0" = "$GST_PLUGIN_SCANNER" ]\n'
                 'cat "$GDK_PIXBUF_MODULE_FILE" "$GTK_IM_MODULE_FILE"\n'
                 'printf "%s\\n" "$GIO_MODULE_DIR" "$GST_PLUGIN_SCANNER" "$LD_LIBRARY_PATH" "$GDK_BACKEND" "$@"\n'
                 'IFS= read -r input\nprintf "%s\\n" "$input"\n')
-            (root / 'bin/nuvio').chmod(0o755)
+            (root / 'lib/nuvio').chmod(0o755)
             launcher = root / 'bin/nuvio-desktop'
             shutil.copy2(RECIPE / 'nuvio-appimage', launcher)
             alias = pathlib.Path(tmp) / 'symlinked image'
@@ -286,7 +288,7 @@ class WebKitBuildTest(unittest.TestCase):
                     self.assertEqual(result, [str(root / 'lib/native/gdk-pixbuf-2.0/2.10.0/loaders/fixture.so'),
                                               str(root / 'lib/native/gtk-3.0/3.0.0/immodules/fixture.so'),
                                               str(root / 'lib/native/gio/modules'), str(root / 'bin/nuvio-gst-plugin-scanner'),
-                                              f'{root}/lib/native:{root}/lib/runtime/lib:{root}/lib/runtime/lib/server',
+                                              f'{root}/lib/native:{root}/lib/runtime/lib',
                                               'x11', 'one two', '--fixture', 'fixture stdin'])
             self.assertEqual(list(pathlib.Path(tmp).glob('nuvio-modules.*')), [])
 

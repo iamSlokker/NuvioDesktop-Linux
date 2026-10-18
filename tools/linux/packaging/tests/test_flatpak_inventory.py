@@ -1,87 +1,140 @@
-"""Actual-bundle inventory must match staging before inspecting packaged classes."""
+"""The exported Flatpak bundle, not staging, must carry the smoke-tested native image and no JAR/JVM."""
 import json
-import io
+import os
 import pathlib
+import shutil
 import sys
 import tempfile
 import unittest
-import zipfile
 from unittest.mock import patch
 
+sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1]))
-import verify
 import artwork_contract
+import client_config
 import flatpak_bundle
+import native_evidence
+import native_fixture
 import notice_contract
+import verify
+
+IMAGE = '/files/lib/nuvio-desktop'
 
 
-class FlatpakJarInventoryTest(unittest.TestCase):
+class FlatpakNativeInventoryTest(unittest.TestCase):
     def setUp(self):
         self.tmp = tempfile.TemporaryDirectory()
         self.addCleanup(self.tmp.cleanup)
-        self.work = pathlib.Path(self.tmp.name)
-        (self.work / 'artifacts').mkdir()
+        root = pathlib.Path(self.tmp.name)
+        self.work = root / 'work'
+        entries = {name: artwork_contract.linux_source(name).read_bytes() for name in artwork_contract.expected_resources()}
+        entries[client_config.CONFIG_CLASS] = native_fixture.supabase_class()
+        anime = {name: artwork_contract.data_provenance().with_name(name).read_bytes()
+                 for name in native_evidence.ANIME_FILES}
+        self.jar = {'application.jar': entries}
+        embedded = [n for n in entries if not n.startswith('anime-mapping/') and not n.endswith('.class')]
+        canonical, evidence, _ = native_fixture.make(root, jars=self.jar, embedded=embedded, anime=anime)
+        notice_contract.stage_notices(canonical)
+        (canonical / 'lib/native').mkdir()
+        (canonical / 'lib/native/nuvio-hdr-probe').write_bytes(b'fixture helper')
+        (canonical / 'lib/native/nuvio-hdr-probe').chmod(0o755)
+        (canonical / 'lib/native/libmpv.so.2').symlink_to('libmpv.so.2.5.0')
+        (canonical / 'lib/native/libmpv.so.2.5.0').write_bytes(b'fixture mpv')
         self.info = dict(application_id='com.example.NuvioFixture', channel='nightly')
+        (canonical / 'release-info.json').write_text(json.dumps(self.info))
+        native_fixture.smoke(evidence, canonical)
+        (self.work / 'artifacts').mkdir()
+        native_evidence.archive(self.work, self.work / 'artifacts/Nuvio-native-image-inputs-aaaaaaaaaaaa.tar', 1)
         runtime_repo = json.loads((pathlib.Path(verify.__file__).parent / 'flatpak-repo/repo.json').read_text())['runtime_repo']
         # A real bundle header (unsigned CI contract) plus padding past the size floor.
         (self.work / 'artifacts/Nuvio.flatpak').write_bytes(flatpak_bundle.fixture_bundle(
             'app/com.example.NuvioFixture/x86_64/nightly', runtime_repo=('s', runtime_repo),
             **{'deltas/fixture/0': ('ay', bytes(8192))}))
-        (self.work / 'canonical').mkdir()
-        (self.work / 'canonical/release-info.json').write_text(json.dumps(self.info))
-        self.jars = ['application.jar', 'onnx runtime.jar']
-        directory = self.work / 'flatpak-build/files/lib/nuvio-desktop/lib/app'
-        directory.mkdir(parents=True)
-        for name in self.jars:
-            (directory / name).write_bytes(('fixture ' + name).encode())
+        staging = self.work / 'flatpak-build/files/lib/nuvio-desktop'
+        shutil.copytree(canonical, staging, symlinks=True)
         (self.work / 'flatpak-build/metadata').write_bytes(b'fixture metadata')
-        self.cat_jars = []
-        self.listing = self.inventory(self.jars)
+        # What the bundle exported; tests change it to model a different export.
+        self.exported = root / 'exported'
+        shutil.copytree(staging, self.exported, symlinks=True)
+        self.cat_paths = []
 
-    @staticmethod
-    def inventory(names):
-        directory = '/files/lib/nuvio-desktop/lib/app'
-        return '\n'.join(['d00755 1000 1000 0 ' + directory] +
-                         ['-00644 1000 1000 10 ' + directory + '/' + name for name in names]) + '\n'
+    def listing(self):
+        lines = ['d00755 0 0 0 ' + IMAGE]
+        for path in sorted(self.exported.rglob('*')):
+            name = IMAGE + '/' + path.relative_to(self.exported).as_posix()
+            if path.is_symlink():
+                lines.append('l00777 0 0 0 %s -> %s' % (name, os.readlink(path)))
+            elif path.is_dir():
+                lines.append('d00755 0 0 0 ' + name)
+            else:
+                lines.append('-%05o 0 0 %d %s' % (path.stat().st_mode & 0o7777, path.stat().st_size, name))
+        return '\n'.join(lines) + '\n'
 
     def command_output(self, args, **kwargs):
         self.assertEqual('ostree', args[0])
         if args[2] == 'ls':
             self.assertTrue(kwargs['text'])
+            if args[3] == '-R':
+                self.assertEqual(IMAGE, args[-1])
+                return self.listing()
             if args[-1].endswith('/lib/native/nuvio-hdr-probe'):
-                return '-00755 1000 1000 4096 ' + args[-1] + '\n'
-            return self.listing
+                return '-00755 0 0 4096 ' + args[-1] + '\n'
+            raise AssertionError(args)
         self.assertEqual('cat', args[2])
-        if args[-1].endswith('/release-info.json'):
-            return json.dumps(self.info).encode()
         if args[-1] == '/metadata':
             return b'fixture metadata'
-        if '/share/licenses/third-party/' in args[-1]:
-            return (notice_contract.NOTICES / args[-1].split('/share/licenses/third-party/', 1)[1]).read_bytes()
-        self.assertTrue(args[-1].endswith('.jar'))
-        name = pathlib.PurePosixPath(args[-1]).name
-        self.cat_jars.append(name)
-        return ('fixture ' + name).encode()
+        self.assertTrue(args[-1].startswith(IMAGE + '/'), args[-1])
+        relative = args[-1][len(IMAGE) + 1:]
+        self.cat_paths.append(relative)
+        return (self.exported / relative).read_bytes()
 
     def audit(self):
-        return verify.artifacts(self.work, 'flatpak')
-
-    def test_matching_actual_inventory_reads_and_verifies_each_packaged_jar(self):
         with patch.object(verify.subprocess, 'run'), \
                 patch.object(verify.subprocess, 'check_output', side_effect=self.command_output), \
-                patch.object(verify, 'verify_packaged_backend') as backend, \
-                patch.object(verify, 'verify_packaged_onnx', return_value={'provider': 'CPU'}) as onnx, \
-                patch.object(verify, 'verify_packaged_fonts', return_value={'version': '4.1'}) as fonts, \
-                patch.object(verify, 'verify_packaged_artwork', return_value={'redistribution_assessment': 'BLOCKED'}) as artwork:
-            self.audit()
-        self.assertEqual(self.jars, self.cat_jars)
-        backend.assert_called_once()
-        onnx.assert_called_once()
-        fonts.assert_called_once()
-        artwork.assert_called_once()
-        report = json.loads((self.work / 'artifacts/flatpak-audit.json').read_text())
+                patch.object(verify, 'verify_packaged_onnx', return_value={'files': {}}), \
+                patch.object(verify, 'verify_packaged_fonts', return_value={'resources': {}}):
+            verify.artifacts(self.work, 'flatpak')
+        return json.loads((self.work / 'artifacts/flatpak-audit.json').read_text())
+
+    def test_exported_native_image_is_bound_to_the_retained_inputs_and_smoke_record(self):
+        report = self.audit()
+        self.assertIn('lib/nuvio', self.cat_paths)
+        self.assertIn(str(native_evidence.PACKAGED_MANIFEST), self.cat_paths)
         self.assertEqual('app/com.example.NuvioFixture/x86_64/nightly', report['bundle']['ref'])
         self.assertIsNone(report['bundle']['origin'])
+        self.assertEqual('PASS', report['smoke']['status'])
+        self.assertEqual(4, report['artwork']['replacement_setup_previews'])
+        self.assertEqual(['ANON_KEY', 'URL'], report['backend'])
+        self.assertEqual(1, report['native_image']['input_jars'])
+
+    def test_jars_jvm_or_a_different_executable_in_the_export_are_rejected(self):
+        def jar(e): (e / 'lib/app').mkdir(exist_ok=True); (e / 'lib/app/app.jar').write_bytes(b'x')
+        def link(e): (e / 'lib/app').mkdir(exist_ok=True); (e / 'lib/app/hidden').symlink_to('payload.jar')
+        def jvm(e): (e / 'lib/runtime/lib/server').mkdir(); (e / 'lib/runtime/lib/server/libjvm.so').write_bytes(b'x')
+        def exe(e): (e / 'lib/nuvio').write_bytes(b'another executable')
+        def notice(e): (e / native_evidence.GRAALVM_NOTICES / 'LICENSE.txt').unlink()
+        def jar_notice(e): (e / native_evidence.JAR_NOTICES / 'index.json').write_text('{}')
+        for change, message in [(jar, 'JAR in the Flatpak bundle'), (link, 'JAR link'), (jvm, 'JVM runtime'),
+                                (exe, 'differs from the inspected sandbox'), (notice, 'Missing regular file'),
+                                (jar_notice, 'JAR notice index')]:
+            with self.subTest(message=message):
+                shutil.rmtree(self.exported)
+                shutil.copytree(self.work / 'flatpak-build/files/lib/nuvio-desktop', self.exported, symlinks=True)
+                change(self.exported)
+                with self.assertRaisesRegex(ValueError, message):
+                    self.audit()
+
+    def test_missing_smoke_record_or_evidence_archive_blocks_the_flatpak(self):
+        (self.work / 'native-image/smoke.json').write_text(json.dumps(dict(status='FAIL', runs=[])))
+        with self.assertRaisesRegex(ValueError, 'differs from the retained evidence'):
+            self.audit()
+        (self.work / 'artifacts/Nuvio-native-image-inputs-aaaaaaaaaaaa.tar').unlink()
+        native_evidence.archive(self.work, self.work / 'artifacts/Nuvio-native-image-inputs-aaaaaaaaaaaa.tar', 1)
+        with self.assertRaisesRegex(ValueError, 'not a pass'):
+            self.audit()
+        (self.work / 'artifacts/Nuvio-native-image-inputs-aaaaaaaaaaaa.tar').unlink()
+        with self.assertRaisesRegex(ValueError, 'evidence archive'):
+            self.audit()
 
     def test_ci_bundle_with_repository_link_or_key_is_rejected_before_import(self):
         path = self.work / 'artifacts/Nuvio.flatpak'
@@ -96,79 +149,24 @@ class FlatpakJarInventoryTest(unittest.TestCase):
                 with patch.object(verify.subprocess, 'run') as run, \
                         patch.object(verify.subprocess, 'check_output', side_effect=self.command_output):
                     with self.assertRaisesRegex(ValueError, 'must not embed|runtime repository'):
-                        self.audit()
+                        verify.artifacts(self.work, 'flatpak')
                 self.assertFalse(any('build-import-bundle' in call.args[0] for call in run.call_args_list))
 
-    def test_extra_or_missing_bundle_jar_is_rejected_before_class_verification(self):
-        for names in [self.jars + ['unexpected.jar'], self.jars[:1]]:
-            with self.subTest(names=names):
-                self.listing = self.inventory(names)
-                with patch.object(verify.subprocess, 'run'), \
-                        patch.object(verify.subprocess, 'check_output', side_effect=self.command_output), \
-                        patch.object(verify, 'verify_packaged_backend') as backend, \
-                        patch.object(verify, 'verify_packaged_onnx') as onnx, \
-                        patch.object(verify, 'verify_packaged_fonts') as fonts, \
-                        patch.object(verify, 'verify_packaged_artwork') as artwork:
-                    with self.assertRaisesRegex(ValueError, 'JAR inventory differs'):
-                        self.audit()
-                self.assertEqual([], self.cat_jars)
-                backend.assert_not_called()
-                onnx.assert_not_called()
-                fonts.assert_not_called()
-                artwork.assert_not_called()
-
-    def test_non_regular_or_duplicate_bundle_jars_are_rejected(self):
-        directory = '/files/lib/nuvio-desktop/lib/app/'
-        for bad_line in ['l00777 1000 1000 0 ' + directory + 'linked.jar -> application.jar',
-                         'l00777 1000 1000 0 ' + directory + 'hidden -> payload.jar -> nonjar',
-                         'd00755 1000 1000 0 ' + directory + 'directory.jar',
-                         '-00644 1000 1000 10 ' + directory + 'application.jar']:
-            with self.subTest(line=bad_line):
-                self.listing = self.inventory(self.jars) + bad_line + '\n'
-                with patch.object(verify.subprocess, 'run'), \
-                        patch.object(verify.subprocess, 'check_output', side_effect=self.command_output):
-                    with self.assertRaisesRegex(ValueError, 'Non-regular/duplicate'):
-                        self.audit()
-                self.assertEqual([], self.cat_jars)
-
-    def test_exported_bundle_reaches_real_artwork_gate_instead_of_trusting_staging(self):
-        payload = {}
-        for name in artwork_contract.expected_resources():
-            payload[name] = artwork_contract.linux_source(name).read_bytes()
-        dataset = (artwork_contract.repository() /
-                   'composeApp/src/desktopMain/resources/anime-list-mini.json').read_bytes()
-        for bad_export in (False, True, 'original'):
-            content = dict(payload)
-            if bad_export == 'original':
-                # The runtime-downloaded dataset (here renamed) in the exported JAR must fail.
-                content['nested/renamed.bin'] = dataset
-            elif bad_export:
-                # Correct staging plus a forbidden asset in the actual exported JAR must fail.
-                content['nested/ANIME-LIST-MINI.JSON'] = b'new bytes'
-            stream = io.BytesIO()
-            with zipfile.ZipFile(stream, 'w') as jar:
-                for name, data in content.items(): jar.writestr(name, data)
-            def output(args, **kwargs):
-                if args[-1].endswith('.jar'):
-                    if args[-1].endswith('application.jar'): return stream.getvalue()
-                    empty = io.BytesIO()
-                    with zipfile.ZipFile(empty, 'w'): pass
-                    return empty.getvalue()
-                return self.command_output(args, **kwargs)
-            with self.subTest(bad_export=bad_export), patch.object(verify.subprocess, 'run'), \
-                    patch.object(verify.subprocess, 'check_output', side_effect=output), \
-                    patch.object(verify, 'verify_packaged_backend'), \
-                    patch.object(verify, 'verify_packaged_onnx', return_value={}), \
-                    patch.object(verify, 'verify_packaged_fonts', return_value={}):
-                if bad_export == 'original':
-                    with self.assertRaisesRegex(ValueError, 'Forbidden historical artwork bytes'): self.audit()
-                elif bad_export:
-                    with self.assertRaisesRegex(ValueError, 'Removed artwork filename'): self.audit()
-                else:
-                    self.audit()
-                    report = json.loads((self.work / 'artifacts/flatpak-audit.json').read_text())
-                    self.assertEqual(4, report['artwork']['replacement_setup_previews'])
-                    self.assertEqual('BLOCKED', report['artwork']['redistribution_assessment'])
+    def test_forbidden_artwork_in_the_native_image_inputs_fails(self):
+        dataset = (artwork_contract.repository() / 'composeApp/src/desktopMain/resources/anime-list-mini.json').read_bytes()
+        jar = self.work / 'native-image/inputs/application.jar'
+        entries = dict(self.jar['application.jar'], **{'nested/renamed.bin': dataset})
+        jar.write_bytes(native_fixture.jar_bytes(entries))
+        archive = self.work / 'artifacts/Nuvio-native-image-inputs-aaaaaaaaaaaa.tar'
+        archive.unlink()
+        native_evidence.archive(self.work, archive, 1)
+        # Model inputs whose manifest hash matched (the binding is tested elsewhere): the
+        # contract on the input JARs must still reject the forbidden bytes.
+        with patch.object(native_evidence, 'verify', side_effect=lambda root, evidence: native_evidence.NativeImage(
+                json.loads((root / native_evidence.PACKAGED_MANIFEST).read_text()), [jar],
+                (root / 'lib/nuvio').read_bytes())):
+            with self.assertRaisesRegex(ValueError, 'Forbidden historical artwork bytes'):
+                self.audit()
 
 
 if __name__ == '__main__':

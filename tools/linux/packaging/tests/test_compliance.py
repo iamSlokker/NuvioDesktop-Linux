@@ -75,6 +75,22 @@ class ComplianceInventoryTest(unittest.TestCase):
         self.assertEqual('media:wayland', owner('lib/native/libwayland-client.so.0'))
         self.assertEqual('unresolved-native:lib/native/other-helper', owner('lib/native/other-helper'))
 
+    def test_native_image_packages_attribute_the_executable_and_jdk_libraries(self):
+        media = {'artifact_contract': {'libraries': {'lib/libmpv.so.2.5.0': {'soname': 'libmpv.so.2', 'component': 'mpv'}}}}
+        native = lambda path: inv.native_owner(path, media, {'files': []}, {}, {}, {}, native=True)
+        jvm = lambda path: inv.native_owner(path, media, {'files': []}, {}, {}, {})
+        self.assertEqual('native-image', native('lib/nuvio'))
+        self.assertEqual('graalvm-ce', native('lib/libawt_xawt.so'))
+        self.assertEqual('graalvm-ce', native('lib/runtime/lib/libjawt.so'))
+        self.assertEqual('application', native('lib/native/libplayer_bridge.so'))
+        self.assertEqual('media:mpv', native('lib/native/libmpv.so.2'))
+        self.assertEqual('skiko-native', native('lib/app/libskiko-linux-x64.so'))
+        # The reviewed JVM run keeps its mapping.
+        self.assertEqual('temurin', jvm('lib/runtime/lib/server/libjvm.so'))
+        self.assertIn('build JDK only', inv.build_only_scope('jdk', True))
+        self.assertIn('lib/nuvio', inv.build_only_scope('graalvm', True))
+        self.assertIn('JDK subset also bundled runtime', inv.build_only_scope('cmake', False))
+
     def test_jar_inventory_hashes_notices_and_embedded_binaries(self):
         p = self.root / 'fixture.jar'
         jar(p, {'META-INF/LICENSE': b'license', 'native/windows/a.dll': b'MZ-fixture', 'X.class': b'class'})
