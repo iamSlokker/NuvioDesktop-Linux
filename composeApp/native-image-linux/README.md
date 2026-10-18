@@ -70,6 +70,16 @@ a painted first frame, without `failed=0`, or on any missing-registration / fata
 console. A QA build (`-Pnuvio.native.qa=true`) reports missing registrations and carries on: never
 package one (`lib/native-qa` marks it, and its console is copied to `lib/native-qa-console.log`).
 
+## Packages
+
+`tools/linux/packaging` runs `createLinuxNativeDistributable` inside its Ubuntu 22.04 builder
+(GraalVM CE 25.0.2 at `/opt/graalvm`), adds `lib/native` from the media runtime and the bridge
+built from this source, and gates every package on the same smoke script
+(`tools/linux/packaging/native_smoke.py`). It keeps the exact classpath JARs, a path-free
+`inputs.json` and native-image's `build-artifacts.json`/`embedded-resources.json` (written beside
+the executable by `-H:+GenerateBuildArtifactsFile`/`-H:+GenerateEmbeddedResourcesFile`) as
+evidence; see the packaging README's "Native image and smoke gate".
+
 ## History
 
 2026-10-17, GraalVM CE 25.0.2: first trace (self-test + 60 s idle, signed out). The first QA build
