@@ -137,7 +137,7 @@ How each contract verifies a package without JARs:
 | --- | --- | --- |
 | Inputs | — | `inputs.json` equals the retained one; `lib/nuvio` and every JDK file match it; no `.jar`, `lib/runtime/lib/server`, `libjli.so`, `libapplauncher.so` or QA marker anywhere |
 | Backend (`client_config`) | exactly one `SupabaseConfig` with the reviewed URL/key fields | URL and key occur in `lib/nuvio` |
-| Fonts/ONNX/artwork | existing contracts unchanged (hashes, removed names/bytes, ABI/ldd of ONNX natives) | each reviewed payload is listed by `embedded-resources.json` and occurs verbatim in `lib/nuvio` (native-image stores resources uncompressed); no embedded resource has a removed name; anime-mapping notices ship as files in `share/licenses/anime-mapping/` |
+| ONNX/artwork/data | existing contracts (hashes, ABI/ldd of ONNX natives; the bundled anime dataset must match the checkout) | each reviewed payload is listed by `embedded-resources.json` and occurs verbatim in `lib/nuvio` (native-image stores resources uncompressed); no embedded resource has a removed name; anime-mapping notices ship as files in `share/licenses/anime-mapping/` |
 | Embedded JNI | quickjs etc. from the input JARs, if embedded | bytes in `lib/nuvio`; ABI floor and `ldd` |
 | Report | every embedded JAR resource comes from a recorded input JAR entry of the same size (JDK module resources counted separately) | — |
 | Notices | every notice-like entry of every input JAR | `share/licenses/jar-notices/` equals that extraction; GraalVM notices equal `inputs.json` |
@@ -185,6 +185,14 @@ clears inherited LD_PRELOAD/LD_LIBRARY_PATH and sets `GDK_BACKEND=x11`. The nati
 Flatpak's outer launcher instead retains its sandbox-provided graphics/codec
 extension LD_LIBRARY_PATH after the private directories; clearing those paths
 would hide GNOME's host-driver extensions. It still clears LD_PRELOAD.
+
+`nuvio://` links (Watch Party invites, "Open in Nuvio") open the app on Linux through
+the desktop entry: `MimeType=x-scheme-handler/nuvio;` with `Exec=nuvio-desktop %u`.
+Every launcher (`bin/nuvio-desktop`, the DEB `/usr/bin` wrapper, AppRun, the Flatpak
+launcher, whose Exec `flatpak build-export` rewrites to `... @@u %u @@`) forwards the
+link to `lib/nuvio`; a running copy receives it through `DesktopSingleInstance`.
+`verify.py` checks the shipped and the exported Flatpak entries. Windows keeps its
+own per-user registry registration (`DesktopUrlScheme`).
 
 Media remains mpv **0.41.0**, FFmpeg **9.0.2**, libplacebo **7.360.1**, with the
 existing safe-auto and CUDA-mapper patches. The image contains versioned runtime

@@ -441,13 +441,47 @@ internal object NativePlayerBridge {
             resource = "/player-ui/controls.js",
             target = root.resolve("controls.js"),
         )
-        nativePlayerFontAssets.forEach { font ->
-            copyResourceIfChanged(font.resourcePath, fontsDir.resolve(font.filename))
-        }
+        copyResourceIfChanged(
+            resource = "/composeResources/nuvio.composeapp.generated.resources/font/jetbrains_sans_regular.ttf",
+            target = fontsDir.resolve("jetbrains_sans_regular.ttf"),
+        )
+        copyResourceIfChanged(
+            resource = "/composeResources/nuvio.composeapp.generated.resources/font/jetbrains_sans_semibold.ttf",
+            target = fontsDir.resolve("jetbrains_sans_semibold.ttf"),
+        )
+        copyResourceIfChanged(
+            resource = "/composeResources/nuvio.composeapp.generated.resources/font/jetbrains_sans_bold.ttf",
+            target = fontsDir.resolve("jetbrains_sans_bold.ttf"),
+        )
         return ControlsPageAssets(
             url = htmlFile.toURI().toASCIIString(),
         )
     }
+
+    private fun nativePlayerFontFaces(): String =
+        """
+            @font-face {
+              font-family: "Nuvio JetBrains Sans";
+              src: url("fonts/jetbrains_sans_regular.ttf") format("truetype");
+              font-weight: 400;
+              font-style: normal;
+              font-display: block;
+            }
+            @font-face {
+              font-family: "Nuvio JetBrains Sans";
+              src: url("fonts/jetbrains_sans_semibold.ttf") format("truetype");
+              font-weight: 600;
+              font-style: normal;
+              font-display: block;
+            }
+            @font-face {
+              font-family: "Nuvio JetBrains Sans";
+              src: url("fonts/jetbrains_sans_bold.ttf") format("truetype");
+              font-weight: 700 900;
+              font-style: normal;
+              font-display: block;
+            }
+        """.trimIndent()
 
     private fun readTextResource(resource: String): String =
         NativePlayerBridge::class.java.getResourceAsStream(resource)

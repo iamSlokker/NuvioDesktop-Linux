@@ -20,15 +20,15 @@ import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Density
 import nuvio.composeapp.generated.resources.Res
-import nuvio.composeapp.generated.resources.inter_bold
-import nuvio.composeapp.generated.resources.inter_regular
-import nuvio.composeapp.generated.resources.inter_semibold
+import nuvio.composeapp.generated.resources.jetbrains_sans_bold
+import nuvio.composeapp.generated.resources.jetbrains_sans_regular
+import nuvio.composeapp.generated.resources.jetbrains_sans_semibold
 import org.jetbrains.compose.resources.Font
 
 val LocalAppTheme = staticCompositionLocalOf { AppTheme.WHITE }
 
 /**
- * The installed font family the user picked for the app UI, or "" for the bundled Inter.
+ * The installed font family the user picked for the app UI, or "" for the bundled JetBrains Sans.
  * The name rather than the resolved [FontFamily] because surfaces outside Compose need it too — the
  * native player's HTML controls take it as a CSS family name.
  */
@@ -65,12 +65,12 @@ private fun buildColorScheme(palette: ThemeColorPalette, amoled: Boolean = false
     onError = Color(0xFFFCE5EC),
 )
 
-private val BundledInter: FontFamily
+private val JetBrainsSans: FontFamily
     @Composable
     get() = FontFamily(
-        Font(Res.font.inter_bold, FontWeight.Bold, FontStyle.Normal),
-        Font(Res.font.inter_semibold, FontWeight.SemiBold, FontStyle.Normal),
-        Font(Res.font.inter_regular, FontWeight.Normal, FontStyle.Normal),
+        Font(Res.font.jetbrains_sans_bold, FontWeight.Bold, FontStyle.Normal),
+        Font(Res.font.jetbrains_sans_semibold, FontWeight.SemiBold, FontStyle.Normal),
+        Font(Res.font.jetbrains_sans_regular, FontWeight.Normal, FontStyle.Normal),
     )
 
 private fun nuvioTypography(fontFamily: FontFamily): Typography =
@@ -199,7 +199,7 @@ private fun nuvioTypeTokens(fontFamily: FontFamily): NuvioTypeScale =
  * Setting the family slot by slot only reached the eight slots below. Material fills the other 22
  * from its own defaults, and every one of those comes back as `FontFamily.SansSerif` — the host's
  * generic sans, which is Segoe UI here. That is what left `bodySmall` settings help text in a
- * different face from the row titles above it. The bundled font never reached those slots
+ * different face from the row titles above it. The bundled JetBrains Sans never reached those slots
  * either, so this is not new to the app-font setting; the setting only made it visible.
  *
  * `FontFamily.Resolver` would have caught the ad-hoc `TextStyle`s too, but it is a sealed interface
@@ -269,7 +269,7 @@ fun NuvioTheme(
     // A system family the host does not have resolves to null, and the bundled face is used
     // instead — a font uninstalled since it was picked degrades to the default rather than to
     // whatever the text stack would have substituted.
-    val bundledFontFamily = BundledInter
+    val bundledFontFamily = JetBrainsSans
     val resolvedFontFamily = remember(appFontFamilyName, bundledFontFamily) {
         appFontFamilyName.takeIf { it.isNotBlank() }
             ?.let(::systemFontFamilyOrNull)

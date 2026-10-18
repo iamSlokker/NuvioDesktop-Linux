@@ -57,6 +57,10 @@ class FlatpakNativeInventoryTest(unittest.TestCase):
         self.exported = root / 'exported'
         shutil.copytree(staging, self.exported, symlinks=True)
         self.cat_paths = []
+        # What build-export makes of the packaged desktop entry (Exec rewritten, MimeType kept).
+        self.exported_desktop = (pathlib.Path(verify.__file__).parent / 'com.nuvio.media.desktop.desktop').read_text().replace(
+            'Exec=nuvio-desktop %u', 'Exec=/usr/bin/flatpak run --branch=nightly --arch=x86_64 '
+            '--command=nuvio-desktop --file-forwarding com.example.NuvioFixture @@u %u @@').encode()
 
     def listing(self):
         lines = ['d00755 0 0 0 ' + IMAGE]
@@ -83,6 +87,9 @@ class FlatpakNativeInventoryTest(unittest.TestCase):
         self.assertEqual('cat', args[2])
         if args[-1] == '/metadata':
             return b'fixture metadata'
+        if args[-1].startswith('/export/'):
+            self.assertEqual('/export/share/applications/com.example.NuvioFixture.desktop', args[-1])
+            return self.exported_desktop
         self.assertTrue(args[-1].startswith(IMAGE + '/'), args[-1])
         relative = args[-1][len(IMAGE) + 1:]
         self.cat_paths.append(relative)
@@ -91,8 +98,7 @@ class FlatpakNativeInventoryTest(unittest.TestCase):
     def audit(self):
         with patch.object(verify.subprocess, 'run'), \
                 patch.object(verify.subprocess, 'check_output', side_effect=self.command_output), \
-                patch.object(verify, 'verify_packaged_onnx', return_value={'files': {}}), \
-                patch.object(verify, 'verify_packaged_fonts', return_value={'resources': {}}):
+                patch.object(verify, 'verify_packaged_onnx', return_value={'files': {}}):
             verify.artifacts(self.work, 'flatpak')
         return json.loads((self.work / 'artifacts/flatpak-audit.json').read_text())
 
@@ -103,9 +109,20 @@ class FlatpakNativeInventoryTest(unittest.TestCase):
         self.assertEqual('app/com.example.NuvioFixture/x86_64/nightly', report['bundle']['ref'])
         self.assertIsNone(report['bundle']['origin'])
         self.assertEqual('PASS', report['smoke']['status'])
-        self.assertEqual(4, report['artwork']['replacement_setup_previews'])
         self.assertEqual(['ANON_KEY', 'URL'], report['backend'])
         self.assertEqual(1, report['native_image']['input_jars'])
+
+    def test_exported_desktop_entry_must_keep_the_nuvio_link_handler(self):
+        report = self.audit()
+        self.assertEqual('x-scheme-handler/nuvio;', report['desktop_entry']['mime_type'])
+        self.assertIn('@@u %u @@', report['desktop_entry']['exec'])
+        original = self.exported_desktop
+        for broken, message in [(original.replace(b'MimeType=x-scheme-handler/nuvio;\n', b''), 'does not register'),
+                                (original.replace(b' @@u %u @@', b''), 'does not pass the link')]:
+            with self.subTest(message=message):
+                self.exported_desktop = broken
+                with self.assertRaisesRegex(ValueError, message):
+                    self.audit()
 
     def test_jars_jvm_or_a_different_executable_in_the_export_are_rejected(self):
         def jar(e): (e / 'lib/app').mkdir(exist_ok=True); (e / 'lib/app/app.jar').write_bytes(b'x')
@@ -151,22 +168,6 @@ class FlatpakNativeInventoryTest(unittest.TestCase):
                     with self.assertRaisesRegex(ValueError, 'must not embed|runtime repository'):
                         verify.artifacts(self.work, 'flatpak')
                 self.assertFalse(any('build-import-bundle' in call.args[0] for call in run.call_args_list))
-
-    def test_forbidden_artwork_in_the_native_image_inputs_fails(self):
-        dataset = (artwork_contract.repository() / 'composeApp/src/desktopMain/resources/anime-list-mini.json').read_bytes()
-        jar = self.work / 'native-image/inputs/application.jar'
-        entries = dict(self.jar['application.jar'], **{'nested/renamed.bin': dataset})
-        jar.write_bytes(native_fixture.jar_bytes(entries))
-        archive = self.work / 'artifacts/Nuvio-native-image-inputs-aaaaaaaaaaaa.tar'
-        archive.unlink()
-        native_evidence.archive(self.work, archive, 1)
-        # Model inputs whose manifest hash matched (the binding is tested elsewhere): the
-        # contract on the input JARs must still reject the forbidden bytes.
-        with patch.object(native_evidence, 'verify', side_effect=lambda root, evidence: native_evidence.NativeImage(
-                json.loads((root / native_evidence.PACKAGED_MANIFEST).read_text()), [jar],
-                (root / 'lib/nuvio').read_bytes())):
-            with self.assertRaisesRegex(ValueError, 'Forbidden historical artwork bytes'):
-                self.audit()
 
 
 if __name__ == '__main__':

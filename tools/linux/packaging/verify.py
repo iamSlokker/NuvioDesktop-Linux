@@ -16,7 +16,6 @@ from compliance.inventory import verify_appimage_runtime
 from webkit.stage import linked_paths
 from client_config import verify_native_backend, verify_packaged_backend
 from onnx_contract import NATIVES as ONNX_NATIVES, verify_packaged_onnx
-from font_contract import MANIFEST as FONT_MANIFEST, verify_packaged_fonts
 from artwork_contract import release_rules, verify_packaged_artwork
 from notice_contract import TARGET as NOTICE_TARGET, expected as notice_files, verify_packaged_notices
 from flatpak_bundle import check_unpublished_bundle
@@ -169,7 +168,7 @@ def flatpak_tree(repository, ref):
     return tree
 
 
-def check_native_payloads(root, native, embedded, onnx, fonts, artwork):
+def check_native_payloads(root, native, embedded, onnx, artwork):
     """Reviewed JAR payloads are embedded verbatim in lib/nuvio; removed ones are not.
 
     The contracts above checked them in the exact input JARs; native-image's report
@@ -177,7 +176,7 @@ def check_native_payloads(root, native, embedded, onnx, fonts, artwork):
     The anime-mapping notices are not app resources; they ship as files instead.
     """
     anime = {name for name in artwork['resources'] if name.startswith('anime-mapping/')}
-    names = (set(onnx['files']) | set(fonts['resources']) | set(artwork['resources'])) - anime
+    names = (set(onnx['files']) | set(artwork['resources'])) - anime
     payloads = {}
     for jar in native.jars:
         with zipfile.ZipFile(jar) as archive:
@@ -193,8 +192,7 @@ def check_native_payloads(root, native, embedded, onnx, fonts, artwork):
         if (path.is_symlink() or not path.is_file()
                 or hashlib.sha256(path.read_bytes()).hexdigest() != artwork['resources'][name]):
             raise ValueError('Missing/different anime-mapping notice: ' + str(path.relative_to(root)))
-    removed = {item['filename'].casefold() for item in json.loads(FONT_MANIFEST.read_text())['removed_fonts']}
-    removed |= release_rules()[0]
+    removed = release_rules()[0]
     for name in embedded:
         if pathlib.PurePosixPath(name).name.casefold() in removed:
             raise ValueError('Removed font/artwork/dataset embedded in the native image: ' + name)
@@ -209,6 +207,25 @@ REQUIRED = ['bin/nuvio', 'bin/nuvio-desktop', 'lib/nuvio', 'lib/runtime/lib/libj
             'share/icons/hicolor/512x512/apps/com.nuvio.media.desktop.png',
             'share/licenses/Nuvio/COPYING', 'share/licenses/mpv/LICENSE.GPL',
             str(native_evidence.GRAALVM_NOTICES / 'LICENSE.txt')]
+
+SCHEME_HANDLER = 'x-scheme-handler/nuvio'
+
+
+def check_desktop_entry(text, label):
+    """nuvio:// links (Watch Party invites, "Open in Nuvio") must reach the app: the entry claims
+    the scheme and its Exec hands the URL (%u/%U) to the launcher, which forwards it to lib/nuvio."""
+    group, fields = None, {}
+    for line in text.splitlines():
+        if line.startswith('['):
+            group = line.strip()
+        elif group == '[Desktop Entry]' and '=' in line and not line.startswith('#'):
+            key, value = line.split('=', 1)
+            fields[key.strip()] = value.strip()
+    if SCHEME_HANDLER not in fields.get('MimeType', '').split(';'):
+        raise ValueError(label + ' does not register ' + SCHEME_HANDLER)
+    if not re.search(r'(?:^|\s)%[uU](?:\s|$)', fields.get('Exec', '')):
+        raise ValueError(label + ' Exec does not pass the link (%u): ' + fields.get('Exec', ''))
+    return dict(mime_type=fields['MimeType'], exec=fields['Exec'])
 
 
 def library_path(root):
@@ -261,9 +278,8 @@ def check_image(root, evidence, require_smoke=False, smoke_identity=False):
     verify_packaged_backend(root, native.jars)
     backend = verify_native_backend(native.executable)
     onnx = verify_packaged_onnx(root, check_abi, native.jars)
-    fonts = verify_packaged_fonts(root, native.jars)
     artwork = verify_packaged_artwork(root, native.jars)
-    payloads = check_native_payloads(root, native, embedded, onnx, fonts, artwork)
+    payloads = check_native_payloads(root, native, embedded, onnx, artwork)
     notices = verify_packaged_notices(root)
     hdr_probe = check_hdr_probe(root)
     info = json.loads((root / 'release-info.json').read_text())
@@ -275,6 +291,8 @@ def check_image(root, evidence, require_smoke=False, smoke_identity=False):
     if f'GIT_COMMIT={info["git_commit"]}\n' not in stamp or f'VERSION_NAME={info["version"]}\n' not in stamp:
         raise ValueError('Inconsistent source/version stamp')
     subprocess.run(['desktop-file-validate', str(root / 'share/applications/com.nuvio.media.desktop.desktop')], check=True)
+    desktop_entry = check_desktop_entry((root / 'share/applications/com.nuvio.media.desktop.desktop').read_text(),
+                                        'share/applications/com.nuvio.media.desktop.desktop')
     smoke = None
     if require_smoke:
         smoke = native_evidence.check_smoke(
@@ -325,9 +343,9 @@ def check_image(root, evidence, require_smoke=False, smoke_identity=False):
                 if not pathlib.Path(path).resolve().is_relative_to(root):
                     raise ValueError('Private media resolved outside image: ' + dep)
         elf_records.append(dict(file=rel, needed=needed))
-    return dict(source=info, files=records, elf=elf_records, onnx=onnx, fonts=fonts, artwork=artwork,
+    return dict(source=info, files=records, elf=elf_records, onnx=onnx, artwork=artwork,
                 notices=notices, hdr_probe=hdr_probe, native_image=native_summary(native, module_resources),
-                backend=backend, native_payloads=payloads, smoke=smoke)
+                backend=backend, native_payloads=payloads, smoke=smoke, desktop_entry=desktop_entry)
 
 
 def native_summary(native, module_resources):
@@ -445,6 +463,10 @@ def artifacts(work, formats):
                 metadata = subprocess.check_output(['ostree', '--repo=' + tmp, 'cat', ref, '/metadata'])
                 if metadata != (work / 'flatpak-build/metadata').read_bytes():
                     raise ValueError('Flatpak exported metadata differs from inspected sandbox')
+                # build-export rewrites Exec to `flatpak run ... @@u %u @@`; the link must survive it.
+                exported = '/export/share/applications/' + info['application_id'] + '.desktop'
+                desktop_entry = check_desktop_entry(subprocess.check_output(
+                    ['ostree', '--repo=' + tmp, 'cat', ref, exported]).decode(), 'Flatpak ' + exported)
                 hdr_probe = flatpak_hdr_probe(tmp, ref)
                 # Inspect the exported bytes, not just the canonical input or release
                 # stamp: no JAR or JVM may ship, and the exported executable, manifest
@@ -455,9 +477,8 @@ def artifacts(work, formats):
                 verify_packaged_backend(image, native.jars)
                 backend = verify_native_backend(native.executable)
                 onnx = verify_packaged_onnx(image, check_abi, native.jars)
-                fonts = verify_packaged_fonts(image, native.jars)
                 artwork = verify_packaged_artwork(image, native.jars)
-                payloads = check_native_payloads(image, native, embedded, onnx, fonts, artwork)
+                payloads = check_native_payloads(image, native, embedded, onnx, artwork)
                 smoke = native_evidence.check_smoke(evidence, image)
                 for name in notice_files():
                     target = image / NOTICE_TARGET / name
@@ -466,10 +487,10 @@ def artifacts(work, formats):
                         FLATPAK_IMAGE + '/' + str(NOTICE_TARGET / name)]))
                 notices = verify_packaged_notices(image)
                 (dest / 'flatpak-audit.json').write_text(json.dumps(
-                    dict(source=info, ref=ref, metadata=metadata.decode(), onnx=onnx, fonts=fonts, artwork=artwork,
+                    dict(source=info, ref=ref, metadata=metadata.decode(), onnx=onnx, artwork=artwork,
                          notices=notices, hdr_probe=hdr_probe, bundle=bundle, backend=backend,
                          native_image=native_summary(native, module_resources), native_payloads=payloads,
-                         smoke=smoke, native_image_evidence=evidence_archive), indent=2) + '\n')
+                         smoke=smoke, native_image_evidence=evidence_archive, desktop_entry=desktop_entry), indent=2) + '\n')
             if not (work / 'flatpak-build/metadata').is_file():
                 raise ValueError('Missing exported Flatpak metadata')
     checksums = ''.join(hashlib.sha256(p.read_bytes()).hexdigest() + '  ' + p.name + '\n'

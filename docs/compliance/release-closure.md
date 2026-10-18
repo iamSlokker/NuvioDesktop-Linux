@@ -1,5 +1,7 @@
 # Release preparation: font and notice closure
 
+**2026-10-18 owner decision:** Linux is as faithful as possible to Umbra's Nuvio: it ships upstream's setup previews and bundled JetBrains Sans font, and bundles the anime ID dataset like upstream (no runtime download). See [Owner decision 2026-10-18](artwork-data-closure.md#owner-decision-2026-10-18-setup-previews-font-and-anime-dataset-like-upstream). The font, setup-preview and dataset statements below are historical.
+
 **2026-10-17 owner decision:** the Linux build now ships Umbra's original artwork unchanged, as upstream; only the four setup previews remain fork replacements. See [Owner decision 2026-10-17](artwork-data-closure.md#owner-decision-2026-10-17-upstream-artwork). The artwork statements below are historical.
 
 **2026-10-13 — reviewable correction; public redistribution remains BLOCKED.**

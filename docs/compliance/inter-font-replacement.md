@@ -1,5 +1,7 @@
 # Bundled Inter font replacement
 
+**Superseded 2026-10-18:** by owner decision Linux bundles upstream's JetBrains Sans again, like Umbra's Nuvio; the Inter fonts, notice and font gate described here were removed. To restore them, revert `fix(linux): use upstream's bundled JetBrains Sans instead of Inter` (`f4f18836a`); see [Restoring a fork-made version](artwork-data-closure.md#restoring-a-fork-made-version). This record is historical.
+
 The release correction replaces the three JetBrains Sans UI font binaries with
 unmodified **Inter 4.1** regular (400), semibold (600), and bold (700) TTFs from
 the official [rsms/inter v4.1 release](https://github.com/rsms/inter/releases/tag/v4.1).

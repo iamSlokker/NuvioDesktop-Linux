@@ -109,8 +109,8 @@ the packaging builder identity and the immutable WebKit builder seed change; the
 AppImage assembly identity also changes (`verify.py`). A new bootstrap/seed export
 and a WebKit engine rebuild/import are expected before an all-format run passes.
 The bootstrap (`build.py --format deb`) now applies the same Linux source policy
-(`source_policy.py`: runtime-downloaded anime dataset; its artwork overlay was
-dropped on 2026-10-17) as
+(`source_policy.py`; its artwork overlay was dropped on 2026-10-17 and its
+anime dataset exclusion on 2026-10-18, so it now removes nothing) as
 `canonical_from_seed.py`, so its artwork gate passes and the seed can be exported.
 Changing `build.py` is part of this seed refresh. The release source step binds the Ubuntu source lock to
 the bundled packages' exact versions rather than to the engine builder image ID,

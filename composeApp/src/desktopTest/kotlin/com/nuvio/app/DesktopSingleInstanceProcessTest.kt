@@ -66,6 +66,19 @@ class DesktopSingleInstanceProcessTest {
         }
     }
 
+    // Linux packages register x-scheme-handler/nuvio with `Exec=nuvio-desktop %u`, so clicking a
+    // Watch Party invite while Nuvio is open starts a second copy with the link as its argument.
+    @Test fun watchPartyInviteFromASecondLaunchJoinsInTheRunningCopy() = withHeadlessFixture { root ->
+        Child(root, "primary:a").use { primary ->
+            primary.primaryPort()
+            secondary(root, "a", true, "nuvio://party/abc234")
+            assertEquals("LINK:PARTY:ABC234", primary.command("link"))
+            assertEquals("ACTIVATED-LINK:PARTY:ABC234", primary.command("activated-link"))
+            assertEquals("COUNT:1", primary.command("count"))
+            primary.exit()
+        }
+    }
+
     @Test fun linkHandoffStripsRawLineBreaksInsteadOfTruncatingTheUrl() = withHeadlessFixture { root ->
         Child(root, "primary:a").use { primary ->
             primary.primaryPort()

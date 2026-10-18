@@ -2,7 +2,7 @@
 
 Packages ship lib/nuvio (the native executable) and the JDK libraries
 native-image emits, never application JARs or a JVM. The JAR contracts
-(client_config, font/onnx/artwork) therefore run on the exact native-image
+(client_config, onnx/artwork) therefore run on the exact native-image
 input JARs, which `record()` retains next to the build as evidence:
 
   <work>/native-image/inputs/*.jar        the classpath native-image compiled
@@ -231,7 +231,7 @@ def stage(image, work, source, graalvm, config):
             path.write_bytes(payload)
             index[jar][name] = hashlib.sha256(payload).hexdigest()
     (image / JAR_NOTICES / 'index.json').write_text(json.dumps(index, indent=2, sort_keys=True) + '\n')
-    # The dataset is downloaded at run time; its attribution and licenses ship as files
+    # The anime dataset is embedded; its attribution and licenses ship as files
     # (native-image embeds only resources the app reads, and the app never reads these).
     anime = image / ANIME_NOTICES
     anime.mkdir(parents=True)
