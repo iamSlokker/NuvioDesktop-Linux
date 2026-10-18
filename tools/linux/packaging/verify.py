@@ -14,12 +14,13 @@ from formats import PLATFORM
 import appimage_runtime
 from compliance.inventory import verify_appimage_runtime
 from webkit.stage import linked_paths
-from client_config import verify_packaged_backend
+from client_config import verify_native_backend, verify_packaged_backend
 from onnx_contract import NATIVES as ONNX_NATIVES, verify_packaged_onnx
-from font_contract import verify_packaged_fonts
-from artwork_contract import verify_packaged_artwork
+from font_contract import MANIFEST as FONT_MANIFEST, verify_packaged_fonts
+from artwork_contract import release_rules, verify_packaged_artwork
 from notice_contract import TARGET as NOTICE_TARGET, expected as notice_files, verify_packaged_notices
 from flatpak_bundle import check_unpublished_bundle
+import native_evidence
 
 FORBIDDEN = [b'/home/hmacedo', b'/var/home/hmacedo', b'/home/linuxbrew', b'/opt/homebrew',
              b'/source/', b'/work/prefix', b'/recipes/']
@@ -133,70 +134,155 @@ def check_abi(path, label):
             raise ValueError('ABI above Ubuntu 22.04 floor: ' + label + ': ' + tag)
 
 
-def flatpak_jar_names(repository, ref):
-    directory = '/files/lib/nuvio-desktop/lib/app'
+FLATPAK_IMAGE = '/files/lib/nuvio-desktop'
+
+
+def flatpak_tree(repository, ref):
+    """Recursive listing of the exported image: {relative path: type+mode}; no JAR may appear."""
     listing = subprocess.check_output(
-        ['ostree', '--repo=' + str(repository), 'ls', ref, directory], text=True)
-    names = set()
+        ['ostree', '--repo=' + str(repository), 'ls', '-R', ref, FLATPAK_IMAGE], text=True)
+    tree = {}
     for line in listing.splitlines():
         # ostree ls: type+octal-mode, uid, gid, size, path. Split only the
-        # metadata columns so literal spaces in a JAR filename are preserved.
+        # metadata columns so literal spaces in a filename are preserved.
         fields = line.split(maxsplit=4)
         if (len(fields) != 5 or not re.fullmatch(r'[dl-][0-7]{5}', fields[0])
                 or any(not field.isdigit() for field in fields[1:4])):
             raise ValueError('Unrecognized Flatpak application inventory entry: ' + line)
         if fields[0][0] == 'l' and '.jar' in fields[4]:
             # Symlink formatting uses " -> ", which is also legal filename text.
-            # Never let an ambiguous link name hide an additional classpath JAR.
-            raise ValueError('Non-regular/duplicate Flatpak JAR: ' + fields[4])
+            # Never let an ambiguous link name hide a JAR.
+            raise ValueError('JAR link in the Flatpak bundle: ' + fields[4])
         path = fields[4].split(' -> ', 1)[0] if fields[0][0] == 'l' else fields[4]
-        if path == directory:
-            continue
-        if not path.startswith(directory + '/'):
+        if path != FLATPAK_IMAGE and not path.startswith(FLATPAK_IMAGE + '/'):
             raise ValueError('Unexpected Flatpak application inventory path: ' + path)
-        name = path[len(directory) + 1:]
-        if '/' in name:
-            raise ValueError('Unexpected nested Flatpak application inventory path: ' + path)
-        if name.endswith('.jar'):
-            if fields[0][0] != '-' or name in names:
-                raise ValueError('Non-regular/duplicate Flatpak JAR: ' + path)
-            names.add(name)
-    return names
+        name = path[len(FLATPAK_IMAGE) + 1:]
+        if fields[0][0] != 'd' and name.lower().endswith('.jar'):
+            raise ValueError('JAR in the Flatpak bundle (native packages ship none): ' + path)
+        if name in tree:
+            raise ValueError('Duplicate Flatpak inventory entry: ' + path)
+        if name:
+            tree[name] = fields[0]
+    for name in native_evidence.FORBIDDEN_JVM:
+        if name in tree:
+            raise ValueError('JVM runtime/launcher in the Flatpak bundle: ' + name)
+    return tree
 
 
-def check_image(root):
+def check_native_payloads(root, native, embedded, onnx, fonts, artwork):
+    """Reviewed JAR payloads are embedded verbatim in lib/nuvio; removed ones are not.
+
+    The contracts above checked them in the exact input JARs; native-image's report
+    must list each as embedded and its bytes must occur in the shipped executable.
+    The anime-mapping notices are not app resources; they ship as files instead.
+    """
+    anime = {name for name in artwork['resources'] if name.startswith('anime-mapping/')}
+    names = (set(onnx['files']) | set(fonts['resources']) | set(artwork['resources'])) - anime
+    payloads = {}
+    for jar in native.jars:
+        with zipfile.ZipFile(jar) as archive:
+            for name in names & set(archive.namelist()):
+                payloads[name] = archive.read(name)
+    for name in sorted(names):
+        if name not in embedded:
+            raise ValueError('Reviewed payload is not embedded in the native image: ' + name)
+        if not native.contained(payloads[name]):
+            raise ValueError('Reviewed payload bytes are absent from lib/nuvio: ' + name)
+    for name in sorted(anime):
+        path = root / native_evidence.ANIME_NOTICES / pathlib.PurePosixPath(name).name
+        if (path.is_symlink() or not path.is_file()
+                or hashlib.sha256(path.read_bytes()).hexdigest() != artwork['resources'][name]):
+            raise ValueError('Missing/different anime-mapping notice: ' + str(path.relative_to(root)))
+    removed = {item['filename'].casefold() for item in json.loads(FONT_MANIFEST.read_text())['removed_fonts']}
+    removed |= release_rules()[0]
+    for name in embedded:
+        if pathlib.PurePosixPath(name).name.casefold() in removed:
+            raise ValueError('Removed font/artwork/dataset embedded in the native image: ' + name)
+    return dict(embedded_verbatim=len(names), anime_notice_files=len(anime), embedded_resources=len(embedded),
+                scope='Exact bytes in lib/nuvio; rights and source gates unchanged')
+
+
+REQUIRED = ['bin/nuvio', 'bin/nuvio-desktop', 'lib/nuvio', 'lib/runtime/lib/libjawt.so',
+            'lib/native/libplayer_bridge.so', 'lib/native/libmpv.so.2', 'lib/app/build-info.properties',
+            'release-info.json', str(native_evidence.PACKAGED_MANIFEST),
+            'share/applications/com.nuvio.media.desktop.desktop',
+            'share/icons/hicolor/512x512/apps/com.nuvio.media.desktop.png',
+            'share/licenses/Nuvio/COPYING', 'share/licenses/mpv/LICENSE.GPL',
+            str(native_evidence.GRAALVM_NOTICES / 'LICENSE.txt')]
+
+
+def library_path(root):
+    # lib/ last: the emitted JDK libraries load from the executable's directory, and
+    # libjawt.so resolves libawt.so to that already-loaded copy (an audit fixture, as
+    # the ONNX alias below; the launchers never put lib/ on the search path).
+    return f'{root}/lib/native:{root}/lib/runtime/lib:{root}/lib'
+
+
+def embedded_elf(native, embedded, env, elf_records):
+    """Linux x86_64 JNI libraries the image embeds as resources (e.g. quickjs), from the input JARs."""
+    for jar in native.jars:
+        with zipfile.ZipFile(jar) as archive:
+            for entry in archive.infolist():
+                if entry.is_dir() or entry.filename not in embedded:
+                    continue
+                label = 'lib/nuvio:' + entry.filename
+                if entry.filename in ONNX_NATIVES:
+                    # Verified by the ONNX contract as a pinned pair, matching ORT's core-before-JNI load order.
+                    elf_records.append(dict(file=label, embedded=True, component='onnxruntime'))
+                    continue
+                payload = archive.read(entry)
+                if 'linux' in entry.filename.lower() and payload.startswith(b'\x7fELF') and payload[18:20] == b'\x3e\x00':
+                    if not native.contained(payload):
+                        raise ValueError('Embedded JNI bytes are absent from lib/nuvio: ' + entry.filename)
+                    with tempfile.NamedTemporaryFile(suffix='.so') as copy:
+                        copy.write(payload)
+                        copy.flush()
+                        check_abi(copy.name, label)
+                        linked = subprocess.check_output(['ldd', copy.name], text=True, env=env, stderr=subprocess.STDOUT)
+                        if 'not found' in linked:
+                            raise ValueError('Unresolved embedded JNI: ' + label + '\n' + linked)
+                    elf_records.append(dict(file=label, embedded=True))
+
+
+def check_image(root, evidence, require_smoke=False, smoke_identity=False):
+    """`evidence`: <work>/native-image (native_evidence). `smoke_identity`: the payload must be
+    byte-identical to the image the smoke gate launched (DEB); otherwise the executable is."""
     root = root.resolve()
     check_webkit_relocation(root)
-    required = ['bin/nuvio', 'bin/nuvio-desktop', 'lib/runtime/lib/libjawt.so',
-                'lib/runtime/lib/server/libjvm.so', 'lib/native/libplayer_bridge.so',
-                'lib/native/libmpv.so.2', 'lib/app/build-info.properties', 'release-info.json',
-                'share/applications/com.nuvio.media.desktop.desktop',
-                'share/icons/hicolor/512x512/apps/com.nuvio.media.desktop.png',
-                'share/licenses/Nuvio/COPYING', 'share/licenses/mpv/LICENSE.GPL']
-    for rel in required:
+    for rel in REQUIRED:
         if not (root / rel).is_file() or (root / rel).stat().st_size == 0:
             raise ValueError('Missing/empty required artifact: ' + rel)
-    for rel in ['bin/nuvio', 'bin/nuvio-desktop']:
+    for rel in ['bin/nuvio', 'bin/nuvio-desktop', 'lib/nuvio']:
         if not os.access(root / rel, os.X_OK):
             raise ValueError('Non-executable launcher: ' + rel)
-    if not list((root / 'lib/app').glob('*.jar')):
-        raise ValueError('No application jars')
-    verify_packaged_backend(root)
-    onnx = verify_packaged_onnx(root, check_abi)
-    fonts = verify_packaged_fonts(root)
-    artwork = verify_packaged_artwork(root)
+    native = native_evidence.verify(root, evidence)
+    embedded, module_resources = native_evidence.embedded_resources(evidence, native)
+    # JAR contracts on the exact native-image inputs, then the shipped bytes.
+    verify_packaged_backend(root, native.jars)
+    backend = verify_native_backend(native.executable)
+    onnx = verify_packaged_onnx(root, check_abi, native.jars)
+    fonts = verify_packaged_fonts(root, native.jars)
+    artwork = verify_packaged_artwork(root, native.jars)
+    payloads = check_native_payloads(root, native, embedded, onnx, fonts, artwork)
     notices = verify_packaged_notices(root)
     hdr_probe = check_hdr_probe(root)
     info = json.loads((root / 'release-info.json').read_text())
     if not re.fullmatch('[a-f0-9]{40}', info['git_commit']):
         raise ValueError('Missing full source revision')
+    if info.get('graalvm_release') != {key: native.manifest['graalvm'][key] for key in native_evidence.RELEASE_KEYS}:
+        raise ValueError('Release identity names a different GraalVM than the native-image manifest')
     stamp = (root / 'lib/app/build-info.properties').read_text()
     if f'GIT_COMMIT={info["git_commit"]}\n' not in stamp or f'VERSION_NAME={info["version"]}\n' not in stamp:
         raise ValueError('Inconsistent source/version stamp')
-    subprocess.run(['desktop-file-validate', str(root / required[8])], check=True)
+    subprocess.run(['desktop-file-validate', str(root / 'share/applications/com.nuvio.media.desktop.desktop')], check=True)
+    smoke = None
+    if require_smoke:
+        smoke = native_evidence.check_smoke(
+            evidence, root, native_evidence.image_identity(root) if smoke_identity else None)
     records = entries(root)
     elf_records = []
-    env = dict(os.environ, LD_LIBRARY_PATH=f'{root}/lib/native:{root}/lib/runtime/lib:{root}/lib/runtime/lib/server')
+    env = dict(os.environ, LD_LIBRARY_PATH=library_path(root))
+    embedded_elf(native, embedded, env, elf_records)
     for rel in records:
         p = root / rel
         if p.is_symlink():
@@ -206,33 +292,8 @@ def check_image(root):
         if p.name in ['local.properties', 'id_rsa', 'id_ed25519', '.env'] or p.suffix in ['.key', '.pem']:
             raise ValueError('Personal configuration/credential file: ' + rel)
         data = p.read_bytes()
-        if p.suffix == '.jar':
-            with zipfile.ZipFile(p) as jar:
-                if jar.testzip():
-                    raise ValueError('Corrupt jar: ' + rel)
-                for entry in jar.infolist():
-                    if pathlib.PurePosixPath(entry.filename).is_absolute() or '..' in pathlib.PurePosixPath(entry.filename).parts:
-                        raise ValueError('Unsafe jar entry: ' + rel + ':' + entry.filename)
-                    if not entry.is_dir():
-                        payload = jar.read(entry)
-                        label = rel + ':' + entry.filename
-                        scan_bytes(payload, label)
-                        # Multi-platform jars also contain other architectures.
-                        # Inspect only Linux x86_64 payloads that can run here.
-                        if entry.filename in ONNX_NATIVES:
-                            # Verified above as a pinned pair, matching ORT's core-before-JNI load order.
-                            elf_records.append(dict(file=label, embedded=True, component='onnxruntime'))
-                        elif 'linux' in entry.filename.lower() and payload.startswith(b'\x7fELF') and payload[18:20] == b'\x3e\x00':
-                            with tempfile.NamedTemporaryFile(suffix='.so') as embedded:
-                                embedded.write(payload)
-                                embedded.flush()
-                                check_abi(embedded.name, label)
-                                linked = subprocess.check_output(['ldd', embedded.name], text=True, env=env, stderr=subprocess.STDOUT)
-                                if 'not found' in linked:
-                                    raise ValueError('Unresolved embedded JNI: ' + label + '\n' + linked)
-                                elf_records.append(dict(file=label, embedded=True))
-        else:
-            scan_bytes(data, rel)
+        # Covers lib/nuvio's embedded resources too: native-image stores them verbatim.
+        scan_bytes(data, rel)
         if not data.startswith(b'\x7fELF'):
             continue
         if rel.startswith('lib/native/') and PLATFORM.match(p.name):
@@ -265,7 +326,16 @@ def check_image(root):
                     raise ValueError('Private media resolved outside image: ' + dep)
         elf_records.append(dict(file=rel, needed=needed))
     return dict(source=info, files=records, elf=elf_records, onnx=onnx, fonts=fonts, artwork=artwork,
-                notices=notices, hdr_probe=hdr_probe)
+                notices=notices, hdr_probe=hdr_probe, native_image=native_summary(native, module_resources),
+                backend=backend, native_payloads=payloads, smoke=smoke)
+
+
+def native_summary(native, module_resources):
+    graalvm = native.manifest['graalvm']
+    return dict(executable=native.manifest['executable'], graalvm=graalvm['GRAALVM_VERSION'],
+                java=graalvm['JAVA_RUNTIME_VERSION'], input_jars=len(native.jars),
+                non_jar_resources=module_resources,
+                scope='Contracts ran on the exact retained native-image input JARs; payload bytes checked in lib/nuvio')
 
 
 def check_appimage_runtime(work, appimage, root):
@@ -284,10 +354,47 @@ def check_appimage_runtime(work, appimage, root):
     return dict(embedding, source_archive=published[0].name, notices=appimage_runtime.NOTICE_DIR)
 
 
+def flatpak_native_image(repository, ref, tree, work, evidence):
+    """Rebuild, from the exported bundle's bytes, what native_evidence.verify reads, and verify it."""
+    audit = pathlib.Path(repository) / 'native-audit'  # Inside the disposable repository directory.
+    shutil.rmtree(audit, ignore_errors=True)
+    staging = work / 'flatpak-build/files/lib/nuvio-desktop'
+
+    def cat(relative):
+        if tree.get(relative, ' ')[0] != '-':
+            raise ValueError('Missing regular file in the Flatpak bundle: ' + relative)
+        data = subprocess.check_output(['ostree', '--repo=' + str(repository), 'cat', ref,
+                                        FLATPAK_IMAGE + '/' + relative])
+        target = audit / relative
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_bytes(data)
+        target.chmod(int(tree[relative][1:], 8) & 0o777)
+        return data
+
+    manifest = json.loads(cat(str(native_evidence.PACKAGED_MANIFEST)))
+    if cat(native_evidence.EXECUTABLE) != (staging / native_evidence.EXECUTABLE).read_bytes():
+        raise ValueError('Flatpak native executable differs from the inspected sandbox')
+    for name in manifest['jdk_files']:
+        cat(name)
+    for name in manifest['graalvm']['notices']:
+        cat(str(native_evidence.GRAALVM_NOTICES / name))
+    prefix = str(native_evidence.JAR_NOTICES) + '/'
+    for name in sorted(n for n, kind in tree.items() if n.startswith(prefix) and kind[0] != 'd'):
+        cat(name)
+    for name in native_evidence.ANIME_FILES:
+        cat(str(native_evidence.ANIME_NOTICES / name))
+    return audit, native_evidence.verify(audit, evidence)
+
+
 def artifacts(work, formats):
     dest = work / 'artifacts'
+    evidence = work / 'native-image'
     wanted = {'deb': ['deb'], 'appimage': ['AppImage'], 'native': ['deb', 'AppImage'],
               'flatpak': ['flatpak'], 'all': ['deb', 'AppImage', 'flatpak']}[formats]
+    archives = sorted(dest.glob('Nuvio-native-image-inputs-*.tar'))
+    if len(archives) != 1:
+        raise ValueError('Missing/ambiguous native-image evidence archive in artifacts')
+    evidence_archive = native_evidence.check_archive(work, archives[0])
     for suffix in wanted:
         files = list(dest.glob('*.' + suffix))
         if len(files) != 1 or files[0].stat().st_size < 4096:
@@ -297,7 +404,10 @@ def artifacts(work, formats):
             subprocess.run(['dpkg-deb', '--info', str(path)], check=True)
             with tempfile.TemporaryDirectory(dir=work) as tmp:
                 subprocess.run(['dpkg-deb', '--extract', str(path), tmp], check=True)
-                report = check_image(pathlib.Path(tmp) / 'opt/nuvio-desktop')
+                # The DEB payload must be byte-identical to the image the smoke gate launched.
+                report = check_image(pathlib.Path(tmp) / 'opt/nuvio-desktop', evidence,
+                                     require_smoke=True, smoke_identity=True)
+                report['native_image_evidence'] = evidence_archive
                 (dest / 'deb-audit.json').write_text(json.dumps(report, indent=2) + '\n')
         elif suffix == 'AppImage':
             # Runtime inspection/extraction only: never executes AppRun/the app.
@@ -309,7 +419,8 @@ def artifacts(work, formats):
                 payload = root / 'usr/lib/nuvio-desktop'
                 check_webkit_relocation(payload, required=True)
                 entries(root)  # Include outer AppRun/desktop/icon links in the path audit.
-                report = check_image(payload)
+                report = check_image(payload, evidence, require_smoke=True)
+                report['native_image_evidence'] = evidence_archive
                 if report['source'] != json.loads((work / 'canonical/release-info.json').read_text()):
                     raise ValueError('AppImage source/version differs from canonical image')
                 report['appimage_runtime'] = check_appimage_runtime(work, path, root)
@@ -335,34 +446,30 @@ def artifacts(work, formats):
                 if metadata != (work / 'flatpak-build/metadata').read_bytes():
                     raise ValueError('Flatpak exported metadata differs from inspected sandbox')
                 hdr_probe = flatpak_hdr_probe(tmp, ref)
-                # Inspect exported JAR bytes, not just the canonical input or
-                # release stamp: empty/inadvertently overridden defaults fail.
-                jars = sorted((work / 'flatpak-build/files/lib/nuvio-desktop/lib/app').glob('*.jar'))
-                expected_jars = {jar.name for jar in jars}
-                actual_jars = flatpak_jar_names(tmp, ref)
-                if actual_jars != expected_jars:
-                    raise ValueError('Flatpak JAR inventory differs from staging: extra=' +
-                                     repr(sorted(actual_jars - expected_jars)) + ' missing=' +
-                                     repr(sorted(expected_jars - actual_jars)))
-                image = pathlib.Path(tmp) / 'client-audit'
-                (image / 'lib/app').mkdir(parents=True)
-                for jar in jars:
-                    payload = subprocess.check_output(['ostree', '--repo=' + tmp, 'cat', ref,
-                        '/files/lib/nuvio-desktop/lib/app/' + jar.name])
-                    (image / 'lib/app' / jar.name).write_bytes(payload)
-                verify_packaged_backend(image)
-                onnx = verify_packaged_onnx(image, check_abi)
-                fonts = verify_packaged_fonts(image)
-                artwork = verify_packaged_artwork(image)
+                # Inspect the exported bytes, not just the canonical input or release
+                # stamp: no JAR or JVM may ship, and the exported executable, manifest
+                # and notices must be the ones bound to the retained native-image inputs.
+                tree = flatpak_tree(tmp, ref)
+                image, native = flatpak_native_image(tmp, ref, tree, work, evidence)
+                embedded, module_resources = native_evidence.embedded_resources(evidence, native)
+                verify_packaged_backend(image, native.jars)
+                backend = verify_native_backend(native.executable)
+                onnx = verify_packaged_onnx(image, check_abi, native.jars)
+                fonts = verify_packaged_fonts(image, native.jars)
+                artwork = verify_packaged_artwork(image, native.jars)
+                payloads = check_native_payloads(image, native, embedded, onnx, fonts, artwork)
+                smoke = native_evidence.check_smoke(evidence, image)
                 for name in notice_files():
                     target = image / NOTICE_TARGET / name
                     target.parent.mkdir(parents=True, exist_ok=True)
                     target.write_bytes(subprocess.check_output(['ostree', '--repo=' + tmp, 'cat', ref,
-                        '/files/lib/nuvio-desktop/' + str(NOTICE_TARGET / name)]))
+                        FLATPAK_IMAGE + '/' + str(NOTICE_TARGET / name)]))
                 notices = verify_packaged_notices(image)
                 (dest / 'flatpak-audit.json').write_text(json.dumps(
                     dict(source=info, ref=ref, metadata=metadata.decode(), onnx=onnx, fonts=fonts, artwork=artwork,
-                         notices=notices, hdr_probe=hdr_probe, bundle=bundle), indent=2) + '\n')
+                         notices=notices, hdr_probe=hdr_probe, bundle=bundle, backend=backend,
+                         native_image=native_summary(native, module_resources), native_payloads=payloads,
+                         smoke=smoke, native_image_evidence=evidence_archive), indent=2) + '\n')
             if not (work / 'flatpak-build/metadata').is_file():
                 raise ValueError('Missing exported Flatpak metadata')
     checksums = ''.join(hashlib.sha256(p.read_bytes()).hexdigest() + '  ' + p.name + '\n'
@@ -376,11 +483,16 @@ if __name__ == '__main__':
     parser.add_argument('kind', choices=['image', 'artifacts'])
     parser.add_argument('path', type=pathlib.Path)
     parser.add_argument('--formats', choices=['deb', 'appimage', 'native', 'flatpak', 'all'], default='all')
+    parser.add_argument('--native-evidence', type=pathlib.Path,
+                        help='image: <work>/native-image with the retained native-image inputs (required)')
+    parser.add_argument('--require-smoke', action='store_true', help='image: require the passing smoke record')
     args = parser.parse_args()
     if any(os.environ.get(k) for k in ['DISPLAY', 'WAYLAND_DISPLAY', 'NUVIO_RUN_LIVE_DISPLAY_TESTS']):
         parser.error('Unset display/live-test environment')
     if args.kind == 'image':
-        report = check_image(args.path)
+        if args.native_evidence is None:
+            parser.error('image verification needs --native-evidence')
+        report = check_image(args.path, args.native_evidence, require_smoke=args.require_smoke)
         print(json.dumps(dict(files=len(report['files']), elf=len(report['elf']), source=report['source'])))
     else:
         artifacts(args.path.resolve(), args.formats)

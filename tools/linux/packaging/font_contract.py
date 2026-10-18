@@ -1,4 +1,5 @@
-"""Verify the actual application JAR font payload, without loading the application."""
+"""Verify the application font payload in the exact native-image input JARs (verify.py then
+requires the same bytes in lib/nuvio), without loading the application."""
 import hashlib
 import json
 from pathlib import Path
@@ -9,7 +10,7 @@ MANIFEST = Path(__file__).parent / 'fonts/inter-manifest.json'
 PREFIX = 'composeResources/nuvio.composeapp.generated.resources/'
 
 
-def verify_packaged_fonts(image):
+def verify_packaged_fonts(image, jars=None):
     manifest = json.loads(MANIFEST.read_text())
     records = manifest['files'] + [manifest['license_file'], manifest['notice_file']]
     expected = {PREFIX + item['path'].split('/composeResources/', 1)[1]: item['sha256']
@@ -17,7 +18,7 @@ def verify_packaged_fonts(image):
     removed_names = {item['filename'] for item in manifest['removed_fonts']}
     removed_hashes = {item['sha256'] for item in manifest['removed_fonts']}
     seen = {}
-    for jar in sorted((Path(image) / 'lib/app').glob('*.jar')):
+    for jar in (sorted((Path(image) / 'lib/app').glob('*.jar')) if jars is None else jars):
         with zipfile.ZipFile(jar) as archive:
             for entry in archive.infolist():
                 if entry.is_dir():
