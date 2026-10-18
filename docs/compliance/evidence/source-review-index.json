@@ -46,15 +46,9 @@
   "status": "LOCAL_REVIEW_ONLY",
   "supplements": [
     {
-      "bytes": 9563,
-      "path": "composeApp/src/commonMain/composeResources/files/licenses/ReleaseArtwork/PROVENANCE.json",
-      "scope_limit": "Four setup-preview replacement identities and MIT grant only; not publication approval.",
-      "sha256": "8b8e57dbe6c7872db29a58af7c1cad4020efa01bf92a3851dcd443b41311174b"
-    },
-    {
       "bytes": 6854,
       "path": "composeApp/src/desktopMain/resources/anime-mapping/PROVENANCE.json",
-      "scope_limit": "Exact database/import identity and notices; Linux packages download it at runtime; original generation and merged-data rights unresolved.",
+      "scope_limit": "Exact database/import identity and attribution notices; original generation and merged-data rights unresolved.",
       "sha256": "c37de9a42e098ed7c45504bf95127ddcfbe1760a1d27e0c769e8181d6f0c25f3"
     },
     {
@@ -64,16 +58,16 @@
       "sha256": "2e469d78b39dcf336527c0acd0fe75fb482ddfbea5e5627fdfcdc7bc1e681b5e"
     },
     {
-      "bytes": 23928,
+      "bytes": 27733,
       "path": "docs/compliance/artwork-data-closure.md",
-      "scope_limit": "Owner decision 2026-10-17 to ship upstream artwork (four setup-preview replacements remain), superseded replacement audit and exact anime import; upstream artwork and data rights unresolved.",
-      "sha256": "317dfa77c9f1b6465dffa63eb2051abbb5d587003785e90ae5d83d1a90bc9b10"
+      "scope_limit": "Owner decisions 2026-10-17/18 to ship upstream artwork, setup previews, font and the bundled anime dataset, with restore notes; superseded replacement audit and exact anime import; upstream artwork and data rights unresolved.",
+      "sha256": "2339dbd223c37996f6c3809219ff914a509f3b07c70aab4d9f8f7fc8b2e52eb4"
     },
     {
-      "bytes": 122226,
+      "bytes": 122991,
       "path": "docs/compliance/evidence/artwork-data-review.json",
       "scope_limit": "Current resource hashes and unresolved rights inventory, not grants or publication approval.",
-      "sha256": "07d1a07c006756eb4ee25aaa2ceaad81174ae621f1e2d530c287a19d951ec4d8"
+      "sha256": "65c70e929ddb7cf5a93c863c2619f003542290b835ae037cfd389059256a5e54"
     },
     {
       "bytes": 364920,
@@ -136,10 +130,10 @@
       "sha256": "3aa990814fe0d3a64b8f895a3e75f1fa7f94f9edb0f0c9a73036239cd5bf4614"
     },
     {
-      "bytes": 4355,
+      "bytes": 4762,
       "path": "docs/compliance/inter-font-replacement.md",
-      "scope_limit": "New licensed font correction; historical binaries remain unchanged.",
-      "sha256": "8334c710d76557e6d7ec42717584e6ae0dc4753920dd943410a3acebce73a0ed"
+      "scope_limit": "Historical Inter font correction, superseded 2026-10-18 by upstream JetBrains Sans.",
+      "sha256": "7fd10aa86358944c199ba1f3efb3fc76d138e6824057facb92c1128d5753ea5e"
     },
     {
       "bytes": 11107,
@@ -148,40 +142,22 @@
       "sha256": "431524dcd7bc7b10b55e55da0713f5bb3ee07dc0aea70d80f5d2e5cc4f1f667b"
     },
     {
-      "bytes": 10608,
+      "bytes": 11034,
       "path": "docs/compliance/release-closure.md",
-      "scope_limit": "Current font/notice correction and remaining gates; all formats remain blocked.",
-      "sha256": "a4646ea43f51f6f40336469fb8fbedb1be2b35b87cc6acc823852c5ca5322c49"
+      "scope_limit": "Font/notice correction (font superseded 2026-10-18) and remaining gates; all formats remain blocked.",
+      "sha256": "a68b6a087498fbf283f8d870664520a525741ac3c61884def3abe652b5a9b297"
     },
     {
-      "bytes": 13164,
+      "bytes": 13188,
       "path": "docs/compliance/source-delivery-plan.md",
       "scope_limit": "Proposed delivery/retention design, not an approved offer or publication.",
-      "sha256": "0cfb05513b3e3cf542556ce51bb10d93d18675006ef000157e0eb423e990cc9d"
+      "sha256": "7b6be316d2873181d89722c9f89f343916e2cd3b4677addbfe64273c30581e2c"
     },
     {
-      "bytes": 7355,
-      "path": "tools/linux/packaging/artwork/GenerateReleaseArtwork.java",
-      "scope_limit": "Preferred editable form of the four setup previews; original geometry and pinned Inter inputs only.",
-      "sha256": "d1393f4787b2e9a089c0dff75c0883a3685af9ece153c589720ed9670cbe7a3c"
-    },
-    {
-      "bytes": 2968,
-      "path": "tools/linux/packaging/artwork/README.md",
-      "scope_limit": "Setup-preview authoring/reproduction and how to restore the fork-made artwork.",
-      "sha256": "2e66fee01ce55c908ae54f64e7ab0fca75b7643cdbb5799ac9ce88ac01000014"
-    },
-    {
-      "bytes": 2866,
-      "path": "tools/linux/packaging/artwork/generate.py",
-      "scope_limit": "Headless authoring driver; optional tooling, not a new app dependency.",
-      "sha256": "13f5b5360bd540c55f4b882c078025d7085b53aebfc803cad2cb9954239ffb1b"
-    },
-    {
-      "bytes": 6055,
+      "bytes": 5532,
       "path": "tools/linux/packaging/artwork_contract.py",
       "scope_limit": "Future artwork/data payload gate; not legal clearance.",
-      "sha256": "4bee3bef91611e9eefb5605ab8e557ddb5f020776db537b62acc62ed6233ebb3"
+      "sha256": "954d50611a03bd0961392287e701cae7b9bf8b58e2f6c2e8081f91914b02bfc4"
     },
     {
       "bytes": 4460,
@@ -202,28 +178,16 @@
       "sha256": "328ff038f5615adb43a2d46fc68fca36e40fbbbbbf7396941d1ec74f36fd302e"
     },
     {
-      "bytes": 9942,
+      "bytes": 9103,
       "path": "tools/linux/packaging/compliance/review_index.py",
       "scope_limit": "Review-index byte bindings only; not a source cache or compliance verifier.",
-      "sha256": "fa38cf639cc951a104ce3a0e166ded805b27ee388a032cead98a98f04ff312e3"
+      "sha256": "dfd66b514ff48c0b312d1b5580167b1b440bfa2587325765ed087b078f408f7c"
     },
     {
       "bytes": 14772,
       "path": "tools/linux/packaging/compliance/ubuntu_sources.py",
       "scope_limit": "Signed Ubuntu index/input/dsc verifier; no package install or build.",
       "sha256": "2b7a28b15d31a007adfcb1bd2dc1c214fcfc1670fe49bc54b0e9e93fb4b37b1f"
-    },
-    {
-      "bytes": 2270,
-      "path": "tools/linux/packaging/font_contract.py",
-      "scope_limit": "Future application JAR font/notice gate; not proof existing artifacts contain Inter.",
-      "sha256": "30c9ae8c7b7d5f8924bfa2be3e1e3647a319629df67a6bc3586f769e2d1218b4"
-    },
-    {
-      "bytes": 2702,
-      "path": "tools/linux/packaging/fonts/inter-manifest.json",
-      "scope_limit": "Official Inter release/source/font hashes; locally retained, not recipient delivery.",
-      "sha256": "71f63166f309e73db3d2d88c4d4faf5f0c691e5ed9d5ad3b76ec683f93684fef"
     }
   ]
 }
