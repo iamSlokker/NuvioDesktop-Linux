@@ -150,22 +150,6 @@ class FlatpakNativeInventoryTest(unittest.TestCase):
                         verify.artifacts(self.work, 'flatpak')
                 self.assertFalse(any('build-import-bundle' in call.args[0] for call in run.call_args_list))
 
-    def test_forbidden_artwork_in_the_native_image_inputs_fails(self):
-        dataset = (artwork_contract.repository() / 'composeApp/src/desktopMain/resources/anime-list-mini.json').read_bytes()
-        jar = self.work / 'native-image/inputs/application.jar'
-        entries = dict(self.jar['application.jar'], **{'nested/renamed.bin': dataset})
-        jar.write_bytes(native_fixture.jar_bytes(entries))
-        archive = self.work / 'artifacts/Nuvio-native-image-inputs-aaaaaaaaaaaa.tar'
-        archive.unlink()
-        native_evidence.archive(self.work, archive, 1)
-        # Model inputs whose manifest hash matched (the binding is tested elsewhere): the
-        # contract on the input JARs must still reject the forbidden bytes.
-        with patch.object(native_evidence, 'verify', side_effect=lambda root, evidence: native_evidence.NativeImage(
-                json.loads((root / native_evidence.PACKAGED_MANIFEST).read_text()), [jar],
-                (root / 'lib/nuvio').read_bytes())):
-            with self.assertRaisesRegex(ValueError, 'Forbidden historical artwork bytes'):
-                self.audit()
-
 
 if __name__ == '__main__':
     unittest.main()

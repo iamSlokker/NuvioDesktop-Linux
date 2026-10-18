@@ -50,6 +50,14 @@ class LinuxNativeImageMetadataTest {
         }
     }
 
+    /** Bundled like upstream: the Linux jar keeps the anime ID dataset, so the image must embed it. */
+    @Test
+    fun `the Linux image embeds the bundled anime ID dataset`() {
+        val doc = json.parseToJsonElement(File(root, "resources/reachability-metadata.json").readText()) as JsonObject
+        val globs = (doc["resources"] as JsonArray).map { (it as JsonObject)["glob"]?.jsonPrimitive?.content }
+        assertTrue("anime-list-mini.json" in globs, "resources/ does not embed anime-list-mini.json: $globs")
+    }
+
     /** The Linux build passes upstream's topics too, so a type in both would carry two reasons. */
     @Test
     fun `no type is registered by two hand-written topics, Linux or upstream`() {

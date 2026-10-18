@@ -21,18 +21,16 @@ import verify
 ONNX_FIXTURE = 'backdrop-framing/fixture.onnx'
 
 
-def artwork_jar(bad):
+def artwork_jar():
     entries = {name: artwork_contract.linux_source(name).read_bytes() for name in artwork_contract.expected_resources()}
     entries[ONNX_FIXTURE] = b'fixture onnx model, reviewed by the onnx contract'
     entries[client_config.CONFIG_CLASS] = native_fixture.supabase_class()
-    if bad:
-        entries['nested/anime-list-mini.json'] = b'runtime-downloaded dataset'
     return entries
 
 
 class NativeArtworkGateTest(unittest.TestCase):
-    def build(self, root, bad=False, embed_all=True):
-        jars = {'application.jar': artwork_jar(bad)}
+    def build(self, root, embed_all=True):
+        jars = {'application.jar': artwork_jar()}
         embedded = [name for name in jars['application.jar']
                     if not name.startswith('anime-mapping/') and not name.endswith('.class')
                     and (embed_all or name != ONNX_FIXTURE)]
@@ -61,10 +59,10 @@ class NativeArtworkGateTest(unittest.TestCase):
         native_evidence.archive(work, work / 'artifacts/Nuvio-native-image-inputs-aaaaaaaaaaaa.tar', 1)
         return work, image
 
-    def audit(self, kind, bad=False, embed_all=True, mutate=None):
+    def audit(self, kind, embed_all=True, mutate=None):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
-            work, image = self.build(root, bad, embed_all)
+            work, image = self.build(root, embed_all)
             (work / ('artifacts/fixture.' + ('deb' if kind == 'deb' else 'AppImage'))).write_bytes(b'x' * 4096)
 
             def run(args, **kwargs):
@@ -96,10 +94,12 @@ class NativeArtworkGateTest(unittest.TestCase):
                 self.assertEqual('PASS', report['smoke']['status'])
                 self.assertEqual(['ANON_KEY', 'URL'], report['backend'])
 
-    def test_both_native_format_verifiers_reject_forbidden_input_artwork(self):
+    def test_both_native_format_verifiers_require_the_bundled_anime_dataset_in_lib_nuvio(self):
         for kind in ('deb', 'appimage'):
-            with self.subTest(kind=kind), self.assertRaisesRegex(ValueError, 'Removed artwork filename'):
-                self.audit(kind, bad=True)
+            with self.subTest(kind=kind):
+                report = self.audit(kind)
+                self.assertIn('anime-list-mini.json', report['artwork']['resources'])
+                self.assertGreaterEqual(report['native_payloads']['embedded_verbatim'], 2)  # dataset + ONNX fixture
 
     def test_reviewed_payload_missing_from_the_image_fails(self):
         with self.assertRaisesRegex(ValueError, 'not embedded in the native image'):

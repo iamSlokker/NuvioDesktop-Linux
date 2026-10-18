@@ -54,10 +54,10 @@ def rule(function):
 
 @rule
 def anime_dataset_rules():
-    """Linux packages download the anime dataset at runtime; never redistribute its bytes."""
-    dataset = json.loads(data_provenance().read_text())['dataset']
-    return dict(expected={}, forbidden={dataset['sha256']: dataset['bytes']},
-                removed={dataset['resource'].casefold()}, replacements={})
+    """The anime ID dataset is bundled like upstream: the checkout's bytes, embedded in lib/nuvio."""
+    name = 'anime-list-mini.json'
+    return dict(expected={name: hashlib.sha256(linux_source(name).read_bytes()).hexdigest()}, forbidden={},
+                removed=set(), replacements={})
 
 
 def release_rules():

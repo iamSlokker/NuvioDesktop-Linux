@@ -11,6 +11,9 @@
     },
     {
       "glob": "setup/**"
+    },
+    {
+      "glob": "anime-list-mini.json"
     }
   ]
 }

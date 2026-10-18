@@ -15,9 +15,12 @@ from unittest.mock import patch
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1]))
 import build as packaging
 import canonical_from_seed as canonical
-import source_policy
 from webkit import build as engine, export_candidate, import_candidate as importer
 from webkit.contract import ENGINE_FILES, PROCESSES
+
+
+# Bundled like upstream since 2026-10-18; no Linux source policy removes it.
+DATASET = 'composeApp/src/desktopMain/resources/anime-list-mini.json'
 
 
 class EngineHandoffTest(unittest.TestCase):
@@ -196,7 +199,7 @@ class CanonicalSeedTest(unittest.TestCase):
                     kwargs['stdout'].close()
             target = 'composeApp/src/commonMain/composeResources/drawable/rating_fixture.png'
             files = {target: b'upstream original',
-                     next(iter(source_policy.RUNTIME_DOWNLOADED)): b'runtime-downloaded dataset'}
+                     DATASET: b'bundled dataset'}
             def snapshot(destination, channel):
                 rows = []
                 for name, data in sorted(files.items()):
@@ -241,15 +244,15 @@ class CanonicalSeedTest(unittest.TestCase):
                 expected = tuple(str(arg) for arg in original[:-4]) + (image, *(str(arg) for arg in original[-3:]))
                 self.assertEqual(normalized, expected)
             self.assertEqual(json.loads((new / 'source-info.json').read_text())['builder_image_id'], image)
-            # Both paths apply the Linux source policy exactly once and stamp the same snapshot.
+            # Both paths apply the Linux source policy (which keeps everything) and stamp the same snapshot.
             self.assertEqual((old / 'source-info.json').read_text(), (new / 'source-info.json').read_text())
             self.assertEqual((old / 'source-files.json').read_text(), (new / 'source-files.json').read_text())
             for work in (old, new):
                 self.assertEqual(b'upstream original', (work / 'source' / target).read_bytes())
-                self.assertFalse(any((work / 'source' / name).exists() for name in source_policy.RUNTIME_DOWNLOADED))
+                self.assertEqual(b'bundled dataset', (work / 'source' / DATASET).read_bytes())
                 recorded = dict(json.loads((work / 'source-files.json').read_text()))
                 self.assertEqual(hashlib.sha256(b'upstream original').hexdigest(), recorded[target])
-                self.assertNotEqual(json.loads((work / 'source-info.json').read_text())['source_sha256'],
+                self.assertEqual(json.loads((work / 'source-info.json').read_text())['source_sha256'],
                                     hashlib.sha256(json.dumps(sorted((n, hashlib.sha256(d).hexdigest())
                                                                      for n, d in files.items())).encode()).hexdigest())
 

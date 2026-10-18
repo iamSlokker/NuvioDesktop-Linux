@@ -44,21 +44,19 @@ class ArtworkContractTest(unittest.TestCase):
         self.assertNotEqual(0, result.returncode)
         self.assertIn('requires the repository', result.stderr)
 
-    def test_runtime_downloaded_anime_dataset_is_rejected_by_name_or_bytes(self):
+    def test_anime_dataset_ships_bundled_with_the_checkout_bytes(self):
+        # Bundled like upstream (owner decision 2026-10-18): required, any other bytes rejected.
         dataset = contract.repository() / 'composeApp/src/desktopMain/resources/anime-list-mini.json'
-        data = dataset.read_bytes()
-        for name in ('anime-list-mini.json', 'nested/ANIME-LIST-MINI.JSON', 'renamed/data.bin'):
-            with self.subTest(name=name):
-                self.jar(dict(self.payload, **{name: data}))
-                with self.assertRaisesRegex(ValueError, 'Removed artwork filename|Forbidden historical artwork bytes'):
-                    contract.verify_packaged_artwork(self.root)
         self.jar(self.payload)
-        self.assertNotIn('anime-list-mini.json', contract.verify_packaged_artwork(self.root)['resources'])
+        report = contract.verify_packaged_artwork(self.root)
+        self.assertEqual(hashlib.sha256(dataset.read_bytes()).hexdigest(), report['resources']['anime-list-mini.json'])
+        payload = dict(self.payload); del payload['anime-list-mini.json']; self.jar(payload)
+        with self.assertRaisesRegex(ValueError, 'Missing reviewed artwork/data: anime-list-mini.json'):
+            contract.verify_packaged_artwork(self.root)
 
-    def test_linux_source_snapshot_omits_runtime_downloaded_dataset(self):
+    def test_linux_source_snapshot_keeps_the_anime_dataset(self):
         import build
         import source_policy
-        self.assertEqual({'composeApp/src/desktopMain/resources/anime-list-mini.json'}, source_policy.RUNTIME_DOWNLOADED)
         repo = self.root / 'repo'
         tracked = ['composeApp/src/desktopMain/resources/anime-list-mini.json',
                    'composeApp/src/desktopMain/resources/anime-mapping/NOTICE.txt',
@@ -70,13 +68,11 @@ class ArtworkContractTest(unittest.TestCase):
         with patch.object(build, 'REPO', repo), \
                 patch.object(build, 'git', lambda *args: '' if '--others' in args else answers[args[0]]):
             info = build.source_tree(self.root / 'work/source', 'nightly')
-        info = source_policy.apply(self.root / 'work/source', info)
-        rows = json.loads((self.root / 'work/source-files.json').read_text())
-        names = [row[0] for row in rows]
-        self.assertNotIn('composeApp/src/desktopMain/resources/anime-list-mini.json', names)
-        self.assertIn('composeApp/src/desktopMain/resources/anime-mapping/NOTICE.txt', names)
-        self.assertFalse((self.root / 'work/source/composeApp/src/desktopMain/resources/anime-list-mini.json').exists())
-        self.assertEqual(hashlib.sha256(json.dumps([tuple(r) for r in rows]).encode()).hexdigest(), info['source_sha256'])
+        manifest = (self.root / 'work/source-files.json').read_text()
+        self.assertEqual(info, source_policy.apply(self.root / 'work/source', dict(info)))
+        self.assertEqual(manifest, (self.root / 'work/source-files.json').read_text())
+        self.assertIn('composeApp/src/desktopMain/resources/anime-list-mini.json', [row[0] for row in json.loads(manifest)])
+        self.assertTrue((self.root / 'work/source/composeApp/src/desktopMain/resources/anime-list-mini.json').is_file())
 
     def test_actual_pinned_previews_data_and_notices_pass_without_claiming_rights_clearance(self):
         self.jar(self.payload)

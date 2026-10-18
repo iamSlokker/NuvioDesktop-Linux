@@ -231,7 +231,7 @@ def stage(image, work, source, graalvm, config):
             path.write_bytes(payload)
             index[jar][name] = hashlib.sha256(payload).hexdigest()
     (image / JAR_NOTICES / 'index.json').write_text(json.dumps(index, indent=2, sort_keys=True) + '\n')
-    # The dataset is downloaded at run time; its attribution and licenses ship as files
+    # The anime dataset is embedded; its attribution and licenses ship as files
     # (native-image embeds only resources the app reads, and the app never reads these).
     anime = image / ANIME_NOTICES
     anime.mkdir(parents=True)
