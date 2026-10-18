@@ -1,4 +1,4 @@
-"""Read public defaults and verify the actual generated constants in application jars.
+"""Read public defaults and verify the generated constants in the native-image input JARs.
 
 No application classes are loaded, and no backend/user configuration is accessed.
 """
@@ -73,12 +73,25 @@ def string_fields(data):
     return fields
 
 
-def verify_packaged_backend(image):
+def verify_packaged_backend(image, jars=None):
+    """`jars`: the native-image input JARs; native packages ship no lib/app JARs."""
     found = []
-    for path in sorted((image / 'lib/app').glob('*.jar')):
+    for path in (sorted((image / 'lib/app').glob('*.jar')) if jars is None else jars):
         with zipfile.ZipFile(path) as jar:
             for name in jar.namelist():
                 if name == CONFIG_CLASS:
                     found.append(string_fields(jar.read(name)))
     if len(found) != 1 or found[0] != public_defaults():
         raise ValueError('Packaged official backend defaults differ from reviewed public client configuration')
+
+
+def verify_native_backend(executable):
+    """The compiled executable carries the reviewed URL and key verbatim (image-heap strings).
+
+    Together with the field check on the exact input JARs, this ties the shipped
+    binary to the reviewed defaults; a substring cannot show which field holds it.
+    """
+    for name, value in public_defaults().items():
+        if value.encode() not in executable:
+            raise ValueError('Native executable lacks the reviewed public client ' + name)
+    return sorted(public_defaults())

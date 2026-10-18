@@ -58,7 +58,7 @@ def process_evidence(root):
     web = [p for p in result if p['executable'].endswith('/WebKitWebProcess')]
     if not web:
         raise AssertionError('No inspectable private WebProcess; sandbox acceptance is not established')
-    engine_processes = [p for p in result if p['executable'] == 'bin/nuvio'
+    engine_processes = [p for p in result if p['executable'] == 'lib/nuvio'
                         or p['executable'].startswith('lib/webkit2gtk-4.1/WebKit')]
     for entry in engine_processes:
         mapped = [line.split(maxsplit=5)[5] for line in entry['maps'].splitlines() if len(line.split(maxsplit=5)) == 6]
@@ -137,7 +137,7 @@ def main():
                 alias = base / 'symlinked entry'
                 alias.symlink_to(root.name, target_is_directory=True)
                 launcher = alias / 'bin/nuvio-desktop'
-            shutil.copy2(tools / 'probe-overlay', root / 'bin/nuvio')
+            shutil.copy2(tools / 'probe-overlay', root / 'lib/nuvio')  # what bin/nuvio-desktop execs
             shutil.copytree(controls, root / 'share/probe-controls')
             (base / 'outside-sentinel').write_text('not an allowed WebProcess mount')
             profile = base / 'profile'

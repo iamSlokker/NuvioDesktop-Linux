@@ -80,7 +80,7 @@ def development_source(name):
 
 def native(args, work):
     # A failed rebuild must not leave a previous revision eligible for export.
-    for directory in ['canonical', 'artifacts', 'native']:
+    for directory in ['canonical', 'artifacts', 'native', 'native-image', 'native-smoke']:
         shutil.rmtree(work / directory, ignore_errors=True)
     runtime = pathlib.Path(args.runtime).resolve() if args.runtime else REPO / 'build/linux-media-runtime/runtime'
     if not runtime.exists():
@@ -98,7 +98,8 @@ def native(args, work):
     for src, dst in [(MEDIA / 'manifest.json', 'manifest.json'), (HERE / 'config.json', 'config.json'),
                      (HERE / 'apt-prefetch.py', 'apt-prefetch.py'),
                      (HERE / 'install-builder-tools.py', 'install-builder-tools.py'),
-                     (inputs / 'jdk', 'jdk.tar.gz'), (inputs / 'cmake', 'cmake.whl')]:
+                     (inputs / 'jdk', 'jdk.tar.gz'), (inputs / 'graalvm', 'graalvm.tar.gz'),
+                     (inputs / 'cmake', 'cmake.whl')]:
         shutil.copy2(src, context / dst)
     media_builder = json.loads((runtime / 'share/nuvio-media-runtime/build-info.json').read_text())['builder_image_id']
     identity = hashlib.sha256((HERE / 'Containerfile').read_bytes() + (HERE / 'apt-prefetch.py').read_bytes() +
@@ -119,20 +120,38 @@ def native(args, work):
             src = pathlib.Path(args.gradle_cache) / directory
             if src.is_dir():
                 shutil.copytree(src, work / 'gradle' / directory, dirs_exist_ok=True)
-    command = ['podman', 'run', '--rm', '--network=host', '--userns=keep-id',
+    build_in_builder(image, info, args.channel, args.jobs, args.offline, work, runtime, inputs)
+
+
+def builder_command(info, channel, jobs, offline, work, runtime, inputs, network):
+    command = ['podman', 'run', '--rm', '--network=' + network, '--userns=keep-id',
                '--security-opt', 'label=disable', '--cap-drop=all', '--security-opt', 'no-new-privileges',
                '--env', 'HOME=/tmp/nuvio-build', '--env', 'GRADLE_USER_HOME=/gradle',
                '--env', 'SOURCE_DATE_EPOCH=' + str(info['source_date_epoch']),
-               '--env', 'NUVIO_BUILD_CHANNEL=' + args.channel,
+               '--env', 'NUVIO_BUILD_CHANNEL=' + channel,
                '--env', 'NUVIO_PACKAGE_FORMAT=deb',
-               '--env', 'NUVIO_BUILD_JOBS=' + str(args.jobs)]
-    if args.offline:
+               '--env', 'NUVIO_BUILD_JOBS=' + str(jobs),
+               # native-image peaks at ~9-11 GB RSS with a 9 GB heap; the 16 GB CI runner fits one.
+               '--env', 'NUVIO_NATIVE_BUILDER_HEAP=' + os.environ.get('NUVIO_NATIVE_BUILDER_HEAP', '9g')]
+    if offline:
         command += ['--env', 'NUVIO_GRADLE_OFFLINE=1']
     for src, dest, ro in [(work / 'source', '/source', False), (runtime, '/media', True),
                            (inputs, '/inputs', True), (work, '/output', False),
                            (work / 'gradle', '/gradle', False)]:
         command += ['--mount', f'type=bind,src={src},dst={dest}' + (',ro' if ro else '')]
-    run(*command, image, 'bash', '/source/tools/linux/packaging/native-build.sh')
+    return command
+
+
+def build_in_builder(image, info, channel, jobs, offline, work, runtime, inputs, runner=None):
+    """Compile with network (Gradle dependencies), then gate and package without it.
+
+    The second run launches the staged native image (private Xvfb, D-Bus and profile)
+    before any DEB exists, so a failed probe or missing registration leaves no package.
+    """
+    runner = runner or run
+    script = '/source/tools/linux/packaging/native-build.sh'
+    for network, phase in [('host', 'build'), ('none', 'package')]:
+        runner(*builder_command(info, channel, jobs, offline, work, runtime, inputs, network), image, 'bash', script, phase)
 
 
 def appimage(args, work):

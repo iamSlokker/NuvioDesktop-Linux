@@ -2,6 +2,7 @@
 """Pure file/policy tests; no display, real user data, or network."""
 import hashlib
 import json
+import re
 import os
 import pathlib
 import runpy
@@ -90,10 +91,10 @@ class PackagingContractTest(unittest.TestCase):
         script = str(packaging_build.HERE / 'install-builder-tools.py')
         with tempfile.TemporaryDirectory() as tmp:
             inputs = pathlib.Path(tmp)
-            files = {'jdk': 'jdk.tar.gz', 'cmake': 'cmake.whl'}
+            files = {'jdk': 'jdk.tar.gz', 'graalvm': 'graalvm.tar.gz', 'cmake': 'cmake.whl'}
             cfg = {'tools': {name: {'sha256': hashlib.sha256(name.encode()).hexdigest()} for name in files}}
             (inputs / 'config.json').write_text(json.dumps(cfg))
-            for invalid in [None, 'jdk', 'cmake']:
+            for invalid in [None, 'jdk', 'graalvm', 'cmake']:
                 with self.subTest(invalid=invalid):
                     for name, filename in files.items():
                         (inputs / filename).write_bytes(b'corrupt' if name == invalid else name.encode())
@@ -106,23 +107,25 @@ class PackagingContractTest(unittest.TestCase):
                             wheel.assert_not_called()
                         else:
                             runpy.run_path(script, run_name='__main__')
-                            tar.assert_called_once_with(inputs / 'jdk.tar.gz')
+                            self.assertEqual([((inputs / 'jdk.tar.gz',),), ((inputs / 'graalvm.tar.gz',),)],
+                                             tar.call_args_list)
                             wheel.assert_called_once_with(inputs / 'cmake.whl')
-                            tar.return_value.__enter__.return_value.extractall.assert_called_once_with('/opt/java')
+                            self.assertEqual([(('/opt/java',),), (('/opt/graalvm-dist',),)],
+                                             tar.return_value.__enter__.return_value.extractall.call_args_list)
                             wheel.return_value.__enter__.return_value.extractall.assert_called_once_with('/opt/cmake-wheel')
 
     def test_flatpak_launcher_keeps_runtime_driver_extensions_after_private_libraries(self):
         with tempfile.TemporaryDirectory(prefix='nuvio flatpak ') as tmp:
             root = pathlib.Path(tmp)
-            (root / 'bin').mkdir()
-            fake = root / 'bin/nuvio'
+            (root / 'lib').mkdir()
+            fake = root / 'lib/nuvio'  # The native executable; no JVM library path.
             fake.write_text('#!/bin/sh\nprintf "%s\\n" "$LD_LIBRARY_PATH" "$GDK_BACKEND" "$@"\n')
             fake.chmod(0o755)
             launcher = root / 'launcher'
             launcher.write_text(launcher_text(root))
             env = dict(os.environ, LD_LIBRARY_PATH='/usr/lib/x86_64-linux-gnu/GL/default/lib')
             actual = subprocess.check_output(['/bin/sh', str(launcher), 'a b'], text=True, env=env).splitlines()
-            self.assertEqual([f'{root}/lib/native:{root}/lib/runtime/lib:{root}/lib/runtime/lib/server:'
+            self.assertEqual([f'{root}/lib/native:{root}/lib/runtime/lib:'
                               '/usr/lib/x86_64-linux-gnu/GL/default/lib', 'x11', 'a b'], actual)
 
     def test_release_webkit_cannot_pass_as_relocatable_appimage(self):
@@ -141,14 +144,26 @@ class PackagingContractTest(unittest.TestCase):
             (image / 'bin').mkdir()
             launcher = pathlib.Path(__file__).resolve().parents[1] / 'nuvio-desktop'
             shutil.copy2(launcher, image / 'bin/nuvio-desktop')
-            fake = image / 'bin/nuvio'
+            (image / 'lib').mkdir()
+            fake = image / 'lib/nuvio'  # The native executable the wrapper runs directly.
             fake.write_text('#!/bin/sh\nprintf "%s\\n" "$LD_LIBRARY_PATH" "$GDK_BACKEND" "$@"\n')
             fake.chmod(0o755)
             env = dict(os.environ, LD_LIBRARY_PATH='/untrusted/lib', GDK_BACKEND='wayland')
             result = subprocess.check_output([str(image / 'bin/nuvio-desktop'), 'a b', '--fixture'],
                                              text=True, env=env).splitlines()
-            self.assertEqual([f'{image}/lib/native:{image}/lib/runtime/lib:{image}/lib/runtime/lib/server',
+            self.assertEqual([f'{image}/lib/native:{image}/lib/runtime/lib',
                               'x11', 'a b', '--fixture'], result)
+
+    def test_deb_depends_cover_the_native_executable_and_emitted_jdk_libraries(self):
+        source = (packaging_build.HERE / 'formats.py').read_text()
+        depends = source[source.index("depends = ("):source.index("(deb / 'DEBIAN/control')")]
+        # lib/nuvio and libsplashscreen: zlib; libfontmanager: FreeType; libjsound: ALSA;
+        # libawt_xawt: X11/Xext/Xi/Xrender/Xtst (ldd in the builder, 2026-10-18).
+        for package in ['zlib1g', 'libfreetype6', 'libasound2', 'libx11-6', 'libxext6', 'libxi6',
+                        'libxrender1', 'libxtst6']:
+            self.assertRegex(depends, r'(?<![\w.+-])' + re.escape(package) + r'(?![\w.+-])')
+        self.assertIn('no Java runtime', source)
+        self.assertNotIn('private libmpv and Java runtime', source)
 
     def test_development_snapshot_excludes_arbitrary_untracked_files(self):
         self.assertTrue(development_source('tools/linux/packaging/build.py'))

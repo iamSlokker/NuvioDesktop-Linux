@@ -1,10 +1,13 @@
 # Linux x86_64 packages
 
-This pipeline reuses Compose Desktop `createDistributable`/jpackage and the
-canonical [private media recipe](../media-runtime/README.md). DEB and AppImage
-are independent wrappers of that application image; Flatpak consumes the same
-source-built image, never either final native package. Windows/macOS distribution
-settings and player behavior are unchanged.
+This pipeline reuses Compose Desktop `createDistributable`, compiles its JARs with
+GraalVM native-image (the Linux tasks in `composeApp/native-image-linux.gradle.kts`)
+and adds the canonical [private media recipe](../media-runtime/README.md). Packages
+ship the native executable only: no application JAR and no Java runtime. DEB and
+AppImage are independent wrappers of that application image; Flatpak consumes the
+same source-built image, never either final native package. No package is built
+unless the [native smoke gate](#native-image-and-smoke-gate) passes. Windows/macOS
+distribution settings and player behavior are unchanged.
 
 Current development and release gates are in the
 [final readiness report](../../../docs/FINAL-READINESS-REPORT.md). The latest
@@ -49,8 +52,9 @@ The disposable snapshot supplies the reviewed
 [public client properties](public-client.properties) to upstream's existing
 `GenerateRuntimeConfigsTask`: `https://api.nuvio.tv` and the official publishable
 key documented in the pinned Nuvio self-host example. DEB, Flatpak and AppImage
-verification reads the generated `SupabaseConfig` fields from the actual packaged
-JARs and rejects missing, empty or different defaults. Runtime custom/self-hosted
+verification reads the generated `SupabaseConfig` fields from the exact native-image
+input JARs and requires both values verbatim in the shipped `lib/nuvio`; missing,
+empty or different defaults fail. Runtime custom/self-hosted
 server selection remains unchanged. No developer properties or private/service-role
 credentials are inputs. Account/login acceptance against the service is separate;
 optional service defaults described below remain unavailable.
@@ -69,15 +73,18 @@ Display name: **Nuvio Desktop**. DEB name/portable command: `nuvio-desktop`.
 `composeApp/Configuration/DesktopVersion.properties` supplies version and code;
 there is no separate Linux release version. `release-info.json` and the existing
 `lib/app/build-info.properties` carry the full Git commit, channel, source epoch,
-source-content digest, dirty marker, JDK provenance and builder image ID.
+source-content digest, dirty marker, GraalVM release (`graalvm_release`), build JDK
+(`build_jdk_release`) and builder image ID.
 Local dirty/nightly builds explicitly identify themselves as development.
 Stable builds require a clean tree; tag-triggered CI requires `v<VERSION_NAME>`.
 Desktop/icon metadata is shared; the existing icon is resized offscreen to 512px.
 
 The media builder uses the existing digest-pinned Ubuntu 22.04/signed snapshot
 and GLIBC 2.35 / GLIBCXX 3.4.30 floor. Packaging extends that builder with
-GTK3/WebKitGTK4.1, verifies pinned Temurin 21.0.12.1+1 and CMake 3.31.6 inputs,
-and records complete package versions. AppImage tool **1.9.1** is SHA-256 pinned. The type-2
+GTK3/WebKitGTK4.1 (plus Xvfb and Mesa lavapipe for the smoke gate), verifies pinned
+Temurin 21.0.12.1+1 (build JDK: Gradle, Kotlin, jpackage), GraalVM CE **25.0.2**
+(`/opt/graalvm`, native-image) and CMake 3.31.6 inputs, and records complete package
+versions. Neither JDK is copied into a package. AppImage tool **1.9.1** is SHA-256 pinned. The type-2
 runtime is not downloaded: `appimage_runtime.py build --output DIR` compiles it
 from pinned sources (`appimage-runtime/manifest.json`, digest-pinned Alpine,
 `--network=none`), reproducibly, and `--runtime-file` embeds only a runtime equal
@@ -90,11 +97,55 @@ relink kit, `RELINK.md`) to `artifacts/`. The `appimage-runtime` entry still in
 `config.json`; it supplies GTK3/WebKitGTK4.1 and graphics/audio interfaces.
 
 Fixed inputs and stamps make builds traceable/rebuildable. Whole-package
-byte-for-byte reproducibility has **not** been established: jpackage/JAR archive
-timestamps, package compression and export tools require independent repeat
-build comparison. Do not present media-runtime reproducibility as proof of
+byte-for-byte reproducibility has **not** been established: JAR archive
+timestamps, native-image output, package compression and export tools require
+independent repeat build comparison. Do not present media-runtime reproducibility as proof of
 whole-application reproducibility. GitHub runner orchestration tools are
 recorded separately; application/native build inputs live in the pinned builder.
+
+## Native image and smoke gate
+
+`build.py`/`canonical_from_seed.py` run the builder twice (`native-build.sh`):
+
+1. **build** (network for Gradle dependencies): `createDistributable` and the
+   focused JVM tests, then a second Gradle run of `createLinuxNativeDistributable`
+   (`-Pnuvio.graalvm.home=/opt/graalvm`, never `-Pnuvio.native.qa`) so native-image
+   runs in the Ubuntu 22.04 builder (glibc floor 2.34 for the executable) with
+   `NUVIO_NATIVE_BUILDER_HEAP` (default `9g`; ~9-11 GB peak RSS, one build on the
+   16 GB runner). The JNI bridge and HDR helper are built from this source, then
+   `stage.py` lays out the canonical image from the native layout and
+   `native_evidence.py` retains the evidence in `<work>/native-image/`: the exact
+   classpath JARs, `inputs.json` (path-free arguments, metadata file hashes, JAR
+   SHA-256s, GraalVM release and archive hash, executable and JDK-library hashes,
+   GraalVM notice hashes; also shipped as `share/nuvio-native-image/inputs.json`) and
+   native-image's own `build-artifacts.json`/`embedded-resources.json`.
+2. **package** (`--network=none`): `native_smoke.py` launches the staged image's
+   `bin/nuvio-desktop` three times through stage 1's
+   `composeApp/scripts/linux-native-smoke.py` (private Xvfb, private D-Bus, empty
+   profile, Mesa lavapipe named through the image's own Vulkan loader). Any missing
+   first frame, failed self-test probe, early exit or missing-registration/fatal
+   console line fails the run and no DEB is built; a pass writes
+   `<work>/native-image/smoke.json` (executable SHA-256 and a digest of every staged
+   file, unchanged by the run). Then the DEB and its verification.
+
+`formats.py` publishes the evidence as `Nuvio-native-image-inputs-<commit12>.tar`
+(deterministic tar: JARs, manifest, reports, smoke record and console logs).
+
+How each contract verifies a package without JARs:
+
+| Contract | Input JARs (retained, hash-bound) | Shipped bytes |
+| --- | --- | --- |
+| Inputs | — | `inputs.json` equals the retained one; `lib/nuvio` and every JDK file match it; no `.jar`, `lib/runtime/lib/server`, `libjli.so`, `libapplauncher.so` or QA marker anywhere |
+| Backend (`client_config`) | exactly one `SupabaseConfig` with the reviewed URL/key fields | URL and key occur in `lib/nuvio` |
+| Fonts/ONNX/artwork | existing contracts unchanged (hashes, removed names/bytes, ABI/ldd of ONNX natives) | each reviewed payload is listed by `embedded-resources.json` and occurs verbatim in `lib/nuvio` (native-image stores resources uncompressed); no embedded resource has a removed name; anime-mapping notices ship as files in `share/licenses/anime-mapping/` |
+| Embedded JNI | quickjs etc. from the input JARs, if embedded | bytes in `lib/nuvio`; ABI floor and `ldd` |
+| Report | every embedded JAR resource comes from a recorded input JAR entry of the same size (JDK module resources counted separately) | — |
+| Notices | every notice-like entry of every input JAR | `share/licenses/jar-notices/` equals that extraction; GraalVM notices equal `inputs.json` |
+| Smoke | — | `smoke.json` is a pass for this exact `lib/nuvio`; the DEB payload is byte-identical to the image the smoke launched |
+
+The contracts check identity and presence, not rights. Flatpak verification rebuilds
+the inspected subset (executable, manifest, JDK files, notices) from the exported
+OSTree bytes and runs the same checks; AppImage verifies its extracted payload.
 
 ## Runtime and dependency boundary
 
@@ -112,20 +163,25 @@ HDR output is unverified on HDR hardware.
 Canonical layout:
 
 ```text
-bin/nuvio                  original jpackage launcher
-bin/nuvio-desktop          portable environment wrapper
-lib/app/                   application/dependency jars, build stamp
-lib/runtime/               bundled Java 21 runtime, including JAWT
+bin/nuvio                  script: exec ../lib/nuvio
+bin/nuvio-desktop          portable environment wrapper (execs lib/nuvio)
+lib/nuvio                  GraalVM native executable (application, Maven JARs, JDK class library)
+lib/lib*.so                JDK libraries native-image emitted (libawt, libfontmanager, ...; libjvm.so is its stub)
+lib/app/                   nuvio.cfg (-D options applied at run time), skiko, build stamp; no JAR
+lib/runtime/lib/           java.home: libjawt.so and font properties from GraalVM
 lib/native/                player_bridge, nuvio-hdr-probe, mpv and private media ELF closure
-share/                     desktop/icon metadata, media provenance and licenses
+share/nuvio-native-image/  inputs.json: exact native-image inputs (JAR names/SHA-256, arguments, GraalVM)
+share/licenses/            GraalVM/, jar-notices/ (the input JARs' notice files), anime-mapping/, media, ...
+share/                     desktop/icon metadata, media provenance
 release-info.json          one revision/version identity for all formats
 ```
 
-Linux JNI lookup is relative to bundled `java.home`, never the working directory.
-The packaging-only CMake switch sets `$ORIGIN:$ORIGIN/../runtime/lib`; private
-media libraries retain relative RUNPATH. The wrapper selects only image-private
-libraries plus bundled Java, clears inherited LD_PRELOAD/LD_LIBRARY_PATH and
-sets `GDK_BACKEND=x11`. The native single-X11-lifetime guard is untouched.
+Linux JNI lookup is relative to `java.home` (`lib/runtime`, set by
+`NativeImageSupport`), never the working directory. The packaging-only CMake switch
+sets `$ORIGIN:$ORIGIN/../runtime/lib`; private media libraries retain relative
+RUNPATH. The wrapper selects only image-private libraries (`lib/native`,
+`lib/runtime/lib`; the emitted JDK libraries load from the executable's directory),
+clears inherited LD_PRELOAD/LD_LIBRARY_PATH and sets `GDK_BACKEND=x11`. The native single-X11-lifetime guard is untouched.
 Flatpak's outer launcher instead retains its sandbox-provided graphics/codec
 extension LD_LIBRARY_PATH after the private directories; clearing those paths
 would hide GNOME's host-driver extensions. It still clears LD_PRELOAD.
@@ -419,11 +475,14 @@ TMDB likewise uses user settings, not a generated bundled key. Those settings,
 OAuth secrets, user API tokens and account data must not be copied into packages.
 
 Nuvio is GPLv3; this mpv build is GPL, FFmpeg is LGPLv3 (OpenSSL configuration),
-and private components/JDK/GTK/WebKit carry their own notices and source duties.
-The image carries media/JDK/platform notices and application license. The source
+and private components/GraalVM (GPLv2 with Classpath Exception)/GTK/WebKit carry
+their own notices and source duties. The image carries media/GraalVM/platform notices,
+the input JARs' notice files and the application license. `compliance/release_sources.py`
+adds the pinned GraalVM sources (graal, labs-openjdk, mx) and the native-image input
+archive to every package's `SOURCE-MAP.json` entry. The source
 artifact contains exact application inputs and media recipes/patches, **not a
 complete third-party corresponding-source release**. Before publication retain
-and provide the verified media archives, JDK corresponding sources, required
+and provide the verified media archives, GraalVM corresponding sources, required
 GTK/WebKit/platform sources, dependency notices and any required build/linking
 materials. Hashes, URLs and notices alone do not fulfill source obligations.
 The embedded AppImage type-2 runtime has its own licensing/source duties too;
@@ -441,10 +500,11 @@ snapshots require deliberate security refreshes, not indefinite deployment.
 
 The Umbra snapshot also packages CPU ONNX Runtime Java 1.31.0 and the unchanged
 U2NetP/YuNet hero-framing models. Full model/runtime licenses and pinned model
-hashes are in `backdrop-framing/` inside the application JAR; the ONNX dependency
-retains its third-party notices. `onnx_contract.py` checks the actual packaged
-Linux JNI/core bytes, model/license bytes, CPU dependencies and ABI floor in DEB,
-Flatpak readback and AppImage verification. See the
+hashes are in `backdrop-framing/` inside the application JAR, embedded verbatim in
+`lib/nuvio`; the ONNX dependency retains its third-party notices.
+`onnx_contract.py` checks the Linux JNI/core bytes, model/license bytes, CPU
+dependencies and ABI floor in the exact native-image input JARs, and verification
+requires those bytes in the shipped executable (DEB, Flatpak readback, AppImage). See the
 [snapshot integration notes](../../../docs/linux-umbra-snapshot-integration.md)
 for the accepted engine provenance and remaining desktop acceptance.
 

@@ -186,12 +186,31 @@ def maven_component(packaged, cache):
             'gaps': ['MAVEN_SOURCES_NOT_RETAINED'] if not sources else []}
 
 
-def native_owner(path, media, engine, owner_rows, package_rows, versions):
+def build_only_scope(name, native):
+    base = 'build input, absent as a tool from application packages; present in distributed builder OCI'
+    if not native:  # Historical JVM packages: wording of the reviewed inventory.
+        return base + '; JDK subset also bundled runtime'
+    if name == 'jdk':
+        return base + '; build JDK only (Gradle, Kotlin, jpackage), no part of it ships'
+    if name == 'graalvm':
+        return base + '; native-image compiled lib/nuvio and emitted the shipped JDK libraries (component graalvm-ce)'
+    return base
+
+
+def native_owner(path, media, engine, owner_rows, package_rows, versions, native=False):
     name = Path(path).name
     # The bridge and the experimental HDR capability helper are built from application sources.
     if path in ('lib/native/libplayer_bridge.so', 'lib/native/nuvio-hdr-probe'):
         return 'application'
-    if path.startswith('lib/runtime/') or path == 'bin/nuvio' or name == 'libapplauncher.so':
+    if native:
+        # GraalVM native-image packages: the executable compiles the application, its
+        # Maven JARs and the JDK class library with Substrate VM; the JDK libraries it
+        # emitted (lib/*.so) and libjawt.so (lib/runtime/lib) are GraalVM's.
+        if path == 'lib/nuvio':
+            return 'native-image'
+        if path.startswith('lib/runtime/') or (path.startswith('lib/') and path.count('/') == 1):
+            return 'graalvm-ce'
+    elif path.startswith('lib/runtime/') or path == 'bin/nuvio' or name == 'libapplauncher.so':
         return 'temurin'
     if name.startswith('libskiko-'):
         return 'skiko-native'
@@ -302,14 +321,36 @@ def build_inventory(repo, inputs, cache, package_rows, owner_rows, runtime=None,
               'appimage': inputs / 'appimage/squashfs-root/usr/lib/nuvio-desktop',
               'flatpak': inputs / 'flatpak/files/lib/nuvio-desktop'}
     versions = dict(line.split('\t') for line in (inputs / 'webkit-source/engine/webkit-builder-packages.tsv').read_text().splitlines())
+    # GraalVM native-image packages (no JARs, no JVM) record graalvm_release; JVM ones jdk_release.
+    native = 'graalvm_release' in info
+    if native:
+        graalvm = info['graalvm_release']
+        jdk_components = {
+            'graalvm-ce': {'id': 'graalvm-ce', 'version': graalvm['GRAALVM_VERSION'] + ' (' + graalvm['JAVA_RUNTIME_VERSION'] + ')',
+                           'binary': config['tools']['graalvm'], 'source': {'release_source': graalvm['SOURCE'],
+                           'retention': 'docs/compliance/evidence/dependency-source-retention.json: graalvm'},
+                           'license_evidence': ['share/licenses/GraalVM: LICENSE.txt (GPLv2 with Classpath Exception), '
+                                                'LICENSE_NATIVEIMAGE.txt, THIRD_PARTY_LICENSE.txt, per-module legal/'],
+                           'modifications': ['none; JDK libraries emitted by native-image and libjawt.so copied unchanged'],
+                           'gaps': ['GRAALVM_SOURCE_OFFER_REVIEW']},
+            'native-image': {'id': 'native-image', 'version': info['version'],
+                             'incorporated_components': ['application', 'graalvm-ce (JDK class library, Substrate VM)',
+                                                         'every maven:* component listed with path lib/nuvio:<JAR>'],
+                             'inputs': 'share/nuvio-native-image/inputs.json; exact JARs in Nuvio-native-image-inputs-*.tar',
+                             'license_evidence': ['application GPLv3, share/licenses/GraalVM, share/licenses/jar-notices'],
+                             'modifications': ['GraalVM native-image compilation (static linking of the classpath)'],
+                             'gaps': ['NATIVE_IMAGE_RELINK_MATERIAL_REVIEW']}}
+    else:
+        jdk_components = {
+            'temurin': {'id': 'temurin', 'version': info['jdk_release']['FULL_VERSION'].strip('"'),
+                        'binary': config['tools']['jdk'], 'source': {'repository': info['jdk_release']['SOURCE_REPO'].strip('"'),
+                        'revision': info['jdk_release']['SOURCE'].strip('"'), 'archive_sha256': None},
+                        'license_evidence': ['share/licenses/Java: per-module licenses, GPLv2/ClassPath exception and third-party notices'],
+                        'modifications': ['jlink module selection; jpackage launcher/runtime image'], 'gaps': ['JDK_CORRESPONDING_SOURCE_MISSING']}}
     components = {'application': {'id': 'application', 'version': info['version'], 'commit': info['git_commit'],
                                   'license_evidence': ['LICENSE: GPL version 3; or-later election requires review'],
                                   'source_archive': next(n for n in checksums if n.startswith('Nuvio-source-'))},
-                  'temurin': {'id': 'temurin', 'version': info['jdk_release']['FULL_VERSION'].strip('"'),
-                              'binary': config['tools']['jdk'], 'source': {'repository': info['jdk_release']['SOURCE_REPO'].strip('"'),
-                              'revision': info['jdk_release']['SOURCE'].strip('"'), 'archive_sha256': None},
-                              'license_evidence': ['share/licenses/Java: per-module licenses, GPLv2/ClassPath exception and third-party notices'],
-                              'modifications': ['jlink module selection; jpackage launcher/runtime image'], 'gaps': ['JDK_CORRESPONDING_SOURCE_MISSING']},
+                  **jdk_components,
                   'webkit': {'id': 'webkit', 'version': wm['version'], 'source': wm['source'],
                              'license_evidence': ['engine/notices/WebKit: mixed LGPL/BSD/third-party terms'],
                              'recipe_identity': engine['recipe_identity'], 'modifications': ['two pinned WebKit patches; production flags in engine-build.json'],
@@ -365,14 +406,30 @@ def build_inventory(repo, inputs, cache, package_rows, owner_rows, runtime=None,
                 raise ValueError('Canonical ELF differs across packages: ' + fmt + '/' + rel)
             elif fmt == 'flatpak' and rel not in deb_elf:
                 raise ValueError('Unexpected Flatpak ELF')
-            owner = native_owner(rel, media, engine, owner_rows, package_rows, versions)
+            owner = native_owner(rel, media, engine, owner_rows, package_rows, versions, native)
             components.setdefault(owner, {'id': owner, 'version': None, 'source': None, 'gaps': ['NATIVE_OWNER_MISSING']})
             files.append({'format': fmt, 'path': rel, 'sha256': sha(p), 'component': owner})
-        current = {p.name: sha(p) for p in (image / 'lib/app').glob('*.jar')}
+        if native:
+            # No JAR ships: the exact inputs compiled into lib/nuvio come from the extracted
+            # Nuvio-native-image-inputs-*.tar, bound by each package's shipped manifest.
+            if any(p.is_file() for p in image.rglob('*.jar')):
+                raise ValueError('JAR in a native-image package: ' + fmt)
+            manifest = json.loads((image / 'share/nuvio-native-image/inputs.json').read_text())
+            if json.loads((inputs / 'native-image/inputs.json').read_text()) != manifest:
+                raise ValueError('Retained native-image inputs do not describe this package: ' + fmt)
+            jar_dir = inputs / 'native-image/inputs'
+            current = {row['name']: row['sha256'] for row in manifest['classpath']}
+            if any(sha(jar_dir / name) != digest for name, digest in current.items()):
+                raise ValueError('Retained native-image input JAR differs from the manifest')
+            location = 'lib/nuvio:'
+        else:
+            jar_dir = image / 'lib/app'
+            current = {p.name: sha(p) for p in jar_dir.glob('*.jar')}
+            location = 'lib/app/'
         if fmt == 'deb':
             jars = current
             for name in sorted(current):
-                p = image / 'lib/app' / name
+                p = jar_dir / name
                 notices, embedded = jar_details(p)
                 if name.startswith('composeApp-desktop-'):
                     component = components['application']
@@ -381,13 +438,14 @@ def build_inventory(repo, inputs, cache, package_rows, owner_rows, runtime=None,
                     components[component['id']] = component
                     if not notices:
                         component.setdefault('gaps', []).append('JAR_NOTICE_COVERAGE_REVIEW')
-                files.append({'format': 'all', 'path': 'lib/app/' + name, 'sha256': current[name],
+                files.append({'format': 'all', 'path': location + name, 'sha256': current[name],
                               'component': component['id'], 'notices': notices, 'embedded_binaries': embedded})
         elif current != jars:
             raise ValueError('Actual JARs differ across formats: ' + fmt)
+    application_jars = inputs / 'native-image/inputs' if native else images['deb'] / 'lib/app'
     for name, license_name in [('u2netp.onnx', 'LICENSE-U2NET.txt'), ('yunet.onnx', 'LICENSE-YUNET.txt')]:
         path = 'backdrop-framing/' + name
-        jar = next(p for p in (images['deb'] / 'lib/app').glob('composeApp-desktop-*.jar'))
+        jar = next(p for p in application_jars.glob('composeApp-desktop-*.jar'))
         with zipfile.ZipFile(jar) as z:
             components['model:' + name] = {'id': 'model:' + name, 'version': 'exact model SHA256',
                 'sha256': hashlib.sha256(z.read(path)).hexdigest(), 'source': 'https://github.com/UmbraProjects/NuvioDesktop/blob/6f155d267a478b3cebd8320de5a8bedc8e5de52a/composeApp/src/desktopMain/resources/' + path,
@@ -432,7 +490,7 @@ def build_inventory(repo, inputs, cache, package_rows, owner_rows, runtime=None,
             component['presence'] = ('bundled AppImage ELF owner' if any(f['component'] == key for f in files)
                                      else 'resource or build-tool owner in staging record; no standalone bundled ELF mapped')
         elif key.startswith('maven:'):
-            component['presence'] = 'bundled runtime JAR'
+            component['presence'] = 'compiled into lib/nuvio (native-image input JAR, not shipped)' if native else 'bundled runtime JAR'
         elif key.startswith('media:'):
             component['presence'] = ('incorporated code/data from build input' if component.get('incorporated_code') or component.get('incorporated_data')
                                      else component.get('classification'))
@@ -453,7 +511,8 @@ def build_inventory(repo, inputs, cache, package_rows, owner_rows, runtime=None,
                         'scope': 'separate GNOME runtime; exact runtime source closure not audited', 'metadata_sha256': sha(inputs / 'flatpak/metadata')},
             'host_drivers': 'not bundled; no legal System Library conclusion'},
         'additional_artifact_scope': {'builder_seed_and_engine_oci': 'BLOCKED: full container/toolchain source and notice closure not covered by application inventory'},
-        'build_only': {name: dict(value, scope='build input, absent as a tool from application packages; present in distributed builder OCI; JDK subset also bundled runtime') for name,value in config['tools'].items() if name != 'appimage-runtime'},
+        'build_only': {name: dict(value, scope=build_only_scope(name, native)) for name, value in config['tools'].items()
+                       if name != 'appimage-runtime' and (native or name != 'graalvm')},
         'assessment': {fmt: 'BLOCKED' for fmt in images},
         'assessment_basis': 'Missing retained corresponding sources/notices and reviewed source availability; no automatic legal certification'}
 

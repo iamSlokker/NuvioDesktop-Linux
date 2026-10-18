@@ -15,7 +15,8 @@ import subprocess
 import sys
 
 from fetch import CONFIG
-from client_config import verify_packaged_backend
+from client_config import verify_native_backend, verify_packaged_backend
+import native_evidence
 
 HERE = pathlib.Path(__file__).resolve().parent
 
@@ -27,9 +28,9 @@ def launcher_text(image):
 set -eu
 image=%s
 unset LD_PRELOAD
-export LD_LIBRARY_PATH="$image/lib/native:$image/lib/runtime/lib:$image/lib/runtime/lib/server${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
+export LD_LIBRARY_PATH="$image/lib/native:$image/lib/runtime/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
 export GDK_BACKEND=x11
-exec "$image/bin/nuvio" "$@"
+exec "$image/lib/nuvio" "$@"
 ''' % shlex.quote(str(image))
 
 
@@ -37,7 +38,11 @@ def build(work):
     if any(os.environ.get(k) for k in ['DISPLAY', 'WAYLAND_DISPLAY', 'NUVIO_RUN_LIVE_DISPLAY_TESTS']):
         raise ValueError('Unset display/live-test environment')
     canonical = work / 'canonical'
-    verify_packaged_backend(canonical)
+    # Only the native image that passed the smoke gate, with its retained inputs.
+    native = native_evidence.verify(canonical, work / 'native-image')
+    native_evidence.check_smoke(work / 'native-image', canonical)
+    verify_packaged_backend(canonical, native.jars)
+    verify_native_backend(native.executable)
     info = json.loads((canonical / 'release-info.json').read_text())
     expected = json.loads((work / 'source-info.json').read_text())
     if any(info[key] != expected[key] for key in ['git_commit', 'source_sha256', 'channel']):
@@ -74,14 +79,17 @@ def build(work):
     subprocess.run(['flatpak', 'build', '--unshare=network', '--nofilesystem=host', str(root),
                     '/usr/bin/sh', '-eu', '-c', '''
 unset DISPLAY WAYLAND_DISPLAY NUVIO_RUN_LIVE_DISPLAY_TESTS LD_PRELOAD
-export LD_LIBRARY_PATH=/app/lib/nuvio-desktop/lib/native:/app/lib/nuvio-desktop/lib/runtime/lib:/app/lib/nuvio-desktop/lib/runtime/lib/server${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}
+# lib/ last: libjawt.so finds libawt.so there only because the executable already loaded it.
+export LD_LIBRARY_PATH=/app/lib/nuvio-desktop/lib/native:/app/lib/nuvio-desktop/lib/runtime/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}:/app/lib/nuvio-desktop/lib
 test -x /app/lib/nuvio-desktop/lib/native/nuvio-hdr-probe
-find /app/lib/nuvio-desktop/lib/native /app/lib/nuvio-desktop/lib/runtime -type f \\( -name '*.so*' -o -name nuvio-hdr-probe \\) -exec sh -c '
+test -x /app/lib/nuvio-desktop/lib/nuvio
+{ find /app/lib/nuvio-desktop/lib/native /app/lib/nuvio-desktop/lib/runtime -type f \\( -name '*.so*' -o -name nuvio-hdr-probe \\)
+  find /app/lib/nuvio-desktop/lib -maxdepth 1 -type f \\( -name '*.so' -o -name nuvio \\); } | xargs sh -c '
  for f do
    result=$(ldd "$f") || exit 1
    case "$result" in *"not found"*) printf "%s\\n%s\\n" "$f" "$result"; exit 1;; esac
  done
-' sh {} +
+' sh
 '''], check=True)
     subprocess.run(['flatpak', 'build-finish', '--command=nuvio-desktop', *permissions, str(root)], check=True)
     repository = work / 'flatpak-repo'

@@ -142,6 +142,10 @@ val linuxNativeCompile = tasks.register<Exec>("linuxNativeCompile") {
             add("-H:ConfigurationFileDirectories=" + metadataDirs.joinToString(",") { it.absolutePath })
             add("-H:+ReportExceptionStackTraces")
             add("-H:+UnlockExperimentalVMOptions")
+            // build-artifacts.json and embedded-resources.json beside the executable: the Linux
+            // packages keep them as evidence of what the image contains (tools/linux/packaging).
+            add("-H:+GenerateBuildArtifactsFile")
+            add("-H:+GenerateEmbeddedResourcesFile")
             // Build-time -D values; NativeImageSupport re-applies nuvio.cfg's at run time.
             add("-Djava.awt.headless=false")
             add("-Dskiko.renderApi=OPENGL")

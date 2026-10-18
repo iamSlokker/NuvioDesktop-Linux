@@ -32,7 +32,16 @@ appimage/squashfs-root/usr/lib/nuvio-desktop/  AppImage --appimage-extract only
 flatpak/files/lib/nuvio-desktop/    isolated OSTree checkout of Flatpak app ref
 flatpak/metadata                   actual exported Flatpak metadata
 deb-control.txt                    actual control.tar.zst control text
+native-image/                      native-image packages only: Nuvio-native-image-inputs-*.tar
+                                   extracted here (inputs/*.jar, inputs.json, reports)
 ```
+
+Native-image packages (release-info `graalvm_release`) contain no JAR or JVM. The
+inventory then maps `lib/nuvio` to a `native-image` component, the emitted JDK
+libraries and `lib/runtime/lib` to `graalvm-ce`, and reads Maven components and
+models from the retained input JARs after checking them against each package's
+`share/nuvio-native-image/inputs.json`. JVM packages (`jdk_release`) keep the
+original `temurin` mapping used by the reviewed run.
 
 The reviewed run is 38397205286. Its artifact archive digest is recorded in
 `docs/compliance/evidence/run-38397205286.json`. Use authenticated `gh run download`

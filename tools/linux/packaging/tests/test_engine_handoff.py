@@ -216,23 +216,30 @@ class CanonicalSeedTest(unittest.TestCase):
                     patch.object(packaging, 'source_tree', side_effect=snapshot), \
                     patch.object(packaging.subprocess, 'check_output', return_value=image):
                 packaging.native(args, old)
-            original = next(command for command in commands if command[:2] == ('podman', 'run'))
+            originals = [command for command in commands if command[:2] == ('podman', 'run')]
             commands.clear()
             with patch.object(canonical, 'run', side_effect=capture), patch.object(canonical, 'fetch', side_effect=fetch), \
                     patch.object(canonical, 'source_tree', side_effect=snapshot), \
                     patch.object(canonical, 'load_seed', return_value=image) as load:
                 canonical.canonical(args, new)
                 load.assert_called_once_with(args.builder_seed.resolve(), args.builder_seed_sha256)
-            actual = commands[-1]
-            self.assertEqual(actual[-3:], (image, 'bash', '/source/tools/linux/packaging/native-build.sh'))
+            actuals = commands[-2:]
+            script = '/source/tools/linux/packaging/native-build.sh'
+            # Compile with network, then the smoke gate and the DEB in a run without it.
+            self.assertEqual([command[-4:] for command in actuals],
+                             [(image, 'bash', script, 'build'), (image, 'bash', script, 'package')])
+            self.assertEqual(['--network=host', '--network=none'],
+                             [next(arg for arg in command if str(arg).startswith('--network=')) for command in actuals])
             self.assertFalse(any(command[:2] == ('podman', 'build') for command in commands))
             self.assertIn('--validated', commands[0])
             self.assertIn('audit-runtime.py', str(commands[1][1]))
             # All runtime flags, source stamps and mounts match the canonical
             # path. Only the builder selection differs (immutable verified ID).
-            normalized = tuple(str(arg).replace(str(new), str(old)) for arg in actual)
-            expected = tuple(str(arg) for arg in original[:-3]) + (image, *original[-2:])
-            self.assertEqual(normalized, expected)
+            self.assertEqual(2, len(originals))
+            for actual, original in zip(actuals, originals):
+                normalized = tuple(str(arg).replace(str(new), str(old)) for arg in actual)
+                expected = tuple(str(arg) for arg in original[:-4]) + (image, *(str(arg) for arg in original[-3:]))
+                self.assertEqual(normalized, expected)
             self.assertEqual(json.loads((new / 'source-info.json').read_text())['builder_image_id'], image)
             # Both paths apply the Linux source policy exactly once and stamp the same snapshot.
             self.assertEqual((old / 'source-info.json').read_text(), (new / 'source-info.json').read_text())

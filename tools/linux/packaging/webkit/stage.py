@@ -205,7 +205,8 @@ def stage(image, generation, resource_sources):
     copied.add('lib/native/gio/modules/giomodule.cache')
     pending = [p for p in image.rglob('*') if not p.is_symlink() and is_elf(p)]
     seen = set()
-    env = dict(os.environ, LD_LIBRARY_PATH=f'{native}:{image}/lib/runtime/lib:{image}/lib/runtime/lib/server')
+    # lib/ last: libjawt.so resolves libawt.so to the copy the native executable already loaded.
+    env = dict(os.environ, LD_LIBRARY_PATH=f'{native}:{image}/lib/runtime/lib:{image}/lib')
     while pending:
         elf = pending.pop()
         if str(elf) in seen:

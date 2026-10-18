@@ -1,4 +1,4 @@
-"""Verify the actual packaged CPU inference payload, without loading app classes.
+"""Verify the CPU inference payload in the exact native-image input JARs, without loading app classes.
 
 Native hashes are from com.microsoft.onnxruntime:onnxruntime:1.31.0 on Maven
 Central (JAR SHA256 d3f903af31fe8f01300adb6b2b67297aa5bee7895909afc32e76ef29a3921149).
@@ -27,10 +27,10 @@ RESOURCES = {
 }
 
 
-def verify_packaged_onnx(image, abi_check):
+def verify_packaged_onnx(image, abi_check, jars=None):
     expected = dict(NATIVES, **{'backdrop-framing/' + name: sha for name, sha in RESOURCES.items()})
     found, payloads = {}, {}
-    for path in sorted((image / 'lib/app').glob('*.jar')):
+    for path in (sorted((image / 'lib/app').glob('*.jar')) if jars is None else jars):
         with zipfile.ZipFile(path) as jar:
             for entry in jar.infolist():
                 name = entry.filename

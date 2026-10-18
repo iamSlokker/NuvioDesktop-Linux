@@ -44,7 +44,11 @@ see the end of this section); no release has been created or published.
 Builds after the bundled JDK moved to Temurin 21.0.12.1+1 emit
 `OpenJDK21U-jdk-sources_21.0.12.1_1.tar.gz`
 (`573057d03584ae793fb7ec9a14c76d826d9187a53efeefd99da47403a5308234`) in place of the
-Temurin 17 source asset listed above for this evidence build.
+Temurin 17 source asset listed above for this evidence build. Native-image builds
+(GraalVM CE 25.0.2, no JVM or JAR in the packages) instead emit the pinned
+`graal-981ecb6e….tar.gz`, `labs-openjdk-2ea5f0bb….tar.gz` and `mx-7d659b9a….tar.gz`
+sources and `Nuvio-native-image-inputs-<commit12>.tar`, and no Temurin source; see
+[GraalVM retention](compliance/dependency-source-retention.md#graalvm-ce-2502-native-image-packages).
 
 The Actions artifact containing these files expires on 2027-01-12; it is evidence,
 not the recipient delivery channel.

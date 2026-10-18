@@ -1,4 +1,5 @@
-"""Check reviewed artwork/data bytes in actual package JARs, never infer rights."""
+"""Check reviewed artwork/data bytes in the exact native-image input JARs (verify.py then
+requires them in lib/nuvio or share/licenses/anime-mapping), never infer rights."""
 import hashlib
 import json
 import os
@@ -77,11 +78,11 @@ def expected_resources():
     return expected
 
 
-def verify_packaged_artwork(image):
+def verify_packaged_artwork(image, jars=None):
     expected = expected_resources()
     removed_names, forbidden, replacements, sizes = release_rules()
     seen = {}
-    for jar in sorted((Path(image) / 'lib/app').glob('*.jar')):
+    for jar in (sorted((Path(image) / 'lib/app').glob('*.jar')) if jars is None else jars):
         with zipfile.ZipFile(jar) as archive:
             for entry in archive.infolist():
                 basename = PurePosixPath(entry.filename.replace('\\', '/')).name.casefold()

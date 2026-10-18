@@ -2,7 +2,7 @@
 set -eu
 unset LD_PRELOAD LD_LIBRARY_PATH WEBKIT_EXEC_PATH WEBKIT_INJECTED_BUNDLE_PATH
 image=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd -P)
-library_path="$image/lib/native:$image/lib/runtime/lib:$image/lib/runtime/lib/server"
+library_path="$image/lib/native:$image/lib/runtime/lib"
 export GDK_BACKEND=x11
 # GTK3's 4.1 API still requires sandbox opt-in. This production hook enables it
 # before WebProcessPool creation; the private engine rejects disable requests.
@@ -34,7 +34,8 @@ export GST_REGISTRY_1_0="$GST_REGISTRY"
 # closure (important on hosts newer than the Ubuntu build baseline).
 LD_LIBRARY_PATH="$library_path" "$image/bin/nuvio-pixbuf-query" "$GDK_PIXBUF_MODULEDIR"/*.so > "$GDK_PIXBUF_MODULE_FILE"
 LD_LIBRARY_PATH="$library_path" "$image/bin/nuvio-gtk-query" "$image/lib/native/gtk-3.0/3.0.0/immodules"/*.so > "$GTK_IM_MODULE_FILE"
-LD_LIBRARY_PATH="$library_path" "$image/bin/nuvio" "$@" <&0 &
+# The GraalVM native executable; its emitted JDK libraries load from lib/ beside it.
+LD_LIBRARY_PATH="$library_path" "$image/lib/nuvio" "$@" <&0 &
 child=$!
 result=0
 wait "$child" || result=$?

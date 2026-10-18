@@ -136,6 +136,11 @@ The packaged release metadata identifies `adoptium/jdk17u` revision
 `e6ba7dec3d07654074559310376a3ae89da5f4ac`.
 Later builds pin and bundle Temurin **21.0.12.1+1** instead; its retained source
 evidence is in the [dependency supplement](dependency-source-retention.md).
+Packages from the native-image change (2026-10-18) bundle no Temurin and no JAR:
+they ship the GraalVM CE **25.0.2** native executable and its emitted JDK
+libraries, with GraalVM's notices and pinned graal/labs-openjdk/mx source archives
+([supplement](dependency-source-retention.md#graalvm-ce-2502-native-image-packages)).
+This audit's findings describe the JVM packages of run 38397205286 only.
 
 No complete, hash-locked JDK/HotSpot/native third-party corresponding-source
 bundle, Temurin build inputs or independently
