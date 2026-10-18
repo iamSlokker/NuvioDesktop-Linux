@@ -10,6 +10,7 @@ import sys
 
 from fetch import CONFIG
 from notice_contract import stage_notices
+import native_evidence
 
 
 def remove_build_data(destination, contract):
@@ -26,11 +27,18 @@ def remove_build_data(destination, contract):
             parent.rmdir()
 
 
-def stage(work, source=pathlib.Path('/source'), media=pathlib.Path('/media')):
+def stage(work, source=pathlib.Path('/source'), media=pathlib.Path('/media'),
+          graalvm=pathlib.Path('/opt/graalvm'), build_jdk=pathlib.Path('/opt/jdk')):
     info = json.loads((work / 'source-info.json').read_text())
-    app = source / 'composeApp/build/compose/binaries/main/app/nuvio'
-    if not (app / 'bin/nuvio').is_file() or not (app / 'lib/runtime/lib/libjawt.so').is_file():
-        raise ValueError('Missing Compose/jpackage image or bundled JAWT')
+    # createLinuxNativeDistributable's layout (composeApp/native-image-linux/README.md): the
+    # GraalVM native executable lib/nuvio, the JDK libraries it emitted, lib/app without
+    # JARs and lib/runtime/lib (libjawt.so, font properties). No JVM, no application JAR.
+    app = source / 'composeApp/build/native-image-linux/nuvio'
+    if (not (app / 'lib/nuvio').is_file() or not (app / 'bin/nuvio').is_file()
+            or not (app / 'lib/runtime/lib/libjawt.so').is_file()):
+        raise ValueError('Missing native-image layout, executable or JAWT')
+    if (app / 'lib/native-qa').exists() or (app / 'lib/native').exists():
+        raise ValueError('Refusing a QA native image or a developer lib/native')
     destination = work / 'canonical'
     shutil.rmtree(destination, ignore_errors=True)
     shutil.copytree(app, destination, symlinks=True)
@@ -56,11 +64,17 @@ def stage(work, source=pathlib.Path('/source'), media=pathlib.Path('/media')):
     shutil.copy2(source / 'LICENSE', licenses / 'COPYING')
     shutil.copytree(source / 'composeApp/src/desktopMain/resources/player-shaders',
                     licenses / 'player-shaders', ignore=shutil.ignore_patterns('*.glsl'))
-    shutil.copytree(pathlib.Path('/opt/jdk/legal'), share / 'licenses/Java', dirs_exist_ok=True)
+    # GraalVM CE notices, the manifest of the exact native-image inputs, the input
+    # JARs' notice files (the JARs themselves no longer ship) and the anime notices.
+    native_evidence.stage(destination, work, source, graalvm, CONFIG)
     stage_notices(destination)
     shutil.copy2('/builder-packages.tsv', share / 'nuvio-media-runtime/package-builder-packages.tsv')
     info['media_inventory_sha256'] = hashlib.sha256((media / 'share/nuvio-media-runtime/inventory.json').read_bytes()).hexdigest()
-    info['jdk_release'] = dict(line.split('=', 1) for line in pathlib.Path('/opt/jdk/release').read_text().splitlines() if '=' in line)
+    info['graalvm_release'] = native_evidence.release_fields(graalvm)
+    # Build-only JDK (Gradle, Kotlin, jpackage); it is not part of any package.
+    info['build_jdk_release'] = {k: v.strip('"') for k, v in (
+        line.split('=', 1) for line in (build_jdk / 'release').read_text().splitlines() if '=' in line)
+        if k in ('IMPLEMENTOR', 'JAVA_VERSION', 'JAVA_RUNTIME_VERSION', 'SOURCE')}
     (destination / 'release-info.json').write_text(json.dumps(info, indent=2, sort_keys=True) + '\n')
     instant = datetime.datetime.fromtimestamp(info['source_date_epoch'], datetime.timezone.utc)
     stamp = dict(BUILD_ID=instant.strftime('%Y%m%d-%H%M%S') + '.' + info['source_sha256'][:12],

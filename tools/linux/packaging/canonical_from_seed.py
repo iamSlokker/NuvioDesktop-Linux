@@ -15,7 +15,7 @@ import json
 import os
 import pathlib
 
-from build import HERE, MEDIA, REPO, CONFIG, fetch, run, source_tree
+from build import HERE, MEDIA, REPO, CONFIG, build_in_builder, fetch, run, source_tree
 from webkit.builder_seed import load_seed
 import source_policy
 
@@ -36,16 +36,8 @@ def canonical(args, work):
     info['builder_image_id'] = image
     (work / 'source-info.json').write_text(json.dumps(info, indent=2) + '\n')
     (work / 'gradle').mkdir(exist_ok=True)
-    command = ['podman', 'run', '--rm', '--network=host', '--userns=keep-id',
-               '--security-opt', 'label=disable', '--cap-drop=all', '--security-opt', 'no-new-privileges',
-               '--env', 'HOME=/tmp/nuvio-build', '--env', 'GRADLE_USER_HOME=/gradle',
-               '--env', 'SOURCE_DATE_EPOCH=' + str(info['source_date_epoch']),
-               '--env', 'NUVIO_BUILD_CHANNEL=' + args.channel, '--env', 'NUVIO_PACKAGE_FORMAT=deb',
-               '--env', 'NUVIO_BUILD_JOBS=' + str(args.jobs)]
-    for src, dest, ro in [(work / 'source', '/source', False), (runtime, '/media', True),
-                          (inputs, '/inputs', True), (work, '/output', False), (work / 'gradle', '/gradle', False)]:
-        command += ['--mount', f'type=bind,src={src},dst={dest}' + (',ro' if ro else '')]
-    run(*command, image, 'bash', '/source/tools/linux/packaging/native-build.sh')
+    # Same two builder runs as build.native(): compile, then smoke gate + DEB without network.
+    build_in_builder(image, info, args.channel, args.jobs, False, work, runtime, inputs, runner=run)
 
 
 def main():

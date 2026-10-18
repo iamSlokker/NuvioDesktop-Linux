@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""DEB and AppImage wrappers around the same jpackage image (not each other)."""
+"""DEB and AppImage wrappers around the same native-image application image (not each other)."""
 import hashlib
 import json
 import os
@@ -11,6 +11,7 @@ import sys
 
 from appimage_runtime import ARCHIVE_PREFIX, NOTICE_DIR, verify_output
 from fetch import CONFIG, fetch
+import native_evidence
 
 HERE = pathlib.Path(__file__).resolve().parent
 # Platform ABI and graphics driver entry points stay outside the AppImage.
@@ -51,8 +52,11 @@ def build(work, deb_only=False):
     (deb / 'usr/bin/nuvio-desktop').chmod(0o755)
     for category in ['applications', 'icons']:
         shutil.copytree(image / 'share' / category, deb / 'usr/share' / category, dirs_exist_ok=True)
+    # The native executable needs zlib; the JDK libraries native-image emits need
+    # FreeType (libfontmanager), ALSA (libjsound) and X11/Xext/Xi/Xrender/Xtst (libawt_xawt).
     depends = ('libc6 (>= 2.35), libstdc++6 (>= 12), libgcc-s1, libatomic1, '
-               'libgtk-3-0, libwebkit2gtk-4.1-0, libx11-6, libxext6, libxrandr2, libxss1, '
+               'libgtk-3-0, libwebkit2gtk-4.1-0, libx11-6, libxext6, libxi6, libxrender1, libxtst6, '
+               'libxrandr2, libxss1, '
                'libxcb1, libwayland-client0, libva2, libva-drm2, libva-x11-2, libdrm2, '
                'libasound2, libpulse0, libfontconfig1, libfreetype6, libfribidi0, libharfbuzz0b, '
                'libssl3, zlib1g, liblcms2-2, libudev1, libgl1, ca-certificates, xdg-utils')
@@ -64,11 +68,16 @@ Depends: {depends}
 Section: video
 Priority: optional
 Description: {CONFIG['display_name']}
- Integrated desktop media player with a private libmpv and Java runtime.
+ Integrated desktop media player with a private libmpv. Native executable;
+ no Java runtime is installed or required.
 ''')
     run('dpkg-deb', '--root-owner-group', '--build', deb, artifacts / f'nuvio-desktop_{version}_amd64.deb')
     shutil.copy2(image / 'release-info.json', artifacts / 'release-info.json')
     archive_application_source(work, artifacts, info)
+    # Exact native-image input JARs, manifest, native-image reports and the smoke
+    # record; also the material needed to rebuild/relink the executable.
+    native_evidence.archive(work, artifacts / f'Nuvio-native-image-inputs-{info["git_commit"][:12]}.tar',
+                            info['source_date_epoch'])
     run('python3', HERE / 'verify.py', 'artifacts', work, '--formats', 'deb')
     if not deb_only:
         build_appimage(work)
@@ -82,25 +91,33 @@ interfaces, recipes and patches. source-files.json records their SHA256 values;
 source-info.json binds the snapshot to its Git revision and build identity.
 
 This is NOT a complete third-party Corresponding Source distribution. Media,
-JDK, JVM/native dependencies and embedded AppImage runtime need their own exact
-source inputs, notices and any required build/relink/install materials. The
-separate WebKit source artifact covers its pinned WebKit/GTK inputs and patches,
+GraalVM (whose JDK class library, Substrate VM and emitted JDK libraries are in
+the native executable), Maven/native dependencies and embedded AppImage runtime
+need their own exact source inputs, notices and any required build/relink/install
+materials; SOURCE-MAP.json names the release's GraalVM and media source archives.
+The separate WebKit source artifact covers its pinned WebKit/GTK inputs and patches,
 not every Ubuntu library copied into AppImage. See the compliance report when
 present under application/docs/compliance/ and tools/linux/packaging/README.md.
 
-Work only in a disposable copy. Use the pinned Temurin JDK and public client
-properties, never a developer local.properties. Gradle wrapper and dependency
-artifacts must be retained separately for offline rebuilding. The top-level
-packaging orchestrator currently requires Git metadata omitted from this tar:
-check out the recorded Git commit and compare every recorded source byte before
-using its packaging commands. A fully offline snapshot-only packaging bootstrap
-is not supplied; do not represent this archive as a complete offline rebuild kit.
+Work only in a disposable copy. Use the pinned Temurin build JDK, the pinned
+GraalVM CE (tools/linux/packaging/config.json) and public client properties,
+never a developer local.properties. Gradle wrapper and dependency artifacts must
+be retained separately for offline rebuilding; the exact JARs native-image
+compiled, its arguments and metadata hashes are in Nuvio-native-image-inputs-*.tar.
+The top-level packaging orchestrator currently requires Git metadata omitted from
+this tar: check out the recorded Git commit and compare every recorded source byte
+before using its packaging commands. A fully offline snapshot-only packaging
+bootstrap is not supplied; do not represent this archive as a complete offline
+rebuild kit.
 
-Application-image build (after providing the documented verified dependencies):
+Application build (after providing the documented verified dependencies):
   cd application
   cp tools/linux/packaging/public-client.properties local.properties
   env -u DISPLAY -u WAYLAND_DISPLAY -u NUVIO_RUN_LIVE_DISPLAY_TESTS \
-    ./gradlew :composeApp:createDistributable -Pnuvio.desktop.channel=nightly
+    ./gradlew :composeApp:createLinuxNativeDistributable -Pnuvio.desktop.channel=nightly \
+    -Pnuvio.graalvm.home=/path/to/graalvm-community-openjdk-25.0.2+10.1
+(composeApp/native-image-linux/README.md; build in the Ubuntu 22.04 package builder
+for the packages' glibc floor.)
 Linux native/media build and installation layout are described in
 application/tools/linux/media-runtime/README.md and
 application/tools/linux/packaging/README.md. Preserve the sandbox when rebuilding
@@ -165,7 +182,7 @@ def build_appimage(work, engine=None):
     for stale in artifacts.glob(ARCHIVE_PREFIX + '*.tar.gz'):
         stale.unlink()
     shutil.copy2(runtime['source_archive'], artifacts / runtime['source_archive'].name)
-    run('python3', HERE / 'verify.py', 'image', portable)
+    run('python3', HERE / 'verify.py', 'image', portable, '--native-evidence', work / 'native-image', '--require-smoke')
     tool = work / 'appimagetool'
     shutil.rmtree(tool, ignore_errors=True)
     tool.mkdir()
