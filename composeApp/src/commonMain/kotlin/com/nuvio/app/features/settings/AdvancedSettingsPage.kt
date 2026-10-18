@@ -13,9 +13,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.runtime.getValue
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.nuvio.app.features.details.LightweightMetaDiskCache
+import com.nuvio.app.features.home.HomeCatalogDiskCache
 import com.nuvio.app.isDesktop
 import com.nuvio.app.core.ui.ImageCacheSettings
 import com.nuvio.app.core.ui.ImageCacheSettingsRepository
+import com.nuvio.app.core.ui.MemoryUse
 import com.nuvio.app.features.cloud.formatCloudLibraryBytes
 import com.nuvio.app.features.player.PlayerSettingsRepository
 import com.nuvio.app.features.profiles.ProfileRepository
@@ -27,7 +29,14 @@ import nuvio.composeapp.generated.resources.Res
 import nuvio.composeapp.generated.resources.settings_advanced_clear_cw_cache
 import nuvio.composeapp.generated.resources.settings_advanced_clear_cw_cache_done
 import nuvio.composeapp.generated.resources.settings_advanced_clear_cw_cache_subtitle
+import nuvio.composeapp.generated.resources.settings_advanced_home_catalog_cache
+import nuvio.composeapp.generated.resources.settings_advanced_home_catalog_cache_description
 import nuvio.composeapp.generated.resources.settings_advanced_metadata_cache
+import nuvio.composeapp.generated.resources.settings_advanced_memory_use
+import nuvio.composeapp.generated.resources.settings_advanced_memory_use_balanced
+import nuvio.composeapp.generated.resources.settings_advanced_memory_use_description
+import nuvio.composeapp.generated.resources.settings_advanced_memory_use_generous
+import nuvio.composeapp.generated.resources.settings_advanced_memory_use_lean
 import nuvio.composeapp.generated.resources.settings_advanced_metadata_cache_days
 import nuvio.composeapp.generated.resources.settings_advanced_metadata_cache_description
 import nuvio.composeapp.generated.resources.settings_advanced_metadata_cache_hours
@@ -192,6 +201,44 @@ private fun ImageCacheRows(isTablet: Boolean) {
             ImageCacheSettingsRepository.setMetadataCacheHours(hours)
             // Off means nothing outlives the session, so what is already on disk goes too.
             if (hours == 0) metadataCacheScope.launch { LightweightMetaDiskCache.clear() }
+        },
+    )
+
+    SettingsGroupDivider(isTablet = isTablet)
+    SettingsDropdownChoiceRow(
+        title = stringResource(Res.string.settings_advanced_memory_use),
+        description = stringResource(Res.string.settings_advanced_memory_use_description),
+        options = MemoryUse.entries.map { level ->
+            SettingsChoiceOption(
+                level,
+                stringResource(
+                    when (level) {
+                        MemoryUse.Lean -> Res.string.settings_advanced_memory_use_lean
+                        MemoryUse.Balanced -> Res.string.settings_advanced_memory_use_balanced
+                        MemoryUse.Generous -> Res.string.settings_advanced_memory_use_generous
+                    },
+                ),
+            )
+        },
+        selectedValue = settings.memoryUse,
+        isTablet = isTablet,
+        modifier = Modifier.settingsScrollAnchor(SettingsScrollAnchor.searchKey("memory-use")),
+        onSelected = ImageCacheSettingsRepository::setMemoryUse,
+    )
+
+    SettingsGroupDivider(isTablet = isTablet)
+    SettingsDropdownChoiceRow(
+        title = stringResource(Res.string.settings_advanced_home_catalog_cache),
+        description = stringResource(Res.string.settings_advanced_home_catalog_cache_description),
+        options = ImageCacheSettings.HomeCatalogCacheHoursChoices.map { hours ->
+            SettingsChoiceOption(hours, metadataCacheHoursLabel(hours))
+        },
+        selectedValue = settings.homeCatalogCacheHours,
+        isTablet = isTablet,
+        modifier = Modifier.settingsScrollAnchor(SettingsScrollAnchor.searchKey("home-catalog-cache")),
+        onSelected = { hours ->
+            ImageCacheSettingsRepository.setHomeCatalogCacheHours(hours)
+            if (hours == 0) metadataCacheScope.launch { HomeCatalogDiskCache.clear() }
         },
     )
 

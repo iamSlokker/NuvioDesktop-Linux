@@ -2,38 +2,38 @@
   "additional_retained_inputs": [
     {
       "expected_sha256_origin": "official GitHub release asset digest",
-      "path": "temurin/OpenJDK17U-jdk-sources_17.0.20.1_1.tar.gz",
-      "sha256": "21e2a065d244ab048e737f21af5d1fc74daaeb6707de36477ead8db1dca71214",
-      "size": 109272338,
-      "url": "https://github.com/adoptium/temurin17-binaries/releases/download/jdk-17.0.20.1%2B1/OpenJDK17U-jdk-sources_17.0.20.1_1.tar.gz"
+      "path": "temurin/OpenJDK21U-jdk-sources_21.0.12.1_1.tar.gz",
+      "sha256": "573057d03584ae793fb7ec9a14c76d826d9187a53efeefd99da47403a5308234",
+      "size": 115126841,
+      "url": "https://github.com/adoptium/temurin21-binaries/releases/download/jdk-21.0.12.1%2B1/OpenJDK21U-jdk-sources_21.0.12.1_1.tar.gz"
     },
     {
       "expected_sha256_origin": "official GitHub release asset digest",
-      "path": "temurin/OpenJDK17U-jdk-sources_17.0.20.1_1.tar.gz.json",
-      "sha256": "3a259a1f367eaabc3c50cbf41164648a04c42f9ae2a237110d319f01da4b883f",
-      "size": 29216,
-      "url": "https://github.com/adoptium/temurin17-binaries/releases/download/jdk-17.0.20.1%2B1/OpenJDK17U-jdk-sources_17.0.20.1_1.tar.gz.json"
+      "path": "temurin/OpenJDK21U-jdk-sources_21.0.12.1_1.tar.gz.json",
+      "sha256": "24d4ee17af9c5dc7efad5020c36b2ad22050ee9da0dedfe826a7d087b01a05d1",
+      "size": 32115,
+      "url": "https://github.com/adoptium/temurin21-binaries/releases/download/jdk-21.0.12.1%2B1/OpenJDK21U-jdk-sources_21.0.12.1_1.tar.gz.json"
     },
     {
       "expected_sha256_origin": "official GitHub release asset digest",
-      "path": "temurin/OpenJDK17U-jdk-sources_17.0.20.1_1.tar.gz.sha256.txt",
-      "sha256": "4955f7b4564879befa59e2f417d6f7518fb428a8de1d0df7095cdb0e3f5ffb23",
+      "path": "temurin/OpenJDK21U-jdk-sources_21.0.12.1_1.tar.gz.sha256.txt",
+      "sha256": "a67c8b520c5a2bfe42405fe1b7baef468e7855795e52458222841d388c07d7b2",
       "size": 108,
-      "url": "https://github.com/adoptium/temurin17-binaries/releases/download/jdk-17.0.20.1%2B1/OpenJDK17U-jdk-sources_17.0.20.1_1.tar.gz.sha256.txt"
+      "url": "https://github.com/adoptium/temurin21-binaries/releases/download/jdk-21.0.12.1%2B1/OpenJDK21U-jdk-sources_21.0.12.1_1.tar.gz.sha256.txt"
     },
     {
       "expected_sha256_origin": "official GitHub release asset digest",
-      "path": "temurin/OpenJDK17U-jdk-sources_17.0.20.1_1.tar.gz.sig",
-      "sha256": "aa3df8dd812e3e221b0174718610f0c3eb3836042468b8ac7f583fe37f942031",
+      "path": "temurin/OpenJDK21U-jdk-sources_21.0.12.1_1.tar.gz.sig",
+      "sha256": "399c667d81039fc7611dd3172d055f5a8f86de85569dee5fb6522ff5849f2f99",
       "size": 310,
-      "url": "https://github.com/adoptium/temurin17-binaries/releases/download/jdk-17.0.20.1%2B1/OpenJDK17U-jdk-sources_17.0.20.1_1.tar.gz.sig"
+      "url": "https://github.com/adoptium/temurin21-binaries/releases/download/jdk-21.0.12.1%2B1/OpenJDK21U-jdk-sources_21.0.12.1_1.tar.gz.sig"
     },
     {
       "expected_sha256_origin": "official GitHub release asset digest",
-      "path": "temurin/OpenJDK17U-jdk_x64_linux_hotspot_17.0.20.1_1.tar.gz.json",
-      "sha256": "4f21ef9c32468160de6ac6dd6707d8637455bae067b11f322ffcd1b7a43f7280",
-      "size": 29212,
-      "url": "https://github.com/adoptium/temurin17-binaries/releases/download/jdk-17.0.20.1%2B1/OpenJDK17U-jdk_x64_linux_hotspot_17.0.20.1_1.tar.gz.json"
+      "path": "temurin/OpenJDK21U-jdk_x64_linux_hotspot_21.0.12.1_1.tar.gz.json",
+      "sha256": "38a0a65a131f1044978c857f560e55936c45a384a8d75d96aeb81d6ddf4c4b1d",
+      "size": 32111,
+      "url": "https://github.com/adoptium/temurin21-binaries/releases/download/jdk-21.0.12.1%2B1/OpenJDK21U-jdk_x64_linux_hotspot_21.0.12.1_1.tar.gz.json"
     },
     {
       "expected_sha256_origin": "locally computed; exact source commit from packaged release metadata",
@@ -44,17 +44,17 @@
     },
     {
       "expected_sha256_origin": "official GitHub release asset digest",
-      "path": "temurin/OpenJDK17U-sbom_x64_linux_hotspot_17.0.20.1_1.json",
-      "sha256": "b86100e3d2c612d8609805da1559538ffae8555058ac09dec882311c0c9e80dd",
-      "size": 161519,
-      "url": "https://github.com/adoptium/temurin17-binaries/releases/download/jdk-17.0.20.1%2B1/OpenJDK17U-sbom_x64_linux_hotspot_17.0.20.1_1.json"
+      "path": "temurin/OpenJDK21U-sbom_x64_linux_hotspot_21.0.12.1_1.json",
+      "sha256": "f190db5c8b8ac98bd26e5bb7f78f973d87bd92668e1878566cc0de126991ed8c",
+      "size": 176462,
+      "url": "https://github.com/adoptium/temurin21-binaries/releases/download/jdk-21.0.12.1%2B1/OpenJDK21U-sbom_x64_linux_hotspot_21.0.12.1_1.json"
     },
     {
       "expected_sha256_origin": "official GitHub release asset digest",
-      "path": "temurin/OpenJDK17U-sbom_x64_linux_hotspot_17.0.20.1_1.json.sig",
-      "sha256": "03652068afaef77fc88b450560b2297ad8268f086e09b7e884ebab0d61d6e16d",
+      "path": "temurin/OpenJDK21U-sbom_x64_linux_hotspot_21.0.12.1_1.json.sig",
+      "sha256": "4d71d6a142a605ac6f44bbb9a038bef4a945f126973c519a94fc3a685d710edd",
       "size": 310,
-      "url": "https://github.com/adoptium/temurin17-binaries/releases/download/jdk-17.0.20.1%2B1/OpenJDK17U-sbom_x64_linux_hotspot_17.0.20.1_1.json.sig"
+      "url": "https://github.com/adoptium/temurin21-binaries/releases/download/jdk-21.0.12.1%2B1/OpenJDK21U-sbom_x64_linux_hotspot_21.0.12.1_1.json.sig"
     },
     {
       "component": "onnxruntime",
@@ -191,17 +191,17 @@
   },
   "inventory_sha256": "3e01d1cb3618173a284a0e3246513f56a11ed929a93806c5694f5c7b5a0d50d3",
   "jdk": {
-    "archive_entry_count": 82049,
-    "binutils": "2.37",
-    "boot_jdk": "Temurin17.0.20+8",
-    "build_environment_image": "adoptopenjdk/centos6_build_image@sha256:c6abdf59e82603ebfffb81d2059239a211273ab452526cd1b9ee447c1fa284b5",
+    "archive_entry_count": 85484,
+    "binutils": "2.39",
+    "boot_jdk": "Temurin20.0.2+9",
+    "build_environment_image": "adoptopenjdk/centos7_build_image@sha256:b72393954092d1206c2a7221e46fa3e07ad028914aaec7f8a6bcedb2810cfe4e",
     "build_observations": [
       "Full JDK source includes HotSpot/native implementation, jlink/jpackage, third-party legal notices, configure/make and building instructions.",
       "Official binary/source metadata bind the exact binary and source SHA256 to the same source/build revisions.",
       "Release build statically links libstdc++; bundled freetype, libjpeg, giflib, libpng, zlib, lcms and harfbuzz source trees are present."
     ],
     "build_revision": "https://github.com/adoptium/temurin-build/commit/e6ba7dec3d07654074559310376a3ae89da5f4ac",
-    "compiler": "GCC10.3.0",
+    "compiler": "GCC11.3.0",
     "remaining": [
       "Retain exact external build dependencies/toolchain inputs and applicable source/exception evidence for statically incorporated runtime libraries.",
       "Retain or reproduce source-to-binary build attestation; official metadata/signatures are publisher evidence, not independent reproducibility.",
@@ -218,30 +218,30 @@
       },
       {
         "path": "doc/building.md",
-        "sha256": "8d8b74389cfae2251b24f4685d9ea348e9125a31ed3ca2b0fb4ed0ddbd016784"
+        "sha256": "78cf07feb46828e42678437208e8a41c096636f8474379b8bbf4f78ec93817c1"
       },
       {
         "path": "src/hotspot/share/runtime/java.cpp",
-        "sha256": "190a0c905376bd372f93b3f81d51e4d0733b997bfafc7d89d48eb7eb8e5bc9d4"
+        "sha256": "02a38e055142b94f7da0aa503986f56959481549b8f559cfea0480a6982f7f31"
       },
       {
         "path": "src/jdk.jlink/share/classes/jdk/tools/jlink/internal/Main.java",
-        "sha256": "8bc9da370602be4b5a0b6806d0fcd72b5e12b8624120f250603dc4439bae5649"
+        "sha256": "d0c0b2aa98a6e69fae3a19b22ede70d3b018e065385d837eacf5dacb7eee1900"
       },
       {
         "path": "src/jdk.jpackage/share/classes/jdk/jpackage/main/Main.java",
-        "sha256": "600137aa57a4dc722ee98a93cf8e4f6969dbaf183cc82d29721c6b6cd1958e23"
+        "sha256": "ae4bc8a180d9ed792fc30621301794f5b2f54faaaa390e638a5093bc2a0b5efd"
       }
     ],
-    "source_archive_sha256": "21e2a065d244ab048e737f21af5d1fc74daaeb6707de36477ead8db1dca71214",
-    "source_revision": "https://github.com/adoptium/jdk17u/commit/79597447bd94ff9f8216e2e3a573d5261ee49f2e",
+    "source_archive_sha256": "573057d03584ae793fb7ec9a14c76d826d9187a53efeefd99da47403a5308234",
+    "source_revision": "https://github.com/adoptium/jdk21u/commit/1c417fbfc2f70ab03a565b0af0a5a3c6f5e15ad6",
     "source_signature": {
       "documentation": "https://adoptium.net/installation/gpg-verification/",
       "fingerprint": "3B04D753C9050D9A5D343F39843C48A565F8F04B",
       "verified": true
     },
-    "upstream_binary_sha256": "3808d1d15e3ec6bd5b84057fb5d84c33d8a1536a258146bcea2e603fc726e08e",
-    "version": "17.0.20.1+1"
+    "upstream_binary_sha256": "ce79869e1307ed8ee1e2baa86a412b1eb5b75d10a01006d788a6f968bcfaee94",
+    "version": "21.0.12.1+1"
   },
   "maven": [
     {

@@ -311,6 +311,8 @@
     <string name="collections_folder_count">%1$d folder(s)</string>
     <string name="collections_folder_empty_items">No items found</string>
     <string name="collections_folder_not_found">Folder not found</string>
+    <string name="collections_folder_sources_failed">%1$s couldn't load: %2$s</string>
+    <string name="collections_folder_sources_failed_more">%1$s and %2$d more</string>
     <string name="collections_header">Collections</string>
     <string name="collections_import_header">Import Collections</string>
     <string name="collections_import_json_placeholder">JSON</string>
@@ -867,10 +869,17 @@
     <string name="settings_advanced_image_cache_size_description_unknown">Disk space for posters, logos and backdrops. A change applies after restart.</string>
     <string name="settings_advanced_metadata_cache">Metadata Cache</string>
     <string name="settings_advanced_metadata_cache_description">How long titles looked up for rows, the hero and artwork prewarm are kept between launches, so a restart does not fetch them all again. Changing metadata language, artwork source or addons refreshes them automatically.</string>
+    <string name="settings_advanced_memory_use">Memory Use</string>
+    <string name="settings_advanced_memory_use_description">Lean frees memory more eagerly while you are not using the app and keeps fewer full-size backdrops ready. Generous keeps more backdrops ready, so going back over titles is instant, at up to ~130 MB more. Applies straight away.</string>
+    <string name="settings_advanced_memory_use_lean">Lean</string>
+    <string name="settings_advanced_memory_use_balanced">Balanced</string>
+    <string name="settings_advanced_memory_use_generous">Generous</string>
     <string name="settings_advanced_metadata_cache_off">Off</string>
     <string name="settings_advanced_metadata_cache_hours">%1$d hours</string>
     <string name="settings_advanced_metadata_cache_days">%1$d days</string>
     <string name="settings_advanced_metadata_cache_one_day">1 day</string>
+    <string name="settings_advanced_home_catalog_cache">Home Catalog Cache</string>
+    <string name="settings_advanced_home_catalog_cache_description">Shows Home\'s catalog rows from the last launch straight away while they refresh in the background, as long as they are no older than this. Continue Watching, Next Up and Upcoming always come from your own watch history.</string>
     <string name="settings_advanced_image_prewarm">Prewarm Artwork</string>
     <string name="settings_advanced_image_prewarm_description">Download artwork for the hero, Continue Watching, every Home row and your Library in the background, so it is on disk before you scroll to it. Pauses during playback.</string>
     <string name="settings_advanced_image_prewarm_running">Prewarming… %1$d of %2$d checked.</string>
@@ -1134,7 +1143,7 @@
     <string name="settings_homescreen_hide_catalog_underline">Hide Catalog Underline</string>
     <string name="settings_homescreen_hide_catalog_underline_description">Remove the accent line under catalog and collection titles throughout the app.</string>
     <string name="settings_homescreen_row_shuffle">Shuffle Rows On Title Click</string>
-    <string name="settings_homescreen_row_shuffle_description">Clicking a home catalog row title reshuffles it. Shuffling pulls a few more pages first, so the row deals in titles you have not scrolled to. The order lasts until you restart.</string>
+    <string name="settings_homescreen_row_shuffle_description">Clicking a catalog row title on Home or in a collection reshuffles it. Shuffling pulls a few more pages first, so the row deals in titles you have not scrolled to. On Home the order lasts until you restart; in a collection, until you leave it.</string>
     <string name="settings_homescreen_summary">%1$d of %2$d catalogs visible • %3$d hero sources selected</string>
     <string name="settings_homescreen_summary_hint">Open a catalog only when you need to rename or reorder it.</string>
     <string name="settings_homescreen_visible">Visible</string>
@@ -2109,6 +2118,11 @@
     <string name="settings_tmdb_enable_enrichment">Enable TMDB Enrichment</string>
     <string name="settings_tmdb_enable_enrichment_description">Use TMDB as a metadata source to enhance addon data</string>
     <string name="settings_tmdb_enter_api_key">Enter your TMDB v3 API key.</string>
+    <string name="settings_tmdb_key_check_checking">Checking this key with TMDB…</string>
+    <string name="settings_tmdb_key_check_rejected">TMDB rejected this key. Check it was copied in full. Nuvio needs the &quot;API Key&quot; from TMDB's API settings page: a 32-character code, not the much longer &quot;API Read Access Token&quot;.</string>
+    <string name="settings_tmdb_key_check_unreachable">Couldn't reach TMDB to check this key. It's saved and will be used once TMDB is reachable.</string>
+    <string name="settings_tmdb_key_check_valid">TMDB accepted this key.</string>
+    <string name="settings_tmdb_key_check_wrong_type">This is TMDB's &quot;API Read Access Token&quot; (v4), which Nuvio can't use. On TMDB's API settings page, copy the &quot;API Key&quot; (v3) instead: the 32-character code above the token.</string>
     <string name="settings_tmdb_language_code_label">Language code</string>
     <string name="settings_tmdb_module_artwork">Artwork</string>
     <string name="settings_tmdb_module_artwork_description">Logo and backdrop images from TMDB</string>
@@ -3493,7 +3507,7 @@
     <string name="settings_home_hover_preview">Hover preview</string>
     <string name="settings_home_hover_preview_description">Rest the pointer on a poster to open a card with its backdrop, description and quick actions. Remembered separately for each display mode.</string>
     <string name="settings_home_smooth_scrolling">Smooth scrolling</string>
-    <string name="settings_home_smooth_scrolling_description">Ease mouse-wheel scrolling in Basic and Adaptive modes.</string>
+    <string name="settings_home_smooth_scrolling_description">Smooth mouse-wheel scrolling in Basic and Adaptive modes.</string>
     <string name="cd_browse_catalogs">Browse catalogs (Tab)</string>
     <string name="cd_exit_search">Exit search</string>
     <string name="cd_send_to_top">Send to top</string>
@@ -3706,4 +3720,9 @@
     <string name="server_error_save">Could not save the server configuration.</string>
     <string name="server_error_session_clear">Could not safely clear the current session. The server was not changed.</string>
     <string name="server_error_restart">The server was saved, but the app could not restart automatically. Restart it manually.</string>
+    <string name="settings_homescreen_section_search">Search</string>
+    <string name="settings_confident_search">Open confident matches directly</string>
+    <string name="settings_confident_search_description">Pressing Enter opens the title’s page when the search can only mean one thing. Add a year, “movie”, “tv”, “anime”, a country (us, uk) or a season (s3) to narrow it down, e.g. “carrie 2013” or “shameless us”.</string>
+    <string name="settings_confident_search_threshold">Confidence threshold</string>
+    <string name="settings_confident_search_threshold_description">How far ahead of other titles with the same name a match must be, by popularity. 100% only opens a title with no namesake.</string>
 </resources>

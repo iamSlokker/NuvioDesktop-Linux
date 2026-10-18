@@ -91,6 +91,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.lifecycle.compose.currentStateAsState
 import com.nuvio.app.features.games.GameModeController
 import com.nuvio.app.features.streams.StreamPrefetchService
 import com.nuvio.app.core.ui.NuvioAsyncImage as AsyncImage
@@ -1383,6 +1386,7 @@ fun MetaDetailsScreen(
                         withSeasonOrEp
                             .sortedWith(metaVideoSeasonEpisodeComparator)
                             .groupBy { normalizeSeasonNumber(it.effectiveSeasonNumber()) }
+                            .withEpisodeRanges()
                     } else if (meta.type != "series" && episodeVideosForTv.isNotEmpty()) {
                         mapOf(normalizeSeasonNumber(null) to episodeVideosForTv)
                     } else {
@@ -1390,12 +1394,10 @@ fun MetaDetailsScreen(
                     }
                 }
                 val seasonsForTv = remember(groupedEpisodesForTv) {
-                    groupedEpisodesForTv.keys.sortedBy(::seasonSortKey)
+                    groupedEpisodesForTv.keys.sortedBy(::episodeGroupSortKey)
                 }
-                val defaultSeasonForTv = remember(seasonsForTv, preferredSeriesSeasonNumber) {
-                    preferredSeriesSeasonNumber
-                        ?.let(::normalizeSeasonNumber)
-                        ?.takeIf { it in groupedEpisodesForTv }
+                val defaultSeasonForTv = remember(seasonsForTv, preferredSeriesSeasonNumber, preferredSeriesEpisodeNumber) {
+                    groupedEpisodesForTv.episodeGroupKeyFor(preferredSeriesSeasonNumber, preferredSeriesEpisodeNumber)
                         ?: seasonsForTv.firstOrNull()
                         ?: SPECIALS_SEASON_NUMBER
                 }
@@ -1814,7 +1816,14 @@ fun MetaDetailsScreen(
                 // the native child to 1px (see HeroTrailerPlayerSurface.desktop.kt), and closing the
                 // modal resumes in place — the same park/resume the scroll gate below already uses,
                 // so the surface is never torn down and never comes back on a black frame.
-                val heroTrailerModalVisible = showLibraryListPicker ||
+                // Another screen is opening over this one (a cast member, a related title, a browse
+                // page). The outgoing entry drops out of RESUMED as the navigation starts, but stays
+                // composed through the transition, so without this the native trailer kept painting
+                // over the incoming page for several frames. Back is covered by isLeavingDetails.
+                val detailsLifecycleState by LocalLifecycleOwner.current.lifecycle.currentStateAsState()
+                val detailsCovered = !detailsLifecycleState.isAtLeast(Lifecycle.State.RESUMED)
+                val heroTrailerModalVisible = detailsCovered ||
+                    showLibraryListPicker ||
                     showRatingDialog ||
                     showMonitorDialog ||
                     selectedEpisodeForActions != null ||

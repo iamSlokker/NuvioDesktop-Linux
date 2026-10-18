@@ -3,7 +3,7 @@
 Writes, next to the packages in <work>/artifacts:
   Nuvio-media-source-<commit12>.tar.gz          FFmpeg/mpv/libplacebo/... inputs and recipes
   Nuvio-AppImage-Ubuntu-source-<commit12>.tar   exact Ubuntu sources of libraries bundled in the AppImage
-  OpenJDK17U-jdk-sources_<version>.tar.gz       Temurin source for the bundled Java runtime
+  OpenJDK<N>U-jdk-sources_<version>.tar.gz      Temurin source for the bundled Java runtime
   SOURCE-MAP.json                               every package -> the source assets that cover it
 
 The application and private WebKit/GTK source archives are already produced by
@@ -42,8 +42,8 @@ def sha(path):
 
 def jdk_source_spec():
     rows = json.loads(RETENTION.read_text())['additional_retained_inputs']
-    matches = [row for row in rows if row['path'].startswith('temurin/OpenJDK17U-jdk-sources_')
-               and row['path'].endswith('.tar.gz')]
+    matches = [row for row in rows if row['path'].startswith('temurin/OpenJDK')
+               and 'U-jdk-sources_' in row['path'] and row['path'].endswith('.tar.gz')]
     if len(matches) != 1:
         raise ValueError('Expected exactly one pinned Temurin source archive')
     return matches[0]

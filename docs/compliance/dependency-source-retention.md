@@ -48,26 +48,30 @@ retain the required original license/copyright/NOTICE text, applicable source
 forms and build instructions, and cover incorporated native components. Do not
 publish the local cache as a supposedly complete source offering.
 
-## Temurin 17.0.20.1+1
+## Temurin 21.0.12.1+1
+
+The builder pin moved from Temurin 17.0.20.1+1 to 21.0.12.1+1 when upstream set
+the Gradle daemon JVM (which jlink/jpackage bundle) to 21. The originally audited
+`fce98dc1633b` packages bundled 17.0.20.1+1; its receipt is in this file's Git history.
 
 Retained the **official full JDK source archive**, rather than just Java `src.zip`:
 
-- Source SHA256: `21e2a065d244ab048e737f21af5d1fc74daaeb6707de36477ead8db1dca71214`.
-- Source revision: `adoptium/jdk17u@79597447bd94ff9f8216e2e3a573d5261ee49f2e`.
+- Source SHA256: `573057d03584ae793fb7ec9a14c76d826d9187a53efeefd99da47403a5308234`.
+- Source revision: `adoptium/jdk21u@1c417fbfc2f70ab03a565b0af0a5a3c6f5e15ad6`.
 - Build scripts: `adoptium/temurin-build@e6ba7dec3d07654074559310376a3ae89da5f4ac`,
   archive SHA256 `b1340378b9ed62b32acfacd012dd069ec2b9d940fc39d3c73f32142d64e89713`.
-- Official binary metadata matches the already packaged JDK input SHA256
-  `3808d1d15e3ec6bd5b84057fb5d84c33d8a1536a258146bcea2e603fc726e08e` and
+- Official binary metadata matches the pinned builder JDK input SHA256
+  `ce79869e1307ed8ee1e2baa86a412b1eb5b75d10a01006d788a6f968bcfaee94` and
   identifies the same source/build revisions.
 - Source archive and official SBOM signatures both verified with fingerprint
   `3B04D753C9050D9A5D343F39843C48A565F8F04B`, as documented by
   [Adoptium](https://adoptium.net/installation/gpg-verification/).
 - Official release asset SHA256s also verified the source, signatures, metadata
   and SBOM. Source scope checks identify HotSpot, native implementation, jlink,
-  jpackage, configure/make, root license and `doc/building.md` in the 82,049-entry
+  jpackage, configure/make, root license and `doc/building.md` in the 85,484-entry
   archive. Hashes of representative scope files are retained in the receipt.
 
-The upstream build used GCC 10.3.0, binutils 2.37, boot JDK 17.0.20+8 and the
+The upstream build used GCC 11.3.0, binutils 2.39, boot JDK 20.0.2+9 and the
 immutable image digest recorded in the receipt. Metadata reports static
 libstdc++ linking and bundled freetype/libjpeg/giflib/libpng/zlib/lcms/harfbuzz.
 Their applicability must be assessed by actual terms and incorporated material;

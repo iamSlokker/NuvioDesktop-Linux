@@ -103,7 +103,10 @@ class ReleaseSourcesTest(unittest.TestCase):
 
     def test_pinned_jdk_source_is_the_single_temurin_source_archive(self):
         spec = rs.jdk_source_spec()
-        self.assertTrue(spec['url'].startswith('https://github.com/adoptium/temurin17-binaries/releases/download/'))
+        # Same Temurin release as the JDK the builder pins and bundles.
+        jdk = json.loads((rs.PACKAGING / 'config.json').read_text())['tools']['jdk']
+        self.assertEqual(spec['url'].rsplit('/', 1)[0], jdk['url'].rsplit('/', 1)[0])
+        self.assertTrue(spec['url'].startswith('https://github.com/adoptium/temurin'))
         self.assertRegex(spec['sha256'], '^[0-9a-f]{64}$')
         self.assertTrue(spec['path'].endswith('.tar.gz') and 'jdk-sources' in spec['path'])
 
@@ -124,7 +127,7 @@ class ReleaseSourcesTest(unittest.TestCase):
         self.assertEqual({'app.deb', 'app.flatpak', 'app.AppImage'}, set(written['packages']))
         names = lambda package: {s['name'] for s in written['packages'][package]['sources']}
         common = {'Nuvio-source-aaaaaaaaaaaa.tar.gz', 'Nuvio-media-source-aaaaaaaaaaaa.tar.gz',
-                  'OpenJDK17U-jdk-sources_17.0.20.1_1.tar.gz'}
+                  Path(rs.jdk_source_spec()['path']).name}
         self.assertEqual(common, names('app.deb'))
         self.assertEqual(common, names('app.flatpak'))
         self.assertEqual(common | {'Nuvio-WebKit-source-x.tar.gz', 'Nuvio-AppImage-runtime-source-y.tar.gz',

@@ -13,7 +13,8 @@ import java.io.File
 internal fun linuxShaderPathList(paths: List<String>): String =
     paths.joinToString(":") { it.replace(":", "\\:") }
 
-internal data class LinuxShaderProfile(val chain: String, val label: String?)
+/** [shaderOpts] is the `glsl-shader-opts` value the chain needs (the Sharpen menu's CAS strength). */
+internal data class LinuxShaderProfile(val chain: String, val label: String?, val shaderOpts: String = "")
 
 /** Shader selection only: no grading, scaling, vf, hwdec, HDR, RTX or SVP mutations. */
 internal fun linuxShaderProfile(
@@ -25,10 +26,15 @@ internal fun linuxShaderProfile(
     if (!shouldApplyNuvioRuntimeMpvProperty(settings.desktopMpvConfigMode,
             desktopCustomMpvOptionNames(settings.desktopCustomMpvOptions),
             "glsl-shaders")) return null
+    // The Sharpen menu's CAS pass hooks LUMA, so it rides on any chain, including none, and needs
+    // no media eligibility: unlike Anime4K it neither upscales nor assumes SDR.
+    val casSharpness = desktopCasSharpness(settings.desktopMpvPropertyOverrides[DESKTOP_SHARPEN_OVERRIDE_KEY])
+    val casPath = casSharpness?.let { DesktopAnimeShaders.casSharpenPath() }
+    val shaderOpts = if (casPath != null) "nuvio_cas_sharpness=$casSharpness" else ""
     // Ownership is checked first: explicit Replace/Full options belong to the user.
     // Session forces and the UHD preference only affect selection AFTER media eligibility.
     if (!confirmedSdr || sourceSize == null || sourceSize.width <= 0 || sourceSize.height <= 0)
-        return LinuxShaderProfile("", null)
+        return LinuxShaderProfile(linuxShaderPathList(listOfNotNull(casPath)), null, shaderOpts)
     val active = desktopActiveAnimeMode(settings.desktopAnimeMode, settings.desktopAnimeModeAutoEnabled,
         settings.desktopAnimeSessionOverride, isAnime)
     val custom = if (active == DesktopAnimeMode.CustomShader) {
@@ -53,7 +59,7 @@ internal fun linuxShaderProfile(
         plan.preset != null -> "Anime4K ${plan.preset.label}"
         else -> File(custom).nameWithoutExtension
     }
-    return LinuxShaderProfile(linuxShaderPathList(paths), label)
+    return LinuxShaderProfile(linuxShaderPathList(paths + listOfNotNull(casPath)), label, shaderOpts)
 }
 
 internal fun NativePlayerController.applyLinuxShaderProfile(
@@ -63,6 +69,10 @@ internal fun NativePlayerController.applyLinuxShaderProfile(
     confirmedSdr: Boolean = false,
 ): String? {
     val profile = linuxShaderProfile(settings, isAnime, sourceSize, confirmedSdr) ?: return null
-    withVideoProfile { setMpvProperty("glsl-shaders", profile.chain) }
+    withVideoProfile {
+        // Opts before shaders, so the chain never compiles once with a stale strength.
+        setMpvProperty("glsl-shader-opts", profile.shaderOpts)
+        setMpvProperty("glsl-shaders", profile.chain)
+    }
     return profile.label
 }

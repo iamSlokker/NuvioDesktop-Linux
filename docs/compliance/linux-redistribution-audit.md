@@ -134,6 +134,8 @@ The packaged release metadata identifies `adoptium/jdk17u` revision
 `79597447bd94` (resolved through the official commit API to
 `79597447bd94ff9f8216e2e3a573d5261ee49f2e`) and Temurin build scripts revision
 `e6ba7dec3d07654074559310376a3ae89da5f4ac`.
+Later builds pin and bundle Temurin **21.0.12.1+1** instead; its retained source
+evidence is in the [dependency supplement](dependency-source-retention.md).
 
 No complete, hash-locked JDK/HotSpot/native third-party corresponding-source
 bundle, Temurin build inputs or independently

@@ -163,7 +163,10 @@ internal object LinuxHdrSessionEnvironment : LinuxHdrSessionCoordinator.Environm
     override fun libmpvWaylandSupported(): Boolean? = waylandSupport
     override fun probeHelperAvailable(): Boolean = LinuxHdrCapabilityProbe.helper() != null
     override fun probe(): LinuxHdrCapabilities? = LinuxHdrCapabilityProbe.run()
-    override fun targetOptions(mode: DesktopHdrMode): List<Pair<String, String>> = desktopHdrTargetMpvProperties(mode)
+    override fun targetOptions(mode: DesktopHdrMode): List<Pair<String, String>> = desktopHdrTargetMpvProperties(
+        mode,
+        PlayerSettingsRepository.uiState.value.desktopMpvPropertyOverrides[DESKTOP_DISPLAY_PANEL_OVERRIDE_KEY],
+    )
     override fun log(message: String) = hdrLog.i { message }
 }
 
