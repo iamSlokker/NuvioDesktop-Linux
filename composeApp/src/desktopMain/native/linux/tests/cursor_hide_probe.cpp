@@ -93,10 +93,9 @@ int main(int argc, char **argv) {
     expectCursor(true, "after the pointer moved");
     run("state = {...state, controlsVisible:false}; render();", 4);
     expectCursor(false, "after the chrome faded again over a parked pointer");
-    // The real path: the Linux host's configuration, the chrome shown once, then no input at all
-    // until controls.js's own auto-hide timer fades it (upstream's 5.5 s).
-    run("window.nuvioConfigureChromeAutoHide(null, true);"
-        "state = {...state, controlsVisible:true}; render(); noteChromeActivity(true);", 5);
+    // The real path: the chrome shown once, then no input at all until controls.js's own auto-hide
+    // timer (5.5 s) fades it.
+    run("state = {...state, controlsVisible:true}; render(); noteChromeActivity(true);", 5);
     const auto shownAt = std::chrono::steady_clock::now();
     expectCursor(true, "once the chrome was shown for the timer");
     std::this_thread::sleep_for(std::chrono::milliseconds(4500));
