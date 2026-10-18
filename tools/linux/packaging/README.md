@@ -137,7 +137,7 @@ How each contract verifies a package without JARs:
 | --- | --- | --- |
 | Inputs | — | `inputs.json` equals the retained one; `lib/nuvio` and every JDK file match it; no `.jar`, `lib/runtime/lib/server`, `libjli.so`, `libapplauncher.so` or QA marker anywhere |
 | Backend (`client_config`) | exactly one `SupabaseConfig` with the reviewed URL/key fields | URL and key occur in `lib/nuvio` |
-| Fonts/ONNX/artwork | existing contracts unchanged (hashes, removed names/bytes, ABI/ldd of ONNX natives) | each reviewed payload is listed by `embedded-resources.json` and occurs verbatim in `lib/nuvio` (native-image stores resources uncompressed); no embedded resource has a removed name; anime-mapping notices ship as files in `share/licenses/anime-mapping/` |
+| ONNX/artwork/data | existing contracts (hashes, ABI/ldd of ONNX natives; the bundled anime dataset must match the checkout) | each reviewed payload is listed by `embedded-resources.json` and occurs verbatim in `lib/nuvio` (native-image stores resources uncompressed); no embedded resource has a removed name; anime-mapping notices ship as files in `share/licenses/anime-mapping/` |
 | Embedded JNI | quickjs etc. from the input JARs, if embedded | bytes in `lib/nuvio`; ABI floor and `ldd` |
 | Report | every embedded JAR resource comes from a recorded input JAR entry of the same size (JDK module resources counted separately) | — |
 | Notices | every notice-like entry of every input JAR | `share/licenses/jar-notices/` equals that extraction; GraalVM notices equal `inputs.json` |

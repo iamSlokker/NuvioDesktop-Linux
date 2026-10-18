@@ -230,6 +230,10 @@ That is useful existing evidence, but this inspection did not locate retained
 full database license texts, exact upstream dataset revision, or the
 generation/source record needed to close its distribution evidence. Similarly,
 the IMDb attribution says “Used with permission”; this statement is not itself
-the underlying permission record. Models and fonts are covered by their
+the underlying permission record. (2026-10-18: after a period in which Linux
+packages downloaded the dataset at runtime, they bundle it like upstream again,
+with the fork's PROVENANCE, NOTICE and full ODbL/DbCL texts in
+`share/licenses/anime-mapping/`; see
+[artwork-data-closure.md](artwork-data-closure.md#owner-decision-2026-10-18-setup-previews-font-and-anime-dataset-like-upstream).) Models and fonts are covered by their
 separate inventories and were not re-audited here. No artwork, shader or
 application behavior was changed.

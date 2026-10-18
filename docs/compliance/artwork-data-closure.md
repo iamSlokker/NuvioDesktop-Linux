@@ -1,5 +1,53 @@
 # Artwork and anime mapping closure
 
+## Owner decision 2026-10-18: setup previews, font and anime dataset like upstream
+
+"Our Linux must be as faithful as possible to Umbra's Nuvio." The remaining
+divergences that were made only for unresolved rights (a conservative
+recommendation, not a requirement) are reversed the same way as the 2026-10-17
+artwork:
+
+- **Setup previews:** `setup/setup_mode_*.webp` are upstream's bytes again. The
+  fork's authoring recipe (`tools/linux/packaging/artwork/`), the
+  `files/licenses/ReleaseArtwork/` notice/provenance that described only those
+  previews, and the setup-preview rule of `artwork_contract.py` are removed.
+- **Font:** the app and the HUD use upstream's bundled JetBrains Sans
+  (`jetbrains_sans_{regular,semibold,bold}.ttf`, upstream code and the
+  "JetBrains Sans (bundled)" label). Inter 4.1, its OFL notice, the fork-only
+  `NativePlayerFonts.kt` and the Inter font gate (`font_contract.py`,
+  `fonts/inter-manifest.json`) are removed. [The Inter record](inter-font-replacement.md)
+  is historical.
+- **Anime ID dataset:** `anime-list-mini.json` is bundled like upstream: it stays in
+  the packaging source snapshot, the application JAR and the source tarball, and
+  the native image embeds it (`composeApp/native-image-linux/resources/`). The app
+  reads it like upstream; the fork-only `AnimeListDownload.kt` runtime download is
+  gone. `artwork_contract.py` now requires the checkout's dataset bytes, and
+  `verify.py` requires them embedded verbatim in `lib/nuvio`. The attribution files
+  (NOTICE, PROVENANCE, ODbL 1.0 and DbCL 1.0 texts) still ship in
+  `share/licenses/anime-mapping/`.
+
+The rights status of these resources is unchanged (not verified). The sections
+below are dated records; where they describe the replacement previews, the Inter
+font or the runtime download, they are historical.
+
+### Restoring a fork-made version
+
+Standing owner rule: if a DMCA or trademark notice arrives, switch that item back
+to the fork-made version. Each item is one self-contained commit; find it by subject
+if history was rewritten. `git revert` it, then refresh
+`docs/compliance/evidence/source-review-index.json` (run
+`tools/linux/packaging/compliance/review_index.py --output build/review-index.candidate.json`,
+compare, copy over) and rebuild the packages.
+
+| Item | Revert | Restores |
+| --- | --- | --- |
+| Setup previews | `fix(linux): ship upstream's setup previews instead of fork-made ones` (`1eeb1a893`) | The four MIT previews, the recipe `tools/linux/packaging/artwork/`, `files/licenses/ReleaseArtwork/`, the setup-preview rule in `artwork_contract.py` and its tests. Re-running the recipe also needs the Inter fonts (next row). |
+| Font | `fix(linux): use upstream's bundled JetBrains Sans instead of Inter` (`f4f18836a`) | Inter 4.1 and `files/licenses/Inter/`, `NativePlayerFonts.kt`, the Inter theme/HUD code and label, `font_contract.py` with `fonts/inter-manifest.json`, its `verify.py` hooks and tests, `InterTypographyRenderTest`. |
+| Anime dataset | `fix(linux): bundle the anime ID dataset like upstream` (`eb4536a0e`) | `AnimeListDownload.kt` (pinned Fribb revision, size/SHA-256 check, cache) and its storage hook and test, the `source_policy.py` exclusion, the dataset rejection in `artwork_contract.py`, the native-image exclusion and the related tests. |
+
+To restore the 2026-10-17 artwork as well, revert the setup-preview commit first:
+the 2026-10-17 commit (`2608d3e52`) also edits the recipe and ReleaseArtwork files.
+
 ## Owner decision 2026-10-17: upstream artwork
 
 The owner decided that the Linux build ships exactly Umbra's original
@@ -21,7 +69,8 @@ choice for unresolved rights, not a GitHub requirement. Now:
 
 The rights status of the upstream artwork is unchanged (not verified). The
 artwork sections below are the dated 2026-10-14 audit of the superseded
-replacement policy; the anime dataset sections remain current.
+replacement policy; the anime dataset sections remain current. (Superseded on
+2026-10-18 for the setup previews, the font and the dataset; see above.)
 
 ### Restoring the fork-made artwork
 
@@ -287,6 +336,10 @@ crosswalks into a new dump would not clear the gap; live enrichment needs its ow
 terms and retained responses. Therefore **no regeneration was performed**.
 
 ## Linux packages download the anime dataset at runtime
+
+**Superseded 2026-10-18:** Linux bundles the dataset like upstream again; see
+[Owner decision 2026-10-18](#owner-decision-2026-10-18-setup-previews-font-and-anime-dataset-like-upstream).
+Historical record of the 2026-10-14 to 2026-10-18 policy:
 
 By owner decision, Linux release packages no longer redistribute
 `anime-list-mini.json`. `tools/linux/packaging/source_policy.py` (applied by both canonical builds:

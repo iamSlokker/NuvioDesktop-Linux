@@ -32,7 +32,7 @@ reports local review only, not source-delivery or redistribution approval.
 | [OCI package evidence](evidence/oci-ubuntu-packages.json) | Separately scoped full installed-package inventory in the immutable engine and canonical seed; does not certify every OCI layer/file |
 | [OCI source lock](evidence/oci-ubuntu-source-lock.json) | Engine's 847 installed Ubuntu packages map to 427 exact source versions and 1,314 signed-index inputs; separate from non-dpkg/layer closure |
 | [Ubuntu retention receipt](evidence/ubuntu-source-retention.json) | Both full input sets rechecked offline, including every descriptor's closure; canonical seed's 587 package versions match the engine map |
-| [Inter replacement](inter-font-replacement.md) | New source/font pins and OFL for future builds; historical package bytes still contain the old Sans assets |
+| [Inter replacement](inter-font-replacement.md) | Superseded 2026-10-18: Linux bundles upstream's JetBrains Sans again (owner decision); historical record of the Inter pins and OFL |
 | [Modified-build instructions](modified-build-and-install.md) | Concrete private-library/repack entry points and per-format installation boundaries; incomplete native/static rebuild and recipient-delivery gates remain explicit |
 
 Historical findings in the original inventory describe the **original CI
