@@ -48,6 +48,8 @@ class NativeArtworkGateTest(unittest.TestCase):
             path.write_bytes(b'fixture, not a native binary')
             if name.startswith('bin/'):
                 path.chmod(0o755)
+        shutil.copyfile(Path(verify.__file__).parent / 'com.nuvio.media.desktop.desktop',
+                        image / 'share/applications/com.nuvio.media.desktop.desktop')
         (image / 'release-info.json').write_text(json.dumps(self.info))
         notice_contract.stage_notices(image)
         (image / 'lib/app').mkdir(parents=True, exist_ok=True)

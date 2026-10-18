@@ -208,6 +208,25 @@ REQUIRED = ['bin/nuvio', 'bin/nuvio-desktop', 'lib/nuvio', 'lib/runtime/lib/libj
             'share/licenses/Nuvio/COPYING', 'share/licenses/mpv/LICENSE.GPL',
             str(native_evidence.GRAALVM_NOTICES / 'LICENSE.txt')]
 
+SCHEME_HANDLER = 'x-scheme-handler/nuvio'
+
+
+def check_desktop_entry(text, label):
+    """nuvio:// links (Watch Party invites, "Open in Nuvio") must reach the app: the entry claims
+    the scheme and its Exec hands the URL (%u/%U) to the launcher, which forwards it to lib/nuvio."""
+    group, fields = None, {}
+    for line in text.splitlines():
+        if line.startswith('['):
+            group = line.strip()
+        elif group == '[Desktop Entry]' and '=' in line and not line.startswith('#'):
+            key, value = line.split('=', 1)
+            fields[key.strip()] = value.strip()
+    if SCHEME_HANDLER not in fields.get('MimeType', '').split(';'):
+        raise ValueError(label + ' does not register ' + SCHEME_HANDLER)
+    if not re.search(r'(?:^|\s)%[uU](?:\s|$)', fields.get('Exec', '')):
+        raise ValueError(label + ' Exec does not pass the link (%u): ' + fields.get('Exec', ''))
+    return dict(mime_type=fields['MimeType'], exec=fields['Exec'])
+
 
 def library_path(root):
     # lib/ last: the emitted JDK libraries load from the executable's directory, and
@@ -272,6 +291,8 @@ def check_image(root, evidence, require_smoke=False, smoke_identity=False):
     if f'GIT_COMMIT={info["git_commit"]}\n' not in stamp or f'VERSION_NAME={info["version"]}\n' not in stamp:
         raise ValueError('Inconsistent source/version stamp')
     subprocess.run(['desktop-file-validate', str(root / 'share/applications/com.nuvio.media.desktop.desktop')], check=True)
+    desktop_entry = check_desktop_entry((root / 'share/applications/com.nuvio.media.desktop.desktop').read_text(),
+                                        'share/applications/com.nuvio.media.desktop.desktop')
     smoke = None
     if require_smoke:
         smoke = native_evidence.check_smoke(
@@ -324,7 +345,7 @@ def check_image(root, evidence, require_smoke=False, smoke_identity=False):
         elf_records.append(dict(file=rel, needed=needed))
     return dict(source=info, files=records, elf=elf_records, onnx=onnx, artwork=artwork,
                 notices=notices, hdr_probe=hdr_probe, native_image=native_summary(native, module_resources),
-                backend=backend, native_payloads=payloads, smoke=smoke)
+                backend=backend, native_payloads=payloads, smoke=smoke, desktop_entry=desktop_entry)
 
 
 def native_summary(native, module_resources):
@@ -442,6 +463,10 @@ def artifacts(work, formats):
                 metadata = subprocess.check_output(['ostree', '--repo=' + tmp, 'cat', ref, '/metadata'])
                 if metadata != (work / 'flatpak-build/metadata').read_bytes():
                     raise ValueError('Flatpak exported metadata differs from inspected sandbox')
+                # build-export rewrites Exec to `flatpak run ... @@u %u @@`; the link must survive it.
+                exported = '/export/share/applications/' + info['application_id'] + '.desktop'
+                desktop_entry = check_desktop_entry(subprocess.check_output(
+                    ['ostree', '--repo=' + tmp, 'cat', ref, exported]).decode(), 'Flatpak ' + exported)
                 hdr_probe = flatpak_hdr_probe(tmp, ref)
                 # Inspect the exported bytes, not just the canonical input or release
                 # stamp: no JAR or JVM may ship, and the exported executable, manifest
@@ -465,7 +490,7 @@ def artifacts(work, formats):
                     dict(source=info, ref=ref, metadata=metadata.decode(), onnx=onnx, artwork=artwork,
                          notices=notices, hdr_probe=hdr_probe, bundle=bundle, backend=backend,
                          native_image=native_summary(native, module_resources), native_payloads=payloads,
-                         smoke=smoke, native_image_evidence=evidence_archive), indent=2) + '\n')
+                         smoke=smoke, native_image_evidence=evidence_archive, desktop_entry=desktop_entry), indent=2) + '\n')
             if not (work / 'flatpak-build/metadata').is_file():
                 raise ValueError('Missing exported Flatpak metadata')
     checksums = ''.join(hashlib.sha256(p.read_bytes()).hexdigest() + '  ' + p.name + '\n'

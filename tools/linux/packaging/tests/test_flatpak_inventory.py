@@ -57,6 +57,10 @@ class FlatpakNativeInventoryTest(unittest.TestCase):
         self.exported = root / 'exported'
         shutil.copytree(staging, self.exported, symlinks=True)
         self.cat_paths = []
+        # What build-export makes of the packaged desktop entry (Exec rewritten, MimeType kept).
+        self.exported_desktop = (pathlib.Path(verify.__file__).parent / 'com.nuvio.media.desktop.desktop').read_text().replace(
+            'Exec=nuvio-desktop %u', 'Exec=/usr/bin/flatpak run --branch=nightly --arch=x86_64 '
+            '--command=nuvio-desktop --file-forwarding com.example.NuvioFixture @@u %u @@').encode()
 
     def listing(self):
         lines = ['d00755 0 0 0 ' + IMAGE]
@@ -83,6 +87,9 @@ class FlatpakNativeInventoryTest(unittest.TestCase):
         self.assertEqual('cat', args[2])
         if args[-1] == '/metadata':
             return b'fixture metadata'
+        if args[-1].startswith('/export/'):
+            self.assertEqual('/export/share/applications/com.example.NuvioFixture.desktop', args[-1])
+            return self.exported_desktop
         self.assertTrue(args[-1].startswith(IMAGE + '/'), args[-1])
         relative = args[-1][len(IMAGE) + 1:]
         self.cat_paths.append(relative)
@@ -104,6 +111,18 @@ class FlatpakNativeInventoryTest(unittest.TestCase):
         self.assertEqual('PASS', report['smoke']['status'])
         self.assertEqual(['ANON_KEY', 'URL'], report['backend'])
         self.assertEqual(1, report['native_image']['input_jars'])
+
+    def test_exported_desktop_entry_must_keep_the_nuvio_link_handler(self):
+        report = self.audit()
+        self.assertEqual('x-scheme-handler/nuvio;', report['desktop_entry']['mime_type'])
+        self.assertIn('@@u %u @@', report['desktop_entry']['exec'])
+        original = self.exported_desktop
+        for broken, message in [(original.replace(b'MimeType=x-scheme-handler/nuvio;\n', b''), 'does not register'),
+                                (original.replace(b' @@u %u @@', b''), 'does not pass the link')]:
+            with self.subTest(message=message):
+                self.exported_desktop = broken
+                with self.assertRaisesRegex(ValueError, message):
+                    self.audit()
 
     def test_jars_jvm_or_a_different_executable_in_the_export_are_rejected(self):
         def jar(e): (e / 'lib/app').mkdir(exist_ok=True); (e / 'lib/app/app.jar').write_bytes(b'x')

@@ -186,6 +186,14 @@ Flatpak's outer launcher instead retains its sandbox-provided graphics/codec
 extension LD_LIBRARY_PATH after the private directories; clearing those paths
 would hide GNOME's host-driver extensions. It still clears LD_PRELOAD.
 
+`nuvio://` links (Watch Party invites, "Open in Nuvio") open the app on Linux through
+the desktop entry: `MimeType=x-scheme-handler/nuvio;` with `Exec=nuvio-desktop %u`.
+Every launcher (`bin/nuvio-desktop`, the DEB `/usr/bin` wrapper, AppRun, the Flatpak
+launcher, whose Exec `flatpak build-export` rewrites to `... @@u %u @@`) forwards the
+link to `lib/nuvio`; a running copy receives it through `DesktopSingleInstance`.
+`verify.py` checks the shipped and the exported Flatpak entries. Windows keeps its
+own per-user registry registration (`DesktopUrlScheme`).
+
 Media remains mpv **0.41.0**, FFmpeg **9.0.2**, libplacebo **7.360.1**, with the
 existing safe-auto and CUDA-mapper patches. The image contains versioned runtime
 libraries/SONAME links, not headers, pkg-config files, static archives or media
