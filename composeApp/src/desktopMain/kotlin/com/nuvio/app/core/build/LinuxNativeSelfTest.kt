@@ -56,6 +56,16 @@ internal object LinuxNativeSelfTest {
             LinuxInhibitionNative.release(handle)
             if (handle == 0L) "no backend (expected on a private bus)" else "acquired and released"
         }
+        // kotlinx.serialization reaches an object's, a sealed base's or an enum's serializer by
+        // reflection. Navigation builds every route's serializer right after sign-in, a screen the
+        // signed-out smoke never shows; a native build once crashed there on TabsRoute (2026-10-18).
+        probe("linux app serializers") {
+            listOf(
+                com.nuvio.app.TabsRoute::class.java,
+                com.nuvio.app.DetailRoute::class.java,
+                com.nuvio.app.features.catalog.CatalogTargetKind::class.java,
+            ).joinToString(" ") { type -> kotlinx.serialization.serializer(type).descriptor.serialName.substringAfterLast('.') }
+        }
     }
 
     /**
