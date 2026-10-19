@@ -236,7 +236,12 @@ class PackagingContractTest(unittest.TestCase):
         self.assertNotIn('--socket=fallback-x11', permissions)
         self.assertEqual(['--share=ipc', '--share=network', '--socket=x11', '--socket=wayland',
                           '--socket=pulseaudio', '--device=dri', '--own-name=org.mpris.MediaPlayer2.Nuvio',
-                          '--talk-name=org.freedesktop.ScreenSaver', '--env=GDK_BACKEND=x11'], permissions)
+                          '--talk-name=org.freedesktop.ScreenSaver', '--filesystem=xdg-run/discord-ipc-0',
+                          '--filesystem=xdg-run/app/com.discordapp.Discord:create',
+                          '--env=GDK_BACKEND=x11'], permissions)
+        # Discord Rich Presence: only the IPC socket of a host Discord and the runtime
+        # directory where Flatpak Discord publishes it, never the wider XDG runtime dir.
+        self.assertNotIn('--filesystem=xdg-run', permissions)
         self.assertIn('--device=dri', permissions)
         self.assertIn('--own-name=org.mpris.MediaPlayer2.Nuvio', permissions)
         for forbidden in ['--socket=session-bus', '--socket=system-bus', '--device=all',
