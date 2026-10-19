@@ -248,6 +248,16 @@ class PackagingContractTest(unittest.TestCase):
                           '--filesystem=host', '--filesystem=home', '--talk-name=org.freedesktop.Flatpak']:
             self.assertNotIn(forbidden, permissions)
 
+    def test_desktop_entry_matches_the_windows_wm_class(self):
+        # Docks pair XWayland windows with the desktop entry by StartupWMClass; LinuxWindowClass.kt
+        # sets that WM_CLASS on every Nuvio window.
+        packaging = pathlib.Path(__file__).resolve().parents[1]
+        entry = (packaging / 'com.nuvio.media.desktop.desktop').read_text()
+        source = (packaging.parents[2] / 'composeApp/src/desktopMain/kotlin/com/nuvio/app/features/player/desktop/'
+                  'LinuxWindowClass.kt').read_text()
+        constant = re.search(r'const val LinuxWindowClassName = "([^"]+)"', source).group(1)
+        self.assertIn(f'\nStartupWMClass={constant}\n', entry)
+
 
 if __name__ == '__main__':
     unittest.main()

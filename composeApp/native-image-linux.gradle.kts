@@ -285,6 +285,9 @@ val linuxNativeCompile = tasks.register<Exec>("linuxNativeCompile") {
                 cfg.javaOptions.filter { it.startsWith("--add-opens=") || it.startsWith("--add-exports=") }
                     .filterNot { "lwawt" in it || "sun.awt.windows" in it },
             )
+            // XToolkit.awtAppClassName, the windows' WM_CLASS (LinuxWindowClass.kt). Linux-only, so
+            // not in the shared launcher options; a JVM run keeps AWT's own name.
+            add("--add-opens=java.desktop/sun.awt.X11=ALL-UNNAMED")
             add(cfg.mainClass)
         }
         val argFile = work.resolve("ni-args.txt").apply { writeText(args.joinToString("\n") { linuxArgLine(it) } + "\n") }
