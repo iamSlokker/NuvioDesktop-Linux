@@ -23,6 +23,7 @@
 // Properties: -Pnuvio.graalvm.home (or GRAALVM_HOME / local.properties): GraalVM for JDK 25.
 // -Pnuvio.native.qa=true: QA build (reports missing registrations, never package it).
 // -Pnuvio.native.march (default compatibility). -Pnuvio.native.builderHeap (default 10g).
+// -Pnuvio.native.optimize (default s): native-image's -O level.
 // -Pnuvio.linux.nativeRuntimeDir=<dir>: copied to lib/native (libplayer_bridge.so, libmpv, ...).
 // -Pnuvio.linux.smokeImage=<image>: container for linuxNativeSmoke / linuxNativeImageTrace.
 // -Pnuvio.native.smokeRuns (default 3).
@@ -53,6 +54,10 @@ fun linuxNativeProperty(name: String): String? {
 
 val linuxNativeQa = providers.gradleProperty("nuvio.native.qa").orNull.toBoolean()
 val linuxNativeMarch = linuxNativeProperty("nuvio.native.march") ?: "compatibility"
+// native-image's -O level. "s" (size) is the Linux default: the executable is a single file in the
+// Flatpak repository, whose OSTree object must stay under GitHub's 100 MiB per-file limit (the
+// default -O2 build compressed to 115 MB; -Os to 100 MB, with the same first-frame time).
+val linuxNativeOptimize = linuxNativeProperty("nuvio.native.optimize") ?: "s"
 val linuxNativeBuilderHeap = linuxNativeProperty("nuvio.native.builderHeap") ?: "10g"
 val linuxNativeContainer = linuxNativeProperty("nuvio.linux.nativeImageContainer")
 val linuxNativeRuntimeDir = linuxNativeProperty("nuvio.linux.nativeRuntimeDir")
@@ -222,6 +227,7 @@ val linuxNativeCompile = tasks.register<Exec>("linuxNativeCompile") {
     inputs.dir(linuxAwtJniMetadataDir)
     inputs.files(linuxJvmImageDir.map { image -> fileTree(image.dir("lib/app")) { include("*.jar", "nuvio.cfg") } })
     inputs.property("march", linuxNativeMarch)
+    inputs.property("optimize", linuxNativeOptimize)
     inputs.property("qa", linuxNativeQa)
     inputs.property("container", linuxNativeContainer ?: "")
     outputs.dir(linuxNativeWorkDir)
@@ -258,6 +264,7 @@ val linuxNativeCompile = tasks.register<Exec>("linuxNativeCompile") {
             add("-Dcompose.application.configure.swing.globals=true")
             add("-Djpackage.app-version=$version")
             add("-march=$linuxNativeMarch")
+            add("-O$linuxNativeOptimize")
             // As on Windows: java.net.URL http(s) is off by default in an image.
             add("--enable-url-protocols=http,https")
             if (linuxNativeQa) {
