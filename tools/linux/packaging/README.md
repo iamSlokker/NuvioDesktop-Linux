@@ -271,14 +271,15 @@ HDR session (its capability probe and mpv's own Wayland window); it is not a
 native-Wayland embedding claim. Network supports streaming/APIs, PulseAudio supports audio, and `dri`
 provides normal GPU interfaces. Portals are available through Flatpak's standard
 filtered bus; only the existing MPRIS name ownership and ScreenSaver interface
-are additionally requested. No home/host filesystem, session/system-bus socket,
+are additionally requested. For Discord Rich Presence (off by default), only
+`xdg-run/discord-ipc-0` and `xdg-run/app/com.discordapp.Discord` are exposed. No home/host filesystem, session/system-bus socket,
 Flatpak host-spawn, broad D-Bus name or all-device grant is requested. X11 access
 itself carries cross-client limitations; this is not a strong desktop-isolation
 claim. Default Flatpak XDG config/data/cache directories persist normally.
 
 | Integration | Sandbox boundary |
 | --- | --- |
-| Discord IPC | Host/other-app sockets are not exposed; absence is nonfatal. Presence is not promised without separately reviewed socket access. |
+| Discord IPC | Only the host `discord-ipc-0` socket and Flatpak Discord's runtime directory are exposed; absence is nonfatal. A host Discord started after Nuvio is only seen after Nuvio restarts (the single socket is bind-mounted at launch); Flatpak Discord is seen at any time. Other clients are covered only if they publish `discord-ipc-0`. |
 | Game import/launch | Host game folders and launchers are not exposed; no Steam/Proton/host-spawn implementation. Sandbox-visible executables only. |
 | External players | Host PATH/programs and `flatpak run` delegation are unavailable; portal/system opening is conditional and needs acceptance. |
 | Local media, downloads, backup, shaders | Swing pickers are not portal pickers. Only sandbox-visible paths work by default; no broad host access added. A separately designed portal integration/user-granted path is needed for arbitrary files. |
