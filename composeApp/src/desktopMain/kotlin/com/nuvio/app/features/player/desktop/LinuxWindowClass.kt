@@ -16,7 +16,7 @@ internal const val LinuxWindowClassName = "com.nuvio.media.desktop"
 internal fun applyLinuxWindowClass(): Boolean = runCatching {
     val toolkit = Toolkit.getDefaultToolkit()
     if (toolkit.javaClass.name != "sun.awt.X11.XToolkit") return false
-    toolkit.javaClass.getDeclaredField("awtAppClassName").apply { isAccessible = true }
+    Class.forName("sun.awt.X11.XToolkit").getDeclaredField("awtAppClassName").apply { isAccessible = true }
         .set(null, LinuxWindowClassName)
     true
 }.getOrDefault(false)

@@ -77,6 +77,9 @@ class NativeImageReflectionCheckTest {
             .mapTo(entries) { it as JsonObject }
         val topicFiles = root.listFiles { file -> file.isDirectory && file.name != "agent" }.orEmpty()
             .map { File(it, "reachability-metadata.json") } +
+            // Linux port: its trace and topics, read by the Linux native build only.
+            File(projectDir, "native-image-linux").listFiles { file -> file.isDirectory }.orEmpty()
+                .map { File(it, "reachability-metadata.json") } +
             File(projectDir, "build/native-image/generated/reachability-metadata.json")
         topicFiles.filter { it.isFile }.forEach { file ->
             ((json.parseToJsonElement(file.readText()) as JsonObject)["reflection"] as? JsonArray).orEmpty()
