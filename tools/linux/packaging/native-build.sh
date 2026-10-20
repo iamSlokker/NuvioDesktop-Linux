@@ -52,7 +52,7 @@ cmake -S composeApp/src/desktopMain/native/linux -B /output/native \
   -DCMAKE_C_FLAGS='-ffile-prefix-map=/source=. -fdebug-prefix-map=/source=.' \
   -DCMAKE_CXX_FLAGS='-ffile-prefix-map=/source=. -fdebug-prefix-map=/source=.'
 cmake --build /output/native --parallel "$NUVIO_BUILD_JOBS" \
-  --target player_bridge nuvio-hdr-probe linux_separate_audio_test linux_http_recovery_test \
+  --target player_bridge nuvio-hdr-probe quickjs linux_separate_audio_test linux_http_recovery_test \
   linux_audio_recovery_test linux_hdr_session_test
 /output/native/linux_separate_audio_test
 /output/native/linux_http_recovery_test

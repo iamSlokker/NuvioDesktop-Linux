@@ -53,6 +53,8 @@ def stage(work, source=pathlib.Path('/source'), media=pathlib.Path('/media'),
     shutil.copy2(work / 'native/libplayer_bridge.so', native / 'libplayer_bridge.so')
     # Experimental HDR capability helper; same RUNPATH layout as the bridge.
     shutil.copy2(work / 'native/nuvio-hdr-probe', native / 'nuvio-hdr-probe')
+    # quickjs-kt's JNI library rebuilt with the binding local-frame patch (quickjs-kt/README.md).
+    shutil.copy2(work / 'native/libquickjs.so', native / 'libquickjs.so')
     here = source / 'tools/linux/packaging'
     shutil.copy2(here / 'nuvio-desktop', destination / 'bin/nuvio-desktop')
     (destination / 'bin/nuvio-desktop').chmod(0o755)
@@ -62,6 +64,11 @@ def stage(work, source=pathlib.Path('/source'), media=pathlib.Path('/media'),
     licenses = share / 'licenses/Nuvio'
     licenses.mkdir(parents=True)
     shutil.copy2(source / 'LICENSE', licenses / 'COPYING')
+    quickjs = source / 'composeApp/src/desktopMain/native/quickjs-kt'
+    quickjs_licenses = share / 'licenses/quickjs-kt'
+    quickjs_licenses.mkdir(parents=True)
+    for src, name in [('LICENSE.txt', 'LICENSE'), ('quickjs/LICENSE', 'LICENSE.QuickJS'), ('c-vector/LICENSE', 'LICENSE.c-vector')]:
+        shutil.copy2(quickjs / src, quickjs_licenses / name)
     shutil.copytree(source / 'composeApp/src/desktopMain/resources/player-shaders',
                     licenses / 'player-shaders', ignore=shutil.ignore_patterns('*.glsl'))
     # GraalVM CE notices, the manifest of the exact native-image inputs, the input

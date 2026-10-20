@@ -72,6 +72,7 @@ class ComplianceInventoryTest(unittest.TestCase):
         owner = lambda path: inv.native_owner(path, media, {'files': []}, {}, {}, {})
         self.assertEqual('application', owner('lib/native/libplayer_bridge.so'))
         self.assertEqual('application', owner('lib/native/nuvio-hdr-probe'))
+        self.assertEqual('application', owner('lib/native/libquickjs.so'))
         self.assertEqual('media:wayland', owner('lib/native/libwayland-client.so.0'))
         self.assertEqual('unresolved-native:lib/native/other-helper', owner('lib/native/other-helper'))
 

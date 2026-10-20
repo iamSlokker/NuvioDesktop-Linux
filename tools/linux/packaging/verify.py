@@ -201,11 +201,11 @@ def check_native_payloads(root, native, embedded, onnx, artwork):
 
 
 REQUIRED = ['bin/nuvio', 'bin/nuvio-desktop', 'lib/nuvio', 'lib/runtime/lib/libjawt.so',
-            'lib/native/libplayer_bridge.so', 'lib/native/libmpv.so.2', 'lib/app/build-info.properties',
+            'lib/native/libplayer_bridge.so', 'lib/native/libquickjs.so', 'lib/native/libmpv.so.2', 'lib/app/build-info.properties',
             'release-info.json', str(native_evidence.PACKAGED_MANIFEST),
             'share/applications/com.nuvio.media.desktop.desktop',
             'share/icons/hicolor/512x512/apps/com.nuvio.media.desktop.png',
-            'share/licenses/Nuvio/COPYING', 'share/licenses/mpv/LICENSE.GPL',
+            'share/licenses/Nuvio/COPYING', 'share/licenses/quickjs-kt/LICENSE', 'share/licenses/mpv/LICENSE.GPL',
             str(native_evidence.GRAALVM_NOTICES / 'LICENSE.txt')]
 
 SCHEME_HANDLER = 'x-scheme-handler/nuvio'
