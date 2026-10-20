@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """Owner-side signed Flatpak repository for GitHub Pages. Never pushes or launches.
 
-``publish`` takes a verified CI bundle (unsigned; see flatpak_bundle.py) and a
-local checkout of the Pages branch. It imports the exact CI commit into
+``publish`` takes a verified CI bundle (unsigned; see flatpak_bundle.py) and the
+local Pages tree (the previous release's site, unpacked). It imports the exact CI commit into
 ``<pages>/<site_dir>/repo`` (OSTree archive), signs that commit and the summary,
 generates static deltas, prunes unreachable objects and writes the
 .flatpakrepo/.flatpakref/key/index.html. Optionally it writes a signed rebundle
@@ -12,8 +12,8 @@ disposable Flatpak user installation through a file:// copy of the repo file.
 
 It refuses: a missing/invalid committed public key, a signing key that is not
 that key, non-release or wrong-ref bundles, mismatching embedded repo URL/key,
-and anything not strictly newer than the published commit. Git commit/push of
-the Pages checkout is left to flatpak-repo/publish-release.sh and the owner.
+and anything not strictly newer than the published commit. Packing the site for
+deployment is left to flatpak-repo/publish-release.sh.
 """
 import argparse
 import base64
@@ -35,8 +35,8 @@ from fetch import CONFIG  # noqa: E402
 REPO_DIR = HERE / 'flatpak-repo'
 DEFAULT_CONFIG = REPO_DIR / 'repo.json'
 RELEASE_INFO = '/files/lib/nuvio-desktop/release-info.json'
-# GitHub rejects pushed blobs over 100 MiB and limits a Pages site to 1 GB.
-MAX_FILE_BYTES = 100 * 1024 * 1024
+# GitHub Pages limits a site to 1 GB. The site is deployed as an Actions artifact
+# (flatpak-pages.yml), not pushed with git, so git's 100 MiB per-file limit does not apply.
 MAX_SITE_BYTES = 1000 * 1000 * 1000
 DISPLAY_VARS = ('DISPLAY', 'WAYLAND_DISPLAY', 'NUVIO_RUN_LIVE_DISPLAY_TESTS')
 
@@ -237,10 +237,7 @@ def check_site_size(pages, config):
     for root, dirs, files in os.walk(pages):
         dirs[:] = [d for d in dirs if d != '.git' and pathlib.Path(root, d) not in ignored]
         for name in files:
-            size = os.lstat(os.path.join(root, name)).st_size
-            if size >= MAX_FILE_BYTES:
-                raise ValueError('%s is %d bytes; GitHub rejects files of 100 MiB or more' % (os.path.join(root, name), size))
-            total += size
+            total += os.lstat(os.path.join(root, name)).st_size
     if total > MAX_SITE_BYTES:
         raise ValueError('Pages tree is %d bytes; GitHub Pages sites are limited to 1 GB' % total)
     return total
@@ -321,8 +318,9 @@ def verify_signed_bundle(path, config, public_bytes, commit, work):
                 key_fingerprint=header['gpg_fingerprint'], signatures=header['signatures'])
 
 
-# Directories `ostree init` creates empty. The repo lives in the gh-pages git checkout, and git
-# does not track empty directories, so a fresh checkout lacks them and `ostree refs` fails.
+# Directories `ostree init` creates empty. A repo restored from the old gh-pages git checkout lacks
+# them (git does not track empty directories), and the site tar leaves out tmp/ and state/; without
+# them `ostree refs` fails.
 OSTREE_EMPTY_DIRS = ('extensions', 'objects', 'refs/heads', 'refs/mirrors', 'refs/remotes', 'state', 'tmp/cache')
 
 
@@ -422,7 +420,7 @@ def main(argv=None):
             p.add_argument('--public-key', help='Defaults to the committed flatpak-repo/<public_key>')
             p.add_argument('--allow-local-url', action='store_true', help='Accept a file:// repo_url (local tests only)')
         if name in ('publish', 'verify'):
-            p.add_argument('--pages', required=True, help='Local checkout of the GitHub Pages branch')
+            p.add_argument('--pages', required=True, help='Local Pages tree (the unpacked previous site)')
             p.add_argument('--work-dir', help='Scratch parent for import/verification (needs ~2x bundle size)')
         if name in ('publish', 'check-key'):
             p.add_argument('--gpg-key', required=name == 'publish', help='Full fingerprint of the signing key')

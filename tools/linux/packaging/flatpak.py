@@ -34,19 +34,6 @@ exec "$image/lib/nuvio" "$@"
 ''' % shlex.quote(str(image))
 
 
-# GitHub rejects pushed files of 100 MiB or more, and the Flatpak repository is published to GitHub
-# Pages (flatpak_repo.MAX_FILE_BYTES). OSTree stores each file as one compressed object, so a large
-# executable can pass every other check and only fail at publishing; fail the build instead.
-MAX_REPO_OBJECT_BYTES = 100 * 1024 * 1024
-
-
-def check_repo_object_sizes(repository):
-    for path in sorted(pathlib.Path(repository).rglob('*')):
-        if path.is_file() and not path.is_symlink() and path.stat().st_size >= MAX_REPO_OBJECT_BYTES:
-            raise ValueError('%s is %d bytes; GitHub Pages cannot host files of 100 MiB or more'
-                             % (path.relative_to(repository), path.stat().st_size))
-
-
 def build(work):
     if any(os.environ.get(k) for k in ['DISPLAY', 'WAYLAND_DISPLAY', 'NUVIO_RUN_LIVE_DISPLAY_TESTS']):
         raise ValueError('Unset display/live-test environment')
@@ -111,7 +98,6 @@ test -x /app/lib/nuvio-desktop/lib/nuvio
     timestamp = datetime.datetime.fromtimestamp(info['source_date_epoch'], datetime.timezone.utc).isoformat()
     subprocess.run(['flatpak', 'build-export', '--timestamp=' + timestamp,
                     str(repository), str(root), export_branch], check=True)
-    check_repo_object_sizes(repository)
     output = work / 'artifacts' / f'Nuvio-Desktop-{info["version"]}-{info["git_commit"][:12]}-x86_64.flatpak'
     # The CI commit is unsigned, so no --repo-url/--gpg-keys here: an embedded
     # key makes Flatpak refuse an unsigned install. The owner-side signed

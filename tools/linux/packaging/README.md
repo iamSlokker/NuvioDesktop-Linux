@@ -311,7 +311,8 @@ rejects a CI bundle with a repo URL, key or signature.
 
 **Owner publish** (`flatpak_repo.py publish`, wrapped by
 [`flatpak-repo/publish-release.sh`](flatpak-repo/publish-release.sh)) takes the
-verified CI bundle and a local `gh-pages` checkout. It imports the exact CI
+verified CI bundle and the local Pages tree (the previous release's site,
+unpacked). It imports the exact CI
 commit into `flatpak/repo` (archive-z2), runs `flatpak build-sign` and
 `build-update-repo --gpg-sign --generate-static-deltas --prune --prune-depth=2`,
 then writes `nuvio.flatpakrepo`, `com.nuvio.media.desktop.flatpakref` (both
@@ -328,8 +329,8 @@ that key's full fingerprint, a non-`stable`/dirty/development build, release-inf
 or commit timestamp mismatches, an embedded repo URL/key/runtime repo that
 differs, an already published commit, and anything not strictly newer by
 `(version_code, source_date_epoch)` (Flatpak also rejects chronologically older
-commits). It also refuses a file of 100 MiB or more (GitHub's push limit) and a
-site over 1 GB (the Pages limit). Verification is offline: the published
+commits). It also refuses a site over 1 GB (the Pages limit). There is no
+per-file limit: the site is deployed as an Actions artifact, not pushed with git. Verification is offline: the published
 `.flatpakrepo`/`.flatpakref`, with the URL rewritten to `file://`, are added to
 a disposable `FLATPAK_USER_DIR`/`FLATPAK_SYSTEM_DIR`. It then checks
 `remote-info` and a GPG-verified `install --no-deploy --no-deps`, and that the
@@ -340,10 +341,14 @@ The app is never run. `flatpak_repo.py verify` repeats these checks;
 CI commits have no parent, so each publish makes the previous commit
 unreachable: `--prune` removes it and its deltas. The repository serves only the
 current release, plus a from-scratch delta. Updates still download only changed
-objects, but rollback is not served. The release hook commits `gh-pages` as a
-single orphan commit, so superseded objects do not accumulate in git history,
-and prints (never runs) the `git push --force-with-lease` for when the release
-goes public.
+objects, but rollback is not served. The release hook packs the whole site as a
+deterministic `<prefix>-<version>-flatpak-site.tar` in the stage's `source/`, so
+it is uploaded with the `vX.Y.Z-source` release and covered by its `SHA256SUMS`.
+Publishing `vX.Y.Z` runs [`flatpak-pages.yml`](../../../.github/workflows/flatpak-pages.yml),
+which downloads that tar, checks it against `SHA256SUMS` and `SOURCE-MAP.json`
+(the served commit must be the release's `flatpak_commit`) and deploys it to
+GitHub Pages. Nothing is pushed with git, so git's 100 MiB file limit no longer
+applies; releases up to 1.16.2 were pushed to a `gh-pages` branch.
 
 ### Owner one-time setup (not run by any tool or test)
 
@@ -353,15 +358,13 @@ goes public.
 tools/linux/packaging/flatpak-repo/create-signing-key.sh --backup-dir /path/to/offline/backup
 git add tools/linux/packaging/flatpak-repo/nuvio-flatpak.pub.gpg   # commit via the normal branch flow
 
-# 2. Empty gh-pages branch in a separate small checkout (no history download).
-git init ~/nuvio-pages && cd ~/nuvio-pages
-git remote add origin git@github.com:iamSlokker/NuvioDesktop-Linux.git
-git switch --orphan gh-pages && git commit --allow-empty -m "Initialize GitHub Pages"
-git push -u origin gh-pages
-
-# 3. Enable Pages from gh-pages (use -X PUT if Pages already exists), then HTTPS.
-gh api -X POST repos/iamSlokker/NuvioDesktop-Linux/pages -f 'source[branch]=gh-pages' -f 'source[path]=/'
+# 2. Pages deployed by GitHub Actions (use -X PUT if Pages already exists), then HTTPS.
+gh api -X POST repos/iamSlokker/NuvioDesktop-Linux/pages -f build_type=workflow
 gh api -X PUT repos/iamSlokker/NuvioDesktop-Linux/pages -F https_enforced=true
+
+# 3. Let flatpak-pages.yml deploy from release tags and from a manual run on linux.
+gh api -X POST repos/iamSlokker/NuvioDesktop-Linux/environments/github-pages/deployment-branch-policies -f name='v*' -f type=tag
+gh api -X POST repos/iamSlokker/NuvioDesktop-Linux/environments/github-pages/deployment-branch-policies -f name=linux -f type=branch
 ```
 
 The key is RSA-4096, signing-only and **non-expiring**: clients keep the key from
@@ -373,15 +376,17 @@ users re-add the remote. Keep the backup offline; never commit the secret export
 After `prepare-assets.sh <run>` and before `gh release create` in `publish-draft.sh`:
 
 ```sh
-tools/linux/packaging/flatpak-repo/publish-release.sh "$STAGE" ~/nuvio-pages <KEY-FINGERPRINT>
+PAGES=$(mktemp -d)   # the live site: the previous release's -flatpak-site.tar, unpacked
+gh release download vPREVIOUS-source -R iamSlokker/NuvioDesktop-Linux -p '*-flatpak-site.tar' -O - | tar -x -C "$PAGES"
+tools/linux/packaging/flatpak-repo/publish-release.sh "$STAGE" "$PAGES" <KEY-FINGERPRINT>
 ```
 
-It requires the stage's bundle to match `SOURCE-MAP.json` and a clean `gh-pages`
-checkout. It replaces the staged `.flatpak` with the signed rebundle (the
-downloaded CI file is untouched) and regenerates both `SHA256SUMS`. When the
-GitHub release is published, run the printed `git push --force-with-lease`. If a
-later step fails before pushing, `git -C ~/nuvio-pages reset --hard origin/gh-pages`
-restores the published state. Rerunning without that reset fails with
+It requires the stage's bundle to match `SOURCE-MAP.json`. It replaces the
+staged `.flatpak` with the signed rebundle (the downloaded CI file is
+untouched), adds the site tar to `source/` and regenerates both `SHA256SUMS`.
+Publishing the `vX.Y.Z` release deploys the site; a failed deploy is rerun with
+`gh workflow run flatpak-pages.yml -f tag=vX.Y.Z`. To retry a failed publish,
+unpack the previous site into a fresh directory; reusing the tree fails with
 "already published".
 
 User commands (also on the generated `index.html`):
