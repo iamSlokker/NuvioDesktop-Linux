@@ -199,8 +199,10 @@ def build_only_scope(name, native):
 
 def native_owner(path, media, engine, owner_rows, package_rows, versions, native=False):
     name = Path(path).name
-    # The bridge and the experimental HDR capability helper are built from application sources.
-    if path in ('lib/native/libplayer_bridge.so', 'lib/native/nuvio-hdr-probe'):
+    # The bridge, the experimental HDR capability helper and the patched quickjs-kt JNI library
+    # (vendored MIT/Apache-2.0 sources, composeApp/src/desktopMain/native/quickjs-kt) are built
+    # from application sources.
+    if path in ('lib/native/libplayer_bridge.so', 'lib/native/nuvio-hdr-probe', 'lib/native/libquickjs.so'):
         return 'application'
     if native:
         # GraalVM native-image packages: the executable compiles the application, its

@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.24)
 
-project(nuvio_player_bridge_linux LANGUAGES CXX)
+project(nuvio_player_bridge_linux LANGUAGES C CXX)
 
 if(NOT CMAKE_SYSTEM_NAME STREQUAL "Linux")
     message(FATAL_ERROR "This player bridge is Linux-only")
@@ -64,6 +64,29 @@ if(NUVIO_PACKAGE_BUILD)
         BUILD_WITH_INSTALL_RPATH YES
         INSTALL_RPATH "$ORIGIN;$ORIGIN/../runtime/lib")
 endif()
+
+# quickjs-kt's JNI library from the vendored, patched sources (../quickjs-kt/README.md): each
+# JS -> Kotlin binding call gets its own JNI local frame, so a plugin job no longer keeps every
+# argument it passed alive until the job ends. Same sources and defines as upstream's Windows
+# build (buildWindowsQuickJs); the app points quickjs-kt at it (LinuxQuickJsNativeLibrary.kt).
+set(QUICKJS_KT_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../quickjs-kt")
+file(READ "${QUICKJS_KT_DIR}/quickjs/VERSION" QUICKJS_VERSION)
+string(STRIP "${QUICKJS_VERSION}" QUICKJS_VERSION)
+file(GLOB QUICKJS_KT_SOURCES CONFIGURE_DEPENDS
+    "${QUICKJS_KT_DIR}/common/*.c" "${QUICKJS_KT_DIR}/jni/*.c" "${QUICKJS_KT_DIR}/jni/mapping/*.c")
+list(SORT QUICKJS_KT_SOURCES)
+add_library(quickjs SHARED
+    "${QUICKJS_KT_DIR}/quickjs/cutils.c" "${QUICKJS_KT_DIR}/quickjs/dtoa.c"
+    "${QUICKJS_KT_DIR}/quickjs/libregexp.c" "${QUICKJS_KT_DIR}/quickjs/libunicode.c"
+    "${QUICKJS_KT_DIR}/quickjs/quickjs.c" ${QUICKJS_KT_SOURCES})
+target_compile_definitions(quickjs PRIVATE _GNU_SOURCE CONFIG_BIGNUM "CONFIG_VERSION=\"${QUICKJS_VERSION}\"")
+target_include_directories(quickjs PRIVATE "${QUICKJS_KT_DIR}/quickjs" "${QUICKJS_KT_DIR}/common"
+    "${QUICKJS_KT_DIR}/c-vector" "${QUICKJS_KT_DIR}/jni" "${QUICKJS_KT_DIR}/jni/mapping")
+target_include_directories(quickjs SYSTEM PRIVATE ${JNI_INCLUDE_DIRS})
+target_compile_options(quickjs PRIVATE -O2 -w)
+target_link_libraries(quickjs PRIVATE m Threads::Threads ${CMAKE_DL_LIBS})
+target_link_options(quickjs PRIVATE "LINKER:-z,defs")
+set_target_properties(quickjs PROPERTIES C_STANDARD 99 C_EXTENSIONS ON)
 
 # Built explicitly by the opt-in smoke suite; no test hooks in player_bridge.
 add_executable(linux_seek_thumbnail_probe EXCLUDE_FROM_ALL

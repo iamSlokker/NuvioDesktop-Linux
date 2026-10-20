@@ -24,7 +24,7 @@ internal object QuickJsNativeLibrary {
     fun select() {
         if (selected) return
         selected = true
-        if (!System.getProperty("os.name").orEmpty().lowercase().contains("win")) return
+        if (!System.getProperty("os.name").orEmpty().lowercase().contains("win")) return LinuxQuickJsNativeLibrary.select()
         val configured = System.getProperty(LIBRARY_PATH_PROPERTY)?.takeIf { it.isNotBlank() }
         if (configured != null) {
             Logger.withTag("PluginRuntime").i { "QuickJS library from $configured (preset)" }

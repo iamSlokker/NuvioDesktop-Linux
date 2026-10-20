@@ -39,10 +39,11 @@ class NativeArtworkGateTest(unittest.TestCase):
         image, evidence, _ = native_fixture.make(root, jars=jars, embedded=embedded, anime=anime)
         self.info = {'git_commit': 'a' * 40, 'version': 'fixture',
                      'graalvm_release': native_evidence.release_fields(root / 'graalvm')}
-        for name in ['bin/nuvio', 'bin/nuvio-desktop', 'lib/native/libplayer_bridge.so', 'lib/native/libmpv.so.2',
-                     'share/applications/com.nuvio.media.desktop.desktop',
+        for name in ['bin/nuvio', 'bin/nuvio-desktop', 'lib/native/libplayer_bridge.so', 'lib/native/libquickjs.so',
+                     'lib/native/libmpv.so.2', 'share/applications/com.nuvio.media.desktop.desktop',
                      'share/icons/hicolor/512x512/apps/com.nuvio.media.desktop.png',
-                     'share/licenses/Nuvio/COPYING', 'share/licenses/mpv/LICENSE.GPL']:
+                     'share/licenses/Nuvio/COPYING', 'share/licenses/quickjs-kt/LICENSE',
+                     'share/licenses/mpv/LICENSE.GPL']:
             path = image / name
             path.parent.mkdir(parents=True, exist_ok=True)
             path.write_bytes(b'fixture, not a native binary')
