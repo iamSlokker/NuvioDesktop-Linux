@@ -342,6 +342,21 @@ struct LinuxControlsOverlay::State : std::enable_shared_from_this<State> {
         gtk_window_set_accept_focus(GTK_WINDOW(window), FALSE);
         gtk_widget_set_visual(window, visual);
         gtk_widget_set_app_paintable(window, TRUE);
+        // Override-redirect keeps the HUD out of WM management, but a compositor's "close window"
+        // (Hyprland's killactive) can still send it WM_DELETE_WINDOW. GTK's default would destroy
+        // the window and with it the controls, leaving the video without a HUD. Treat it as the
+        // HUD's own close button instead.
+        g_signal_connect(window, "delete-event", G_CALLBACK(+[](GtkWidget *, GdkEvent *, gpointer data) -> gboolean {
+            auto &self = *static_cast<State *>(data);
+            std::fprintf(stderr, "Linux controls: window manager close request\n");
+            if (self.closing || self.pipHudVisibility.suppressed() || !self.message) return TRUE;
+            try {
+                self.message("back", 0.0);
+            } catch (const std::exception &error) {
+                std::fprintf(stderr, "Linux controls message failure: %s\n", error.what());
+            }
+            return TRUE;
+        }), this);
         g_signal_connect(window, "draw", G_CALLBACK(+[](GtkWidget *, cairo_t *cr, gpointer) -> gboolean {
             cairo_save(cr);
             cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE);
