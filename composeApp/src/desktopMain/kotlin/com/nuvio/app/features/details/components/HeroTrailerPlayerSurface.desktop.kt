@@ -223,7 +223,7 @@ actual fun HeroTrailerPlayerSurface(
         var readyReported = false
         var endedReported = false
         while (true) {
-            val snapshot = controller.snapshot()
+            val snapshot = controller.snapshotOffUiThread()
             if (
                 effectivePlayWhenReady &&
                 (firstPaintComplete || hasPaintedOnce) &&
