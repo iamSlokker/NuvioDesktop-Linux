@@ -1,0 +1,73 @@
+name: Flatpak repository (GitHub Pages)
+# Deploys the signed Flatpak repository to GitHub Pages as an Actions artifact, so no file goes
+# through git (whose 100 MiB limit the native executable's OSTree object was about to reach).
+# The owner signs locally: flatpak-repo/publish-release.sh packs the whole site as
+# <prefix>-<version>-flatpak-site.tar into the vX.Y.Z-source release. Publishing vX.Y.Z deploys
+# that tar. Rerun or redeploy an older release with workflow_dispatch.
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Published version release to deploy (vX.Y.Z); its -source release holds the site tar
+        type: string
+        required: true
+
+permissions:
+  contents: read
+
+concurrency:
+  group: flatpak-pages
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    # Version releases only: the vX.Y.Z-source pre-release carries the site but is not deployed itself.
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (startsWith(github.event.release.tag_name, 'v') && !endsWith(github.event.release.tag_name, '-source') &&
+       !github.event.release.prerelease)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}flatpak/
+    env:
+      TAG: ${{ github.event_name == 'release' && github.event.release.tag_name || inputs.tag }}
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+    steps:
+      - name: Download and verify the signed site
+        run: |
+          set -euo pipefail
+          [[ "$TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]] || { echo "Not a version tag: $TAG" >&2; exit 1; }
+          [[ $(gh release view "$TAG" --json isDraft -q .isDraft) == false ]] \
+            || { echo "$TAG is not published" >&2; exit 1; }
+          mkdir dl site
+          gh release download "$TAG-source" --dir dl \
+            --pattern '*-flatpak-site.tar' --pattern SHA256SUMS --pattern SOURCE-MAP.json
+          shopt -s nullglob
+          tars=(dl/*-flatpak-site.tar)
+          [[ ${#tars[@]} -eq 1 ]] || { echo "Expected one -flatpak-site.tar in $TAG-source" >&2; exit 1; }
+          name=$(basename "${tars[0]}")
+          (cd dl && grep -E "^[0-9a-f]{64}  $name\$" SHA256SUMS | sha256sum -c -)
+          (cd dl && grep -E '^[0-9a-f]{64}  SOURCE-MAP.json$' SHA256SUMS | sha256sum -c -)
+          tar -xf "${tars[0]}" -C site --no-same-owner --no-same-permissions
+          # The served commit must be the one the release's signed Flatpak bundle carries.
+          info=site/flatpak/release.json
+          expected=$(jq -r '[.packages[] | .flatpak_commit // empty] | unique | if length == 1 then .[0] else error("flatpak_commit") end' dl/SOURCE-MAP.json)
+          [[ $(jq -r .version "$info") == "${TAG#v}" ]] || { echo "Site is not ${TAG#v}" >&2; exit 1; }
+          [[ $(jq -r .commit "$info") == "$expected" ]] || { echo "release.json commit differs" >&2; exit 1; }
+          [[ $(cat "site/flatpak/repo/refs/heads/$(jq -r .ref "$info")") == "$expected" ]] \
+            || { echo "Repository ref differs from the release's Flatpak commit" >&2; exit 1; }
+          echo "Deploying $name: Flatpak commit $expected, $(du -sh site | cut -f1)"
+      - uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
+        with:
+          path: site
+      - id: deploy
+        uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346 # v5.0.1

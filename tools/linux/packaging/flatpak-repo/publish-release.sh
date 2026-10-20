@@ -1,13 +1,16 @@
 #!/usr/bin/env bash
-# Release hook: publish a staged, verified stable bundle to the local Pages
-# checkout, swap the staged bundle for the signed repo-linked rebundle of the
-# same OSTree commit, refresh SOURCE-MAP.json/SHA256SUMS and commit gh-pages.
-# Never pushes; prints the push command for when the GitHub release goes public.
+# Release hook: publish a staged, verified stable bundle into the local Pages
+# tree, swap the staged bundle for the signed repo-linked rebundle of the same
+# OSTree commit, pack the whole site as source/<prefix>-flatpak-site.tar and
+# refresh SOURCE-MAP.json/SHA256SUMS. Never pushes or uploads anything.
 #
-#   publish-release.sh <stage-dir> <gh-pages-checkout> <key-fingerprint> [flatpak_repo.py publish options]
+#   publish-release.sh <stage-dir> <pages-dir> <key-fingerprint> [flatpak_repo.py publish options]
 #
-# <stage-dir> is prepare-assets.sh output (release/ and source/). Run it after
-# prepare-assets.sh and before the draft release is created.
+# <stage-dir> is prepare-assets.sh output (release/ and source/). <pages-dir> holds
+# the live site, unpacked from the previous release's -flatpak-site.tar (an empty
+# directory for the first publish). The tar travels with the vX.Y.Z-source release;
+# publishing vX.Y.Z runs flatpak-pages.yml, which deploys it to GitHub Pages as an
+# Actions artifact. Run this after prepare-assets.sh and before the releases exist.
 set -euo pipefail
 
 HERE=$(cd "$(dirname "$0")" && pwd)
@@ -15,7 +18,6 @@ STAGE=$(cd "${1:?usage: publish-release.sh <stage-dir> <gh-pages-checkout> <key-
 PAGES=$(cd "${2:?missing gh-pages checkout}" && pwd)
 KEY=${3:?missing signing key fingerprint}
 shift 3
-BRANCH=${NUVIO_PAGES_BRANCH:-gh-pages}
 SITE=$(jq -r .site_dir "$HERE/repo.json")
 
 shopt -s nullglob
@@ -28,8 +30,6 @@ jq -e --arg n "$name" '.packages[$n].sha256' "$map" >/dev/null || { echo "$name 
 [[ $(sha256sum "$bundle" | cut -d' ' -f1) == $(jq -r --arg n "$name" '.packages[$n].sha256' "$map") ]] \
     || { echo "Staged bundle does not match SOURCE-MAP.json" >&2; exit 1; }
 
-[[ $(git -C "$PAGES" symbolic-ref --short HEAD) == "$BRANCH" ]] || { echo "$PAGES is not on $BRANCH" >&2; exit 1; }
-[[ -z $(git -C "$PAGES" status --porcelain) ]] || { echo "$PAGES has uncommitted changes" >&2; exit 1; }
 init=()
 [[ -f "$PAGES/$SITE/repo/config" ]] || init=(--init)
 
@@ -37,7 +37,7 @@ signed="$STAGE/.signed-$name"
 report="$STAGE/flatpak-publish.json"
 if ! python3 "$HERE/../flatpak_repo.py" publish --bundle "$bundle" --pages "$PAGES" --gpg-key "$KEY" \
         --signed-bundle-out "$signed" --report "$report" --work-dir "$STAGE" "${init[@]}" "$@"; then
-    echo "Publishing failed; restore the Pages tree with: git -C $PAGES checkout -- . && git -C $PAGES clean -fd" >&2
+    echo "Publishing failed; unpack the previous -flatpak-site.tar into a fresh $PAGES before retrying" >&2
     rm -f "$signed"
     exit 1
 fi
@@ -52,20 +52,19 @@ jq --arg n "$name" --arg sha "$new_sha" --arg ci "$ci_sha" --arg c "$commit" --a
     '.packages[$n] |= (.ci_sha256 = $ci | .sha256 = $sha | .flatpak_commit = $c | .flatpak_signing_key = $k)' \
     "$map" > "$map.tmp"
 mv "$map.tmp" "$map"
+# The whole site, deterministic, for flatpak-pages.yml. Prefix and version follow the stage's names.
+version=$(jq -r .version "$PAGES/$SITE/release.json")
+prefix=$(basename "$name" .flatpak); prefix=${prefix%-"$version"-x86_64}
+site_tar="$STAGE/source/$prefix-$version-flatpak-site.tar"
+tar --sort=name --format=gnu --owner=0 --group=0 --numeric-owner --mtime=@"$(jq -r .source_date_epoch "$PAGES/$SITE/release.json")" \
+    --exclude=./.git --exclude=./.gitignore --exclude="./$SITE/repo/.lock" \
+    --exclude="./$SITE/repo/tmp" --exclude="./$SITE/repo/state" \
+    -cf "$site_tar" -C "$PAGES" .
 for dir in release source; do
     (cd "$STAGE/$dir" && find . -maxdepth 1 -type f ! -name 'SHA256SUMS*' ! -name '.*' -printf '%P\0' \
         | sort -z | xargs -0 sha256sum -- > SHA256SUMS.tmp && mv SHA256SUMS.tmp SHA256SUMS)
 done
 rm -f "$report"
 
-version=$(jq -r .version "$PAGES/$SITE/release.json")
-old=$(git -C "$PAGES" rev-parse HEAD)
-# One commit on the branch: superseded OSTree objects must not accumulate in git history.
-git -C "$PAGES" checkout -q --orphan "$BRANCH-next"
-git -C "$PAGES" add -A
-git -C "$PAGES" commit -q -m "Flatpak repository: Nuvio Desktop $version (${commit:0:12})"
-git -C "$PAGES" branch -q -D "$BRANCH"
-git -C "$PAGES" branch -q -m "$BRANCH"
 echo "Signed bundle staged as $name (CI commit $commit, key $fpr)."
-echo "When the GitHub release is published, push the repository with:"
-echo "  git -C $PAGES push --force-with-lease=$BRANCH:$old origin $BRANCH"
+echo "Site packed as $(basename "$site_tar") ($(du -h "$site_tar" | cut -f1)); GitHub Pages deploys it when v$version is published."

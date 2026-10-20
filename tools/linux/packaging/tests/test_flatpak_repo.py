@@ -239,18 +239,20 @@ class SiteFilesTest(unittest.TestCase):
             self.assertEqual(['existing', '/flatpak/repo/tmp/', '/flatpak/repo/state/', '/flatpak/repo/.lock'], ignored)
             self.assertEqual('f' * 64, json.loads((site / 'release.json').read_text())['commit'])
 
-    def test_site_size_limits_follow_github(self):
+    def test_site_size_limit_follows_github_pages(self):
         config = flatpak_repo.load_config()
         with tempfile.TemporaryDirectory() as tmp:
             pages = pathlib.Path(tmp)
             (pages / '.git').mkdir()
             with open(pages / '.git/huge', 'wb') as stream:
-                stream.truncate(flatpak_repo.MAX_FILE_BYTES + 1)  # sparse; git internals are ignored
-            (pages / 'small').write_bytes(b'x' * 10)
-            self.assertEqual(10, flatpak_repo.check_site_size(pages, config))
+                stream.truncate(flatpak_repo.MAX_SITE_BYTES + 1)  # sparse; git internals are ignored
+            # Deployed as an Actions artifact, so a single object may exceed git's 100 MiB limit.
             with open(pages / 'big', 'wb') as stream:
-                stream.truncate(flatpak_repo.MAX_FILE_BYTES)
-            with self.assertRaisesRegex(ValueError, '100 MiB'):
+                stream.truncate(150 * 1024 * 1024)
+            self.assertEqual(150 * 1024 * 1024, flatpak_repo.check_site_size(pages, config))
+            with open(pages / 'more', 'wb') as stream:
+                stream.truncate(flatpak_repo.MAX_SITE_BYTES)
+            with self.assertRaisesRegex(ValueError, '1 GB'):
                 flatpak_repo.check_site_size(pages, config)
 
 
@@ -269,8 +271,11 @@ class PackagingIntegrationTest(unittest.TestCase):
             self.assertTrue(os.access(script, os.X_OK))
         hook = (HERE / 'flatpak-repo/publish-release.sh').read_text()
         commands = [line.strip() for line in hook.splitlines() if not line.strip().startswith(('#', 'echo'))]
-        self.assertFalse([line for line in commands if 'push' in line])
-        self.assertIn('--orphan', hook)
+        self.assertFalse([line for line in commands if 'push' in line or line.startswith(('git ', 'gh '))
+                          or ' git ' in line or ' gh ' in line])
+        # The site travels as a deterministic tar in the source release (flatpak-pages.yml deploys it).
+        self.assertIn('-flatpak-site.tar', hook)
+        self.assertIn('--sort=name', hook)
 
     @unittest.skipUnless(shutil.which('ostree'), 'ostree is not installed')
     def test_repo_from_a_git_checkout_regains_the_empty_ostree_directories(self):
