@@ -13,6 +13,7 @@ private const val NuvioWindowTextRgb = 0xF5F7F8
  * any "Nuvio.lnk" it finds regardless of what the shortcut launches.
  */
 internal fun registerDesktopAppIdentity() {
+    if (DesktopHostOs.current == DesktopHostOs.LINUX) applyLinuxWindowClass()
     if (DesktopHostOs.current != DesktopHostOs.WINDOWS) return
     runCatching { NativePlayerBridge.initializeAppIdentity() }
 }

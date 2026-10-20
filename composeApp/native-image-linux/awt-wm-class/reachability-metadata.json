@@ -1,0 +1,12 @@
+{
+  "reflection": [
+    {
+      "type": "sun.awt.X11.XToolkit",
+      "fields": [
+        {
+          "name": "awtAppClassName"
+        }
+      ]
+    }
+  ]
+}
