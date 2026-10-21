@@ -9,8 +9,10 @@
 #include "audio_passthrough_recovery.h"
 #include "player_session_options.h"
 #include "hdr_wayland_session.h"
+#include "auto_crop.h"
 
 #include <algorithm>
+#include <cctype>
 #include <atomic>
 #include <clocale>
 #include <cmath>
@@ -222,6 +224,34 @@ struct Player {
     // Experimental native-Wayland HDR session: no Canvas, X11 lifetime, HUD or thumbnails.
     bool hdrSession = false;
 
+    // Auto crop (resize mode 3, auto_crop.h): checked from the event loop and switched by
+    // setResizeMode, both under operations like every other mpv call here.
+    struct AutoCropHost final : LinuxAutoCrop::Host {
+        Player &player;
+        explicit AutoCropHost(Player &owner) : player(owner) {}
+        bool pausedOrSeeking() override { return player.flag("pause") || player.flag("seeking"); }
+        double displayWidth() override { return player.number("video-params/dw"); }
+        double displayHeight() override { return player.number("video-params/dh"); }
+        int64_t frameWidth() override { return player.integer("video-out-params/w", player.integer("video-params/w")); }
+        int64_t frameHeight() override { return player.integer("video-out-params/h", player.integer("video-params/h")); }
+        bool capture(AutoCropBars &bars, int64_t &grabWidth, int64_t &grabHeight) override {
+            return captureAutoCropBars(player.mpv, bars, grabWidth, grabHeight);
+        }
+        void setCrop(const std::string &crop) override { setAutoCropVideoCrop(player.mpv, crop); }
+        bool titleTaggedImax() override {
+            for (const char *name : {"filename", "media-title"}) {
+                std::string value = player.stringProperty(name);
+                std::transform(value.begin(), value.end(), value.begin(),
+                    [](unsigned char c) { return (char)std::tolower(c); });
+                if (value.find("imax") != std::string::npos) return true;
+            }
+            return false;
+        }
+        void log(const std::string &line) override { std::fprintf(stderr, "Linux %s\n", line.c_str()); }
+    };
+    AutoCropHost autoCropHost{*this};
+    LinuxAutoCrop autoCrop{autoCropHost};
+
     void reserveX11Lifetime() {
         bool expected = false;
         if (!x11PlayerLifetimeReserved.compare_exchange_strong(expected, true))
@@ -382,6 +412,10 @@ struct Player {
                 }
                 if (translated.loaded) { fileReady = true; ended = false; }
                 if (translated.restarted) ended = false;
+                const auto now = LinuxAutoCrop::Clock::now();
+                if (translated.loaded) autoCrop.fileLoaded(now);
+                if (translated.restarted) autoCrop.playbackRestart(now);
+                autoCrop.tick(now);
                 if (translated.eof) ended = true;
                 if (translated.failure) {
                     fileReady = ended = false;
@@ -1012,7 +1046,9 @@ JNI_METHOD(jboolean, isMuted)(JNIEnv *env, jobject, jlong handle) {
 JNI_METHOD(void, setResizeMode)(JNIEnv *env, jobject, jlong handle, jint mode) {
     withPlayer(env, handle, [&](Player &p) {
         p.property("keepaspect", mode == 1 ? "no" : "yes");
-        p.property("panscan", mode == 2 ? "1" : "0");
+        // Auto crop (3) fills like Zoom once video-crop has trimmed the bars (auto_crop.h).
+        p.property("panscan", mode == 2 || mode == 3 ? "1" : "0");
+        p.autoCrop.setEnabled(mode == 3, LinuxAutoCrop::Clock::now());
     });
 }
 
