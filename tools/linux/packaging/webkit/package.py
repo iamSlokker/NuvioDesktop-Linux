@@ -11,6 +11,7 @@ HERE = pathlib.Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE.parent))
 from webkit.build import recipe_identity, valid_cache
 from appimage_runtime import prepare as prepare_runtime
+import appimage_runtime_published
 
 
 def main():
@@ -26,8 +27,18 @@ def main():
     record = json.loads((engine / 'build-complete.json').read_text())
     # Source-built type2 runtime (Podman, pinned inputs) before the offline
     # assembly container; NUVIO_APPIMAGE_RUNTIME_DIR may supply a verified build.
-    prepare_runtime(work / 'appimage-runtime', work / 'inputs/appimage-runtime-sources',
-                    prebuilt=os.environ.get('NUVIO_APPIMAGE_RUNTIME_DIR'))
+    # Without one, the pinned runtime is first recreated from a published release
+    # (appimage_runtime_published.py): Alpine drops superseded apk versions, so the
+    # toolchain image cannot always be rebuilt even though the runtime is unchanged.
+    prebuilt = os.environ.get('NUVIO_APPIMAGE_RUNTIME_DIR')
+    if not prebuilt:
+        try:
+            appimage_runtime_published.from_github(work / 'appimage-runtime-published', work / 'appimage-runtime-download')
+            prebuilt = str(work / 'appimage-runtime-published')
+            print('AppImage runtime recreated from a published release', flush=True)
+        except Exception as error:  # noqa: BLE001 - any failure falls back to the source build
+            print('AppImage runtime not recreated from a release (%s); building from source' % error, flush=True)
+    prepare_runtime(work / 'appimage-runtime', work / 'inputs/appimage-runtime-sources', prebuilt=prebuilt)
     command = ['podman', 'run', '--rm', '--network=none', '--userns=keep-id', '--cap-drop=all',
                '--security-opt', 'label=disable', '--security-opt', 'no-new-privileges',
                '--env', 'PYTHONDONTWRITEBYTECODE=1', '--env', 'PYTHONPATH=/packaging',
