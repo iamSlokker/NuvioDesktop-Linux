@@ -127,6 +127,14 @@ target_include_directories(linux_hud_wm_close_probe PRIVATE "${CMAKE_CURRENT_SOU
 target_link_libraries(linux_hud_wm_close_probe PRIVATE Threads::Threads PkgConfig::GTK3
     PkgConfig::WEBKITGTK "${X11_LIBRARY}")
 
+# Auto crop (auto_crop.h): its rules against a scripted host, then real libmpv with null outputs.
+add_executable(linux_auto_crop_test EXCLUDE_FROM_ALL tests/auto_crop_test.cpp)
+target_compile_features(linux_auto_crop_test PRIVATE cxx_std_17)
+target_compile_options(linux_auto_crop_test PRIVATE -Wall -Wextra -Werror)
+target_include_directories(linux_auto_crop_test PRIVATE "${MPV_INCLUDE_DIR}" "${CMAKE_CURRENT_SOURCE_DIR}")
+target_link_libraries(linux_auto_crop_test PRIVATE "${MPV_LIBRARY}")
+set_target_properties(linux_auto_crop_test PROPERTIES BUILD_RPATH "${MPV_LIBRARY_DIR}")
+
 # Real-libmpv separate-audio regression probe: null outputs, no display/GTK/JNI.
 add_executable(linux_separate_audio_test EXCLUDE_FROM_ALL tests/separate_audio_test.cpp)
 target_compile_features(linux_separate_audio_test PRIVATE cxx_std_17)
