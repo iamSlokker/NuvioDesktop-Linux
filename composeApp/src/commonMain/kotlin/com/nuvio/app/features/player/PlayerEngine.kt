@@ -113,17 +113,23 @@ enum class PlayerControlsAction {
     DoubleTapSeekForward,
 }
 
+/** Exact runtime navigation verdicts and episode numbers for desktop OS media-session reporting (Linux MPRIS). */
+data class PlayerMediaSessionState(
+    val canGoNext: Boolean = false,
+    val canGoPrevious: Boolean = false,
+    val season: Int = 0,
+    val episode: Int = 0,
+)
+
 data class PlayerControlsState(
     val title: String = "",
     val episodeText: String = "",
     // Poster/backdrop URL for the Windows media-session thumbnail. Desktop-only; other platforms
     // and the hero-trailer surfaces leave it blank, which clears the thumbnail.
     val mediaSessionArtwork: String = "",
-    // Exact runtime navigation verdicts for desktop OS media-session capability reporting.
-    val mediaSessionCanGoNext: Boolean = false,
-    val mediaSessionCanGoPrevious: Boolean = false,
-    val mediaSessionSeason: Int = 0,
-    val mediaSessionEpisode: Int = 0,
+    // Linux MPRIS details, grouped: this constructor is at the JVM's 255-slot limit for a method
+    // signature (its defaults overload adds 8 masks, a marker and `this`).
+    val mediaSession: PlayerMediaSessionState = PlayerMediaSessionState(),
     val streamTitle: String = "",
     // The addon's real media file name; mpv's diagnostics show it ahead of the source label.
     val streamFilename: String = "",

@@ -619,16 +619,18 @@ internal fun PlayerScreenRuntime.RenderPlayerRuntimeUi() {
         // Poster first here, unlike openingArtwork: the flyout thumbnail is a small near-square
         // tile, which a portrait poster survives better than a cropped 16:9 backdrop.
         mediaSessionArtwork = poster ?: background ?: "",
-        mediaSessionCanGoNext = (isPlaylistPlayback && playlistUpNext != null) || nextEpisodeInfo?.hasAired == true,
-        mediaSessionCanGoPrevious = PlayerNextEpisodeRules.resolvePreviousEpisode(
-            videos = playerMetaVideos,
-            currentSeason = activeSeasonNumber,
-            currentEpisode = activeEpisodeNumber,
-            currentVideoId = activeVideoId,
-            parentMetaId = parentMetaId,
-        ) != null,
-        mediaSessionSeason = activeSeasonNumber ?: 0,
-        mediaSessionEpisode = activeEpisodeNumber ?: 0,
+        mediaSession = PlayerMediaSessionState(
+            canGoNext = (isPlaylistPlayback && playlistUpNext != null) || nextEpisodeInfo?.hasAired == true,
+            canGoPrevious = PlayerNextEpisodeRules.resolvePreviousEpisode(
+                videos = playerMetaVideos,
+                currentSeason = activeSeasonNumber,
+                currentEpisode = activeEpisodeNumber,
+                currentVideoId = activeVideoId,
+                parentMetaId = parentMetaId,
+            ) != null,
+            season = activeSeasonNumber ?: 0,
+            episode = activeEpisodeNumber ?: 0,
+        ),
         openingLogo = logo,
         openingTitle = title,
         openingMessage = p2pInitialLoadingMessage,

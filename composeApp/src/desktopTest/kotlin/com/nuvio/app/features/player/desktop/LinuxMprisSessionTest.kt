@@ -200,10 +200,11 @@ class LinuxMprisSessionTest {
     }
     @Test fun episodeTitleUsesActiveNumbersAndDoesNotDuplicateEpisodeText() {
         val state = com.nuvio.app.features.player.PlayerControlsState(title = "Show", episodeText = "S01E01 Old",
-            mediaSessionSeason = 2, mediaSessionEpisode = 3, pauseOverlayEpisodeTitle = "Current")
+            mediaSession = com.nuvio.app.features.player.PlayerMediaSessionState(season = 2, episode = 3),
+            pauseOverlayEpisodeTitle = "Current")
         assertEquals("Show — S02E03 — Current", linuxMprisTitle(state))
         assertEquals("Show — S02E03 Current", linuxMprisTitle(state.copy(
-            mediaSessionSeason = 0, mediaSessionEpisode = 0, episodeText = "S02E03 Current")))
+            mediaSession = com.nuvio.app.features.player.PlayerMediaSessionState(), episodeText = "S02E03 Current")))
         assertEquals("Movie", linuxMprisTitle(com.nuvio.app.features.player.PlayerControlsState(title = "Movie")))
     }
     @Test fun artworkFiltersCredentialsAndSignedUrls() {
