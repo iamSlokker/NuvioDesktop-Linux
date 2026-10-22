@@ -27,6 +27,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import androidx.compose.runtime.CompositionLocalProvider
 import com.nuvio.app.core.ui.LocalNuvioBaseDensity
+import com.nuvio.app.features.player.desktop.NvidiaRtxDriverState
 import com.nuvio.app.features.player.desktop.DesktopAnimeShaders
 import com.nuvio.app.features.player.desktop.DESKTOP_DISPLAY_PANEL_OVERRIDE_KEY
 import com.nuvio.app.features.player.desktop.DESKTOP_FILM_GRAIN_OVERRIDE_KEY
@@ -492,6 +493,8 @@ private fun NativePlayerSurface(
         }
         delay(16L)
         PlaybackStartTrace.mark("playerAttach")
+        // The attach below uses the last reading; this one reaches the profile pass when it lands.
+        NvidiaRtxDriverState.refreshAsync()
         // Follow the addon's redirect chain once here rather than letting FFmpeg re-walk it on
         // every seek (see PlaybackRedirectResolver). The source URL stays the stream's identity;
         // only what mpv opens changes.
@@ -563,10 +566,19 @@ private fun NativePlayerSurface(
                 animeSvpEnabled = initialAnimeSvpRequested,
                 isAnimeContent = isAnimeContent,
                 animeShaderRequested = desktopAnimeShaderRequested(playerSettings, isAnimeContent),
-                nvidiaRtxSuperResolutionEnabled = nvidiaRtxSuperResolutionEnabled &&
-                    playerSettings.desktopMpvConfigMode != DesktopMpvConfigMode.Full,
-                nvidiaRtxHdrEnabled = nvidiaRtxHdrEnabled &&
-                    playerSettings.desktopMpvConfigMode != DesktopMpvConfigMode.Full,
+                // The menu's session toggles carry into the next episode's attach. They are not
+                // keys of this effect, so flipping one mid-file never re-attaches; the profile
+                // pass applies it live instead.
+                nvidiaRtxSuperResolutionEnabled = (
+                    PlayerSettingsRepository.uiState.value.desktopRtxVsrSessionOverride
+                        ?: nvidiaRtxSuperResolutionEnabled
+                    ) && playerSettings.desktopMpvConfigMode != DesktopMpvConfigMode.Full &&
+                    NvidiaRtxDriverState.settings.value.superResolutionEnabled != false,
+                nvidiaRtxHdrEnabled = (
+                    PlayerSettingsRepository.uiState.value.desktopRtxTrueHdrSessionOverride
+                        ?: nvidiaRtxHdrEnabled
+                    ) && playerSettings.desktopMpvConfigMode != DesktopMpvConfigMode.Full &&
+                    NvidiaRtxDriverState.settings.value.trueHdrEnabled != false,
                 enableUserMpvOptions = true,
                 restoreVolume = true,
                 onError = onError,
@@ -943,8 +955,9 @@ private fun NativePlayerSurface(
                 )
             },
             PlayerSettingsRepository.uiState,
-        ) { videoState, settings -> videoState to settings }
-            .collect { (videoState, settings) ->
+            NvidiaRtxDriverState.settings,
+        ) { videoState, settings, driver -> Triple(videoState, settings, driver) }
+            .collect { (videoState, settings, driver) ->
                 if (DesktopHostOs.current == DesktopHostOs.LINUX) {
                     if (videoState.refreshToken > 0) {
                         controller.applyLinuxBaseVideoProfile(settings, videoState.isHdr)
@@ -992,6 +1005,7 @@ private fun NativePlayerSurface(
                         svpActive = false,
                         videoLabel = "",
                         shaderLabel = null,
+                        qualityLabel = desktopVideoQualityLabel(videoState.sourceSize, videoState.isHdr),
                     )
                     if (svpStartupProfileAcknowledgementPending.value) {
                         svpStartupProfileAcknowledgementPending.value = false
@@ -1044,11 +1058,15 @@ private fun NativePlayerSurface(
                         displayHdr = videoState.displayHdr,
                         sourceSize = videoState.sourceSize,
                         skipShadersOnUltraHdSources = settings.desktopAnimeSkipUltraHdEnabled,
-                        nvidiaRtxSuperResolutionEnabled = settings.nvidiaRtxSuperResolutionEnabled,
+                        // An NVIDIA App switch that is off wins over the app setting; see
+                        // NvidiaRtxDriverState for what each filter does without the driver.
+                        nvidiaRtxSuperResolutionEnabled = settings.effectiveRtxVsrEnabled &&
+                            driver.superResolutionEnabled != false,
                         nvidiaRtxSuperResolutionScale = vsrScale,
-                        nvidiaRtxHdrEnabled = settings.nvidiaRtxHdrEnabled,
-                        nvidiaRtxHdrAnimeEnabled = settings.nvidiaRtxHdrAnimeEnabled,
-                        nvidiaRtxHdrAnimeShadersEnabled = settings.nvidiaRtxHdrAnimeShadersEnabled,
+                        nvidiaRtxHdrEnabled = settings.effectiveRtxTrueHdrEnabled &&
+                            driver.trueHdrEnabled != false,
+                        nvidiaRtxHdrAnimeEnabled = settings.effectiveRtxTrueHdrAnimeEnabled,
+                        nvidiaRtxHdrAnimeShadersEnabled = settings.effectiveRtxTrueHdrAnimeShadersEnabled,
                         customShaderPaths = settings.desktopCustomShaderPaths,
                         customShaderSelectedPath = settings.desktopCustomShaderSelectedPath,
                     )
@@ -1079,6 +1097,7 @@ private fun NativePlayerSurface(
                         hdrMode = settings.desktopHdrMode,
                     ),
                     shaderLabel = animeProfile.shaderLabel,
+                    qualityLabel = desktopVideoQualityLabel(videoState.sourceSize, isHdr),
                 )
                 if (svpStartupProfileAcknowledgementPending.value) {
                     svpStartupProfileAcknowledgementPending.value = false
@@ -1364,6 +1383,21 @@ private fun applyDesktopVideoProfile(
  *
  * SVP / motion interpolation from Kai is intentionally not ported (it needs a paid external runtime).
  */
+/**
+ * The quality badge beside the player title: the decoded resolution class plus HDR, e.g. "4K HDR".
+ * Either side can decide the class, so a 1920x800 scope encode still reads as 1080p.
+ */
+internal fun desktopVideoQualityLabel(size: DesktopVideoSourceSize?, isHdr: Boolean?): String {
+    if (size == null) return ""
+    val resolution = when {
+        size.longestSide >= 3200 || size.shortestSide >= 1800 -> "4K"
+        size.longestSide >= 1800 || size.shortestSide >= 1000 -> "1080p"
+        size.longestSide >= 1200 || size.shortestSide >= 700 -> "720p"
+        else -> "${size.shortestSide}p"
+    }
+    return if (isHdr == true) "$resolution HDR" else resolution
+}
+
 /**
  * Decoded source dimensions, as packed by the native bridge's `videoSourceSize` event
  * (`width * 65536 + height`). Both values arrive together so no caller can see half a size.
@@ -1738,7 +1772,10 @@ private fun applyDesktopAnimeProfile(
     controller.setMpvProperty("deband-threshold", "45")
     controller.setMpvProperty("deband-grain", desktopDebandGrain(filmGrain, "20"))
 
-    controller.setDesktopShaderChain(DesktopAnimeShaders.shaderChain(effectivePreset))
+    // Under True HDR the CNNs see PQ BT.2020 frames; their per-channel residuals then tint edges.
+    controller.setDesktopShaderChain(
+        DesktopAnimeShaders.shaderChain(effectivePreset, lumaOnly = shaderTrueHdrVf.isNotEmpty()),
+    )
 
     // hqdn3d temporal/spatial denoise (Kai's standard anime VF). Skipped on HDR to avoid the heavier
     // filter chain fighting the tonemap path, matching Kai's denoise removal for HDR anime.

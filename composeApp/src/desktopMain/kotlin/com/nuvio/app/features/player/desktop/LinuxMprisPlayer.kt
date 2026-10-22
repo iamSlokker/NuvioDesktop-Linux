@@ -3,9 +3,9 @@ package com.nuvio.app.features.player.desktop
 import com.nuvio.app.features.player.PlayerControlsState
 
 internal fun linuxMprisTitle(controls: PlayerControlsState): String {
-    val episode = if (controls.mediaSessionEpisode > 0) {
-        val code = "S${controls.mediaSessionSeason.toString().padStart(2, '0')}" +
-            "E${controls.mediaSessionEpisode.toString().padStart(2, '0')}"
+    val episode = if (controls.mediaSession.episode > 0) {
+        val code = "S${controls.mediaSession.season.toString().padStart(2, '0')}" +
+            "E${controls.mediaSession.episode.toString().padStart(2, '0')}"
         listOf(code, controls.pauseOverlayEpisodeTitle).filter { it.isNotBlank() }.joinToString(" — ")
     } else controls.episodeText // Already contains the episode title when available.
     return listOf(controls.title, episode).filter { it.isNotBlank() }.joinToString(" — ")
@@ -39,17 +39,17 @@ internal class LinuxMprisPlayer(
             token = token,
             trackId = "/org/mpris/MediaPlayer2/track/t$token",
             title = linuxMprisTitle(controls),
-            album = controls.title.takeIf { controls.mediaSessionEpisode > 0 || controls.episodeText.isNotBlank() }.orEmpty(),
+            album = controls.title.takeIf { controls.mediaSession.episode > 0 || controls.episodeText.isNotBlank() }.orEmpty(),
             artwork = controls.mediaSessionArtwork,
-            season = controls.mediaSessionSeason,
-            episode = controls.mediaSessionEpisode,
+            season = controls.mediaSession.season,
+            episode = controls.mediaSession.episode,
             // Buffering is still intended Playing, like Windows SMTC; mpv pause remains authoritative.
             status = if (ended) "Stopped" else if (paused) "Paused" else "Playing",
             durationUs = duration,
             positionUs = position,
             canSeek = duration > 0 && LinuxMprisNative.seekable(handle),
-            canNext = controls.mediaSessionCanGoNext,
-            canPrevious = controls.mediaSessionCanGoPrevious,
+            canNext = controls.mediaSession.canGoNext,
+            canPrevious = controls.mediaSession.canGoPrevious,
             rate = NativePlayerBridge.speed(handle).toDouble(),
             volume = controller.getVolume()?.let { if (it.isMuted) 0.0 else it.fraction.toDouble() } ?: 1.0,
             seekSerial = seekSerial,

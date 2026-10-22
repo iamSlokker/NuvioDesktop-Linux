@@ -36,6 +36,19 @@ interface PlayerEngineController {
     fun clearExternalSubtitleAndSelect(trackIndex: Int)
     fun applySubtitleStyle(style: SubtitleStyleState) {}
     fun setSubtitleDelayMs(delayMs: Int) {}
+
+    /**
+     * Decodes [durationSeconds] of the playing audio track from media time [startSeconds] to 16 kHz
+     * mono PCM, reading the source separately from playback (audio-referenced subtitle sync).
+     * Blocking. Null when unsupported or unreadable.
+     */
+    fun decodeSpeechSpot(startSeconds: Double, durationSeconds: Double): FloatArray? = null
+
+    /** Whether [decodeSpeechSpot] can work for the current source. */
+    val supportsSpeechSpots: Boolean get() = false
+
+    /** Average bytes per second of the playing source, when known. */
+    fun sourceBytesPerSecond(): Double? = null
     fun configureIosVideoOutput(settings: PlayerSettingsUiState) {}
 
     /**
@@ -100,17 +113,23 @@ enum class PlayerControlsAction {
     DoubleTapSeekForward,
 }
 
+/** Exact runtime navigation verdicts and episode numbers for desktop OS media-session reporting (Linux MPRIS). */
+data class PlayerMediaSessionState(
+    val canGoNext: Boolean = false,
+    val canGoPrevious: Boolean = false,
+    val season: Int = 0,
+    val episode: Int = 0,
+)
+
 data class PlayerControlsState(
     val title: String = "",
     val episodeText: String = "",
     // Poster/backdrop URL for the Windows media-session thumbnail. Desktop-only; other platforms
     // and the hero-trailer surfaces leave it blank, which clears the thumbnail.
     val mediaSessionArtwork: String = "",
-    // Exact runtime navigation verdicts for desktop OS media-session capability reporting.
-    val mediaSessionCanGoNext: Boolean = false,
-    val mediaSessionCanGoPrevious: Boolean = false,
-    val mediaSessionSeason: Int = 0,
-    val mediaSessionEpisode: Int = 0,
+    // Linux MPRIS details, grouped: this constructor is at the JVM's 255-slot limit for a method
+    // signature (its defaults overload adds 8 masks, a marker and `this`).
+    val mediaSession: PlayerMediaSessionState = PlayerMediaSessionState(),
     val streamTitle: String = "",
     // The addon's real media file name; mpv's diagnostics show it ahead of the source label.
     val streamFilename: String = "",
@@ -123,7 +142,6 @@ data class PlayerControlsState(
     // Opt-in: adds the playing source as the overlay's bottom row, reusing streamTitle/providerName.
     val pauseOverlaySourceEnabled: Boolean = false,
     // Top-billed cast for the pause overlay's top-left block; empty hides it.
-    val pauseOverlayCastLabel: String = "Starring",
     val pauseOverlayCast: List<PlayerControlCastItem> = emptyList(),
     val resizeModeLabel: String = "Fit",
     val playbackSpeedLabel: String = "1x",
@@ -150,6 +168,9 @@ data class PlayerControlsState(
     val desktopColorGamma: Int = 0,
     val desktopAnimeModeLabel: String = "Off",
     val desktopAnimeSvpEnabled: Boolean = false,
+    // The RTX rows in the player menu: the saved setting or this session's toggle of it.
+    val rtxVsrEnabled: Boolean = false,
+    val rtxTrueHdrEnabled: Boolean = false,
     /** Opt-in "what am I actually watching" summary, shown when playback starts. */
     val playbackInfoPanelEnabled: Boolean = false,
     /**

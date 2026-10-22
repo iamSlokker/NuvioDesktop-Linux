@@ -16,6 +16,9 @@
       "glob": "anime-list-mini.json"
     },
     {
+      "glob": "audiosync/**"
+    },
+    {
       "module": "java.desktop",
       "glob": "com/sun/swing/internal/plaf/basic/resources/basic_*.properties"
     },
