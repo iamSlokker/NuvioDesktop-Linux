@@ -12,6 +12,10 @@ Linux counterparts of upstream's Windows-only globs in `../../native-image/resou
   (`externalDesktopResources`). The Linux packages keep them in the jar, so the image must carry
   them. Probe: "backdrop framing models"; the setup screenshots show on first run; the anime ID
   mapping (`AnimeIdMappingStorage`) loads the dataset like upstream, with no download.
+- `audiosync/**`: the Silero VAD weights (`silero_vad_v5_16k.bin`) that audio-referenced subtitle
+  sync (`DesktopAudioSubtitleSync`) reads with `getResourceAsStream`. No upstream topic lists the
+  folder, so without this the packaged app's Auto Sync had no voice detector (Umbra snapshot
+  148524e33, 2026-10-22).
 - `com/sun/swing/internal/plaf/{basic,metal}/resources/*_*.properties` (module `java.desktop`):
   Swing's `UIDefaults` probes a `.properties` variant of its locale bundles (`basic_en_US`, ...)
   before using the compiled `basic`/`metal` classes. The files do not exist; registering the

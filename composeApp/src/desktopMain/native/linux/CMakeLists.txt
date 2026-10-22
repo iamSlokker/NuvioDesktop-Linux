@@ -135,6 +135,14 @@ target_include_directories(linux_auto_crop_test PRIVATE "${MPV_INCLUDE_DIR}" "${
 target_link_libraries(linux_auto_crop_test PRIVATE "${MPV_LIBRARY}")
 set_target_properties(linux_auto_crop_test PROPERTIES BUILD_RPATH "${MPV_LIBRARY_DIR}")
 
+# Subtitle sync's audio decodes (speech_spot.h) with real libmpv: ao=pcm to a file, no device.
+add_executable(linux_speech_spot_test EXCLUDE_FROM_ALL tests/speech_spot_test.cpp)
+target_compile_features(linux_speech_spot_test PRIVATE cxx_std_17)
+target_compile_options(linux_speech_spot_test PRIVATE -Wall -Wextra -Werror)
+target_include_directories(linux_speech_spot_test PRIVATE "${MPV_INCLUDE_DIR}" "${CMAKE_CURRENT_SOURCE_DIR}")
+target_link_libraries(linux_speech_spot_test PRIVATE "${MPV_LIBRARY}")
+set_target_properties(linux_speech_spot_test PROPERTIES BUILD_RPATH "${MPV_LIBRARY_DIR}")
+
 # Real-libmpv separate-audio regression probe: null outputs, no display/GTK/JNI.
 add_executable(linux_separate_audio_test EXCLUDE_FROM_ALL tests/separate_audio_test.cpp)
 target_compile_features(linux_separate_audio_test PRIVATE cxx_std_17)

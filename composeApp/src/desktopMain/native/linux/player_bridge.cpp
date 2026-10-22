@@ -10,6 +10,7 @@
 #include "player_session_options.h"
 #include "hdr_wayland_session.h"
 #include "auto_crop.h"
+#include "speech_spot.h"
 
 #include <algorithm>
 #include <cctype>
@@ -223,6 +224,11 @@ struct Player {
     bool ownsX11Lifetime = false;
     // Experimental native-Wayland HDR session: no Canvas, X11 lifetime, HUD or thumbnails.
     bool hdrSession = false;
+    // What the player opened, for subtitle sync's own audio decodes (speech_spot.h). Set once in
+    // create, before the player is published.
+    std::string speechSource;
+    std::vector<std::string> speechHeaders;
+    bool speechSeparateAudio = false;
 
     // Auto crop (resize mode 3, auto_crop.h): checked from the event loop and switched by
     // setResizeMode, both under operations like every other mpv call here.
@@ -922,6 +928,9 @@ JNI_METHOD(jlong, create)(
         headerOptions(player->mpv, headers);
         std::string audio = text(env, sourceAudioUrl);
         checkMpv(setLinuxSeparateAudio(player->mpv, audio), "audio-files");
+        player->speechSource = source;
+        player->speechHeaders = headers;
+        player->speechSeparateAudio = !audio.empty();
         initializeAndLoad(*player, source, [] {});
         std::weak_ptr<Player> weak = player;
         player->controls = LinuxControlsOverlay::create(hostViewPtr, text(env, controlsPageUrl),
@@ -1049,6 +1058,37 @@ JNI_METHOD(void, setResizeMode)(JNIEnv *env, jobject, jlong handle, jint mode) {
         // Auto crop (3) fills like Zoom once video-crop has trimmed the bars (auto_crop.h).
         p.property("panscan", mode == 2 || mode == 3 ? "1" : "0");
         p.autoCrop.setEnabled(mode == 3, LinuxAutoCrop::Clock::now());
+    });
+}
+
+JNI_METHOD(jdouble, speechSourceBytesPerSecond)(JNIEnv *env, jobject, jlong handle) {
+    return guarded(env, [&]() -> jdouble {
+        auto player = playerFromHandle(handle);
+        if (!player) return -1.0;
+        std::lock_guard<std::mutex> lock(player->operations);
+        if (!player->mpv || player->stopping) return -1.0;
+        return linuxSpeechSourceBytesPerSecond(player->speechSource, player->integer("file-size", -1),
+            player->number("duration"));
+    });
+}
+
+JNI_METHOD(jint, decodeSpeechSpot)(JNIEnv *env, jobject, jlong handle, jdouble startSeconds,
+                                   jdouble durationSeconds, jstring outputPath) {
+    return guarded(env, [&]() -> jint {
+        auto player = playerFromHandle(handle);
+        if (!player) return -1;
+        std::string source, aid;
+        std::vector<std::string> headers;
+        {
+            // Copy what the decode needs, then let it run (up to 90 s) without blocking the player.
+            std::lock_guard<std::mutex> lock(player->operations);
+            if (!player->mpv || player->stopping || player->speechSeparateAudio) return -1;
+            source = player->speechSource;
+            headers = player->speechHeaders;
+            aid = player->stringProperty("aid");
+        }
+        return linuxDecodeSpeechSpot(source, headers, aid, startSeconds, durationSeconds,
+            text(env, outputPath), [player] { return player->stopping.load(); });
     });
 }
 
@@ -1246,6 +1286,9 @@ LINUX_HDR_METHOD(jlong, create)(
         headerOptions(player->mpv, headers);
         std::string audio = text(env, sourceAudioUrl);
         checkMpv(setLinuxSeparateAudio(player->mpv, audio), "audio-files");
+        player->speechSource = source;
+        player->speechHeaders = headers;
+        player->speechSeparateAudio = !audio.empty();
         const auto bindings = strings(env, keyBindings);
         initializeAndLoad(*player, source, [&] {
             installLinuxHdrKeyBindings(player->mpv, bindings);
