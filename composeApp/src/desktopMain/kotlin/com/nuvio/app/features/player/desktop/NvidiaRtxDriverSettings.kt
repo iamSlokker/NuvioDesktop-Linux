@@ -44,6 +44,8 @@ internal object NvidiaRtxDriverState {
 
     /** Re-reads in the background (about 50 ms); called per playback attach. */
     fun refreshAsync() {
+        // reg.exe and the NVIDIA App switches exist on Windows only.
+        if (DesktopHostOs.current != DesktopHostOs.WINDOWS) return
         if (!refreshing.compareAndSet(false, true)) return
         scope.launch {
             try {

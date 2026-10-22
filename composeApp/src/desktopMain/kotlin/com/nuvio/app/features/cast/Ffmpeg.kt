@@ -12,8 +12,10 @@ private val ffmpegLog = Logger.withTag("CastFfmpeg")
  * Not bundled: only the Dolby Vision remux needs it, and it is an opt-in beta.
  */
 internal object Ffmpeg {
-    val ffmpeg: File? by lazy { locate("ffmpeg.exe") }
-    val ffprobe: File? by lazy { locate("ffprobe.exe") }
+    // Linux: the system's ffmpeg/ffprobe on PATH (no .exe; the Flatpak sandbox has none).
+    private val executableSuffix = if (System.getProperty("os.name").orEmpty().lowercase().contains("win")) ".exe" else ""
+    val ffmpeg: File? by lazy { locate("ffmpeg$executableSuffix") }
+    val ffprobe: File? by lazy { locate("ffprobe$executableSuffix") }
     val available: Boolean get() = ffmpeg != null && ffprobe != null
 
     private fun locate(exe: String): File? {
