@@ -118,6 +118,9 @@ internal fun linuxHdrInputAction(
         PlayerShortcutAction.NextSubtitle -> LinuxHdrInputAction.Event("keyboardNextSubtitle")
         PlayerShortcutAction.NextAudio -> LinuxHdrInputAction.Event("keyboardNextAudio")
         PlayerShortcutAction.CycleZoom -> LinuxHdrInputAction.Event("resize")
+        // Live TV: the same shortcut the embedded player dispatches (PlayerEngine.desktop.kt).
+        PlayerShortcutAction.ChannelUp -> LinuxHdrInputAction.Event("iptvChannel", 1.0)
+        PlayerShortcutAction.ChannelDown -> LinuxHdrInputAction.Event("iptvChannel", -1.0)
         PlayerShortcutAction.OpenSources,
         PlayerShortcutAction.OpenEpisodes -> LinuxHdrInputAction.LeaveHdr
         PlayerShortcutAction.SkipInterval -> LinuxHdrInputAction.SkipInterval
