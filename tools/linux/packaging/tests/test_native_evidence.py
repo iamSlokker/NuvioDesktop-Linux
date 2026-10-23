@@ -175,6 +175,16 @@ class NativeSmokeTest(unittest.TestCase):
                           dict(run=2, first_frame_ms=None, passed=None, failed=None, exit='1', failed_checks=True)],
                          native_smoke.parse_runs(output))
 
+    def test_a_hung_smoke_fails_the_gate_instead_of_holding_the_job(self):
+        # 150 s first frame/self-test, 5 s linger, 60 s SIGTERM, 10+10 s shutdown per run.
+        self.assertGreater(native_smoke.smoke_deadline_seconds(3), 3 * (150 + 5 + 60 + 10 + 10))
+        self.assertLess(native_smoke.smoke_deadline_seconds(3), 3600)
+        source = Path(native_smoke.__file__).read_text()
+        self.assertIn('timeout=smoke_deadline_seconds(runs)', source)
+        self.assertIn('except subprocess.TimeoutExpired', source)
+        script = (Path(native_smoke.__file__).parents[3] / 'composeApp/scripts/linux-native-smoke.py').read_text()
+        self.assertIn('select.select([bus.stdout], [], [], 30)', script)
+
     def test_build_script_gates_the_deb_on_the_smoke_without_network(self):
         script = (Path(native_smoke.__file__).parent / 'native-build.sh').read_text()
         package = script[script.index('if [[ $phase == package ]]'):script.index('exit 0')]
