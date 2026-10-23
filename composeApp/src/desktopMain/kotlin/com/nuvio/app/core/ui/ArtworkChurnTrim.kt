@@ -2,6 +2,7 @@ package com.nuvio.app.core.ui
 
 import co.touchlab.kermit.Logger
 import com.nuvio.app.core.build.NativeImageSupport
+import com.nuvio.app.features.player.desktop.DesktopHostOs
 import java.lang.management.ManagementFactory
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
@@ -83,6 +84,8 @@ internal object MemoryTrimLog {
     private val log = Logger.withTag("MemoryTrim")
 
     private fun privateBytes(): Long? = runCatching {
+        // On Linux this MXBean value is the whole address space (VmSize), not private memory.
+        if (DesktopHostOs.current == DesktopHostOs.LINUX) return@runCatching LinuxProcessMemory.privateBytes()
         (ManagementFactory.getOperatingSystemMXBean() as com.sun.management.OperatingSystemMXBean)
             .committedVirtualMemorySize
     }.getOrNull()?.takeIf { it > 0 }
