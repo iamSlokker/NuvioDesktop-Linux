@@ -110,7 +110,10 @@ internal fun linuxMpvHeaderArguments(headers: Map<String, String>): List<String>
     }
 }
 
-internal fun LinuxExternalPlayerTarget.commandPrefix(request: ExternalPlayerPlaybackRequest): List<String> = when (this) {
+internal fun LinuxExternalPlayerTarget.commandPrefix(
+    request: ExternalPlayerPlaybackRequest,
+    sandboxFilesystems: List<String> = emptyList(),
+): List<String> = when (this) {
     is LinuxExternalPlayerTarget.Executable -> listOf(path)
     is LinuxExternalPlayerTarget.Flatpak -> buildList {
         add(launcher)
@@ -128,6 +131,8 @@ internal fun LinuxExternalPlayerTarget.commandPrefix(request: ExternalPlayerPlay
                 val escaped = path.replace("\\", "\\\\").replace(":", "\\:")
                 add("--filesystem=$escaped:ro")
             }
+        // Read-write grants a control channel needs, e.g. the folder holding mpv's IPC socket.
+        sandboxFilesystems.forEach { add("--filesystem=$it") }
         add(appId)
     }
 }

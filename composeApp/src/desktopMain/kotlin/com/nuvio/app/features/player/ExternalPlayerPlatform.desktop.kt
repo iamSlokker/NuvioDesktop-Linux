@@ -52,6 +52,7 @@ internal actual object ExternalPlayerPlatform {
     private val isWindows = System.getProperty("os.name").orEmpty().lowercase(Locale.ROOT).contains("win")
     private val isLinux = System.getProperty("os.name").orEmpty().lowercase(Locale.ROOT).contains("linux")
     private val linuxDiscovery = LinuxExternalPlayerDiscovery()
+    private val launchGuard = ExternalPlayerLaunchGuard()
     private val customPlayerStore = DesktopStorage.store("nuvio_external_players")
 
     private val definitions: List<DesktopPlayerDefinition> = listOf(
@@ -346,6 +347,10 @@ internal actual object ExternalPlayerPlatform {
             }
             return ExternalPlayerOpenResult.Failed
         }
+        if (launchGuard.isRepeat(request.sourceUrl)) {
+            externalPlayerLog.i { "External playback ignored: already opening this source source=$sourceSummary" }
+            return ExternalPlayerOpenResult.Opened
+        }
 
         if (effectiveId == null || effectiveId == systemPlayerId) {
             defaultMediaAssociation?.let { association ->
@@ -370,6 +375,7 @@ internal actual object ExternalPlayerPlatform {
                         diagnosticContext = "player=system association=${knownDefinition?.id ?: "unknown"} source=$sourceSummary",
                         tracking = request.tracking,
                         reader = channel?.reader,
+                        source = request.sourceUrl,
                     )
                 ) return ExternalPlayerOpenResult.Opened
             }
@@ -383,8 +389,20 @@ internal actual object ExternalPlayerPlatform {
         }
         if (isLinux) {
             val target = linuxTarget(def) ?: return ExternalPlayerOpenResult.NoPlayerAvailable
-            val command = linuxLaunchCommand(def.id, target, request) ?: return ExternalPlayerOpenResult.Failed
-            return if (launchDetached(command, "player=$effectiveId source=$sourceSummary")) {
+            val channel = request.tracking?.let { prepareLinuxExternalPlayerChannel(def.control, target) }
+            val command = linuxLaunchCommand(def.id, target, request, channel) ?: run {
+                runCatching { channel?.channel?.reader?.close() }
+                return ExternalPlayerOpenResult.Failed
+            }
+            return if (
+                launchDetached(
+                    command = command,
+                    diagnosticContext = "player=$effectiveId source=$sourceSummary",
+                    tracking = request.tracking,
+                    reader = channel?.channel?.reader,
+                    source = request.sourceUrl,
+                )
+            ) {
                 ExternalPlayerOpenResult.Opened
             } else {
                 ExternalPlayerOpenResult.Failed
@@ -409,6 +427,7 @@ internal actual object ExternalPlayerPlatform {
                 diagnosticContext = "player=$effectiveId source=$sourceSummary",
                 tracking = request.tracking,
                 reader = channel?.reader,
+                source = request.sourceUrl,
             )
         ) ExternalPlayerOpenResult.Opened else ExternalPlayerOpenResult.Failed
     }
@@ -418,12 +437,14 @@ internal actual object ExternalPlayerPlatform {
         playerId: String,
         target: LinuxExternalPlayerTarget,
         request: ExternalPlayerPlaybackRequest,
+        channel: LinuxExternalPlayerChannel? = null,
     ): List<String>? {
         if (!LinuxExternalPlayerDiscovery.supports(playerId)) return null
         val def = definitions.firstOrNull { it.id == playerId } ?: return null
         val normalized = linuxExternalPlayerRequest(request) ?: return null
         return buildList {
-            addAll(target.commandPrefix(normalized))
+            addAll(target.commandPrefix(normalized, channel?.sandboxFilesystems.orEmpty()))
+            channel?.let { addAll(it.channel.launchArgs) }
             addAll(def.buildArgs(normalized).flatMap { argument ->
                 // Linux mpv preserves literal header values through the list append action.
                 if (playerId == "mpv" && argument.startsWith("--http-header-fields=")) {
@@ -448,6 +469,7 @@ internal actual object ExternalPlayerPlatform {
         diagnosticContext: String,
         tracking: ExternalPlaybackTracking? = null,
         reader: ExternalPlayerReader? = null,
+        source: String? = null,
     ): Boolean {
         val executable = command.firstOrNull() ?: "none"
         externalPlayerLog.i {
@@ -468,6 +490,7 @@ internal actual object ExternalPlayerPlatform {
                 .start()
         }.onSuccess { process ->
             externalPlayerLog.i { "External process started $diagnosticContext pid=${process.pid()}" }
+            source?.let { launchGuard.launched(it, process::isAlive) }
             // The process is the only playback signal an external player gives us: alive means
             // playing, so the lights go down now and come back when it exits. (The system-handler
             // fallback in [openUri] has no process to watch and so never touches the room.)
