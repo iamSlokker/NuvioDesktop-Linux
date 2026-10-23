@@ -81,6 +81,16 @@ def parse_runs(output):
     return runs
 
 
+# Each run is bounded inside linux-native-smoke.py: 150 s to the first frame and self-test, 5 s
+# linger, 60 s for SIGTERM, then service shutdown. This outer bound only catches a hang those
+# waits cannot see, so a stuck launch fails the step instead of holding the job for hours.
+SMOKE_RUN_BOUND_SECONDS = 300
+
+
+def smoke_deadline_seconds(runs):
+    return runs * SMOKE_RUN_BOUND_SECONDS + 60
+
+
 def smoke(work, source=Path('/source'), runs=3):
     work = Path(work)
     canonical = work / 'canonical'
@@ -97,9 +107,15 @@ def smoke(work, source=Path('/source'), runs=3):
     env.update(WEBKIT_DISABLE_COMPOSITING_MODE='1', NUVIO_NATIVE_SELFTEST_MPV_OPTIONS='vulkan-device=' + device)
     out = work / 'native-smoke'
     script = source / 'composeApp/scripts/linux-native-smoke.py'
-    result = subprocess.run([sys.executable, '-I', str(script), 'smoke', '--runs', str(runs), '--out', str(out),
-                             '--', str(canonical / 'bin/nuvio-desktop')],
-                            env=env, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
+    try:
+        result = subprocess.run([sys.executable, '-I', str(script), 'smoke', '--runs', str(runs), '--out', str(out),
+                                 '--', str(canonical / 'bin/nuvio-desktop')],
+                                env=env, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True,
+                                timeout=smoke_deadline_seconds(runs))
+    except subprocess.TimeoutExpired as hung:
+        print(hung.output or '', end='', flush=True)
+        raise SystemExit('Native smoke gate FAILED: hung past %ds; no package may be built (logs in %s)'
+                         % hung.timeout, out)
     print(result.stdout, end='', flush=True)
     records = parse_runs(result.stdout)
     if (result.returncode != 0 or 'SMOKE PASS' not in result.stdout or len(records) != runs

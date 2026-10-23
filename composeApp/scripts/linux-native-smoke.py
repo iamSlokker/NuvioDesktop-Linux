@@ -17,6 +17,7 @@ import ctypes
 import ctypes.util
 import os
 import re
+import select
 import shutil
 import signal
 import subprocess
@@ -181,11 +182,26 @@ class Launch:
                 break
             time.sleep(0.05)
         else:
+            self.stop_services()
             raise RuntimeError('Xvfb did not start on ' + self.display)
         bus = subprocess.Popen(['dbus-daemon', '--session', '--nofork', '--print-address=1'],
                                stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, text=True, env=env)
         self.processes.append(bus)
-        env['DBUS_SESSION_BUS_ADDRESS'] = bus.stdout.readline().strip()
+        # A dbus-daemon that never prints its address would otherwise block this read forever.
+        ready, _, _ = select.select([bus.stdout], [], [], 30)
+        address = bus.stdout.readline().strip() if ready else ''
+        if not address:
+            self.stop_services()
+            raise RuntimeError('dbus-daemon did not report a session bus address')
+        env['DBUS_SESSION_BUS_ADDRESS'] = address
+
+    def stop_services(self):
+        for process in reversed(self.processes):
+            process.terminate()
+            try:
+                process.wait(timeout=10)
+            except subprocess.TimeoutExpired:
+                process.kill()
 
     def run(self, timeout, linger, want_frame=True):
         os.makedirs(self.dir, exist_ok=True)
@@ -237,12 +253,7 @@ class Launch:
         reader.join(timeout=10)
         self.exit_code = app.returncode
         console.close()
-        for process in reversed(self.processes):
-            process.terminate()
-            try:
-                process.wait(timeout=10)
-            except subprocess.TimeoutExpired:
-                process.kill()
+        self.stop_services()
         return self
 
     def failures(self):
