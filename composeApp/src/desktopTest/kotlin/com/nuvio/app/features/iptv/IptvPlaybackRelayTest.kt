@@ -40,7 +40,10 @@ class IptvPlaybackRelayTest {
         closeables += AutoCloseable { server.shutdown() }
         server.dispatcher = object : Dispatcher() {
             override fun dispatch(request: RecordedRequest): MockResponse = when (request.requestUrl?.encodedPath) {
+                // MockWebServer keeps a connection open after `Connection: close`; the CONNECT tunnel
+                // test reads its response to end of stream, so the origin hangs up like a live server.
                 "/live/u/p/1.ts" -> MockResponse().setBody("TS-BYTES").addHeader("Content-Type", "video/mp2t")
+                    .setSocketPolicy(okhttp3.mockwebserver.SocketPolicy.DISCONNECT_AT_END)
                 "/moved" -> MockResponse().setResponseCode(302).addHeader("Location", "/live/u/p/1.ts")
                 else -> MockResponse().setResponseCode(404)
             }
