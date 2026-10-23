@@ -383,8 +383,19 @@ internal actual object ExternalPlayerPlatform {
         }
         if (isLinux) {
             val target = linuxTarget(def) ?: return ExternalPlayerOpenResult.NoPlayerAvailable
-            val command = linuxLaunchCommand(def.id, target, request) ?: return ExternalPlayerOpenResult.Failed
-            return if (launchDetached(command, "player=$effectiveId source=$sourceSummary")) {
+            val channel = request.tracking?.let { prepareLinuxExternalPlayerChannel(def.control, target) }
+            val command = linuxLaunchCommand(def.id, target, request, channel) ?: run {
+                runCatching { channel?.channel?.reader?.close() }
+                return ExternalPlayerOpenResult.Failed
+            }
+            return if (
+                launchDetached(
+                    command = command,
+                    diagnosticContext = "player=$effectiveId source=$sourceSummary",
+                    tracking = request.tracking,
+                    reader = channel?.channel?.reader,
+                )
+            ) {
                 ExternalPlayerOpenResult.Opened
             } else {
                 ExternalPlayerOpenResult.Failed
@@ -418,12 +429,14 @@ internal actual object ExternalPlayerPlatform {
         playerId: String,
         target: LinuxExternalPlayerTarget,
         request: ExternalPlayerPlaybackRequest,
+        channel: LinuxExternalPlayerChannel? = null,
     ): List<String>? {
         if (!LinuxExternalPlayerDiscovery.supports(playerId)) return null
         val def = definitions.firstOrNull { it.id == playerId } ?: return null
         val normalized = linuxExternalPlayerRequest(request) ?: return null
         return buildList {
-            addAll(target.commandPrefix(normalized))
+            addAll(target.commandPrefix(normalized, channel?.sandboxFilesystems.orEmpty()))
+            channel?.let { addAll(it.channel.launchArgs) }
             addAll(def.buildArgs(normalized).flatMap { argument ->
                 // Linux mpv preserves literal header values through the list append action.
                 if (playerId == "mpv" && argument.startsWith("--http-header-fields=")) {
