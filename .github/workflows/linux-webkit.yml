@@ -153,3 +153,30 @@ jobs:
               fi
             done
           } >> "$GITHUB_STEP_SUMMARY"
+
+  prune-caches:
+    # Every run saves its inputs and compiler cache under a new run-scoped key and nothing
+    # removed the old ones, so a few runs filled the repository's 10 GB cache limit and GitHub
+    # began evicting whatever was oldest. Keep only the newest entry per ref. A separate job so
+    # the build keeps a read-only token; this one checks out and runs no repository code.
+    needs: engine
+    if: ${{ always() && needs.engine.result != 'skipped' }}
+    runs-on: ubuntu-22.04
+    timeout-minutes: 10
+    permissions:
+      actions: write
+    steps:
+      - name: Delete superseded WebKit input caches
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PREFIX: webkit-inputs-v1-
+        run: |
+          set -euo pipefail
+          # Newest first across all pages; every entry after the first of its ref is superseded.
+          gh api --paginate -X GET "repos/$GITHUB_REPOSITORY/actions/caches" \
+            -f key="$PREFIX" -f sort=created_at -f direction=desc -F per_page=100 \
+            --jq '.actions_caches[] | [.id, .ref, .key] | @tsv' > "$RUNNER_TEMP/caches.tsv"
+          awk -F'\t' 'seen[$2]++' "$RUNNER_TEMP/caches.tsv" | while IFS=$'\t' read -r id ref key; do
+            echo "Deleting superseded cache $key ($ref)"
+            gh api -X DELETE "repos/$GITHUB_REPOSITORY/actions/caches/$id" || echo "  already gone"
+          done

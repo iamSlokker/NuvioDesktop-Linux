@@ -701,3 +701,64 @@ class EngineDriverTest(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
+
+
+class CachePruneTest(unittest.TestCase):
+    """The prune job keeps one input cache per ref; run against a stand-in gh, no network."""
+
+    def run_prune(self, workflow, listing):
+        step = next(block for block in workflow_steps(workflow) if block.startswith('      - name: Delete superseded'))
+        prefix = re.search(r'^          PREFIX: (.+)$', step, re.MULTILINE).group(1)
+        with tempfile.TemporaryDirectory() as tmp:
+            deleted = pathlib.Path(tmp) / 'deleted'
+            deleted.write_text('')
+            stub = textwrap.dedent('''\
+                gh() {
+                  if [[ " $* " == *" DELETE "* ]]; then echo "${@: -1}" >> "$DELETED"; return 0; fi
+                  [[ " $* " == *" key=$PREFIX "* && " $* " == *" direction=desc "* ]] || return 9
+                  printf '%s' "$LISTING"
+                }
+                ''')
+            env = dict(os.environ, GITHUB_REPOSITORY='owner/repo', RUNNER_TEMP=tmp, PREFIX=prefix,
+                       DELETED=str(deleted), LISTING=listing)
+            subprocess.run(['bash', '-c', stub + run_script(step)], env=env, check=True,
+                           stdout=subprocess.DEVNULL)
+            return prefix, [line.rsplit('/', 1)[1] for line in deleted.read_text().split()]
+
+    def test_only_the_newest_cache_of_each_ref_survives(self):
+        for workflow in ('linux-packages.yml', 'linux-webkit.yml'):
+            listing = ''.join('%d\t%s\tkey-%d\n' % row for row in [
+                (50, 'refs/heads/linux', 50), (41, 'refs/tags/v1.16.0', 41), (40, 'refs/heads/linux', 40),
+                (30, 'refs/heads/linux', 30), (20, 'refs/tags/v1.16.0', 20)])
+            prefix, deleted = self.run_prune(workflow, listing)
+            self.assertTrue(prefix.endswith('-inputs-v2-') or prefix.endswith('-inputs-v1-'), prefix)
+            self.assertEqual(deleted, ['40', '30', '20'], workflow)
+
+    def test_prefixes_match_the_saved_keys(self):
+        for workflow in ('linux-packages.yml', 'linux-webkit.yml'):
+            text = (seed.REPO / '.github/workflows' / workflow).read_text()
+            prefix = re.search(r'^          PREFIX: (.+)$', text, re.MULTILINE).group(1)
+            restore = next(block for block in workflow_steps(workflow) if 'uses: actions/cache/restore@' in block)
+            self.assertIn('key: ' + prefix + '${{', restore)
+
+    def test_only_the_prune_job_can_write_actions(self):
+        for workflow, build_job in (('linux-packages.yml', 'packages'), ('linux-webkit.yml', 'engine')):
+            text = (seed.REPO / '.github/workflows' / workflow).read_text()
+            top, jobs = text.split('\njobs:\n', 1)
+            self.assertIn('permissions:\n  contents: read\n  actions: read\n', top)
+            build, prune = jobs.split('\n  prune-caches:\n', 1)
+            self.assertNotIn('permissions:', build)
+            self.assertIn('    needs: %s\n' % build_job, prune)
+            self.assertIn('    permissions:\n      actions: write\n    steps:', prune)
+            self.assertNotIn('actions/checkout', prune)
+
+
+class AptLockTest(unittest.TestCase):
+    def test_runner_apt_waits_for_the_dpkg_lock(self):
+        text = (seed.REPO / '.github/workflows/linux-packages.yml').read_text()
+        calls = re.findall(r'apt-get[^\n]*', text)
+        self.assertGreaterEqual(len(calls), 3)
+        for call in calls:
+            self.assertIn('-o DPkg::Lock::Timeout=', call)
+        self.assertEqual(step_field(named_step('linux-packages.yml', 'Smoke-install DEB on Ubuntu 22.04'),
+                                    'timeout-minutes'), '20')

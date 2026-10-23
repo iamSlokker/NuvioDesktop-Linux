@@ -80,8 +80,9 @@ jobs:
           set -euo pipefail
           # Only host orchestration tools. App/native compilation uses the
           # digest/snapshot/hash-pinned disposable builder in the repository.
-          sudo apt-get update
-          sudo apt-get install -y podman gh jq flatpak ostree desktop-file-utils libwebkit2gtk-4.1-0 libva2 libva-drm2 libva-x11-2 libxss1 libasound2 libpulse0 liblcms2-2
+          # Wait for the runner's own apt-daily/unattended-upgrades instead of failing on its dpkg lock.
+          sudo apt-get -o DPkg::Lock::Timeout=300 -o Acquire::Retries=3 update
+          sudo apt-get -o DPkg::Lock::Timeout=300 install -y podman gh jq flatpak ostree desktop-file-utils libwebkit2gtk-4.1-0 libva2 libva-drm2 libva-x11-2 libxss1 libasound2 libpulse0 liblcms2-2
           dpkg-query -W > "$RUNNER_TEMP/runner-packages.tsv"
       - name: Download trusted engine and its canonical builder seed
         if: ${{ env.ENGINE_RUN != '' }}
@@ -195,13 +196,15 @@ jobs:
         id: deb_smoke
         if: ${{ !cancelled() && env.BOOTSTRAP_ONLY != 'true' && steps.deb.outcome == 'success' }}
         continue-on-error: true
+        timeout-minutes: 20
         shell: bash
         run: |
           set -euo pipefail
           unset DISPLAY WAYLAND_DISPLAY NUVIO_RUN_LIVE_DISPLAY_TESTS
           debs=(build/linux-packaging/artifacts/*.deb)
           [[ ${#debs[@]} -eq 1 && -s "${debs[0]}" ]]
-          sudo env DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends "$PWD/${debs[0]}"
+          sudo env DEBIAN_FRONTEND=noninteractive apt-get -o DPkg::Lock::Timeout=300 \
+            install -y --no-install-recommends "$PWD/${debs[0]}"
           [[ "$(dpkg-query -W -f='${Status}' nuvio-desktop)" == "install ok installed" ]]
           sudo dpkg --audit
           sudo dpkg -V nuvio-desktop
@@ -375,3 +378,30 @@ jobs:
           path: build/linux-packaging/artifacts/*
           if-no-files-found: error
           compression-level: 0
+
+  prune-caches:
+    # Every run saves its inputs and compiler cache under a new run-scoped key and nothing
+    # removed the old ones, so a few runs filled the repository's 10 GB cache limit and GitHub
+    # began evicting whatever was oldest. Keep only the newest entry per ref. A separate job so
+    # the build keeps a read-only token; this one checks out and runs no repository code.
+    needs: packages
+    if: ${{ always() && needs.packages.result != 'skipped' }}
+    runs-on: ubuntu-22.04
+    timeout-minutes: 10
+    permissions:
+      actions: write
+    steps:
+      - name: Delete superseded input caches
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PREFIX: linux-inputs-v2-
+        run: |
+          set -euo pipefail
+          # Newest first across all pages; every entry after the first of its ref is superseded.
+          gh api --paginate -X GET "repos/$GITHUB_REPOSITORY/actions/caches" \
+            -f key="$PREFIX" -f sort=created_at -f direction=desc -F per_page=100 \
+            --jq '.actions_caches[] | [.id, .ref, .key] | @tsv' > "$RUNNER_TEMP/caches.tsv"
+          awk -F'\t' 'seen[$2]++' "$RUNNER_TEMP/caches.tsv" | while IFS=$'\t' read -r id ref key; do
+            echo "Deleting superseded cache $key ($ref)"
+            gh api -X DELETE "repos/$GITHUB_REPOSITORY/actions/caches/$id" || echo "  already gone"
+          done
