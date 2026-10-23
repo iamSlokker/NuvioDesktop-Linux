@@ -30,6 +30,8 @@ class LinuxHdrInputTest {
         KeyEvent.VK_C to PlayerShortcutAction.CycleColorProfile,
         KeyEvent.VK_F10 to PlayerShortcutAction.CycleAnime,
         KeyEvent.VK_I to PlayerShortcutAction.ToggleMpvDiagnostics,
+        KeyEvent.VK_PAGE_UP to PlayerShortcutAction.ChannelUp,
+        KeyEvent.VK_PAGE_DOWN to PlayerShortcutAction.ChannelDown,
     )
     private val appKeys = mapOf(
         AppShortcutAction.ToggleFullscreen to KeyEvent.VK_F,
@@ -58,6 +60,8 @@ class LinuxHdrInputTest {
         assertEquals(LinuxHdrInputAction.Event("keyboardNextAudio"), action(KeyEvent.VK_A))
         assertEquals(LinuxHdrInputAction.Event("resize"), action(KeyEvent.VK_Z))
         assertEquals(LinuxHdrInputAction.Event("keyboardToggle"), action(KeyEvent.VK_ENTER))
+        assertEquals(LinuxHdrInputAction.Event("iptvChannel", 1.0), action(KeyEvent.VK_PAGE_UP))
+        assertEquals(LinuxHdrInputAction.Event("iptvChannel", -1.0), action(KeyEvent.VK_PAGE_DOWN))
     }
 
     @Test
