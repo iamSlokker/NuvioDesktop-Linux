@@ -1904,6 +1904,8 @@ internal fun isTrustworthyPlaybackEnd(
 ): Boolean =
     isEnded &&
         durationMs > 0L &&
+        // An error clip or debrid placeholder ending is not the episode ending.
+        !com.nuvio.app.features.watching.domain.isShortPlaceholderDuration(durationMs) &&
         positionMs >= (durationMs - NEXT_EPISODE_EOF_POSITION_TOLERANCE_MS).coerceAtLeast(0L) &&
         lastTrustedPositionMs > 0L &&
         lastTrustedPositionMs >=

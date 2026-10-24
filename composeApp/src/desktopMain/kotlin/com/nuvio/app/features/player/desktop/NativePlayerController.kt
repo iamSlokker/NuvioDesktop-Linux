@@ -3176,25 +3176,25 @@ internal fun PlayerControlsState.toControlsJson(
         append(',')
         appendJsonField("sourcesPanelOpen", sourcesPanelOpen)
         append(',')
-        appendJsonField("heroTrailerMode", heroTrailerMode)
+        appendJsonField("heroTrailerMode", heroTrailer.enabled)
         append(',')
-        appendJsonField("heroTrailerBackgroundColor", heroTrailerBackgroundColor)
+        appendJsonField("heroTrailerBackgroundColor", heroTrailer.backgroundColor)
         append(',')
-        appendJsonField("heroTrailerLogoUrl", heroTrailerLogoUrl)
+        appendJsonField("heroTrailerLogoUrl", heroTrailer.logoUrl)
         append(',')
-        appendJsonField("heroTrailerTitle", heroTrailerTitle)
+        appendJsonField("heroTrailerTitle", heroTrailer.title)
         append(',')
-        appendJsonField("heroTrailerMeta", heroTrailerMeta)
+        appendJsonField("heroTrailerMeta", heroTrailer.meta)
         append(',')
-        appendJsonField("heroTrailerDescription", heroTrailerDescription)
+        appendJsonField("heroTrailerDescription", heroTrailer.description)
         append(',')
-        appendJsonField("heroTrailerMuted", heroTrailerMuted)
+        appendJsonField("heroTrailerMuted", heroTrailer.muted)
         append(',')
-        appendJsonField("heroTrailerVolume", heroTrailerVolume)
+        appendJsonField("heroTrailerVolume", heroTrailer.volume)
         append(',')
-        appendJsonField("heroTrailerNavDismissEdge", heroTrailerNavDismissEdge)
+        appendJsonField("heroTrailerNavDismissEdge", heroTrailer.navDismissEdge)
         append(',')
-        appendJsonField("heroTrailerNavDismissBandFraction", heroTrailerNavDismissBandFraction.toDouble())
+        appendJsonField("heroTrailerNavDismissBandFraction", heroTrailer.navDismissBandFraction.toDouble())
         append(',')
         appendJsonField("streamFailoverEnabled", streamFailoverEnabled)
         append('}')
@@ -3207,7 +3207,7 @@ private fun PlayerControlsState.nativeControlsStructureKey(): PlayerControlsStat
         durationMs = 0L,
         positionMs = 0L,
         // Volatile data (driven by the overlay volume slider); not a structural change.
-        heroTrailerVolume = 0,
+        heroTrailer = heroTrailer.copy(volume = 0),
     )
 
 private fun StringBuilder.appendJsonField(name: String, value: String) {

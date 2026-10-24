@@ -95,7 +95,7 @@ internal object LinuxPlaylistRepositoryProbe {
             "incomplete", "progress" -> {
                 PlaylistPlaybackSession.start(id, entries[0].entryId)
                 PlaylistPlaybackSession.playbackSpeed = 1.5f
-                PlaylistPlaybackSession.reportProgress(if (scenario == "progress") 99_000 else 20_000, 100_000)
+                PlaylistPlaybackSession.reportProgress(if (scenario == "progress") 990_000 else 200_000, 1_000_000)
                 PlaylistPlaybackSession.onPlayerExited()
                 assertEquals(if (scenario == "progress") "b" else "a", current().resumeEntry?.videoId)
                 assertNull(PlaylistPlaybackSession.current())
