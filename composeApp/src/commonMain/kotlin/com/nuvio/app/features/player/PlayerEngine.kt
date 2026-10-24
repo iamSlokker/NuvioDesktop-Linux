@@ -446,37 +446,50 @@ data class PlayerControlsState(
      * sheet the user has since dismissed.
      */
     val sourcesPanelOpen: Boolean = false,
-    /**
-     * Desktop only: when true the native controls overlay hides all chrome and renders just
-     * the hero-trailer fade gradients (used by the TV-mode home hero trailer surface).
-     */
-    val heroTrailerMode: Boolean = false,
-    /** Desktop only: background color (e.g. "#121212") the hero-trailer fade blends toward. */
-    val heroTrailerBackgroundColor: String = "",
-    /** Desktop only: hero metadata rendered over the full-bleed trailer (logo/title/meta/desc). */
-    val heroTrailerLogoUrl: String = "",
-    val heroTrailerTitle: String = "",
-    val heroTrailerMeta: String = "",
-    val heroTrailerDescription: String = "",
-    val heroTrailerMuted: Boolean = true,
-    /** Desktop only: hero-trailer volume (0..100) reflected by the overlay volume slider. */
-    val heroTrailerVolume: Int = 0,
-    /**
-     * Desktop only: which screen edge holds the navigation chrome while a home hero trailer plays
-     * ("top" for the floating top bar, "left" for the sidebar, "none" to disable). The heavyweight
-     * native video surface paints over the Compose navbar, so when the pointer enters this edge
-     * band the overlay tells Kotlin to dismiss the trailer, uncovering the navbar.
-     */
-    val heroTrailerNavDismissEdge: String = "none",
-    /**
-     * Desktop only: the top nav-dismiss band height as a fraction of the trailer surface height.
-     * The overlay surface matches the hero region, so a fraction scales with the hero size — the
-     * small (and user-resizable) adaptive hero needs a tighter band than TV mode's full-viewport
-     * hero, or moving onto the strip at all trips the dismiss.
-     */
-    val heroTrailerNavDismissBandFraction: Float = 0.22f,
+    /** Desktop only: hero-trailer overlay state; see [PlayerHeroTrailerState]. */
+    val heroTrailer: PlayerHeroTrailerState = PlayerHeroTrailerState(),
     /** Desktop only: reflects the stream-failover setting in the player context-menu toggle. */
     val streamFailoverEnabled: Boolean = false,
+)
+// PlayerControlsState is close to the JVM's 255-slot method-signature limit: its synthetic
+// default-arguments constructor adds an int mask per 32 params, a marker and `this`, and Long/Double
+// take two slots. Going over still compiles but fails class loading (ClassFormatError: Too many
+// arguments in method signature). Group new fields into holders like the one below.
+
+/**
+ * Desktop only: state for the native controls overlay when it renders a hero trailer (home or
+ * details) instead of the player HUD. Serialised flat as `heroTrailer*` fields for controls.js.
+ */
+data class PlayerHeroTrailerState(
+    /**
+     * When true the native controls overlay hides all chrome and renders just the hero-trailer
+     * fade gradients (used by the TV-mode home hero trailer surface).
+     */
+    val enabled: Boolean = false,
+    /** Background color (e.g. "#121212") the hero-trailer fade blends toward. */
+    val backgroundColor: String = "",
+    /** Hero metadata rendered over the full-bleed trailer (logo/title/meta/desc). */
+    val logoUrl: String = "",
+    val title: String = "",
+    val meta: String = "",
+    val description: String = "",
+    val muted: Boolean = true,
+    /** Hero-trailer volume (0..100) reflected by the overlay volume slider. */
+    val volume: Int = 0,
+    /**
+     * Which screen edge holds the navigation chrome while a home hero trailer plays ("top" for the
+     * floating top bar, "left" for the sidebar, "none" to disable). The heavyweight native video
+     * surface paints over the Compose navbar, so when the pointer enters this edge band the overlay
+     * tells Kotlin to dismiss the trailer, uncovering the navbar.
+     */
+    val navDismissEdge: String = "none",
+    /**
+     * The top nav-dismiss band height as a fraction of the trailer surface height. The overlay
+     * surface matches the hero region, so a fraction scales with the hero size — the small (and
+     * user-resizable) adaptive hero needs a tighter band than TV mode's full-viewport hero, or
+     * moving onto the strip at all trips the dismiss.
+     */
+    val navDismissBandFraction: Float = 0.22f,
 )
 
 /**

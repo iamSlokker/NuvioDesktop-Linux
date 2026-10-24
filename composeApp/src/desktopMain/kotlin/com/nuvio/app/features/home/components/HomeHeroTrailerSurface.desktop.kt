@@ -23,6 +23,7 @@ import com.nuvio.app.core.ui.LocalNuvioBaseDensity
 import com.nuvio.app.features.details.HeroTrailerAudioState
 import com.nuvio.app.features.player.PlayerControlsAction
 import com.nuvio.app.features.player.PlayerControlsState
+import com.nuvio.app.features.player.PlayerHeroTrailerState
 import com.nuvio.app.features.player.desktop.DesktopHostOs
 import com.nuvio.app.features.player.desktop.NativePlayerController
 import com.nuvio.app.features.player.desktop.NativePlayerHost
@@ -183,17 +184,19 @@ actual fun HomeHeroTrailerSurface(
         // Push hero-trailer overlay state first so attach() forwards it to the controls page.
         controller.updateControls(
             PlayerControlsState(
-                heroTrailerMode = true,
-                heroTrailerBackgroundColor = backgroundHex,
-                heroTrailerLogoUrl = logoUrl?.takeIf { it.isNotBlank() }.orEmpty(),
-                heroTrailerTitle = title,
-                heroTrailerMeta = meta,
-                heroTrailerDescription = description,
                 isLoading = true,
-                heroTrailerMuted = muted,
-                heroTrailerVolume = effectiveVolume,
-                heroTrailerNavDismissEdge = navDismissEdge,
-                heroTrailerNavDismissBandFraction = navDismissBandFraction,
+                heroTrailer = PlayerHeroTrailerState(
+                    enabled = true,
+                    backgroundColor = backgroundHex,
+                    logoUrl = logoUrl?.takeIf { it.isNotBlank() }.orEmpty(),
+                    title = title,
+                    meta = meta,
+                    description = description,
+                    muted = muted,
+                    volume = effectiveVolume,
+                    navDismissEdge = navDismissEdge,
+                    navDismissBandFraction = navDismissBandFraction,
+                ),
             ),
         )
         trailerSurfaceLog.i { "attach video=${sourceUrl.take(80)} audio=${sourceAudioUrl?.take(60)} muted=$muted vol=$effectiveVolume" }
@@ -223,17 +226,19 @@ actual fun HomeHeroTrailerSurface(
     LaunchedEffect(controller, sourceUrl, muted, effectiveVolume) {
         controller.updateControls(
             PlayerControlsState(
-                heroTrailerMode = true,
-                heroTrailerBackgroundColor = backgroundHex,
-                heroTrailerLogoUrl = logoUrl?.takeIf { it.isNotBlank() }.orEmpty(),
-                heroTrailerTitle = title,
-                heroTrailerMeta = meta,
-                heroTrailerDescription = description,
                 isLoading = true,
-                heroTrailerMuted = muted,
-                heroTrailerVolume = effectiveVolume,
-                heroTrailerNavDismissEdge = navDismissEdge,
-                heroTrailerNavDismissBandFraction = navDismissBandFraction,
+                heroTrailer = PlayerHeroTrailerState(
+                    enabled = true,
+                    backgroundColor = backgroundHex,
+                    logoUrl = logoUrl?.takeIf { it.isNotBlank() }.orEmpty(),
+                    title = title,
+                    meta = meta,
+                    description = description,
+                    muted = muted,
+                    volume = effectiveVolume,
+                    navDismissEdge = navDismissEdge,
+                    navDismissBandFraction = navDismissBandFraction,
+                ),
             ),
         )
         controller.setMpvProperty("mute", if (muted) "yes" else "no")

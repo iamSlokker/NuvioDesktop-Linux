@@ -1,6 +1,7 @@
 package com.nuvio.app.features.player.desktop
 
 import com.nuvio.app.features.player.PlayerControlsState
+import com.nuvio.app.features.player.PlayerHeroTrailerState
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -21,14 +22,14 @@ class LinuxHeroPlaybackEligibilityTest {
 
     @Test fun mutedStartupIsSilentEvenWithRememberedPositiveVolume() {
         assertEquals(listOf("mute=yes", "volume=0"), linuxHeroStartupAudioOptions(
-            PlayerControlsState(heroTrailerMode = true, heroTrailerMuted = true, heroTrailerVolume = 60),
+            PlayerControlsState(heroTrailer = PlayerHeroTrailerState(enabled = true, muted = true, volume = 60)),
         ))
     }
 
     @Test fun unmutedStartupUsesSharedVolumeWithinItsExistingBounds() {
         for ((input, expected) in listOf(-1 to 0, 0 to 0, 60 to 60, 100 to 100, 150 to 100)) {
             assertEquals(listOf("mute=no", "volume=$expected"), linuxHeroStartupAudioOptions(
-                PlayerControlsState(heroTrailerMode = true, heroTrailerMuted = false, heroTrailerVolume = input),
+                PlayerControlsState(heroTrailer = PlayerHeroTrailerState(enabled = true, muted = false, volume = input)),
             ))
         }
     }

@@ -29,6 +29,6 @@ internal fun linuxHeroPlayWhenReady(playWhenReady: Boolean, home: Boolean = fals
 // Native create loads media before queued properties are replayed. Set the shared
 // hero audio state before mpv_initialize/loadfile, including retained-surface resumes.
 internal fun linuxHeroStartupAudioOptions(state: PlayerControlsState): List<String> = listOf(
-    "mute=${if (state.heroTrailerMuted) "yes" else "no"}",
-    "volume=${if (state.heroTrailerMuted) 0 else state.heroTrailerVolume.coerceIn(0, 100)}",
+    "mute=${if (state.heroTrailer.muted) "yes" else "no"}",
+    "volume=${if (state.heroTrailer.muted) 0 else state.heroTrailer.volume.coerceIn(0, 100)}",
 )
