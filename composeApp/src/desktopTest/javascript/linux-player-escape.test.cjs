@@ -33,13 +33,15 @@ function fixture(overrides = {}) {
     focused: () => listener({ key: 'Escape', preventDefault() { calls.push('prevent'); } }) };
 }
 
-test('AWT entry reaches shared Back without DOM focus', () => {
-  const f = fixture(); f.linux(); assert.deepEqual(f.calls, ['back']);
+// With nothing to close, Escape sends escapeBack (not back): Kotlin turns it into Back, or into
+// leaving fullscreen when "Escape goes windowed first" is on. The back button still sends back.
+test('AWT entry reaches shared escapeBack without DOM focus', () => {
+  const f = fixture(); f.linux(); assert.deepEqual(f.calls, ['escapeBack']);
 });
 test('one gesture closes only the topmost layer', () => {
   const f = fixture({ subtitleHexField: 'textColor', contextMenuOpen: true, actionOverflowOpen: true,
     colorGradePanelOpen: true, activeModal: 'subtitles' });
-  for (const expected of [['hex'], ['context'], ['overflow'], ['color'], ['modal', 'focus'], ['back']]) {
+  for (const expected of [['hex'], ['context'], ['overflow'], ['color'], ['modal', 'focus'], ['escapeBack']]) {
     f.calls.length = 0; f.linux(); assert.deepEqual(f.calls, expected);
   }
 });
@@ -50,9 +52,9 @@ for (const modal of ['sources', 'episodes', 'audio', 'subtitles', 'speed', 'vide
     f.calls.length = 0; f.linux(); assert.deepEqual(f.calls, ['skipSubmitDismiss']);
   });
 }
-test('non-dismissible result toast permits Back', () => {
+test('non-dismissible result toast permits escapeBack', () => {
   const f = fixture({ state: { skipSubmitToastDismissible: false } });
-  f.linux(); assert.deepEqual(f.calls, ['back']);
+  f.linux(); assert.deepEqual(f.calls, ['escapeBack']);
 });
 test('hero surfaces never route Escape into playback navigation', () => {
   for (const overrides of [{ isHeroTrailerSurface: true }, { state: { heroTrailerMode: true } }]) {
@@ -63,8 +65,8 @@ test('focused Windows/macOS handler retains its original error-before-modal orde
   const f = fixture({ activeModal: 'sources', error: 'failed' });
   f.focused(); assert.deepEqual(f.calls, ['prevent', 'back']);
 });
-test('focused handler retains panel ordering and shared toast Back behavior', () => {
+test('focused handler retains panel ordering and shared toast escapeBack behavior', () => {
   const f = fixture({ activeModal: 'audio', state: { skipSubmitToastDismissible: true } });
   f.focused(); assert.deepEqual(f.calls, ['prevent', 'modal', 'focus']);
-  f.calls.length = 0; f.focused(); assert.deepEqual(f.calls, ['prevent', 'back']);
+  f.calls.length = 0; f.focused(); assert.deepEqual(f.calls, ['prevent', 'escapeBack']);
 });
