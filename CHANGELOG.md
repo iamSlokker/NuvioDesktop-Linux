@@ -17,6 +17,7 @@
 ### Fixed
 
 - **SDR To HDR On Linux** - the new SDR To HDR switch no longer shows in Settings or settings search on Linux. It only works with Windows HDR on, and the Linux player never reports an HDR display, so on Linux it was a switch that did nothing.
+- **Windows-only settings on Linux** - Interface Renderer, HDR display correction, Low VRAM Mode and the screensaver's Shut down section no longer show on Linux, and settings search no longer lists them or the RTX Video and SVP settings. Linux always draws the interface with OpenGL, the HDR correction and Low VRAM Mode only run on Windows, and the Linux screensaver only dims, so these were controls that did nothing. Windows and macOS are unchanged.
 - **RTX HDR With Anime Shaders** - the remaining colour fringing along lines when True HDR runs together with Anime4K or a custom shader. NVIDIA's video processor expands the video's colour detail before mpv gets the frame, and the result sat slightly off the sharpened lines. A new pass now lines the colour back up with the brightness before the shaders run.
 - **Same release for the next episode** - autoplay now picks the same release again within a binge group, by its filename (moved on to the next episode) or the same torrent, instead of any row that shares the group. From upstream Nuvio.
 - **Plugins with binary data** - plugin scrapers can now send and read binary request and response bodies (`arrayBuffer()`), which scrapers that decrypt responses need. From upstream Nuvio.

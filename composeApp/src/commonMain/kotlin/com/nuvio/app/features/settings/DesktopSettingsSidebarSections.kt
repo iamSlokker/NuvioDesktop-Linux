@@ -144,9 +144,9 @@ internal fun desktopSettingsSidebarSubItems(
             section(SettingsPage.RandomPlay, Res.string.random_play_section_filters),
             section(SettingsPage.RandomPlay, Res.string.random_play_section_genres),
         )
-        SettingsPage.Screensaver -> listOf(
+        SettingsPage.Screensaver -> listOfNotNull(
             section(SettingsPage.Screensaver, Res.string.settings_screensaver_section_title),
-            section(SettingsPage.Screensaver, Res.string.settings_screensaver_section_shutdown),
+            if (platformOffersScreensaverShutdown) section(SettingsPage.Screensaver, Res.string.settings_screensaver_section_shutdown) else null,
         )
         SettingsPage.Games -> listOf(
             section(SettingsPage.Games, Res.string.settings_games_title),

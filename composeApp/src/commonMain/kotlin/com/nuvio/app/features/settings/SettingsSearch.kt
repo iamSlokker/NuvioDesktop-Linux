@@ -1524,13 +1524,13 @@ private fun settingsSearchEntries(
                 resolve(Res.string.settings_playback_desktop_color_custom_description),
                 fallbackAnchor = SettingsScrollAnchor.ColorProfile,
             ) else null,
-            if (isDesktop) PlaybackSearchRow(
+            if (isDesktop && platformOffersInterfaceRenderer) PlaybackSearchRow(
                 "desktop-renderer",
                 resolve(Res.string.settings_playback_desktop_renderer),
                 resolve(Res.string.settings_playback_desktop_renderer_dialog),
                 anchor = SettingsScrollAnchor.DesktopRenderer,
             ) else null,
-            if (isDesktop) PlaybackSearchRow(
+            if (isDesktop && platformOffersHdrUiCompensation) PlaybackSearchRow(
                 "hdr-ui-compensation",
                 resolve(Res.string.settings_playback_desktop_hdr_ui_compensation),
                 resolve(Res.string.settings_playback_desktop_hdr_ui_compensation_description),
@@ -1599,7 +1599,7 @@ private fun settingsSearchEntries(
                 fallbackAnchor = SettingsScrollAnchor.AnimeEnhancements,
                 fallbackTitle = resolve(Res.string.settings_playback_desktop_anime_mode),
             ) else null,
-            if (isDesktop) PlaybackSearchRow(
+            if (isDesktop && platformListsWindowsOnlyPlaybackRowsInSearch) PlaybackSearchRow(
                 "desktop-anime-svp",
                 resolve(Res.string.settings_playback_desktop_anime_svp),
                 resolve(Res.string.settings_playback_desktop_anime_svp_desc),
@@ -1607,7 +1607,7 @@ private fun settingsSearchEntries(
                 fallbackAnchor = SettingsScrollAnchor.AnimeEnhancements,
                 fallbackTitle = resolve(Res.string.settings_playback_desktop_anime_mode),
             ) else null,
-            if (isDesktop) PlaybackSearchRow(
+            if (isDesktop && platformListsWindowsOnlyPlaybackRowsInSearch) PlaybackSearchRow(
                 "desktop-anime-svp-overlay",
                 resolve(Res.string.settings_playback_desktop_anime_svp_overlay),
                 resolve(Res.string.settings_playback_desktop_anime_svp_overlay_desc),
@@ -1624,12 +1624,12 @@ private fun settingsSearchEntries(
         icon = Icons.Rounded.PlayArrow,
         page = SettingsPage.Playback,
         rows = listOfNotNull(
-            if (isDesktop) PlaybackSearchRow(
+            if (isDesktop && platformListsWindowsOnlyPlaybackRowsInSearch) PlaybackSearchRow(
                 "nvidia-rtx-hdr",
                 resolve(Res.string.settings_playback_nvidia_rtx_hdr),
                 anchor = SettingsScrollAnchor.RtxHdr,
             ) else null,
-            if (isDesktop) PlaybackSearchRow(
+            if (isDesktop && platformListsWindowsOnlyPlaybackRowsInSearch) PlaybackSearchRow(
                 "nvidia-rtx-hdr-anime",
                 resolve(Res.string.settings_playback_nvidia_rtx_hdr_anime),
                 resolve(Res.string.settings_playback_nvidia_rtx_hdr_anime_desc),
@@ -1637,7 +1637,7 @@ private fun settingsSearchEntries(
                 fallbackAnchor = SettingsScrollAnchor.RtxHdr,
                 fallbackTitle = resolve(Res.string.settings_playback_nvidia_rtx_hdr),
             ) else null,
-            if (isDesktop) PlaybackSearchRow(
+            if (isDesktop && platformListsWindowsOnlyPlaybackRowsInSearch) PlaybackSearchRow(
                 "nvidia-rtx-hdr-anime-shaders",
                 resolve(Res.string.settings_playback_nvidia_rtx_hdr_anime_shaders),
                 resolve(Res.string.settings_playback_nvidia_rtx_hdr_anime_shaders_desc),
@@ -2356,7 +2356,7 @@ private fun settingsSearchEntries(
             PlaybackSearchRow("screensaver-shutdown-enable", resolve(Res.string.settings_screensaver_shutdown_enable), resolve(Res.string.settings_screensaver_shutdown_enable_description), shutdownSection),
             PlaybackSearchRow("screensaver-shutdown-delay", resolve(Res.string.settings_screensaver_shutdown_idle_time), resolve(Res.string.settings_screensaver_shutdown_idle_time_description), shutdownSection),
             PlaybackSearchRow("screensaver-playback-shutdown-delay", resolve(Res.string.settings_screensaver_playback_shutdown_idle_time), resolve(Res.string.settings_screensaver_playback_shutdown_idle_time_description), shutdownSection),
-        ).forEach { row ->
+        ).filter { platformOffersScreensaverShutdown || it.sectionOverride != shutdownSection }.forEach { row ->
             addRow(
                 page = SettingsPage.Screensaver,
                 key = row.key,
