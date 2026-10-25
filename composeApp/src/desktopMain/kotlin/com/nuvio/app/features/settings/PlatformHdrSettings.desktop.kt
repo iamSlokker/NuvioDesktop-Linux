@@ -22,3 +22,6 @@ internal actual fun PlatformHdrSettingsRows(isTablet: Boolean) {
         onCheckedChange = LinuxHdrSessionSettings::setEnabled,
     )
 }
+
+internal actual val platformOffersInverseToneMapping: Boolean
+    get() = DesktopHostOs.current != DesktopHostOs.LINUX
