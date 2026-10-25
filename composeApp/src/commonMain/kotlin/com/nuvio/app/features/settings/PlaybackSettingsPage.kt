@@ -1260,28 +1260,30 @@ private fun PlaybackSettingsSection(
                             onSelected = PlayerSettingsRepository::setDesktopHdrMode,
                         )
                         PlatformHdrSettingsRows(isTablet = isTablet)
-                        SettingsGroupDivider(isTablet = isTablet)
-                        SettingsSwitchRow(
-                            title = stringResource(Res.string.settings_playback_desktop_inverse_tone_mapping),
-                            description = stringResource(Res.string.settings_playback_desktop_inverse_tone_mapping_desc),
-                            checked = autoPlayPlayerSettings.desktopInverseToneMappingEnabled,
-                            isTablet = isTablet,
-                            onCheckedChange = PlayerSettingsRepository::setDesktopInverseToneMappingEnabled,
-                            modifier = Modifier.settingsScrollAnchor(SettingsScrollAnchor.InverseToneMapping),
-                        )
-                        if (autoPlayPlayerSettings.desktopInverseToneMappingEnabled) {
+                        if (platformOffersInverseToneMapping) {
                             SettingsGroupDivider(isTablet = isTablet)
-                            SettingsSliderRow(
-                                title = stringResource(Res.string.settings_playback_desktop_inverse_tone_mapping_peak),
-                                description = stringResource(Res.string.settings_playback_desktop_inverse_tone_mapping_peak_desc),
-                                value = autoPlayPlayerSettings.desktopInverseToneMappingPeakNits,
-                                valueText = "${autoPlayPlayerSettings.desktopInverseToneMappingPeakNits} nits",
-                                valueTextForValue = { "$it nits" },
-                                valueRange = DESKTOP_INVERSE_TONE_MAPPING_PEAK_RANGE,
-                                step = 50,
+                            SettingsSwitchRow(
+                                title = stringResource(Res.string.settings_playback_desktop_inverse_tone_mapping),
+                                description = stringResource(Res.string.settings_playback_desktop_inverse_tone_mapping_desc),
+                                checked = autoPlayPlayerSettings.desktopInverseToneMappingEnabled,
                                 isTablet = isTablet,
-                                onValueChange = PlayerSettingsRepository::setDesktopInverseToneMappingPeakNits,
+                                onCheckedChange = PlayerSettingsRepository::setDesktopInverseToneMappingEnabled,
+                                modifier = Modifier.settingsScrollAnchor(SettingsScrollAnchor.InverseToneMapping),
                             )
+                            if (autoPlayPlayerSettings.desktopInverseToneMappingEnabled) {
+                                SettingsGroupDivider(isTablet = isTablet)
+                                SettingsSliderRow(
+                                    title = stringResource(Res.string.settings_playback_desktop_inverse_tone_mapping_peak),
+                                    description = stringResource(Res.string.settings_playback_desktop_inverse_tone_mapping_peak_desc),
+                                    value = autoPlayPlayerSettings.desktopInverseToneMappingPeakNits,
+                                    valueText = "${autoPlayPlayerSettings.desktopInverseToneMappingPeakNits} nits",
+                                    valueTextForValue = { "$it nits" },
+                                    valueRange = DESKTOP_INVERSE_TONE_MAPPING_PEAK_RANGE,
+                                    step = 50,
+                                    isTablet = isTablet,
+                                    onValueChange = PlayerSettingsRepository::setDesktopInverseToneMappingPeakNits,
+                                )
+                            }
                         }
                         SettingsGroupDivider(isTablet = isTablet)
                         SettingsChoiceRow(

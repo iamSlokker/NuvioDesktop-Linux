@@ -1486,7 +1486,7 @@ private fun settingsSearchEntries(
                 resolve(Res.string.settings_playback_desktop_hdr_mode),
                 anchor = SettingsScrollAnchor.HdrMode,
             ) else null,
-            if (isDesktop) PlaybackSearchRow(
+            if (isDesktop && platformOffersInverseToneMapping) PlaybackSearchRow(
                 "desktop-inverse-tone-mapping",
                 resolve(Res.string.settings_playback_desktop_inverse_tone_mapping),
                 resolve(Res.string.settings_playback_desktop_inverse_tone_mapping_desc),
