@@ -1,5 +1,28 @@
 # Changelog
 
+## Unreleased
+
+### Added
+
+- **SDR To HDR (mpv)** - a playback setting under HDR mode that turns on mpv's inverse tone mapping, which expands SDR video to HDR on any GPU, with an adjustable peak brightness. It's an alternative to RTX Video True HDR, and True HDR takes over whenever it's running. Needs Windows HDR on. Unlike True HDR it also works with Anime4K, custom shaders and SVP. Before this it could only be set up by hand in the custom mpv options.
+- **Keep Continue Watching Sources** - the sources found for a title in Continue Watching are kept for up to a week, so opening it again shows the list at once while it refreshes in the background (a list under 6 hours old is used as it is). Only kept for releases at least 3 days old with 10 or more results, and for films only when there is a 1080p or better non-cam release. Cached sections say how old they are, and autoplay never starts a cached link that hasn't been proven, unless it goes through your debrid service first. On by default under Playback → Stream selection.
+- **Preload Next Episode Sources** - with Binge Mode on, searches for the next episode's sources 10–30 seconds before the next-episode card appears, so the next episode can start without waiting on every addon. Off by default, under Playback → Next episode. From upstream Nuvio.
+- **YouTube-only streams** - addon streams that carry only a YouTube video are now listed and play in the built-in player. From upstream Nuvio.
+- **Badges in the player** - the player can show your badge pack's images for what is actually playing (resolution, HDR or Dolby Vision, codec, Atmos, DTS-HD, channels) under the title, in place of the plain quality tag. Optional, under Settings → Streams → Show in player, with its own badge pack if you want a different one from the stream list. From upstream Nuvio.
+- **Watch party chat** - chat with everyone in a watch party from the party panel's new Chat tab, including people on the phone and TV apps. New messages show briefly in the player and as a count on the party button until you read them. From upstream Nuvio.
+- **SIMKL for More Like This** - SIMKL's community recommendations and similar titles can fill More Like This on details pages, as a third choice beside Trakt and TMDB. Needs a connected SIMKL account. From upstream Nuvio.
+- **Stream info** - a new Info button in the player shows what is playing: the source and file, the video codec, resolution, frame rate, HDR or Dolby Vision and bitrate, the audio track, codec, channels and sample rate, and the subtitle in use. From upstream Nuvio.
+- **All your MDBList lists in the Library** - with MDBList as the Library source, every list on your account now shows next to the watchlist: your own lists (which you can add titles to), your dynamic lists, lists you liked from other people, and lists imported into MDBList from IMDb, Trakt or Letterboxd. They keep the order you saved on mdblist.com. Choose which appear under Settings → MDBList → Library lists. From upstream Nuvio.
+
+### Fixed
+
+- **RTX HDR With Anime Shaders** - the remaining colour fringing along lines when True HDR runs together with Anime4K or a custom shader. NVIDIA's video processor expands the video's colour detail before mpv gets the frame, and the result sat slightly off the sharpened lines. A new pass now lines the colour back up with the brightness before the shaders run.
+- **Same release for the next episode** - autoplay now picks the same release again within a binge group, by its filename (moved on to the next episode) or the same torrent, instead of any row that shares the group. From upstream Nuvio.
+- **Plugins with binary data** - plugin scrapers can now send and read binary request and response bodies (`arrayBuffer()`), which scrapers that decrypt responses need. From upstream Nuvio.
+- **SVG logos with pictures inside** - SVG logos and posters that embed or link an image no longer show up empty. From upstream Nuvio.
+- **Debrid stream lists** - building long debrid stream lists does less repeated work. From upstream Nuvio.
+- **Black bars in hero trailers** - trailers on Home and details pages now trim black bars baked into the video (a widescreen film in a 16:9 upload) before filling the hero, using the player's Auto Crop.
+
 ## 1.16.0 - 2026-10-23
 
 ### Added

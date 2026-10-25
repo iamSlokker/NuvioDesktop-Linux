@@ -47,6 +47,8 @@ import com.nuvio.app.features.playlist.displayTitle
 import com.nuvio.app.features.streams.AddonStreamGroup
 import com.nuvio.app.features.streams.StreamItem
 import com.nuvio.app.features.streams.StreamBadgeSettingsRepository
+import com.nuvio.app.features.streams.badgeFillCssColorOrNull
+import com.nuvio.app.features.streams.toBadgeCssColorOrNull
 import com.nuvio.app.features.streams.StreamListSort
 import com.nuvio.app.features.streams.StreamListSortOrder
 import com.nuvio.app.features.streams.StreamScore
@@ -692,6 +694,7 @@ internal fun PlayerScreenRuntime.RenderPlayerRuntimeUi() {
         playlistPeekTitle = playlistPeek.first,
         playlistPeekItems = playlistPeek.second,
         party = rememberPartyControlsState(),
+        streamInfo = rememberStreamInfoState(),
     )
 
     val gestureCallbacks = rememberSurfaceGestureCallbacks()
@@ -1218,6 +1221,8 @@ private fun PlayerScreenRuntime.handlePlayerControlsEvent(type: String, value: D
     if (handlePartyControlsEvent(type, value)) return true
     if (handleIptvControlsEvent(type, value)) return true
     when (type) {
+        "streamInfoOpened" -> showStreamInfo = true
+        "streamInfoClosed" -> showStreamInfo = false
         "revealChrome" -> {
             if (!playerControlsLocked) {
                 controlsVisible = true
@@ -1854,9 +1859,10 @@ private fun playerControlSourceItem(
         PlayerControlStreamBadge(
             name = badge.name,
             imageUrl = badge.imageURL,
-            backgroundColor = badge.tagColor,
-            textColor = badge.textColor,
-            borderColor = badge.borderColor,
+            // As CSS for the HUD, and the fill only for a "filled" tag, as StreamBadgeChip does.
+            backgroundColor = badgeFillCssColorOrNull(badge.tagColor, badge.tagStyle).orEmpty(),
+            textColor = badge.textColor.toBadgeCssColorOrNull().orEmpty(),
+            borderColor = badge.borderColor.toBadgeCssColorOrNull().orEmpty(),
         )
     },
     isCurrent = isCurrent,
@@ -2018,7 +2024,7 @@ private fun <T> findCurrentPlayerControlStream(
  * set, because that is the flag mpv's own track selection is turned off by.
  */
 @Composable
-private fun PlayerScreenRuntime.activePlaybackSubtitleLabel(): String = if (useCustomSubtitles) {
+internal fun PlayerScreenRuntime.activePlaybackSubtitleLabel(): String = if (useCustomSubtitles) {
     visibleAddonSubtitles.firstOrNull { subtitle ->
         subtitle.id == selectedAddonSubtitleId || subtitle.url == selectedAddonSubtitleId
     }?.display.orEmpty()

@@ -212,7 +212,8 @@ actual fun HeroTrailerPlayerSurface(
     }
 
     LaunchedEffect(controller, sourceUrl) {
-        controller.setMpvProperty("panscan", "1.0")
+        // Fill the hero and trim bars baked into the video, as on Home (HomeHeroTrailerSurface).
+        controller.setResizeMode(com.nuvio.app.features.player.PlayerResizeMode.AutoCrop, quickAutoCrop = true)
         // Trailer loudness is wildly inconsistent between uploads; smooth it out in real time.
         controller.setMpvProperty("af", TRAILER_AUDIO_NORMALIZATION_FILTER)
     }
