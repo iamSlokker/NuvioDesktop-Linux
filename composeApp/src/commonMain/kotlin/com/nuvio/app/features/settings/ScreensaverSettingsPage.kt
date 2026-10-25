@@ -110,46 +110,48 @@ internal fun LazyListScope.screensaverSettingsContent(
         }
     }
 
-    item {
-        SettingsSection(
-            title = stringResource(Res.string.settings_screensaver_section_shutdown),
-            isTablet = isTablet,
-        ) {
-            SettingsGroup(
+    if (platformOffersScreensaverShutdown) {
+        item {
+            SettingsSection(
+                title = stringResource(Res.string.settings_screensaver_section_shutdown),
                 isTablet = isTablet,
-                modifier = Modifier.settingsSearchAnchors(
-                    "screensaver-shutdown-enable",
-                    "screensaver-shutdown-delay",
-                    "screensaver-playback-shutdown-delay",
-                ),
             ) {
-                SettingsSwitchRow(
-                    title = stringResource(Res.string.settings_screensaver_shutdown_enable),
-                    description = stringResource(Res.string.settings_screensaver_shutdown_enable_description),
-                    checked = settings.shutdownEnabled,
+                SettingsGroup(
                     isTablet = isTablet,
-                    onCheckedChange = ScreensaverSettingsRepository::setShutdownEnabled,
-                )
-                SettingsGroupDivider(isTablet = isTablet)
-                SettingsDropdownChoiceRow(
-                    title = stringResource(Res.string.settings_screensaver_shutdown_idle_time),
-                    description = stringResource(Res.string.settings_screensaver_shutdown_idle_time_description),
-                    options = screensaverDelayOptions(SCREENSAVER_SHUTDOWN_DELAY_OPTIONS_MINUTES, settings.shutdownDelayMinutes),
-                    selectedValue = settings.shutdownDelayMinutes,
-                    enabled = settings.shutdownEnabled,
-                    isTablet = isTablet,
-                    onSelected = ScreensaverSettingsRepository::setShutdownDelayMinutes,
-                )
-                SettingsGroupDivider(isTablet = isTablet)
-                SettingsDropdownChoiceRow(
-                    title = stringResource(Res.string.settings_screensaver_playback_shutdown_idle_time),
-                    description = stringResource(Res.string.settings_screensaver_playback_shutdown_idle_time_description),
-                    options = screensaverDelayOptions(SCREENSAVER_PLAYBACK_SHUTDOWN_DELAY_OPTIONS_MINUTES, settings.playbackShutdownDelayMinutes),
-                    selectedValue = settings.playbackShutdownDelayMinutes,
-                    enabled = settings.shutdownEnabled && settings.activeDuringPlayback,
-                    isTablet = isTablet,
-                    onSelected = ScreensaverSettingsRepository::setPlaybackShutdownDelayMinutes,
-                )
+                    modifier = Modifier.settingsSearchAnchors(
+                        "screensaver-shutdown-enable",
+                        "screensaver-shutdown-delay",
+                        "screensaver-playback-shutdown-delay",
+                    ),
+                ) {
+                    SettingsSwitchRow(
+                        title = stringResource(Res.string.settings_screensaver_shutdown_enable),
+                        description = stringResource(Res.string.settings_screensaver_shutdown_enable_description),
+                        checked = settings.shutdownEnabled,
+                        isTablet = isTablet,
+                        onCheckedChange = ScreensaverSettingsRepository::setShutdownEnabled,
+                    )
+                    SettingsGroupDivider(isTablet = isTablet)
+                    SettingsDropdownChoiceRow(
+                        title = stringResource(Res.string.settings_screensaver_shutdown_idle_time),
+                        description = stringResource(Res.string.settings_screensaver_shutdown_idle_time_description),
+                        options = screensaverDelayOptions(SCREENSAVER_SHUTDOWN_DELAY_OPTIONS_MINUTES, settings.shutdownDelayMinutes),
+                        selectedValue = settings.shutdownDelayMinutes,
+                        enabled = settings.shutdownEnabled,
+                        isTablet = isTablet,
+                        onSelected = ScreensaverSettingsRepository::setShutdownDelayMinutes,
+                    )
+                    SettingsGroupDivider(isTablet = isTablet)
+                    SettingsDropdownChoiceRow(
+                        title = stringResource(Res.string.settings_screensaver_playback_shutdown_idle_time),
+                        description = stringResource(Res.string.settings_screensaver_playback_shutdown_idle_time_description),
+                        options = screensaverDelayOptions(SCREENSAVER_PLAYBACK_SHUTDOWN_DELAY_OPTIONS_MINUTES, settings.playbackShutdownDelayMinutes),
+                        selectedValue = settings.playbackShutdownDelayMinutes,
+                        enabled = settings.shutdownEnabled && settings.activeDuringPlayback,
+                        isTablet = isTablet,
+                        onSelected = ScreensaverSettingsRepository::setPlaybackShutdownDelayMinutes,
+                    )
+                }
             }
         }
     }

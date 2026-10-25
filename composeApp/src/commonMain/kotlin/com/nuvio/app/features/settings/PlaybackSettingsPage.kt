@@ -1359,25 +1359,29 @@ private fun PlaybackSettingsSection(
                                 onClick = PlayerSettingsRepository::resetDesktopColorTuning,
                             )
                         }
-                        SettingsGroupDivider(isTablet = isTablet)
-                        SettingsChoiceRow(
-                            title = stringResource(Res.string.settings_playback_desktop_renderer),
-                            description = autoPlayPlayerSettings.desktopRendererApi.description,
-                            options = DesktopRendererApi.entries.map { SettingsChoiceOption(it, it.label) },
-                            selectedValue = autoPlayPlayerSettings.desktopRendererApi,
-                            isTablet = isTablet,
-                            modifier = Modifier.settingsScrollAnchor(SettingsScrollAnchor.DesktopRenderer),
-                            onSelected = PlayerSettingsRepository::setDesktopRendererApi,
-                        )
-                        SettingsGroupDivider(isTablet = isTablet)
-                        SettingsSwitchRow(
-                            title = stringResource(Res.string.settings_playback_desktop_hdr_ui_compensation),
-                            description = stringResource(Res.string.settings_playback_desktop_hdr_ui_compensation_description),
-                            checked = autoPlayPlayerSettings.desktopHdrUiCompensationEnabled,
-                            isTablet = isTablet,
-                            modifier = Modifier.settingsScrollAnchor(SettingsScrollAnchor.searchKey("hdr-ui-compensation")),
-                            onCheckedChange = PlayerSettingsRepository::setDesktopHdrUiCompensation,
-                        )
+                        if (platformOffersInterfaceRenderer) {
+                            SettingsGroupDivider(isTablet = isTablet)
+                            SettingsChoiceRow(
+                                title = stringResource(Res.string.settings_playback_desktop_renderer),
+                                description = autoPlayPlayerSettings.desktopRendererApi.description,
+                                options = DesktopRendererApi.entries.map { SettingsChoiceOption(it, it.label) },
+                                selectedValue = autoPlayPlayerSettings.desktopRendererApi,
+                                isTablet = isTablet,
+                                modifier = Modifier.settingsScrollAnchor(SettingsScrollAnchor.DesktopRenderer),
+                                onSelected = PlayerSettingsRepository::setDesktopRendererApi,
+                            )
+                        }
+                        if (platformOffersHdrUiCompensation) {
+                            SettingsGroupDivider(isTablet = isTablet)
+                            SettingsSwitchRow(
+                                title = stringResource(Res.string.settings_playback_desktop_hdr_ui_compensation),
+                                description = stringResource(Res.string.settings_playback_desktop_hdr_ui_compensation_description),
+                                checked = autoPlayPlayerSettings.desktopHdrUiCompensationEnabled,
+                                isTablet = isTablet,
+                                modifier = Modifier.settingsScrollAnchor(SettingsScrollAnchor.searchKey("hdr-ui-compensation")),
+                                onCheckedChange = PlayerSettingsRepository::setDesktopHdrUiCompensation,
+                            )
+                        }
                         SettingsGroupDivider(isTablet = isTablet)
                         SettingsSwitchRow(
                             title = stringResource(Res.string.settings_playback_desktop_steady_frame_pacing),
@@ -1387,15 +1391,17 @@ private fun PlaybackSettingsSection(
                             modifier = Modifier.settingsScrollAnchor(SettingsScrollAnchor.searchKey("steady-frame-pacing")),
                             onCheckedChange = PlayerSettingsRepository::setDesktopSteadyFramePacing,
                         )
-                        SettingsGroupDivider(isTablet = isTablet)
-                        SettingsChoiceRow(
-                            title = stringResource(Res.string.settings_playback_desktop_low_vram),
-                            description = autoPlayPlayerSettings.desktopLowVramMode.description,
-                            options = DesktopLowVramMode.entries.map { SettingsChoiceOption(it, it.label) },
-                            selectedValue = autoPlayPlayerSettings.desktopLowVramMode,
-                            isTablet = isTablet,
-                            onSelected = PlayerSettingsRepository::setDesktopLowVramMode,
-                        )
+                        if (platformOffersLowVramMode) {
+                            SettingsGroupDivider(isTablet = isTablet)
+                            SettingsChoiceRow(
+                                title = stringResource(Res.string.settings_playback_desktop_low_vram),
+                                description = autoPlayPlayerSettings.desktopLowVramMode.description,
+                                options = DesktopLowVramMode.entries.map { SettingsChoiceOption(it, it.label) },
+                                selectedValue = autoPlayPlayerSettings.desktopLowVramMode,
+                                isTablet = isTablet,
+                                onSelected = PlayerSettingsRepository::setDesktopLowVramMode,
+                            )
+                        }
                         SettingsGroupDivider(isTablet = isTablet)
                         SettingsChoiceRow(
                             title = stringResource(Res.string.settings_playback_desktop_buffer_preset),
