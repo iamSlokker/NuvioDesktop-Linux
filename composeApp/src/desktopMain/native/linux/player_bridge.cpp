@@ -198,6 +198,7 @@ template<class F> auto guarded(JNIEnv *env, F action) -> decltype(action()) {
 struct Player;
 std::string audioTracksJson(Player &player);
 std::string subtitleTracksJson(Player &player);
+std::string videoTracksJson(Player &player);
 
 // Xlib's error handler belongs to the process, not to an mpv handle. Reserve
 // the whole lifetime, including partial initialization and final restoration.
@@ -756,6 +757,26 @@ std::string audioChannelLayoutName(const std::string &channels, int64_t count) {
     }
 }
 
+// Raw facts for the player badges and the stream info panel, in the fields the Windows bridge
+// reports (upstream 774265f13): empty / 0 when mpv does not know them. demux-bitrate is the
+// container's figure and is often 0.
+std::string trackMediaFactsJson(Player &player, const std::string &prefix, bool video) {
+    double fps = player.number((prefix + "demux-fps").c_str(), 0.0);
+    if (!std::isfinite(fps) || fps < 0.0) fps = 0.0;
+    std::ostringstream json;
+    json.imbue(std::locale::classic());
+    json << ",\"codec\":" << jsonString(trimmed(player.stringProperty((prefix + "codec").c_str())))
+         << ",\"profile\":" << jsonString(trimmed(player.stringProperty((prefix + "codec-profile").c_str())))
+         << ",\"channelCount\":" << player.integer((prefix + "demux-channel-count").c_str())
+         << ",\"dvProfile\":" << (video ? player.integer((prefix + "dolby-vision-profile").c_str()) : 0)
+         << ",\"width\":" << player.integer((prefix + "demux-w").c_str())
+         << ",\"height\":" << player.integer((prefix + "demux-h").c_str())
+         << ",\"fps\":" << fps
+         << ",\"bitrate\":" << player.integer((prefix + "demux-bitrate").c_str())
+         << ",\"sampleRate\":" << player.integer((prefix + "demux-samplerate").c_str());
+    return json.str();
+}
+
 std::string audioTracksJson(Player &player) {
     const int64_t count = player.integer("track-list/count");
     int64_t logicalIndex = 0;
@@ -787,7 +808,8 @@ std::string audioTracksJson(Player &player) {
             ",\"id\":" + jsonString(std::to_string(trackId)) +
             ",\"label\":" + jsonString(label) + ",\"language\":" + jsonString(language) +
             ",\"selected\":" + (player.flag((prefix + "selected").c_str()) ? "true" : "false") +
-            ",\"forced\":" + (player.flag((prefix + "forced").c_str()) ? "true" : "false") + '}';
+            ",\"forced\":" + (player.flag((prefix + "forced").c_str()) ? "true" : "false") +
+            trackMediaFactsJson(player, prefix, false) + '}';
         ++logicalIndex;
     }
     return json + ']';
@@ -819,7 +841,34 @@ std::string subtitleTracksJson(Player &player) {
             ",\"id\":" + jsonString(std::to_string(trackId)) +
             ",\"label\":" + jsonString(label) + ",\"language\":" + jsonString(language) +
             ",\"selected\":" + (selected ? "true" : "false") +
-            ",\"forced\":" + (forced ? "true" : "false") + '}';
+            ",\"forced\":" + (forced ? "true" : "false") +
+            trackMediaFactsJson(player, prefix, false) + '}';
+        ++logicalIndex;
+    }
+    return json + ']';
+}
+
+// The video tracks for the player badges and the stream info panel (upstream 774265f13), read
+// synchronously like the audio and subtitle lists. Labels follow the audio list's rules.
+std::string videoTracksJson(Player &player) {
+    const int64_t count = player.integer("track-list/count");
+    int64_t logicalIndex = 0;
+    std::string json = "[";
+    for (int64_t index = 0; index < count; ++index) {
+        std::string prefix = "track-list/" + std::to_string(index) + "/";
+        if (player.stringProperty((prefix + "type").c_str()) != "video") continue;
+        int64_t trackId = player.integer((prefix + "id").c_str(), logicalIndex + 1);
+        std::string title = trimmed(player.stringProperty((prefix + "title").c_str()));
+        std::string language = trimmed(player.stringProperty((prefix + "lang").c_str()));
+        std::string label = !title.empty() ? title : !language.empty() ? language :
+            "Video " + std::to_string(logicalIndex + 1);
+        if (logicalIndex > 0) json += ',';
+        json += "{\"index\":" + std::to_string(logicalIndex) +
+            ",\"id\":" + jsonString(std::to_string(trackId)) +
+            ",\"label\":" + jsonString(label) + ",\"language\":" + jsonString(language) +
+            ",\"selected\":" + (player.flag((prefix + "selected").c_str()) ? "true" : "false") +
+            ",\"forced\":" + (player.flag((prefix + "forced").c_str()) ? "true" : "false") +
+            trackMediaFactsJson(player, prefix, true) + '}';
         ++logicalIndex;
     }
     return json + ']';
@@ -1096,6 +1145,13 @@ JNI_METHOD(jstring, audioTracksJson)(JNIEnv *env, jobject, jlong handle) {
     if (handle == 0) return env->NewStringUTF("[]");
     return withPlayer(env, handle, [&](Player &p) {
         std::string json = audioTracksJson(p);
+        return env->NewStringUTF(json.c_str());
+    });
+}
+JNI_METHOD(jstring, videoTracksJson)(JNIEnv *env, jobject, jlong handle) {
+    if (handle == 0) return env->NewStringUTF("[]");
+    return withPlayer(env, handle, [&](Player &p) {
+        std::string json = videoTracksJson(p);
         return env->NewStringUTF(json.c_str());
     });
 }
