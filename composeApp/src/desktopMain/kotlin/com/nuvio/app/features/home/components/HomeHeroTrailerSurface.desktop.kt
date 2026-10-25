@@ -248,9 +248,14 @@ actual fun HomeHeroTrailerSurface(
     }
 
     // Crop the trailer to fill the hero region (no letterbox) so it reads as part of the
-    // hero rather than a pillarboxed PIP window. panscan queues until the handle exists.
+    // hero rather than a pillarboxed PIP window. Auto Crop rather than a bare panscan: it also
+    // trims black bars baked into the video itself (a scope film in a 16:9 upload), which panscan
+    // alone leaves on screen. Upstream does this with a frame sampler (e22baecec); ours is the
+    // player's own bar detector, on upstream's quick cadence (a frame every 400 ms, settled after
+    // four agreeing ones) rather than the film's five seconds of learning. The mode is re-applied
+    // when the handle attaches.
     LaunchedEffect(controller, sourceUrl) {
-        controller.setMpvProperty("panscan", "1.0")
+        controller.setResizeMode(com.nuvio.app.features.player.PlayerResizeMode.AutoCrop, quickAutoCrop = true)
         // Trailer loudness is wildly inconsistent between uploads; smooth it out in real time.
         controller.setMpvProperty("af", TRAILER_AUDIO_NORMALIZATION_FILTER)
     }
