@@ -85,7 +85,7 @@ internal object NuvioCalendarRepositoryProbe {
         WatchedStorage.savePayload(1, buildJsonObject { put("items", json.encodeToJsonElement(items)) }.toString())
     }
 
-    private fun saveCache(vararg items: NuvioCalendarCachedItem, profileId: Int = 1, version: Int = 1) {
+    private fun saveCache(vararg items: NuvioCalendarCachedItem, profileId: Int = 1, version: Int = NuvioCalendarCacheEntry.VERSION) {
         NuvioCalendarCacheStorage.save(json.encodeToString(NuvioCalendarCacheEntry(
             profileId = profileId, version = version, items = items.toList(), builtAtEpochMs = System.currentTimeMillis(),
         )))
