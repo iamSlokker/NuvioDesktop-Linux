@@ -5601,6 +5601,63 @@ const maybeAutoGoLive = iptv => {
   send("goLive", IPTV_GO_LIVE_CUSHION_MS);
 };
 
+// Linux: the opening decision above assumes the connect burst is in half a second into playback.
+// Here it was still arriving long after (the received end ran ~2.4x real time for ~8 s), so a
+// channel judged near live, or jumped to an edge that kept moving, then sat ~25 s behind. Linux
+// keeps watching for a while after the decision and, once the burst has slowed to real time (or
+// the watch ends), goes live once if playback is still further behind than LIVE allows. Any seek,
+// pause or channel change by the viewer ends the watch, so it never undoes a rewind.
+const LINUX_IPTV_CATCH_UP_WATCH_MS = 20000;
+// The received end's growth is measured over this span; at most this many ms per ms is settled.
+const LINUX_IPTV_BURST_SPAN_MS = 1500;
+const LINUX_IPTV_BURST_SETTLED_RATE = 1.25;
+let linuxIptvCatchUp = null;
+
+const maybeLinuxIptvCatchUp = iptv => {
+  if (!linuxHost) return;
+  if (iptv.channelLabel !== iptvAutoLiveChannel || !iptvAutoLiveDone) {
+    linuxIptvCatchUp = null;
+    return;
+  }
+  if (iptvOpeningJumpPending()) return;
+  const now = Date.now();
+  const positionMs = Math.max(0, Number(state.positionMs) || 0);
+  const bufferedMs = Math.max(0, Number(state.bufferedMs) || 0);
+  let watch = linuxIptvCatchUp;
+  if (!watch || watch.channel !== iptv.channelLabel) {
+    watch = linuxIptvCatchUp = { channel: iptv.channelLabel, since: now, last: null, samples: [], done: false };
+  }
+  if (watch.done) return;
+  if (!state.isPlaying) {
+    watch.done = true;
+    return;
+  }
+  // A seek shows as playback moving back, or forward faster than the clock; a stall does neither.
+  // The opening jump's own landing is not one.
+  const last = watch.last;
+  watch.last = { at: now, positionMs };
+  const landing = iptvAutoLiveSentAt > 0 && now - iptvAutoLiveSentAt < 2 * IPTV_AUTO_LIVE_LANDING_MS;
+  if (last && !landing && (positionMs < last.positionMs - 500 || positionMs - last.positionMs > now - last.at + 2000)) {
+    watch.done = true;
+    return;
+  }
+  if (state.isLoading) return;
+  watch.samples.push({ at: now, bufferedMs });
+  while (watch.samples.length > 1 && now - watch.samples[1].at >= LINUX_IPTV_BURST_SPAN_MS) watch.samples.shift();
+  const first = watch.samples[0];
+  const span = now - first.at;
+  const settled = span >= LINUX_IPTV_BURST_SPAN_MS &&
+    bufferedMs - first.bufferedMs <= span * LINUX_IPTV_BURST_SETTLED_RATE;
+  const watchOver = now - watch.since >= LINUX_IPTV_CATCH_UP_WATCH_MS;
+  if (!settled && !watchOver) return;
+  if (iptvRawBehindLiveMs() > IPTV_LIVE_SLACK_MS) {
+    watch.done = true;
+    send("goLive", IPTV_GO_LIVE_CUSHION_MS);
+  } else if (watchOver) {
+    watch.done = true;
+  }
+};
+
 const renderIptvLive = () => {
   const iptv = state.iptv || null;
   root.classList.toggle("iptv-live", Boolean(iptv));
@@ -5609,6 +5666,7 @@ const renderIptvLive = () => {
   setVisible(iptvChannelsButton, Boolean(iptv));
   if (!iptv) return;
   maybeAutoGoLive(iptv);
+  maybeLinuxIptvCatchUp(iptv);
   // The previous/next buttons beside play change channel.
   document.querySelectorAll(".episode-skip").forEach(button => {
     setVisible(button, true);
