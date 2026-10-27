@@ -12,7 +12,9 @@ const root = document.getElementById("playerRoot");
 // The Linux HUD runs in WebKitGTK, which repainted only the damaged regions of this transparent
 // window over a cleared buffer in two places (the channel cover and the live TV controls); the
 // Linux-only rules keyed to this class keep Windows and macOS on upstream's behaviour exactly.
-const linuxHost = /\(X11; Linux/.test(navigator.userAgent);
+// Distribution builds brand the platform token ("X11; Ubuntu; Linux x86_64" in Ubuntu's WebKitGTK,
+// which the DEB runs on there), so the vendor in between is allowed.
+const linuxHost = /\(X11;[^)]*\bLinux\b/.test(navigator.userAgent);
 root.classList.toggle("linux-host", linuxHost);
 const contextMenu = document.getElementById("contextMenu");
 const seek = document.getElementById("seek");
