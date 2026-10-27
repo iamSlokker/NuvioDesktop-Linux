@@ -9,6 +9,11 @@ const isHeroTrailerSurface = (() => {
 })();
 
 const root = document.getElementById("playerRoot");
+// The Linux HUD runs in WebKitGTK, which repainted only the damaged regions of this transparent
+// window over a cleared buffer in two places (the channel cover and the live TV controls); the
+// Linux-only rules keyed to this class keep Windows and macOS on upstream's behaviour exactly.
+const linuxHost = /\(X11; Linux/.test(navigator.userAgent);
+root.classList.toggle("linux-host", linuxHost);
 const contextMenu = document.getElementById("contextMenu");
 const seek = document.getElementById("seek");
 const pipSeek = document.getElementById("pipSeek");
@@ -5070,6 +5075,25 @@ const setIptvLoading = (active, channelLabel) => {
   if (bar) bar.style.width = "100%";
 };
 
+// Linux: the channel cover keeps its iptv-loading look through the fade-out, then sheds it once the
+// fade has finished. Left on the hidden cover it made the WebKitGTK HUD flicker whenever the
+// controls were shown during live TV.
+const IPTV_LOADING_FADE_MS = 320;
+let iptvLoadingReleaseTimer = 0;
+const scheduleIptvLoadingClassRelease = showing => {
+  if (!linuxHost) return;
+  if (showing) {
+    window.clearTimeout(iptvLoadingReleaseTimer);
+    iptvLoadingReleaseTimer = 0;
+    return;
+  }
+  if (iptvLoadingReleaseTimer || !openingOverlay.classList.contains("iptv-loading")) return;
+  iptvLoadingReleaseTimer = window.setTimeout(() => {
+    iptvLoadingReleaseTimer = 0;
+    if (!openingOverlay.classList.contains("visible")) openingOverlay.classList.remove("iptv-loading");
+  }, IPTV_LOADING_FADE_MS + 40);
+};
+
 const renderOpeningOverlay = suppress => {
   const progress = normalizedOpeningProgress();
   const artworkUrl = setImageSource(openingArtwork, state.openingArtwork);
@@ -5093,6 +5117,7 @@ const renderOpeningOverlay = suppress => {
   // layout; it changes over only when the next showing is not a channel.
   const iptvLoading = Boolean(showOpening && state.iptv);
   if (showOpening) openingOverlay.classList.toggle("iptv-loading", iptvLoading);
+  scheduleIptvLoadingClassRelease(showOpening);
   setIptvLoading(iptvLoading, state.iptv ? (state.iptv.channelLabel || "") : "");
   openingOverlay.classList.toggle("has-artwork", Boolean(artworkUrl));
   openingOverlay.classList.toggle("has-progress", hasProgress);

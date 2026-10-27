@@ -16,6 +16,7 @@
 
 ### Fixed
 
+- **Live TV HUD Flicker On Linux** - with a channel open, the Linux player's controls flickered whenever they were shown, and the channel's loading cover showed as a small card on black. The HUD runs in WebKitGTK there, which repainted only the changed regions over a cleared window once the new channel cover had been shown; the cover now keeps the film cover's shimmer layer while it is up, and drops its loading look once its fade-out has finished. Windows and macOS are unchanged.
 - **SDR To HDR On Linux** - the new SDR To HDR switch no longer shows in Settings or settings search on Linux. It only works with Windows HDR on, and the Linux player never reports an HDR display, so on Linux it was a switch that did nothing.
 - **Windows-only settings on Linux** - Interface Renderer, HDR display correction, Low VRAM Mode and the screensaver's Shut down section no longer show on Linux, and settings search no longer lists them or the RTX Video and SVP settings. Linux always draws the interface with OpenGL, the HDR correction and Low VRAM Mode only run on Windows, and the Linux screensaver only dims, so these were controls that did nothing. Windows and macOS are unchanged.
 - **RTX HDR With Anime Shaders** - the remaining colour fringing along lines when True HDR runs together with Anime4K or a custom shader. NVIDIA's video processor expands the video's colour detail before mpv gets the frame, and the result sat slightly off the sharpened lines. A new pass now lines the colour back up with the brightness before the shaders run.

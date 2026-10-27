@@ -1750,6 +1750,14 @@ button svg * {
 .opening-overlay.iptv-loading .opening-progress-track {
   display: none !important;
 }
+/* Linux (WebKitGTK): the channel cover keeps the film cover's shimmer layer. It repaints the whole
+   window every frame; without it only the bar's damage was repainted over a cleared window, so the
+   cover showed as a small card on black. */
+.player.linux-host .opening-overlay.iptv-loading::before {
+  display: block !important;
+  opacity: .68;
+  animation: image-shimmer 3200ms ease-in-out infinite;
+}
 .opening-overlay.iptv-loading .iptv-loading-card {
   display: flex;
   flex-direction: column;
