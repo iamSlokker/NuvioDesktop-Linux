@@ -21,7 +21,7 @@ class LinuxFirstRunWizardControllerTest {
     }
     @Test fun freshLaunchAppliesDefaultsAndOpensWizard() = probe("initial")
     @Test fun stepNavigationIsBounded() = probe("navigation")
-    @Test fun draftDoesNotWritePreferencesBeforeFinish() = probe("staged")
+    @Test fun choicesPreviewLiveAndCloseRestoresPreferences() = probe("staged")
     @Test fun finishAppliesPreferencesAndDismissesKeyPrompt() = probe("finish")
     @Test fun completionAndPreferencesSurviveRestart() = restart("finish", "completedRead")
     @Test fun unfinishedWizardReopensFromPersistedSettingsNotUnsavedDraft() = restart("partialWrite", "partialRead")
@@ -62,7 +62,7 @@ internal object LinuxFirstRunWizardControllerProbe {
         when (scenario) {
             "initial", "corruptMarker" -> {
                 assertTrue(state().visible)
-                assertEquals(FirstRunWizardStep.Experience, state().step)
+                assertEquals(state().steps.first(), state().step)
                 assertFalse(state().isRerun)
                 assertEquals(HomeDisplayMode.TvMode, state().draft.displayMode)
                 assertEquals(5, state().draft.trailerDelaySeconds)
@@ -73,20 +73,26 @@ internal object LinuxFirstRunWizardControllerProbe {
             "navigation" -> {
                 FirstRunWizardController.back()
                 assertTrue(state().isFirstStep)
-                repeat(4) { FirstRunWizardController.next() }
+                // One step past either end stays there, whatever the wizard's current step count.
+                repeat(state().steps.size) { FirstRunWizardController.next() }
                 assertTrue(state().isLastStep)
-                repeat(4) { FirstRunWizardController.back() }
+                repeat(state().steps.size) { FirstRunWizardController.back() }
                 assertTrue(state().isFirstStep)
             }
             "staged", "partialWrite" -> {
                 HomeCatalogSettingsRepository.setSmoothScrollingEnabled(false)
                 FirstRunWizardController.updateDraft { it.copy(displayMode = HomeDisplayMode.Basic,
-                    tmdbApiKey = "fixture-unsaved", trailerDelaySeconds = 19) }
+                    tmdbApiKey = "fixture-unsaved", trailerDelaySeconds = 8) }
                 FirstRunWizardController.next()
-                assertEquals(HomeDisplayMode.TvMode, homeDisplayModeOf(home()))
-                assertEquals(5, player().heroTvTrailerDelaySeconds)
+                // Choices are written as they are made (Home behind the panel is the preview);
+                // keys wait for Finish.
+                assertEquals(HomeDisplayMode.Basic, homeDisplayModeOf(home()))
+                assertEquals(8, player().heroTvTrailerDelaySeconds)
                 assertEquals("", TmdbSettingsRepository.snapshot().apiKey)
                 FirstRunWizardController.close()
+                // Every exit but Finish puts the settings back as they were when the panel opened.
+                assertEquals(HomeDisplayMode.TvMode, homeDisplayModeOf(home()))
+                assertEquals(5, player().heroTvTrailerDelaySeconds)
                 assertFalse(state().visible)
                 assertEquals(0, FirstRunWizardStorage.completedVersion())
                 assertFalse(ApiKeysOnboardingStorage.isPermanentlyDismissed())
@@ -148,8 +154,9 @@ internal object LinuxFirstRunWizardControllerProbe {
             }
             "basic" -> {
                 val before = home()
-                FirstRunWizardController.updateDraft { it.copy(displayMode = HomeDisplayMode.Basic,
-                    adaptiveHeroVerticalBias = 0.9f, tvRowDotsEnabled = !before.tvRowDotsEnabled) }
+                // Only the fields the draft changes are written: picking Basic leaves the Adaptive
+                // and TV preferences as they were.
+                FirstRunWizardController.updateDraft { it.copy(displayMode = HomeDisplayMode.Basic) }
                 FirstRunWizardController.finish()
                 assertEquals(HomeDisplayMode.Basic, homeDisplayModeOf(home()))
                 assertEquals(before.adaptiveHeroVerticalBias, home().adaptiveHeroVerticalBias)
