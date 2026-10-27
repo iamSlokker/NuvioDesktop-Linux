@@ -15,7 +15,7 @@ import kotlin.test.assertTrue
 /** Exercises the shared resolver in fresh JVMs without opening windows or loading native code. */
 class LinuxPackagedResourcesTest {
     @Test
-    fun linuxLauncherResolvesBundledModelsNoticesAndMovedSetupImages() = withHeadlessFixture { root ->
+    fun linuxLauncherResolvesBundledModelsAndNotices() = withHeadlessFixture { root ->
         runHeadlessProbe(root, LinuxPackagedResourcesProbe::class.java, "linux-classpath")
     }
 
@@ -59,10 +59,6 @@ object LinuxPackagedResourcesProbe {
                     "anime-mapping/ODBL-1.0.txt",
                     "anime-mapping/DBCL-1.0.txt",
                     "player-shaders/LICENSE.md",
-                    "setup/setup_mode_basic.webp",
-                    "setup/setup_mode_adaptive.webp",
-                    "setup/setup_mode_adaptive_ambient.webp",
-                    "setup/setup_mode_tv.webp",
                 ).forEach { path ->
                     val expected = assertNotNull(javaClass.getResourceAsStream("/$path"), path).use { it.readBytes() }
                     val actual = assertNotNull(PackagedResources.open(path), path).use { it.readBytes() }

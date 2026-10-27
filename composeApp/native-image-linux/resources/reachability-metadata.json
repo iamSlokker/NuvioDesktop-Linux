@@ -10,9 +10,6 @@
       "glob": "backdrop-framing/**"
     },
     {
-      "glob": "setup/**"
-    },
-    {
       "glob": "anime-list-mini.json"
     },
     {
