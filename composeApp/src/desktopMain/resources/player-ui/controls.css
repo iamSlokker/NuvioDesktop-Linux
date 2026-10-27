@@ -6808,6 +6808,14 @@ svg {
 
 /* Behind the live edge: the dot greys out and the badge becomes the "go live" button. */
 .iptv-live-badge.behind { cursor: pointer; }
+/* Linux (WebKitGTK): presses on live TV's badge and Channels button land on the button itself.
+   Their labels are rewritten with every playerUpdate (4 a second here), and WebKit drops the click
+   of a press whose target text node was replaced before the release, so Go live took several
+   clicks. */
+.player.linux-host .iptv-live-badge *,
+.player.linux-host #iptvChannelsButton * {
+  pointer-events: none;
+}
 .iptv-live-badge.behind .iptv-live-dot { background: rgba(255, 255, 255, .45); box-shadow: none; }
 .iptv-live-badge.behind:hover,
 .iptv-live-badge.behind:focus-visible {
