@@ -9,6 +9,7 @@
 #include "audio_passthrough_recovery.h"
 #include "player_session_options.h"
 #include "hdr_wayland_session.h"
+#include "live_cache_seek.h"
 #include "auto_crop.h"
 #include "speech_spot.h"
 
@@ -16,6 +17,7 @@
 #include <cctype>
 #include <atomic>
 #include <clocale>
+#include <chrono>
 #include <cmath>
 #include <cstdio>
 #include <future>
@@ -222,6 +224,11 @@ struct Player {
     int lastVideoHdr = -1; // Event thread only; never carried to a replacement player.
     LinuxHttpRecoveryEvents recoveryEvents; // Protected by operations, including seek issuance.
     LinuxAudioPassthroughRecovery audioRecovery; // Same operation lock and per-player lifetime.
+    // Live TV cache-only seeks (live_cache_seek.h), under operations: whether the last one left
+    // hr-seek-demuxer-offset set, and its target, so held arrow steps chain off a seek in flight.
+    bool liveHrSeekOffsetApplied = false;
+    double liveSeekTargetSeconds = -1.0;
+    std::chrono::steady_clock::time_point liveSeekIssuedAt{};
     bool ownsX11Lifetime = false;
     // Experimental native-Wayland HDR session: no Canvas, X11 lifetime, HUD or thumbnails.
     bool hdrSession = false;
@@ -419,6 +426,11 @@ struct Player {
                 }
                 if (translated.loaded) { fileReady = true; ended = false; }
                 if (translated.restarted) ended = false;
+                // The demuxer offset of a cache-only live seek is per seek: it ends with the restart.
+                if (event->event_id == MPV_EVENT_PLAYBACK_RESTART && liveHrSeekOffsetApplied) {
+                    mpv_set_property_string(mpv, "hr-seek-demuxer-offset", "0");
+                    liveHrSeekOffsetApplied = false;
+                }
                 const auto now = LinuxAutoCrop::Clock::now();
                 if (translated.loaded) autoCrop.fileLoaded(now);
                 if (translated.restarted) autoCrop.playbackRestart(now);
@@ -682,6 +694,36 @@ void seek(Player &player, jlong ms, const char *mode) {
     checkMpv(player.recoveryEvents.commandSeek(player.mpv, ms, mode,
         relative ? player.number("time-pos", -1.0) : 0.0, LinuxHttpRecoveryEvents::Clock::now()), "seek");
     player.ended = false;
+}
+
+// Live TV: seeks kept inside the demuxer cache's seekable ranges (live_cache_seek.h). Exact, as on
+// Windows: a keyframe seek resolves up to a GOP earlier, and inside the cache the decode is free.
+LinuxLiveCacheState liveCacheState(Player &player) {
+    struct CacheState {
+        mpv_node node{};
+        ~CacheState() { mpv_free_node_contents(&node); }
+    } state;
+    if (mpv_get_property(player.mpv, "demuxer-cache-state", MPV_FORMAT_NODE, &state.node) < 0) return {};
+    return linuxLiveCacheState(state.node);
+}
+
+void issueCachedSeek(Player &player, const LinuxLiveCacheState &cache, double target) {
+    const double offset = linuxCachedSeekDemuxerOffset(cache, target);
+    if (offset > 0.0 || player.liveHrSeekOffsetApplied) {
+        player.property("hr-seek-demuxer-offset", std::to_string(offset));
+        player.liveHrSeekOffsetApplied = offset > 0.0;
+    }
+    seek(player, std::llround(target * 1000.0), "absolute+exact");
+    player.liveSeekTargetSeconds = target;
+    player.liveSeekIssuedAt = std::chrono::steady_clock::now();
+}
+
+void seekWithinCache(Player &player, double target, const char *reason) {
+    const auto cache = liveCacheState(player);
+    const double clamped = linuxClampIntoCachedRanges(cache, target);
+    std::fprintf(stderr, "Linux %s requested=%.2f target=%.2f cacheEnd=%.2f ranges=%d%s\n", reason, target,
+        clamped, cache.cacheEnd, (int)cache.ranges.size(), clamped < 0.0 ? " skipped" : "");
+    if (clamped >= 0.0) issueCachedSeek(player, cache, clamped);
 }
 
 std::string chaptersJson(Player &player) {
@@ -1030,6 +1072,30 @@ JNI_METHOD(void, seekTo)(JNIEnv *env, jobject, jlong handle, jlong position) {
 }
 JNI_METHOD(void, seekBy)(JNIEnv *env, jobject, jlong handle, jlong offset) {
     withPlayer(env, handle, [&](Player &p) { seek(p, offset, "relative+exact"); });
+}
+JNI_METHOD(void, seekToCachedLiveEdge)(JNIEnv *env, jobject, jlong handle, jlong cushionMs) {
+    withPlayer(env, handle, [&](Player &p) {
+        const double timePos = p.number("time-pos", -1.0);
+        const auto cache = liveCacheState(p);
+        const double target = linuxCachedLiveEdgeTarget(cache, timePos, cushionMs);
+        std::fprintf(stderr, "Linux go live pos=%.2f cacheEnd=%.2f ranges=%d target=%.2f%s\n", timePos,
+            cache.cacheEnd, (int)cache.ranges.size(), target, target < 0.0 ? " skipped" : "");
+        if (target >= 0.0) issueCachedSeek(p, cache, target);
+    });
+}
+JNI_METHOD(void, seekWithinCacheTo)(JNIEnv *env, jobject, jlong handle, jlong positionMs) {
+    withPlayer(env, handle, [&](Player &p) { seekWithinCache(p, (double)positionMs / 1000.0, "live seek"); });
+}
+JNI_METHOD(void, seekWithinCacheBy)(JNIEnv *env, jobject, jlong handle, jlong offsetMs) {
+    withPlayer(env, handle, [&](Player &p) {
+        // Relative steps chain off a seek still in flight, so a held arrow keeps stepping instead
+        // of re-reading a time-pos that has not caught up yet.
+        const bool pendingFresh = p.liveSeekTargetSeconds >= 0.0 && (p.flag("seeking") ||
+            std::chrono::steady_clock::now() - p.liveSeekIssuedAt < std::chrono::milliseconds(800));
+        const double base = pendingFresh ? p.liveSeekTargetSeconds : p.number("time-pos", -1.0);
+        if (base < 0.0) return;
+        seekWithinCache(p, base + (double)offsetMs / 1000.0, "live step");
+    });
 }
 JNI_METHOD(void, requestSeekThumbnail)(JNIEnv *env, jobject, jlong handle, jlong positionMs) {
     guarded(env, [&] {
