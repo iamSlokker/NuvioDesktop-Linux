@@ -185,6 +185,16 @@ class NativeSmokeTest(unittest.TestCase):
         script = (Path(native_smoke.__file__).parents[3] / 'composeApp/scripts/linux-native-smoke.py').read_text()
         self.assertIn('select.select([bus.stdout], [], [], 30)', script)
 
+    def test_a_hung_smoke_reports_its_partial_output_and_deadline(self):
+        import subprocess
+        hung = subprocess.TimeoutExpired(['smoke'], 960, output=b'RUN 1 FIRST_FRAME_MS 1312 SELFTEST passed=14 failed=0 EXIT -15\n  run 2: waiting\xff\n')
+        partial, message = native_smoke.hung_report(hung, Path('/output/native-smoke'))
+        self.assertIn('RUN 1 FIRST_FRAME_MS 1312', partial)
+        self.assertIn('run 2: waiting', partial)
+        self.assertEqual('Native smoke gate FAILED: hung past 960s; no package may be built '
+                         '(logs in /output/native-smoke)', message)
+        self.assertEqual('', native_smoke.hung_report(subprocess.TimeoutExpired(['smoke'], 960), 'x')[0])
+
     def test_build_script_gates_the_deb_on_the_smoke_without_network(self):
         script = (Path(native_smoke.__file__).parent / 'native-build.sh').read_text()
         package = script[script.index('if [[ $phase == package ]]'):script.index('exit 0')]
