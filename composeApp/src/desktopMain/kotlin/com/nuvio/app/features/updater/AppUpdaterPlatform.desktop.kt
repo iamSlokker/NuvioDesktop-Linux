@@ -16,6 +16,8 @@ import java.time.Duration
 import java.util.Locale
 import java.util.zip.ZipFile
 import kotlin.system.exitProcess
+import nuvio.composeapp.generated.resources.*
+import com.nuvio.app.core.i18n.localizedString
 
 private const val updaterPreferencesName = "nuvio_updater"
 private const val ignoredTagKey = "ignored_release_tag"
@@ -135,7 +137,7 @@ actual object AppUpdaterPlatform {
     } else withContext(Dispatchers.IO) {
         runCatching {
             require(assetName.endsWith(".zip", ignoreCase = true)) {
-                "This portable build only supports ZIP update archives."
+                localizedString(Res.string.updater_this_portable_build_only_supports_zip)
             }
             // Fail closed. The update is unpacked and run automatically, so an asset with no
             // published digest cannot be checked at all; GitHub has published one for every asset
@@ -162,7 +164,7 @@ actual object AppUpdaterPlatform {
             val response = updaterHttpClient.send(request, HttpResponse.BodyHandlers.ofInputStream())
             if (response.statusCode() !in 200..299) {
                 response.body().close()
-                error("Update download failed with HTTP ${response.statusCode()}.")
+                error(localizedString(Res.string.updater_download_http_failed, response.statusCode()))
             }
 
             val totalBytes = response.headers().firstValue("Content-Length").orElse(null)
