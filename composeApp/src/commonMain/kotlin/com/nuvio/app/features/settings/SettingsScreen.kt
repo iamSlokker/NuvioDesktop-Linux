@@ -3174,8 +3174,9 @@ private fun DesktopActionRow(
         Column(modifier = Modifier.weight(1f)) {
             Text(
                 text = title,
+                modifier = settingsRowTitleAccentMask(title),
                 style = MaterialTheme.typography.bodyMedium,
-                color = tokens.colors.textPrimary,
+                color = settingsRowTitleColor(title),
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
             )

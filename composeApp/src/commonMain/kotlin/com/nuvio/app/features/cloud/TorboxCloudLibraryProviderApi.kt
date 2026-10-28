@@ -6,6 +6,9 @@ import com.nuvio.app.features.debrid.TorboxCloudFileDto
 import com.nuvio.app.features.debrid.TorboxCloudItemDto
 import kotlinx.coroutines.CancellationException
 import kotlinx.serialization.json.JsonPrimitive
+import nuvio.composeapp.generated.resources.Res
+import nuvio.composeapp.generated.resources.cloud_library_list_unreadable
+import org.jetbrains.compose.resources.getString
 
 internal class TorboxCloudLibraryProviderApi : CloudLibraryProviderApi {
     override val provider = DebridProviders.Torbox
@@ -60,19 +63,34 @@ internal class TorboxCloudLibraryProviderApi : CloudLibraryProviderApi {
         }
     }
 
-    private fun com.nuvio.app.features.debrid.DebridApiResponse<com.nuvio.app.features.debrid.TorboxEnvelopeDto<List<TorboxCloudItemDto>>>.itemsOrThrow(
+    private suspend fun com.nuvio.app.features.debrid.DebridApiResponse<com.nuvio.app.features.debrid.TorboxEnvelopeDto<List<TorboxCloudItemDto>>>.itemsOrThrow(
         type: CloudLibraryItemType,
     ): List<CloudLibraryItem> {
         if (!isSuccessful || body?.success == false) {
+            CloudLibraryLog.w {
+                "TorBox ${type.name} list failed: HTTP $status " +
+                    (body?.detail ?: body?.error ?: rawBody.take(200))
+            }
             throw IllegalStateException(body?.detail ?: body?.error ?: rawBody.takeIf { it.isNotBlank() })
         }
-        return body?.data.orEmpty().mapNotNull { dto ->
+        // A 200 whose body didn't decode (DebridApiLog has the reason) used to read as an empty
+        // account, which hid the whole TorBox row with nothing to say why.
+        val envelope = body ?: throw IllegalStateException(
+            getString(Res.string.cloud_library_list_unreadable, provider.displayName),
+        )
+        val dtos = envelope.data.orEmpty()
+        val items = dtos.mapNotNull { dto ->
             dto.toCloudLibraryItem(
                 providerId = provider.id,
                 providerName = provider.displayName,
                 type = type,
             )
         }
+        CloudLibraryLog.i {
+            "TorBox ${type.name} list: ${dtos.size} entries, ${items.size} kept, " +
+                "${items.count { it.playableFiles.isNotEmpty() }} with playable files"
+        }
+        return items
     }
 }
 

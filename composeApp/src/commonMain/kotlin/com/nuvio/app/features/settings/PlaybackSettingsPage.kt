@@ -371,8 +371,9 @@ private fun SettingsRowTextColumn(
     ) {
         Text(
             text = title,
+            modifier = settingsRowTitleAccentMask(title),
             style = if (isTablet) MaterialTheme.typography.bodyMedium else MaterialTheme.typography.bodyLarge,
-            color = MaterialTheme.colorScheme.onSurface,
+            color = settingsRowTitleColor(title),
             fontWeight = FontWeight.Medium,
         )
         if (!description.isNullOrBlank()) {
@@ -581,9 +582,9 @@ private fun SubtitleColorDropdownRow(
         Text(
             text = title,
             style = if (isTablet) MaterialTheme.typography.bodyMedium else MaterialTheme.typography.bodyLarge,
-            color = MaterialTheme.colorScheme.onSurface,
+            color = settingsRowTitleColor(title),
             fontWeight = FontWeight.Medium,
-            modifier = Modifier.weight(1f),
+            modifier = Modifier.weight(1f).then(settingsRowTitleAccentMask(title)),
         )
         Box(modifier = Modifier.width(controlWidth)) {
             Surface(

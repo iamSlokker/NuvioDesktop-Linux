@@ -662,8 +662,9 @@ private fun DiscoverRowShell(
         ) {
             Text(
                 text = title,
+                modifier = settingsRowTitleAccentMask(title),
                 style = MaterialTheme.typography.bodyLarge,
-                color = tokens.colors.textPrimary,
+                color = settingsRowTitleColor(title),
                 fontWeight = FontWeight.SemiBold,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,

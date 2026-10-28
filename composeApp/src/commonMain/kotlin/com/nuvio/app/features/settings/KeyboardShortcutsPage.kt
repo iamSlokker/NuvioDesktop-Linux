@@ -459,8 +459,9 @@ private fun GamepadSliderRow(
         ) {
             Text(
                 text = title,
+                modifier = settingsRowTitleAccentMask(title),
                 style = if (isTablet) MaterialTheme.typography.bodyMedium else MaterialTheme.typography.bodyLarge,
-                color = if (enabled) tokens.colors.textPrimary else tokens.colors.textMuted,
+                color = if (enabled) settingsRowTitleColor(title) else tokens.colors.textMuted,
                 fontWeight = FontWeight.Medium,
             )
             SettingsSubtext(text = description, isTablet = isTablet)
