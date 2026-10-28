@@ -8,6 +8,7 @@ import com.nuvio.app.features.details.playbackEpisodeNumber
 import com.nuvio.app.features.details.playbackSeasonNumber
 import com.nuvio.app.features.downloads.DownloadItem
 import com.nuvio.app.features.downloads.DownloadsRepository
+import com.nuvio.app.features.locallibrary.LocalLibraryRepository
 import com.nuvio.app.features.player.skip.NextEpisodeInfo
 import com.nuvio.app.features.streams.BingeReleaseHint
 import com.nuvio.app.features.streams.AddonStreamGroup
@@ -106,7 +107,10 @@ internal fun CoroutineScope.launchPlayerNextEpisodeAutoPlay(
     val nextSeasonNumber = nextVideo.playbackSeasonNumber()
     val nextEpisodeNumber = nextVideo.playbackEpisodeNumber()
 
-    val downloadedNextEpisode = if (!allowDownloaded) null else DownloadsRepository.findPlayableDownload(
+    // A title set to play its best online source keeps its local copy as a backup, as on the first
+    // click (App.kt folds the same override in): the next episode streams instead of taking the file.
+    val localCopyIsBackup = LocalLibraryRepository.routingFor(parentMetaId, nextVideo.id).ignoresLocalFile
+    val downloadedNextEpisode = if (!allowDownloaded || localCopyIsBackup) null else DownloadsRepository.findPlayableDownload(
         parentMetaId = parentMetaId,
         seasonNumber = nextSeasonNumber,
         episodeNumber = nextEpisodeNumber,

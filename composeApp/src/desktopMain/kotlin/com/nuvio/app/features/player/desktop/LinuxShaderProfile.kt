@@ -1,5 +1,6 @@
 package com.nuvio.app.features.player.desktop
 
+import com.nuvio.app.core.i18n.localizedString
 import com.nuvio.app.features.player.DesktopAnimeMode
 import com.nuvio.app.features.player.DesktopAnimeShaderSkipReason
 import com.nuvio.app.features.player.DesktopVideoSourceSize
@@ -56,7 +57,7 @@ internal fun linuxShaderProfile(
         plan.skipReason == DesktopAnimeShaderSkipReason.UltraHdSource ->
             if (active == DesktopAnimeMode.CustomShader) "Shader off — 4K source" else "Anime4K off — 4K source"
         paths.isEmpty() -> null
-        plan.preset != null -> "Anime4K ${plan.preset.label}"
+        plan.preset != null -> "Anime4K ${localizedString(plan.preset.labelRes)}"
         else -> File(custom).nameWithoutExtension
     }
     return LinuxShaderProfile(linuxShaderPathList(paths + listOfNotNull(casPath)), label, shaderOpts)

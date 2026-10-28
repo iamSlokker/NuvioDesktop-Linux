@@ -1,4 +1,5 @@
 #include "controls_overlay.h"
+#include "hud_labels_carry.h"
 #include "pip_hud_visibility.h"
 #include "pip_hud_geometry.h"
 #include "pip_geometry_dispatch.h"
@@ -121,6 +122,11 @@ struct LinuxControlsOverlay::State : std::enable_shared_from_this<State> {
     // Inbox only is shared with JNI callers; all other fields belong to GTK.
     std::mutex inbox;
     std::string latestJson;
+    // The HUD's label map (see hud_labels_carry.h), kept aside so it survives a later payload
+    // replacing the one that carried it, and whether the page has it yet.
+    std::string hudLabels;
+    bool latestCarriesLabels = false;
+    bool hudLabelsDelivered = false;
     std::deque<std::string> scripts;
     size_t scriptBytes = 0;
     bool deliveryPosted = false;
@@ -176,6 +182,7 @@ struct LinuxControlsOverlay::State : std::enable_shared_from_this<State> {
 
     void deliver() {
         std::string json;
+        std::string labels;
         std::deque<std::string> pending;
         {
             std::lock_guard<std::mutex> lock(inbox);
@@ -184,8 +191,14 @@ struct LinuxControlsOverlay::State : std::enable_shared_from_this<State> {
             json = latestJson;
             pending.swap(scripts);
             scriptBytes = 0;
+            if (!hudLabelsDelivered && !hudLabels.empty()) {
+                if (!latestCarriesLabels) labels = hudLabels;
+                hudLabelsDelivered = true;
+            }
         }
         if (!json.empty()) evaluate("window.playerControls(JSON.parse(" + jsString(json) + "))");
+        if (!labels.empty())
+            evaluate("window.playerControls({hudLabels:JSON.parse(" + jsString(labels) + ")})");
         for (const auto &script : pending) evaluate(script);
     }
 
@@ -385,7 +398,13 @@ struct LinuxControlsOverlay::State : std::enable_shared_from_this<State> {
         webkit_web_view_set_background_color(view, &transparent);
         gtk_container_add(GTK_CONTAINER(window), GTK_WIDGET(view));
         g_signal_connect(view, "load-changed", G_CALLBACK(+[](WebKitWebView *, WebKitLoadEvent event, gpointer data) {
-            if (event == WEBKIT_LOAD_STARTED) static_cast<State *>(data)->ready = false;
+            if (event == WEBKIT_LOAD_STARTED) {
+                auto *self = static_cast<State *>(data);
+                self->ready = false;
+                // A fresh page has no labels yet; the kept map goes out again with the next delivery.
+                std::lock_guard<std::mutex> lock(self->inbox);
+                self->hudLabelsDelivered = false;
+            }
         }), this);
         g_signal_connect(view, "load-failed", G_CALLBACK(+[](WebKitWebView *, WebKitLoadEvent,
             const gchar *, GError *error, gpointer) -> gboolean {
@@ -583,6 +602,12 @@ void LinuxControlsOverlay::updateControls(const std::string &json) {
     std::lock_guard<std::mutex> lock(state_->inbox);
     if (state_->closing) return;
     state_->latestJson = json;
+    std::string labels = linuxHudLabelsObject(json);
+    state_->latestCarriesLabels = !labels.empty();
+    if (state_->latestCarriesLabels) {
+        state_->hudLabels = std::move(labels);
+        state_->hudLabelsDelivered = false;
+    }
     state_->scheduleDelivery();
 }
 

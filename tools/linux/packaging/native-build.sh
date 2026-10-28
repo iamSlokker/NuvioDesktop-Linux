@@ -54,11 +54,12 @@ cmake -S composeApp/src/desktopMain/native/linux -B /output/native \
 cmake --build /output/native --parallel "$NUVIO_BUILD_JOBS" \
   --target player_bridge nuvio-hdr-probe quickjs linux_separate_audio_test linux_http_recovery_test \
   linux_audio_recovery_test linux_hdr_session_test linux_auto_crop_test linux_speech_spot_test \
-  linux_live_cache_seek_test
+  linux_live_cache_seek_test linux_hud_labels_carry_test
 /output/native/linux_separate_audio_test
 /output/native/linux_auto_crop_test
 /output/native/linux_speech_spot_test
 /output/native/linux_live_cache_seek_test
+/output/native/linux_hud_labels_carry_test
 /output/native/linux_http_recovery_test
 /output/native/linux_audio_recovery_test
 # Display variables are unset above; the canonical runtime must report waylandvk.

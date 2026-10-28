@@ -7042,12 +7042,12 @@ svg {
 .iptv-group-count { color: rgba(255,255,255,.5); font-size: 13px; }
 
 /* Next-episode card, one piece: thumbnail and text only. The whole card is the button, so there is
-   no separate Play control, and the card is as wide as its text rather than a fixed 292px with a
-   gap in the middle. Declared last so it applies to every layout, pills included. The action label
-   element stays in the markup because the script still writes to it. */
+   no separate Play control. The width stays fixed so the card doesn't grow and shrink with the
+   episode title; long titles ellipsize. Declared last so it applies to every layout, pills
+   included. The action label element stays in the markup because the script still writes to it. */
 .next-episode-card {
-  width: auto;
-  max-width: min(calc(var(--user-scale) * 340px), calc(100vw - (var(--hp) * 2)));
+  width: min(calc(var(--user-scale) * 292px), calc(100vw - (var(--hp) * 2)));
+  max-width: none;
   padding: calc(var(--user-scale) * 6px) calc(var(--user-scale) * 20px) calc(var(--user-scale) * 6px) calc(var(--user-scale) * 6px);
 }
 .next-episode-copy {
