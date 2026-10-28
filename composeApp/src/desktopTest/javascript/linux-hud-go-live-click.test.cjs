@@ -27,7 +27,7 @@ test('those are the labels renderIptvLive rewrites on every update', () => {
   assert.match(body, /iptvLiveBehind\.textContent = /);
   assert.match(body, /iptvChannelsLabel\.textContent = /);
   assert.match(html, /<button class="iptv-live-badge" id="iptvLiveBadge"[^>]*>\s*<span class="iptv-live-dot"[^>]*><\/span>\s*<span class="iptv-live-label" id="iptvLiveLabel"[^>]*>/);
-  assert.match(html, /<button [^>]*id="iptvChannelsButton"[^>]*>.*<span id="iptvChannelsLabel">/);
+  assert.match(html, /<button [^>]*id="iptvChannelsButton"[^>]*>.*<span id="iptvChannelsLabel"[^>]*>/);
 });
 
 test('Windows and macOS keep upstream behaviour', () => {
