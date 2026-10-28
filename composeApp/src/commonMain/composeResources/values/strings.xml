@@ -3087,6 +3087,7 @@
     <string name="player_action_video_settings">Video settings</string>
     <!-- CloudLibrary -->
     <string name="cloud_library_provider_unavailable">Cloud library is not available for %1$s.</string>
+    <string name="cloud_library_list_unreadable">%1$s sent a cloud library list Nuvio couldn't read.</string>
     <!-- Player iOS video settings modal -->
     <string name="player_video_settings_title">Video</string>
     <string name="player_video_settings_reset_tuning">Reset tuning</string>

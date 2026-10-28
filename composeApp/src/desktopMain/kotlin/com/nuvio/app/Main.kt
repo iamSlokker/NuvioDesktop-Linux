@@ -1107,6 +1107,10 @@ fun main(args: Array<String>) {
                             com.nuvio.app.core.ui.NuvioContextMenuRepresentation,
                         androidx.compose.foundation.text.LocalTextContextMenu provides
                             com.nuvio.app.core.ui.NuvioTextContextMenu,
+                        // Links go through the Windows shell, so browsers installed as packaged
+                        // apps (Arc) open them too.
+                        androidx.compose.ui.platform.LocalUriHandler provides
+                            com.nuvio.app.core.ui.DesktopUriHandler,
                     ) {
                         App()
                     }

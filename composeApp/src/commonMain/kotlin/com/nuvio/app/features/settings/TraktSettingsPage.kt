@@ -201,8 +201,9 @@ private fun TraktSettingsActionRow(
         ) {
             Text(
                 text = title,
+                modifier = settingsRowTitleAccentMask(title),
                 style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.onSurface,
+                color = settingsRowTitleColor(title),
                 fontWeight = FontWeight.Medium,
             )
             Text(

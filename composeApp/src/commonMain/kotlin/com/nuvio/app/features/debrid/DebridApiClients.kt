@@ -1,5 +1,6 @@
 package com.nuvio.app.features.debrid
 
+import co.touchlab.kermit.Logger
 import com.nuvio.app.features.addons.RawHttpResponse
 import com.nuvio.app.features.addons.httpRequestRaw
 import kotlinx.serialization.ExperimentalSerializationApi
@@ -585,14 +586,27 @@ internal suspend fun fetchTorboxCloudPages(
     }
 }
 
+internal val DebridApiLog = Logger.withTag("DebridApi")
+
+// A body that doesn't decode comes back as null, which callers read as "nothing there". Logged,
+// because one unexpected field type in a long list otherwise empties it without a trace.
 private inline fun <reified T> RawHttpResponse.decodeBody(): T? {
     if (body.isBlank() || T::class == Unit::class) return null
     return try {
         DebridApiJson.json.decodeFromString<T>(body)
-    } catch (_: SerializationException) {
+    } catch (error: SerializationException) {
+        logUndecodedBody(error)
         null
-    } catch (_: IllegalArgumentException) {
+    } catch (error: IllegalArgumentException) {
+        logUndecodedBody(error)
         null
+    }
+}
+
+private fun RawHttpResponse.logUndecodedBody(error: Exception) {
+    DebridApiLog.w {
+        "response from ${url.substringBefore('?')} did not decode (HTTP $status, ${body.length} chars): " +
+            error.message.orEmpty().take(400)
     }
 }
 

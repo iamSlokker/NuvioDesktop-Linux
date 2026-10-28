@@ -20,6 +20,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.hoverable
 import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.horizontalScroll
@@ -209,7 +210,7 @@ internal fun SettingsSubtext(
  * a time, so its offscreen layer is paid once rather than per row.
  */
 @Composable
-private fun settingsRowTitleAccentMask(title: String): Modifier {
+internal fun settingsRowTitleAccentMask(title: String): Modifier {
     val highlight by SettingsScrollAnchor.titleHighlight.collectAsStateWithLifecycle()
     // No mask when the accent is near-white: the title is gold then, and the mask would repaint it.
     return if (highlight?.title == title && MaterialTheme.nuvio.colors.selectionTextBrush() != null) {
@@ -219,8 +220,13 @@ private fun settingsRowTitleAccentMask(title: String): Modifier {
     }
 }
 
+/**
+ * A row's title colour: the accent for a few seconds after the settings search jumps to it. Every
+ * row type that shows a title must use this with [settingsRowTitleAccentMask], or a search result
+ * for that row lands without the highlight.
+ */
 @Composable
-private fun settingsRowTitleColor(title: String): Color {
+internal fun settingsRowTitleColor(title: String): Color {
     val highlight by SettingsScrollAnchor.titleHighlight.collectAsStateWithLifecycle()
     return if (highlight?.title == title) {
         // Not the raw accent: on the White theme that is white on white text.
@@ -297,7 +303,7 @@ internal fun SettingsModernRangeSlider(
     enabled: Boolean = true,
     steps: Int = 0,
     onValueChangeFinished: () -> Unit = {},
-    /** Shown in a bubble while the slider is held or dragged; see [SettingsSliderValueBubble]. */
+    /** Shown in a bubble while the slider is hovered, held or dragged; see [SettingsSliderValueBubble]. */
     valueLabel: String? = null,
 ) {
     val tokens = MaterialTheme.nuvio
@@ -311,6 +317,8 @@ internal fun SettingsModernRangeSlider(
     // thumb mid-drag doesn't hand the gesture over to it.
     var draggingHighThumb by remember { mutableStateOf(false) }
     val thumbRadiusPx = with(LocalDensity.current) { SettingsSliderThumbRadius.toPx() }
+    val hoverSource = remember { MutableInteractionSource() }
+    val hovered by hoverSource.collectIsHoveredAsState()
 
     fun valueFromX(x: Float): Float = settingsSliderValueForX(
         x = x,
@@ -342,6 +350,7 @@ internal fun SettingsModernRangeSlider(
             .onGloballyPositioned { size = it.size }
             // Same caveat as SettingsModernSlider: keying this to the measured size would cancel an
             // in-flight mouse gesture on recomposition and freeze the thumb until release.
+            .hoverable(hoverSource, enabled)
             .sliderPressPeek(enabled, drag)
             .pointerInput(enabled, valueRange.start, valueRange.endInclusive, steps) {
                 if (!enabled) return@pointerInput
@@ -377,8 +386,16 @@ internal fun SettingsModernRangeSlider(
             drawGlassSliderThumb(activeBrush, Offset(lowX, centerY), thumbRadius)
             drawGlassSliderThumb(activeBrush, Offset(highX, centerY), thumbRadius)
         }
-        if (valueLabel != null && (drag.active || drag.pressed)) {
-            SettingsSliderValueBubble(valueLabel, if (drag.active) drag.x else drag.pressX)
+        if (valueLabel != null && (drag.active || drag.pressed || hovered)) {
+            // Hovering reads the range itself, so the bubble sits over the middle of the band.
+            val bandMidX = thumbRadiusPx +
+                (size.width - 2f * thumbRadiusPx).coerceAtLeast(0f) * (lowProgress + highProgress) / 2f
+            val bubbleX = when {
+                drag.active -> drag.x
+                drag.pressed -> drag.pressX
+                else -> bandMidX
+            }
+            SettingsSliderValueBubble(valueLabel, bubbleX)
         }
     }
 }
@@ -392,7 +409,7 @@ internal fun SettingsModernSlider(
     enabled: Boolean = true,
     steps: Int = 0,
     onValueChangeFinished: () -> Unit = {},
-    /** Shown in a bubble while the slider is held or dragged; see [SettingsSliderValueBubble]. */
+    /** Shown in a bubble while the slider is hovered, held or dragged; see [SettingsSliderValueBubble]. */
     valueLabel: String? = null,
 ) {
     val tokens = MaterialTheme.nuvio
@@ -401,6 +418,8 @@ internal fun SettingsModernSlider(
     val drag = remember { SliderDragState() }
     var size by remember { mutableStateOf(IntSize.Zero) }
     val thumbRadiusPx = with(LocalDensity.current) { SettingsSliderThumbRadius.toPx() }
+    val hoverSource = remember { MutableInteractionSource() }
+    val hovered by hoverSource.collectIsHoveredAsState()
 
     fun valueFromX(x: Float): Float = settingsSliderValueForX(
         x = x,
@@ -427,6 +446,7 @@ internal fun SettingsModernSlider(
             // Keep the gesture coroutine alive while dragging. Keying pointerInput to the measured
             // size (or a freshly-created range object) can cancel an active mouse gesture during
             // recomposition, leaving the thumb frozen until the button is released.
+            .hoverable(hoverSource, enabled)
             .sliderPressPeek(enabled, drag)
             .pointerInput(enabled, valueRange.start, valueRange.endInclusive, steps) {
                 if (!enabled) return@pointerInput
@@ -456,8 +476,8 @@ internal fun SettingsModernSlider(
             drawGlassSliderFill(activeBrush, trackStart, thumbX, centerY)
             drawGlassSliderThumb(activeBrush, Offset(thumbX, centerY), thumbRadius)
         }
-        if (valueLabel != null && (drag.active || drag.pressed)) {
-            // A press without a drag points at the thumb, where the value it reads is.
+        if (valueLabel != null && (drag.active || drag.pressed || hovered)) {
+            // A press without a drag, or a hover, points at the thumb, where the value it reads is.
             val thumbX = thumbRadiusPx + (size.width - 2f * thumbRadiusPx).coerceAtLeast(0f) * progress
             SettingsSliderValueBubble(valueLabel, if (drag.active) drag.x else thumbX)
         }
@@ -569,8 +589,8 @@ private fun DrawScope.drawGlassSliderThumb(accent: Brush, center: Offset, radius
 private val SliderTrackFill = Color.White.copy(alpha = 0.07f)
 
 /**
- * The slider's value, shown only while it is held or dragged, in a small glass bubble just above the
- * cursor. The rows used to spend a column on a readout nobody needs until they move the slider; a
+ * The slider's value, shown only while it is hovered, held or dragged, in a small glass bubble just
+ * above the cursor (above the thumb when only hovered). The rows used to spend a column on a readout nobody needs until they move the slider; a
  * Popup, so the first row's bubble is not clipped by its card.
  */
 @Composable
@@ -1194,12 +1214,13 @@ internal fun SettingsTextRow(
     ) {
         Text(
             text = title,
+            modifier = settingsRowTitleAccentMask(title),
             style = if (isTablet) {
                 MaterialTheme.typography.bodyMedium
             } else {
                 MaterialTheme.typography.bodyLarge
             },
-            color = MaterialTheme.nuvio.colors.textPrimary,
+            color = settingsRowTitleColor(title),
             fontWeight = FontWeight.Medium,
         )
         if (description != null) {
@@ -1451,8 +1472,9 @@ internal fun SettingsActionRow(
         ) {
             Text(
                 text = title,
+                modifier = settingsRowTitleAccentMask(title),
                 style = if (isTablet) MaterialTheme.typography.bodyMedium else MaterialTheme.typography.bodyLarge,
-                color = tokens.colors.textPrimary,
+                color = settingsRowTitleColor(title),
                 fontWeight = FontWeight.Medium,
             )
             if (!description.isNullOrBlank()) {

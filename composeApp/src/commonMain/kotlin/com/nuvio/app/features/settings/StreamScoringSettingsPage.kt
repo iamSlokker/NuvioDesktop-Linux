@@ -425,9 +425,10 @@ private fun ScoringStepperRow(
         ) {
             Text(
                 text = title,
+                modifier = settingsRowTitleAccentMask(title),
                 style = if (isTablet) MaterialTheme.typography.bodyMedium else MaterialTheme.typography.bodyLarge,
                 fontWeight = FontWeight.Medium,
-                color = MaterialTheme.colorScheme.onSurface,
+                color = settingsRowTitleColor(title),
             )
             if (caption != null) SettingsSubtext(text = caption, isTablet = isTablet)
         }

@@ -101,7 +101,10 @@ fun MetaPreview.toLibraryItem(savedAtEpochMs: Long): LibraryItem =
         id = id,
         type = type,
         name = name,
-        poster = poster,
+        // A card's `poster` is already routed through the poster service for the screen it sits on
+        // (the original kept as `posterFallback`); the library stores the raw art and applies its
+        // own screen's setting when it renders.
+        poster = posterFallback ?: poster,
         banner = banner,
         logo = logo,
         description = description,
@@ -136,7 +139,7 @@ fun LocalMediaItem.toLibraryItem(): LibraryItem {
 
 fun LibraryItem.toMetaPreview(): MetaPreview {
     val resolvedPoster = resolveLibraryPosterUrl()
-    val resolvedFallback = poster.withPosterRefreshToken(posterRefreshToken)
+    val resolvedFallback = basePoster().withPosterRefreshToken(posterRefreshToken)
     return MetaPreview(
         id = id,
         type = type,
@@ -192,7 +195,24 @@ private fun String?.takeIfProviderArt(): String? = this?.takeIf { url ->
  * supported for other poster services.
  */
 private fun LibraryItem.resolveLibraryPosterUrl(): String? =
-    (resolveLibraryPosterServiceUrl(CustomPosterShape.Portrait) ?: poster).withPosterRefreshToken(posterRefreshToken)
+    (resolveLibraryPosterServiceUrl(CustomPosterShape.Portrait) ?: basePoster()).withPosterRefreshToken(posterRefreshToken)
+
+/**
+ * The item's own poster, minus one saved from another screen's poster-service overlay. Items saved
+ * from a Home card before [toLibraryItem] stored the raw art carry that screen's service URL, which
+ * would otherwise show in the Library whatever its own poster-service setting. Their original art
+ * is gone, so the IMDb-derived metahub poster stands in for it.
+ */
+private fun LibraryItem.basePoster(): String? {
+    val serviceHost = CustomPosterSettingsRepository.snapshot().posterUrlTemplate.urlHost()
+    if (serviceHost == null || !poster.urlHost().equals(serviceHost, ignoreCase = true)) return poster
+    val imdb = imdbId?.takeIf { it.isNotBlank() } ?: id.takeIf { it.startsWith("tt") }?.substringBefore(':')
+    return imdb?.let { "https://images.metahub.space/poster/medium/$it/img" }
+}
+
+private fun String?.urlHost(): String? =
+    this?.substringAfter("://", "")?.substringBefore('/')?.substringBefore('?')?.substringBefore('#')
+        ?.takeIf { it.isNotBlank() && '{' !in it }
 
 /** The poster service's URL for this item in the given shape, or null when it does not apply. */
 private fun LibraryItem.resolveLibraryPosterServiceUrl(shape: CustomPosterShape): String? {
