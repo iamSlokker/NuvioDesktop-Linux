@@ -91,6 +91,18 @@ def smoke_deadline_seconds(runs):
     return runs * SMOKE_RUN_BOUND_SECONDS + 60
 
 
+def hung_report(hung, out):
+    """What a hung smoke printed before it was killed, and the gate's failure message.
+
+    subprocess.run hands back the partial output as bytes even with text=True, and it is the only
+    record of which launch and which wait hung."""
+    partial = hung.output or b''
+    if isinstance(partial, bytes):
+        partial = partial.decode('utf-8', 'replace')
+    return partial, ('Native smoke gate FAILED: hung past %ds; no package may be built (logs in %s)'
+                     % (hung.timeout, out))
+
+
 def smoke(work, source=Path('/source'), runs=3):
     work = Path(work)
     canonical = work / 'canonical'
@@ -113,9 +125,9 @@ def smoke(work, source=Path('/source'), runs=3):
                                 env=env, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True,
                                 timeout=smoke_deadline_seconds(runs))
     except subprocess.TimeoutExpired as hung:
-        print(hung.output or '', end='', flush=True)
-        raise SystemExit('Native smoke gate FAILED: hung past %ds; no package may be built (logs in %s)'
-                         % hung.timeout, out)
+        partial, message = hung_report(hung, out)
+        print(partial, end='', flush=True)
+        raise SystemExit(message)
     print(result.stdout, end='', flush=True)
     records = parse_runs(result.stdout)
     if (result.returncode != 0 or 'SMOKE PASS' not in result.stdout or len(records) != runs
