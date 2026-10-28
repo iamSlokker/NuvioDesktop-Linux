@@ -1,5 +1,6 @@
 package com.nuvio.app.features.player.desktop
 
+import com.nuvio.app.core.i18n.localizedString
 import com.nuvio.app.features.player.AppShortcutAction
 import com.nuvio.app.features.player.PlayerShortcutAction
 import java.awt.event.KeyEvent
@@ -128,7 +129,7 @@ internal fun linuxHdrInputAction(
         PlayerShortcutAction.ToggleMpvDiagnostics -> LinuxHdrInputAction.ToggleDiagnostics
         PlayerShortcutAction.CycleSvp,
         PlayerShortcutAction.CycleColorProfile,
-        PlayerShortcutAction.CycleAnime -> LinuxHdrInputAction.Unavailable(action.displayName)
+        PlayerShortcutAction.CycleAnime -> LinuxHdrInputAction.Unavailable(localizedString(action.displayNameRes))
     }
 }
 

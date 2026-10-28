@@ -1027,8 +1027,8 @@ private fun NativePlayerSurface(
                             svpActive = false,
                             videoLabel = when {
                                 settings.desktopMpvConfigMode == DesktopMpvConfigMode.Full -> ""
-                                videoState.isHdr == false -> settings.desktopColorProfile.label
-                                else -> DesktopColorProfile.Neutral.label
+                                videoState.isHdr == false -> localizedString(settings.desktopColorProfile.labelRes)
+                                else -> localizedString(DesktopColorProfile.Neutral.labelRes)
                             },
                             shaderLabel = shaderLabel,
                         )
