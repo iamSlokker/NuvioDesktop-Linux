@@ -3061,6 +3061,17 @@ fun HomeScreen(
         }
     }
 
+    // A new Library sort or filter reorders every row: the column focus was on now holds some
+    // other title, so focus starts the row over and the rows scroll back (resetScrollKey).
+    val libraryOrderKey = libraryDisplaySettings.sortOption to libraryDisplaySettings.filters
+    var lastLibraryOrderKey by remember { mutableStateOf(libraryOrderKey) }
+    LaunchedEffect(libraryOrderKey) {
+        if (libraryOrderKey == lastLibraryOrderKey) return@LaunchedEffect
+        lastLibraryOrderKey = libraryOrderKey
+        libraryTvFocus.itemIndex = 0
+    }
+    val rowResetScrollKey = libraryOrderKey.takeIf { displayMode is HomeContentMode.Library }
+
     LaunchedEffect(adaptiveHeroEnabled, tvModeEnabled, contentMode) {
         // Search: nav bar's text field holds focus — don't steal it.
         // Normal + Library: content area must hold focus for hotkeys to work.
@@ -4506,6 +4517,7 @@ fun HomeScreen(
                                         onShuffleClick = shuffleClickFor(section),
                                         isShuffling = section.key in rowShufflingKeys,
                                         shuffleGeneration = shuffleOrder?.generation ?: 0,
+                                        resetScrollKey = rowResetScrollKey,
                                         modifier = Modifier.padding(bottom = 12.dp),
                                         sectionPadding = homeSectionPadding,
                                         focusedItemIndex = if (tvFocusedRowIndex == rowIndex) tvFocus.itemIndex else null,
@@ -4841,6 +4853,7 @@ fun HomeScreen(
                                                     onShuffleClick = shuffleClickFor(section),
                                                     isShuffling = section.key in rowShufflingKeys,
                                                     shuffleGeneration = shuffleOrder?.generation ?: 0,
+                                                    resetScrollKey = rowResetScrollKey,
                                                     sectionPadding = homeSectionPadding,
                                                     basePosterWidthDpOverride = immersivePosterBaseWidthDp,
                                                     focusedItemIndex = tvFocus.itemIndex,

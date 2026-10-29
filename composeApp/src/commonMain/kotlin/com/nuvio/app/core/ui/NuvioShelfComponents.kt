@@ -151,6 +151,9 @@ fun <T> NuvioShelfSection(
     // Bumped once per completed shuffle. Any change replays the deal animation; the value itself
     // carries no meaning, and 0 means "never shuffled" so a first composition sits still.
     shuffleGeneration: Int = 0,
+    // A change sends the row back to its start: the caller re-sorted it. Without this a keyed row
+    // follows whichever title was first on screen to its new place, which can be mid-row.
+    resetScrollKey: Any? = null,
     key: ((T) -> Any)? = null,
     rowState: LazyListState = rememberLazyListState(),
     itemContent: @Composable (T) -> Unit,
@@ -176,6 +179,38 @@ fun <T> NuvioShelfSection(
             targetValue = ShuffleDealSettled,
             animationSpec = tween(durationMillis = ShuffleDealDurationMs, easing = LinearEasing),
         )
+    }
+    // Seeded like lastDealtGeneration, so a row scrolled back into view keeps its place.
+    var lastResetScrollKey by remember { mutableStateOf(resetScrollKey) }
+    // After a reset the row stays at its start until the user scrolls it: a sort that needs TMDB
+    // details (Popular, Top rated...) re-sorts again once they arrive, and the keyed row would
+    // follow its first title off to wherever that lands.
+    var pinnedToStart by remember { mutableStateOf(false) }
+    val selfScrolling = remember { booleanArrayOf(false) }
+    suspend fun scrollToStart() {
+        selfScrolling[0] = true
+        try {
+            rowState.scrollToItem(0)
+        } finally {
+            selfScrolling[0] = false
+        }
+    }
+    LaunchedEffect(resetScrollKey) {
+        if (resetScrollKey == lastResetScrollKey) return@LaunchedEffect
+        lastResetScrollKey = resetScrollKey
+        pinnedToStart = true
+        scrollToStart()
+    }
+    LaunchedEffect(entries) {
+        if (pinnedToStart) scrollToStart()
+    }
+    // Unpinned once a scroll other than ours ends away from the start. Bringing item 0 into view
+    // for focus is a scroll too, but leaves the row where the pin wants it.
+    LaunchedEffect(rowState) {
+        snapshotFlow { rowState.isScrollInProgress }.collect { scrolling ->
+            val atStart = rowState.firstVisibleItemIndex == 0 && rowState.firstVisibleItemScrollOffset == 0
+            if (!scrolling && !selfScrolling[0] && !atStart) pinnedToStart = false
+        }
     }
     // Horizontal infinite scroll: request the next page when the row is scrolled within a few items
     // of the end. onLoadMore is idempotent, so repeated triggers while a page loads are harmless.
@@ -582,9 +617,11 @@ fun NuvioPosterCard(
         shape = shape,
     )
     val ratingBadgeMetrics = posterRatingBadgeMetrics(basePosterWidthDp = basePosterWidthDp)
-    val hasArtwork = imageUrl != null || artworkContent != null
+    // A blank URL is no artwork: it can never load, and would leave an empty card with no title.
+    val artworkUrl = imageUrl?.takeIf { it.isNotBlank() }
+    val hasArtwork = artworkUrl != null || artworkContent != null
     // Hoisted above the card Box so the long-press anchor can read it — see posterCardClickable.
-    var currentUrl by remember(imageUrl, fallbackImageUrl) { mutableStateOf(imageUrl) }
+    var currentUrl by remember(artworkUrl, fallbackImageUrl) { mutableStateOf(artworkUrl) }
     val shouldShowTitleBelow = showTitleBelow && !posterCardStyle.hideLabelsEnabled
     // Upstream's 14sp label is balanced around its 126dp poster. This fork supports much larger
     // posters, so scale gently by the square root of the size ratio. The tight clamp preserves
