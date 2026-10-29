@@ -5,6 +5,10 @@ import com.nuvio.app.features.addons.httpRequestRaw
 import com.nuvio.app.features.library.LibraryItem
 import com.nuvio.app.features.metadata.MediaIdResolver
 import io.ktor.http.encodeURLParameter
+import java.time.LocalDate
+import java.time.LocalDateTime
+import java.time.OffsetDateTime
+import java.time.ZoneOffset
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -88,6 +92,8 @@ internal data class MdbListLibraryState(
  *
  * List items are requested without a sort, so they come in the order the owner saved on
  * mdblist.com; that order is kept as the item rank, which the Library's default sort follows.
+ * The watchlist is ranked newest addition first. Each row's added date, when MDBList sends one,
+ * is what the "recently added" sorts read.
  * A list is downloaded again only when its update time changes. Liked and external lists are
  * extras: if MDBList cannot serve them the cached copy stays and the rest still syncs. Lists the
  * user hid (settings) are not downloaded at all.
@@ -189,7 +195,8 @@ internal object MdbListLibraryRepository {
     suspend fun setWatchlistMembership(item: LibraryItem, desired: Boolean) {
         mutate(item, desired, path = "/watchlist/items", update = { state, saved ->
             val remaining = state.watchlist.filterNot { idsMatch(it, item.id) }
-            val watchlist = if (saved != null) listOf(saved) + remaining else remaining
+            val watchlist = (if (saved != null) listOf(saved) + remaining else remaining)
+                .mapIndexed { index, it -> it.copy(traktRank = index + 1) }
             state.copy(watchlist = watchlist, items = union(watchlist, state.itemsByList))
         })
     }
@@ -364,23 +371,43 @@ internal object MdbListLibraryRepository {
     }
 
     private suspend fun fetchWatchlist(apiKey: String): List<LibraryItem> {
+        val fetchedAt = System.currentTimeMillis()
         val collected = linkedMapOf<String, LibraryItem>()
         var cursor: String? = null
         do {
             val query = buildMap {
                 put("limit", PAGE_LIMIT.toString())
+                // Unified keeps movies and shows in one added order instead of two buckets.
+                put("unified", "true")
                 put("sort", "added")
-                put("order", "desc")
+                // MDBList returns the newest additions for order=asc (as upstream found).
+                put("order", "asc")
                 put("append_to_response", "poster,description,genres")
                 cursor?.let { put("cursor", it) }
             }
-            val root = json.parseToJsonElement(get(apiKey, "/watchlist/items", query).body) as? JsonObject
-                ?: error("MDBList returned an invalid watchlist payload")
-            decodeItems(root).forEach { item -> collected["${item.type}:${item.id}"] = item }
-            cursor = root.objectValue("pagination")?.string("next_cursor")
-                ?: root.string("next_cursor")
+            val root = json.parseToJsonElement(get(apiKey, "/watchlist/items", query).body)
+            if (root !is JsonObject && root !is JsonArray) error("MDBList returned an invalid watchlist payload")
+            decodeWatchlistPage(root).forEach { item -> collected.putIfAbsent("${item.type}:${item.id}", item) }
+            cursor = (root as? JsonObject)?.let { it.objectValue("pagination")?.string("next_cursor") ?: it.string("next_cursor") }
         } while (!cursor.isNullOrBlank())
-        return collected.values.toList()
+        return orderWatchlist(collected.values.toList(), fetchedAt)
+    }
+
+    /**
+     * Newest addition first, ranked so the Library's default sort follows it. The API's direction
+     * is undocumented, so it is checked against the added dates when the rows carry them; undated
+     * rows get a time just under the fetch time, in that order, so "recently added" still holds.
+     */
+    internal fun orderWatchlist(items: List<LibraryItem>, fetchedAt: Long): List<LibraryItem> {
+        val dated = items.map { it.savedAtEpochMs }.filter { it > 0L }
+        val oriented = if (dated.size >= 2 && dated.first() < dated.last()) items.asReversed() else items
+        val ordered = if (dated.size == items.size) oriented.sortedByDescending { it.savedAtEpochMs } else oriented
+        return ordered.mapIndexed { index, item ->
+            item.copy(
+                traktRank = index + 1,
+                savedAtEpochMs = item.savedAtEpochMs.takeIf { it > 0L } ?: (fetchedAt - index),
+            )
+        }
     }
 
     private suspend fun get(apiKey: String, path: String, query: Map<String, String>) =
@@ -420,28 +447,21 @@ internal object MdbListLibraryRepository {
     }
 
     /** A page of list items: a bare array, `{items: [...]}`, or `{movies: [...], shows: [...]}`. */
-    private fun decodeListPage(root: JsonElement): List<LibraryItem> = when (root) {
-        is JsonArray -> root.mapNotNull { (it as? JsonObject)?.toLibraryItem(null, rowIdIsTmdb = true) }
+    private fun decodeListPage(root: JsonElement, rowIdIsTmdb: Boolean = true): List<LibraryItem> = when (root) {
+        is JsonArray -> root.mapNotNull { (it as? JsonObject)?.toLibraryItem(null, rowIdIsTmdb) }
         is JsonObject -> if (root["items"] is JsonArray) {
-            root.array("items").mapNotNull { (it as? JsonObject)?.toLibraryItem(null, rowIdIsTmdb = true) }
+            root.array("items").mapNotNull { (it as? JsonObject)?.toLibraryItem(null, rowIdIsTmdb) }
         } else {
-            root.array("movies").mapNotNull { (it as? JsonObject)?.toLibraryItem("movie", rowIdIsTmdb = true) } +
-                root.array("shows").mapNotNull { (it as? JsonObject)?.toLibraryItem("series", rowIdIsTmdb = true) }
+            root.array("movies").mapNotNull { (it as? JsonObject)?.toLibraryItem("movie", rowIdIsTmdb) } +
+                root.array("shows").mapNotNull { (it as? JsonObject)?.toLibraryItem("series", rowIdIsTmdb) }
         }
         else -> emptyList()
     }
 
-    private fun decodeItems(root: JsonObject): List<LibraryItem> = buildList {
-        root.array("movies").forEach { element ->
-            (element as? JsonObject)?.toLibraryItem("movie")?.let(::add)
-        }
-        root.array("shows").forEach { element ->
-            (element as? JsonObject)?.toLibraryItem("series")?.let(::add)
-        }
-    }
+    private fun decodeWatchlistPage(root: JsonElement): List<LibraryItem> = decodeListPage(root, rowIdIsTmdb = false)
 
     internal fun decodeWatchlistForTest(payload: String): List<LibraryItem> =
-        decodeItems(json.parseToJsonElement(payload) as JsonObject)
+        decodeWatchlistPage(json.parseToJsonElement(payload))
 
     internal fun decodeListPageForTest(payload: String): List<LibraryItem> =
         decodeListPage(json.parseToJsonElement(payload))
@@ -483,12 +503,26 @@ internal object MdbListLibraryRepository {
             genres = array("genres").mapNotNull { (it as? JsonPrimitive)?.contentOrNull },
             imdbId = imdb,
             tmdbId = tmdb,
-            savedAtEpochMs = long("added_at") ?: System.currentTimeMillis(),
+            // 0 when undated: list rows keep the owner's order as their rank instead.
+            savedAtEpochMs = AddedAtKeys.firstNotNullOfOrNull { key -> (this[key] as? JsonPrimitive)?.let(::mdbListAddedAtMs) } ?: 0L,
         )
     }
 
-    private fun JsonObject.posterUrl(): String? =
-        string("poster") ?: objectValue("poster")?.string("url")
+    private val AddedAtKeys = listOf("listed_at", "added_at", "watchlist_at")
+
+    /**
+     * A full URL, or a bare TMDB path, which MDBList also sends (as upstream's `mdbListImageUrl`).
+     * Anything else, an empty string included, is no poster, so the card shows the title instead
+     * of an image that can never load.
+     */
+    private fun JsonObject.posterUrl(): String? {
+        val value = (string("poster") ?: objectValue("poster")?.string("url"))?.trim() ?: return null
+        return when {
+            value.startsWith("https://") || value.startsWith("http://") -> value
+            value.startsWith('/') && !value.startsWith("//") -> "https://image.tmdb.org/t/p/w500$value"
+            else -> null
+        }
+    }
 
     private fun union(watchlist: List<LibraryItem>, byList: Map<String, List<LibraryItem>>): List<LibraryItem> {
         val seen = LinkedHashMap<String, LibraryItem>()
@@ -551,4 +585,18 @@ internal object MdbListLibraryRepository {
         val value = this[key] as? JsonPrimitive ?: return null
         return value.longOrNull ?: value.contentOrNull?.toLongOrNull()
     }
+}
+
+/**
+ * When a title was added, from MDBList's `listed_at` / `added_at` / `watchlist_at`: normally an
+ * ISO date-time, but external lists can carry a bare date, and epoch seconds or ms are taken too.
+ * Null when it can't be read, so one odd value only loses that title's date.
+ */
+internal fun mdbListAddedAtMs(value: JsonPrimitive): Long? {
+    value.longOrNull?.let { epoch -> return epoch.takeIf { it > 0L }?.let { if (it < 100_000_000_000L) it * 1000 else it } }
+    val text = value.contentOrNull?.trim()?.takeIf { it.isNotEmpty() }?.replace(' ', 'T') ?: return null
+    return runCatching { OffsetDateTime.parse(text).toInstant().toEpochMilli() }
+        .recoverCatching { LocalDateTime.parse(text).toInstant(ZoneOffset.UTC).toEpochMilli() }
+        .recoverCatching { LocalDate.parse(text.take(10)).atStartOfDay(ZoneOffset.UTC).toInstant().toEpochMilli() }
+        .getOrNull()
 }

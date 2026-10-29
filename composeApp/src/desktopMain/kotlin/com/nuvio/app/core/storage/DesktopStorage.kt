@@ -4,10 +4,13 @@ import co.touchlab.kermit.Logger
 import com.nuvio.app.core.perf.PerfTelemetry
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
+import java.nio.file.FileVisitResult
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.Paths
+import java.nio.file.SimpleFileVisitor
 import java.nio.file.StandardCopyOption
+import java.nio.file.attribute.BasicFileAttributes
 import java.util.Locale
 import java.util.Properties
 import java.util.UUID
@@ -402,6 +405,20 @@ internal object DesktopStorage {
     )
 
     /**
+     * Top-level entries of the old `Nuvio` folders the legacy migration leaves behind: everything
+     * the portable copy skips, plus what only the official Nuvio Desktop keeps there (its WebView2
+     * profile, crash reports, TorrServer binary and data). All of it is rebuilt on demand.
+     */
+    private val LEGACY_MIGRATION_SKIP = PORTABLE_MIGRATION_SKIP + setOf(
+        "webview2",
+        "sentry",
+        "torrserver",
+    )
+
+    private fun skipsInLegacyMigration(entry: Path): Boolean =
+        entry.fileName.toString().lowercase(Locale.ROOT) in LEGACY_MIGRATION_SKIP
+
+    /**
      * Stores HTPC wrote into the shared `Nuvio` directory up to 1.9 (1.10 moved to `NuvioHTPC`)
      * that upstream Nuvio Desktop has never had. Checked against upstream/Dev on 2026-09-25; if
      * upstream later adopts one of these names, drop it from the list.
@@ -420,7 +437,11 @@ internal object DesktopStorage {
     internal fun holdsHtpcOnlyStore(directory: Path): Boolean =
         directory.exists() && HTPC_ONLY_LEGACY_STORES.any { name -> directory.resolve("$name.properties").exists() }
 
-    private fun migrateLegacyDirectories(destination: Path, vararg sources: Path) {
+    // Runs before the window exists, so it copies only settings and user data. It used to take
+    // whole folders: for anyone who had run the official Nuvio Desktop that meant its caches,
+    // staged update installers and WebView2 profile (2 GB or more), and a first launch sat
+    // windowless for minutes while that copied and Defender scanned every file.
+    internal fun migrateLegacyDirectories(destination: Path, vararg sources: Path) {
         synchronized(stores) {
             if (destination.exists()) return
             val staging = destination.resolveSibling("${destination.fileName}.migrating-${UUID.randomUUID()}")
@@ -429,17 +450,22 @@ internal object DesktopStorage {
                 sources
                     .filter { it.exists() && it != destination }
                     .forEach { source ->
-                        Files.walk(source).use { paths ->
-                            paths.forEach { current ->
-                                val target = staging.resolve(source.relativize(current).toString())
-                                if (Files.isDirectory(current)) {
-                                    Files.createDirectories(target)
-                                } else if (!target.exists()) {
-                                    Files.createDirectories(target.parent)
-                                    Files.copy(current, target)
+                        Files.walkFileTree(source, object : SimpleFileVisitor<Path>() {
+                            override fun preVisitDirectory(dir: Path, attrs: BasicFileAttributes): FileVisitResult {
+                                if (dir != source && dir.parent == source && skipsInLegacyMigration(dir)) {
+                                    return FileVisitResult.SKIP_SUBTREE
                                 }
+                                Files.createDirectories(staging.resolve(source.relativize(dir).toString()))
+                                return FileVisitResult.CONTINUE
                             }
-                        }
+
+                            override fun visitFile(file: Path, attrs: BasicFileAttributes): FileVisitResult {
+                                if (file.parent == source && skipsInLegacyMigration(file)) return FileVisitResult.CONTINUE
+                                val target = staging.resolve(source.relativize(file).toString())
+                                if (!target.exists()) Files.copy(file, target)
+                                return FileVisitResult.CONTINUE
+                            }
+                        })
                     }
                 runCatching { Files.move(staging, destination, StandardCopyOption.ATOMIC_MOVE) }
                     .getOrElse { Files.move(staging, destination) }
