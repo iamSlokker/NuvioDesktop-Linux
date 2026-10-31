@@ -50,6 +50,20 @@ class LinuxPlayerOwnershipTest {
         assertEquals(listOf("create A", "dispose A", "create B"), f.events)
     }
 
+    @Test fun musicReplacesHeroHoldsOffHeroesAndYieldsToTheFullPlayer() {
+        val f = Fixture()
+        f.open(f.request("hero"))
+        f.open(f.request("music", LinuxPlayerOwnership.Priority.MUSIC))
+        assertNull(f.ownership.request("theme song", LinuxPlayerOwnership.Priority.HERO))
+        f.open(f.request("player", LinuxPlayerOwnership.Priority.PLAYER))
+        // While the film plays, the music player cannot take the native player back.
+        assertNull(f.ownership.request("music", LinuxPlayerOwnership.Priority.MUSIC))
+        assertEquals(listOf("create hero", "dispose hero", "create music", "dispose music", "create player"), f.events)
+        f.close("player")
+        f.open(f.request("music", LinuxPlayerOwnership.Priority.MUSIC))
+        assertEquals("create music", f.events.last())
+    }
+
     @Test fun fullPlayerReplacesHeroAndCannotBePreemptedByHero() {
         val f = Fixture()
         f.open(f.request("hero"))

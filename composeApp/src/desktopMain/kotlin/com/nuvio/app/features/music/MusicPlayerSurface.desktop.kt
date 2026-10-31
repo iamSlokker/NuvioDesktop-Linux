@@ -61,7 +61,8 @@ actual fun MusicPlayerSurface(
     onEnded: (loadId: Long) -> Unit,
     onError: (loadId: Long) -> Unit,
 ) {
-    val supported = DesktopHostOs.current == DesktopHostOs.WINDOWS || DesktopHostOs.current == DesktopHostOs.MACOS
+    val supported = DesktopHostOs.current == DesktopHostOs.WINDOWS || DesktopHostOs.current == DesktopHostOs.MACOS ||
+        DesktopHostOs.current == DesktopHostOs.LINUX
     val latestOnSnapshot = rememberUpdatedState(onSnapshot)
     val latestOnEnded = rememberUpdatedState(onEnded)
     val latestOnError = rememberUpdatedState(onError)
@@ -84,7 +85,9 @@ actual fun MusicPlayerSurface(
             focusTraversalKeysEnabled = false
         }
     }
-    val controller = remember(host) { NativePlayerController(host) }
+    val controller = remember(host) {
+        NativePlayerController(host, linuxMusicSurface = DesktopHostOs.current == DesktopHostOs.LINUX)
+    }
     var revealed by remember { mutableStateOf(false) }
 
     DisposableEffect(host) {

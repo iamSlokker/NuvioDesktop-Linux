@@ -7,7 +7,8 @@ package com.nuvio.app.features.player.desktop
  * There is deliberately no queue: an evicted hero needs fresh foreground eligibility.
  */
 internal class LinuxPlayerOwnership(private val lifecycleLock: Any) {
-    enum class Priority { HERO, PLAYER }
+    // Music sits between: it holds off hero trailers and theme songs, and a film evicts it.
+    enum class Priority { HERO, MUSIC, PLAYER }
     class Request internal constructor(internal val owner: Any, internal val priority: Priority)
     private class Active(val request: Request, val quiesce: () -> Unit, val release: () -> Unit) {
         var prepared = false // Guarded by stateLock.
