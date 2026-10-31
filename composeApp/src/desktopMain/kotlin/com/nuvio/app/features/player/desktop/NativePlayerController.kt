@@ -1,5 +1,7 @@
 package com.nuvio.app.features.player.desktop
 
+import com.nuvio.app.features.preroll.PostShowController
+import com.nuvio.app.features.preroll.PostShowKey
 import com.nuvio.app.core.i18n.localizedString
 import androidx.compose.ui.graphics.Color
 import co.touchlab.kermit.Logger
@@ -278,6 +280,11 @@ internal class NativePlayerController(
         // Re-applies the last user-set volume ([persistedVolumeFraction]) once the fresh mpv
         // instance exists, so volume carries over between episodes. Only the main player passes true.
         restoreVolume: Boolean = false,
+        // fork:preshow - extra "key=value" mpv init options applied before mpv_initialize/loadfile.
+        // For anything that must be in place before the first audio frame (volume, mute, af):
+        // as runtime properties they land after create() returns, after loading has started,
+        // which rebuilds the audio chain mid-start and is audible as a dip or blip.
+        initMpvOptions: List<String> = emptyList(),
     ) {
         if (disposed) return
         if (enableUserMpvOptions || animeSvpEnabled) mayHostVapourSynth = true
@@ -369,6 +376,7 @@ internal class NativePlayerController(
                 // and cache-pause-wait.
                 addAll(com.nuvio.app.features.iptv.iptvLiveBufferMpvOptions(sourceUrl))
                 addAll(com.nuvio.app.features.iptv.iptvRewindMpvOptions(sourceUrl))
+                addAll(initMpvOptions) // fork:preshow
                 // An init option rather than a runtime property: mpv filters text subtitles as it
                 // parses them, so it has to be set before the first track loads. Only ever turned
                 // on here, never forced off, so an mpv.conf that enables it keeps working.
@@ -1512,8 +1520,13 @@ internal class NativePlayerController(
             }
             "toggleFullscreen" -> toggleDesktopAppFullscreen(SwingUtilities.getWindowAncestor(host))
             // The HUD's Escape (with nothing of its own to close). The back button still sends "back".
+            // A D-pad key while the post-show cards are up (the controls page forwards them: it holds keyboard focus).
+            "postShowKey" -> PostShowController.press(value.toInt())
             "escapeBack" -> {
-                if (escapeShouldGoWindowed()) {
+                if (PostShowController.active.value) {
+                    // Escape closes the post-show cards instead of leaving the player.
+                    PostShowController.press(PostShowKey.Back)
+                } else if (escapeShouldGoWindowed()) {
                     toggleDesktopAppFullscreen(SwingUtilities.getWindowAncestor(host))
                 } else {
                     handlePlayerEvent("back", value)
@@ -3115,6 +3128,8 @@ internal fun PlayerControlsState.toControlsJson(
         append(',')
         appendJsonField("hiddenHudButtons", hiddenHudButtons)
         append(',')
+        appendJsonField("hudButtonOrder", hudButtonOrder)
+        append(',')
         appendJsonField("alwaysShowClock", alwaysShowClock)
         append(',')
         appendJsonField("playbackSpeedFineIncrementsEnabled", playbackSpeedFineIncrementsEnabled)
@@ -3327,11 +3342,17 @@ internal fun PlayerControlsState.toControlsJson(
         append(',')
         appendJsonField("heroTrailerVolume", heroTrailer.volume)
         append(',')
+        appendJsonField("heroTrailerLibraryLabel", heroTrailer.libraryLabel)
+        append(',')
+        appendJsonField("heroTrailerInLibrary", heroTrailer.inLibrary)
+        append(',')
         appendJsonField("heroTrailerNavDismissEdge", heroTrailer.navDismissEdge)
         append(',')
         appendJsonField("heroTrailerNavDismissBandFraction", heroTrailer.navDismissBandFraction.toDouble())
         append(',')
         appendJsonField("streamFailoverEnabled", streamFailoverEnabled)
+        append(',')
+        appendJsonField("postShowInput", heroTrailer.postShowInput)
         append('}')
     }
 

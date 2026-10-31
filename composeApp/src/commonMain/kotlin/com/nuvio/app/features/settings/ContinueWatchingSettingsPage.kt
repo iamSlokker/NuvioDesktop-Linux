@@ -103,6 +103,8 @@ import nuvio.composeapp.generated.resources.settings_continue_watching_source_sh
 import nuvio.composeapp.generated.resources.settings_continue_watching_section_default_action
 import nuvio.composeapp.generated.resources.settings_continue_watching_blur_next_up_description
 import nuvio.composeapp.generated.resources.settings_continue_watching_blur_next_up_title
+import nuvio.composeapp.generated.resources.settings_continue_watching_relative_countdown_description
+import nuvio.composeapp.generated.resources.settings_continue_watching_relative_countdown_title
 import nuvio.composeapp.generated.resources.settings_continue_watching_show_unaired_next_up_description
 import nuvio.composeapp.generated.resources.settings_continue_watching_show_unaired_next_up_title
 import nuvio.composeapp.generated.resources.settings_continue_watching_separate_next_up_description
@@ -117,6 +119,8 @@ import nuvio.composeapp.generated.resources.settings_continue_watching_show_desc
 import nuvio.composeapp.generated.resources.settings_continue_watching_show_title
 import nuvio.composeapp.generated.resources.settings_continue_watching_sort_mode_default
 import nuvio.composeapp.generated.resources.settings_continue_watching_sort_mode_default_desc
+import nuvio.composeapp.generated.resources.settings_continue_watching_sort_mode_rotation
+import nuvio.composeapp.generated.resources.settings_continue_watching_sort_mode_rotation_desc
 import nuvio.composeapp.generated.resources.settings_continue_watching_sort_mode_streaming
 import nuvio.composeapp.generated.resources.settings_continue_watching_sort_mode_streaming_desc
 import nuvio.composeapp.generated.resources.settings_continue_watching_sort_mode_title
@@ -146,6 +150,7 @@ internal fun LazyListScope.continueWatchingSettingsContent(
     blurNextUp: Boolean,
     showResumePromptOnLaunch: Boolean,
     sortMode: ContinueWatchingSortMode,
+    relativeAirCountdown: Boolean,
 ) {
     // One panel, the look of the row first and then ordered by how much each row changes it:
     // whether it is there and where it reads from first, then how Up Next is split out, then what a click does, then the
@@ -290,6 +295,15 @@ internal fun LazyListScope.continueWatchingSettingsContent(
                 )
                 SettingsGroupDivider(isTablet = isTablet)
                 SettingsSwitchRow(
+                    title = stringResource(Res.string.settings_continue_watching_relative_countdown_title),
+                    description = stringResource(Res.string.settings_continue_watching_relative_countdown_description),
+                    checked = relativeAirCountdown,
+                    isTablet = isTablet,
+                    modifier = Modifier.settingsScrollAnchor(SettingsScrollAnchor.searchKey("continue-watching-relative-countdown")),
+                    onCheckedChange = ContinueWatchingPreferencesRepository::setRelativeAirCountdown,
+                )
+                SettingsGroupDivider(isTablet = isTablet)
+                SettingsSwitchRow(
                     title = stringResource(Res.string.settings_continue_watching_use_episode_thumbnails_title),
                     description = stringResource(Res.string.settings_continue_watching_use_episode_thumbnails_description),
                     checked = useEpisodeThumbnails,
@@ -320,6 +334,10 @@ internal fun LazyListScope.continueWatchingSettingsContent(
                         SettingsChoiceOption(
                             ContinueWatchingSortMode.STREAMING_STYLE,
                             stringResource(Res.string.settings_continue_watching_sort_mode_streaming),
+                        ),
+                        SettingsChoiceOption(
+                            ContinueWatchingSortMode.ROTATION,
+                            stringResource(Res.string.settings_continue_watching_sort_mode_rotation),
                         ),
                     ),
                     selectedValue = sortMode,
@@ -504,6 +522,11 @@ private fun ContinueWatchingSortModeDialog(
             ContinueWatchingSortMode.STREAMING_STYLE,
             Res.string.settings_continue_watching_sort_mode_streaming,
             Res.string.settings_continue_watching_sort_mode_streaming_desc,
+        ),
+        Triple(
+            ContinueWatchingSortMode.ROTATION,
+            Res.string.settings_continue_watching_sort_mode_rotation,
+            Res.string.settings_continue_watching_sort_mode_rotation_desc,
         ),
     )
 

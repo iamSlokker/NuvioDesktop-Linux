@@ -1,5 +1,6 @@
 package com.nuvio.app.features.streams
 
+import com.nuvio.app.core.ui.smoothBorder
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateFloatAsState
@@ -399,6 +400,19 @@ fun StreamsScreen(
         val index = selectableStreams.indexOfFirst { it === target }
         if (index >= 0) focusedStreamIndex = index
     }
+    // Right from the last addon chip walks on to these; Down or Left past the first returns to the chips and list.
+    var headerFocus by remember(videoId) { mutableStateOf<StreamPickerHeaderControl?>(null) }
+    var openSortTick by remember(videoId) { mutableIntStateOf(0) }
+    val headerControls = buildList {
+        add(StreamPickerHeaderControl.Sort)
+        if (isPanel) {
+            if (panelTwoColumnsFit) add(StreamPickerHeaderControl.Layout)
+            add(StreamPickerHeaderControl.Refresh)
+            add(StreamPickerHeaderControl.Close)
+        }
+    }
+    // A chip clicked with the mouse puts the keyboard back on the chips.
+    LaunchedEffect(uiState.selectedFilter) { headerFocus = null }
 
     LaunchedEffect(type, videoId, seasonNumber, episodeNumber, manualSelection) {
         StreamsRepository.load(
@@ -410,6 +424,12 @@ fun StreamsScreen(
             episode = episodeNumber,
             manualSelection = manualSelection,
             preferLocalStreams = preferLocalStreams,
+        )
+        // The viewer has committed to playing this title: warm the pre-show trivia now so it is
+        // cached by the time playback opens. No-op unless the feature is enabled and configured.
+        com.nuvio.app.features.preroll.TriviaRepository.prefetchFor(
+            type = type,
+            metaId = parentMetaId ?: videoId,
         )
     }
 
@@ -795,6 +815,25 @@ fun StreamsScreen(
                                 return@onPreviewKeyEvent false
                             }
                             val navKey = event.navigationKey()
+                            val onHeader = headerFocus
+                            if (onHeader != null && navKey != Key.Backspace && navKey != Key.Escape) {
+                                val at = headerControls.indexOf(onHeader)
+                                when (navKey) {
+                                    Key.DirectionLeft -> headerFocus = headerControls.getOrNull(at - 1)
+                                    Key.DirectionRight -> headerFocus = headerControls.getOrNull(at + 1) ?: onHeader
+                                    Key.DirectionDown -> headerFocus = null
+                                    Key.Enter, Key.NumPadEnter -> when (onHeader) {
+                                        StreamPickerHeaderControl.Sort -> openSortTick++
+                                        StreamPickerHeaderControl.Layout ->
+                                            StreamBadgeSettingsRepository.setListTwoColumns(!streamBadgeSettings.listTwoColumns)
+                                        StreamPickerHeaderControl.Refresh -> reloadStreams()
+                                        StreamPickerHeaderControl.Close -> onBack()
+                                    }
+                                    Key.DirectionUp -> Unit
+                                    else -> return@onPreviewKeyEvent false
+                                }
+                                return@onPreviewKeyEvent true
+                            }
                             when (navKey) {
                                 Key.Backspace -> {
                                     onBack()
@@ -844,6 +883,8 @@ fun StreamsScreen(
                                     if (nextFilterIndex != currentFilterIndex) {
                                         StreamsRepository.selectFilter(providerIds[nextFilterIndex])
                                         focusedStreamIndex = 0
+                                    } else if (delta > 0) {
+                                        headerFocus = headerControls.first()
                                     }
                                     true
                                 }
@@ -948,7 +989,10 @@ fun StreamsScreen(
             isEpisodeView = isEpisode,
         )
 
-        CompositionLocalProvider(LocalStreamRowActions provides streamRowActions) {
+        CompositionLocalProvider(
+            LocalStreamRowActions provides streamRowActions,
+            LocalStreamPickerHeaderFocus provides StreamPickerHeaderFocus(headerFocus, openSortTick),
+        ) {
         if (isPanel) {
             PanelStreamsLayout(
                 isEpisode = isEpisode,
@@ -967,7 +1011,7 @@ fun StreamsScreen(
                 resumeProgressFraction = effectiveResumeProgressFraction,
                 providerListState = providerListState,
                 streamListState = streamListState,
-                focusedStream = focusedStream,
+                focusedStream = focusedStream.takeIf { headerFocus == null },
                 onStreamSelected = { stream, positionMs, progressFraction ->
                     tracedStreamSelection(stream, positionMs, progressFraction)
                 },
@@ -1001,7 +1045,7 @@ fun StreamsScreen(
                 resumeProgressFraction = effectiveResumeProgressFraction,
                 providerListState = providerListState,
                 streamListState = streamListState,
-                focusedStream = focusedStream,
+                focusedStream = focusedStream.takeIf { headerFocus == null },
                 onStreamSelected = { stream, positionMs, progressFraction ->
                     tracedStreamSelection(stream, positionMs, progressFraction)
                 },
@@ -1027,7 +1071,7 @@ fun StreamsScreen(
                 resumeProgressFraction = effectiveResumeProgressFraction,
                 providerListState = providerListState,
                 streamListState = streamListState,
-                focusedStream = focusedStream,
+                focusedStream = focusedStream.takeIf { headerFocus == null },
                 onStreamSelected = { stream, positionMs, progressFraction ->
                     tracedStreamSelection(stream, positionMs, progressFraction)
                 },
@@ -1047,8 +1091,6 @@ fun StreamsScreen(
                 onClick = onBack,
                 modifier = Modifier
                     .size(40.dp),
-                containerColor = MaterialTheme.colorScheme.background.copy(alpha = 0.45f),
-                contentColor = MaterialTheme.colorScheme.onBackground,
             )
 
             Box(
@@ -1861,6 +1903,10 @@ private fun StreamSortChip() {
     val order = settings.listSortOrder
     val cachedFirst = settings.listCachedFirst
     var expanded by remember { mutableStateOf(false) }
+    val headerFocus = LocalStreamPickerHeaderFocus.current
+    LaunchedEffect(headerFocus.openSortTick) {
+        if (headerFocus.openSortTick > 0) expanded = true
+    }
     val label = listOfNotNull(
         order.takeIf { it != StreamListSortOrder.DEFAULT }?.label,
         stringResource(Res.string.streams_sort_cached_first).takeIf { cachedFirst },
@@ -1870,6 +1916,7 @@ private fun StreamSortChip() {
             label = if (label.isEmpty()) "Sort" else "Sort: $label",
             isSelected = label.isNotEmpty(),
             onClick = { expanded = true },
+            focused = headerFocus.control == StreamPickerHeaderControl.Sort,
         )
         DropdownMenu(
             expanded = expanded,
@@ -1902,6 +1949,8 @@ private fun FilterChip(
     label: String,
     isSelected: Boolean,
     onClick: () -> Unit,
+    /** The picker's keyboard highlight (see [LocalStreamPickerHeaderFocus]). */
+    focused: Boolean = false,
 ) {
     val interactionSource = remember { MutableInteractionSource() }
     val isPressed by interactionSource.collectIsPressedAsState()
@@ -1953,10 +2002,11 @@ private fun FilterChip(
                 .clip(chipShape)
                 .background(containerColor)
                 .then(
-                    if (glass && isSelected) {
-                        Modifier.border(1.dp, StreamGlass.Edge, chipShape)
-                    } else {
-                        Modifier
+                    when {
+                        focused && glass -> Modifier.smoothBorder(1.5.dp, StreamGlass.Edge, chipShape)
+                        focused -> Modifier.smoothBorder(2.dp, MaterialTheme.colorScheme.onSurface, chipShape)
+                        glass && isSelected -> Modifier.border(1.dp, StreamGlass.Edge, chipShape)
+                        else -> Modifier
                     },
                 )
                 .padding(horizontal = 14.dp, vertical = 8.dp),

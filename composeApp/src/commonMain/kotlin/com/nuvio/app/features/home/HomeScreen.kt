@@ -45,6 +45,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.SideEffect
 import androidx.compose.foundation.focusable
+import androidx.compose.ui.focus.FocusDirection
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
@@ -114,6 +116,8 @@ import com.nuvio.app.features.discover.DISCOVER_PLACEHOLDER_KEY_PREFIX
 import com.nuvio.app.features.discover.DiscoverRecommendationsRepository
 import com.nuvio.app.features.discover.DiscoverRowBody
 import com.nuvio.app.features.discover.DiscoverRowHeader
+import com.nuvio.app.features.discover.BrowseFilterStripFocus
+import com.nuvio.app.features.discover.LocalBrowseFilterStripFocus
 import com.nuvio.app.features.discover.DiscoverRowBodyMessage
 import com.nuvio.app.features.library.LibraryFilterBar
 import com.nuvio.app.features.library.LibraryTitleFactsRepository
@@ -178,6 +182,7 @@ import com.nuvio.app.features.tmdb.TmdbSettingsRepository
 import com.nuvio.app.features.simkl.SimklAuthRepository
 import com.nuvio.app.features.simkl.simklContinueWatchingCutoffMs
 import com.nuvio.app.features.simkl.SimklLibraryRepository
+import com.nuvio.app.features.simkl.SimklRewatchRepository
 import com.nuvio.app.features.simkl.SimklSettingsRepository
 import com.nuvio.app.features.trakt.TraktAuthRepository
 import com.nuvio.app.features.trakt.TraktCalendarRepository
@@ -216,6 +221,7 @@ import com.nuvio.app.features.watchprogress.continueWatchingEntries
 import com.nuvio.app.features.watchprogress.toContinueWatchingItem
 import com.nuvio.app.features.watchprogress.toUpNextContinueWatchingItem
 import com.nuvio.app.features.watching.application.WatchingState
+import com.nuvio.app.features.watching.domain.WatchingCompletedEpisode
 import com.nuvio.app.features.watching.domain.WatchingContentRef
 import com.nuvio.app.features.watching.domain.isReleasedBy
 import com.nuvio.app.features.collection.CollectionRepository
@@ -1350,6 +1356,7 @@ fun HomeScreen(
     // Read directly: the collected profile state is declared further down. Seeds from this profile's
     // last pass (see HomeContinueWatchingMemory), so a return from details starts where it left off.
     val seedMemoryProfileId = ProfileRepository.state.value.activeProfile?.profileIndex ?: 1
+    val simklRewatchUiState by SimklRewatchRepository.uiState.collectAsStateWithLifecycle()
     val nextUpSeedCandidatesOrNull by produceState<List<CompletedSeriesCandidate>?>(
         HomeContinueWatchingMemory.forProfile(seedMemoryProfileId).nextUpSeeds,
         watchProgressUiState.entries,
@@ -1360,6 +1367,7 @@ fun HomeScreen(
         continueWatchingPreferences.seedNextUpFromNuvioSync,
         continueWatchingRemoteSourceActive,
         continueWatchingSource,
+        simklRewatchUiState.sessions,
     ) {
         // Read on the UI thread, where the keys were, then handed to the background as plain values.
         val progressEntries = watchProgressUiState.entries
@@ -1408,6 +1416,7 @@ fun HomeScreen(
                 isTraktProgressActive = traktProgressActive,
                 preferFurthestEpisode = fromFurthestEpisode,
                 nowEpochMs = WatchProgressClock.nowEpochMs(),
+                rewatchSeedFor = SimklRewatchRepository::rewatchSeedFor,
             )
         }.also { seeds -> HomeContinueWatchingMemory.storeSeeds(seedMemoryProfileId, seeds) }
     }
@@ -1721,6 +1730,19 @@ fun HomeScreen(
             items = continueWatchingItems,
             separateNextUpRow = continueWatchingPreferences.separateNextUpRow,
             separateUpcomingRow = continueWatchingPreferences.separateUpcomingRow,
+        )
+    }
+
+    // "Previously on" cards for the episodes waiting in Continue Watching, so they are ready by the
+    // time one is played. Cache-only unless the break rule says the viewer would get one.
+    LaunchedEffect(nextUpRowItems, continueWatchingRowItems) {
+        com.nuvio.app.features.preroll.PreviouslyOnRepository.prefetchUpNext(
+            (nextUpRowItems + continueWatchingRowItems).mapNotNull { item ->
+                val season = item.seasonNumber ?: return@mapNotNull null
+                val episode = item.episodeNumber ?: return@mapNotNull null
+                if (!item.isNextUp || item.parentMetaType != "series" || item.resumePositionMs > 0L) return@mapNotNull null
+                com.nuvio.app.features.preroll.PreviouslyOnRequest(item.parentMetaType, item.parentMetaId, season, episode)
+            },
         )
     }
 
@@ -2377,6 +2399,12 @@ fun HomeScreen(
         runCatching { tvFocusRequester.requestFocus() }
     }
     var homeRootHasFocus by remember { mutableStateOf(false) }
+    // A filter bar in a row's header (Discover's browser row, Library's first row) takes real focus, unlike the cards:
+    // Up from its row's cards moves into it, and while it has focus the arrows walk its filters and Enter opens one.
+    val filterStripFocusRequester = remember { FocusRequester() }
+    val focusManager = LocalFocusManager.current
+    var filterStripHasFocus by remember { mutableStateOf(false) }
+    val filterStripFocus = remember { BrowseFilterStripFocus(filterStripFocusRequester) { filterStripHasFocus = it } }
     var lastStateDrivenSearchQuery by remember { mutableStateOf<String?>(null) }
     // Uncovered without being rebuilt (back from the Settings tab, where Home now stays composed):
     // a rebuilt Home took focus in its first-composition effect; a kept one has to ask here, or
@@ -2416,6 +2444,8 @@ fun HomeScreen(
         if (!closed || contentMode is HomeContentMode.Search) return@LaunchedEffect
         repeat(12) { attempt ->
             delay(if (attempt == 0) 50 else 48)
+            // A menu opened from the keyboard hands focus back to its filter, which is inside this root.
+            if (homeRootHasFocus) return@LaunchedEffect
             requestHomeFocus()
             if (homeRootHasFocus) return@LaunchedEffect
         }
@@ -2743,6 +2773,8 @@ fun HomeScreen(
                             } else {
                                 null
                             },
+                            hasFilterStrip = section.key == DISCOVER_BROWSER_ROW_KEY ||
+                                (displayMode is HomeContentMode.Library && section.key == effectiveSections.firstOrNull()?.key),
                         ),
                     )
                 }
@@ -3800,6 +3832,41 @@ fun HomeScreen(
                             },
                         )
                         .onPreviewKeyEvent { event ->
+                            if (filterStripHasFocus) {
+                                // Enter and the arrows along the bar are the focused filter's own; Down
+                                // (or back) returns to the row's cards, Up goes on to the row above.
+                                if (event.type != KeyEventType.KeyDown) return@onPreviewKeyEvent false
+                                return@onPreviewKeyEvent when (event.navigationKey()) {
+                                    Key.DirectionLeft -> {
+                                        focusManager.moveFocus(FocusDirection.Left)
+                                        true
+                                    }
+                                    Key.DirectionRight -> {
+                                        focusManager.moveFocus(FocusDirection.Right)
+                                        true
+                                    }
+                                    Key.DirectionDown, Key.Escape, Key.Back, Key.Backspace -> {
+                                        mouseActivity.onKeyboardNavigation()
+                                        requestHomeFocus()
+                                        true
+                                    }
+                                    Key.DirectionUp -> {
+                                        mouseActivity.onKeyboardNavigation()
+                                        requestHomeFocus()
+                                        withCarriedTvItemIndex {
+                                            if (tvModeEnabled) {
+                                                setImmersiveRowIndex((getImmersiveRowIndex() - 1).coerceAtLeast(0))
+                                                tvFocus.sectionIndex = getImmersiveRowIndex() + if (heroFocusable) 1 else 0
+                                            } else {
+                                                tvFocus.moveSection(-1, tvSectionCount)
+                                            }
+                                        }
+                                        if (!tvModeEnabled) scrollToFocusedTvSection()
+                                        true
+                                    }
+                                    else -> false
+                                }
+                            }
                             val selectKey = event.navigationKey()
                             if (selectKey == Key.Enter || selectKey == Key.NumPadEnter) {
                                 // Resolved on the press: the release must act on the item that
@@ -3854,6 +3921,12 @@ fun HomeScreen(
                                 }
                                 Key.DirectionUp -> {
                                     mouseActivity.onKeyboardNavigation()
+                                    val onFilteredRow = tvRows.getOrNull(tvRowIndexForSection(tvFocus.sectionIndex))?.hasFilterStrip == true &&
+                                        !(heroFocusable && tvFocus.sectionIndex == 0)
+                                    if (onFilteredRow) {
+                                        runCatching { filterStripFocusRequester.requestFocus() }
+                                        if (filterStripHasFocus) return@onPreviewKeyEvent true
+                                    }
                                     withCarriedTvItemIndex {
                                         if (tvModeEnabled) {
                                             setImmersiveRowIndex((getImmersiveRowIndex() - 1).coerceAtLeast(0))
@@ -3915,11 +3988,13 @@ fun HomeScreen(
         // Defined once and handed to both the plain list and the TV immersive shelf, which render
         // the Discover row through separate call sites.
         val discoverRowTitleContent: @Composable () -> Unit = {
-            DiscoverRowHeader(
-                state = discoverUiState,
-                allFiltersLabel = discoverAllFiltersLabel,
-                onMenuOpenChange = { browseFilterMenuOpen = it },
-            )
+            CompositionLocalProvider(LocalBrowseFilterStripFocus provides filterStripFocus) {
+                DiscoverRowHeader(
+                    state = discoverUiState,
+                    allFiltersLabel = discoverAllFiltersLabel,
+                    onMenuOpenChange = { browseFilterMenuOpen = it },
+                )
+            }
         }
 
         // The header a Discover row draws: the catalog/genre segments for row 1, a title-plus-badge
@@ -3932,14 +4007,16 @@ fun HomeScreen(
                 displayMode is HomeContentMode.Library &&
                     (tvModeEnabled || section.key == firstLibraryRowKey) -> {
                     {
-                        LibraryFilterBar(
-                            rowTitle = section.title.takeUnless { section.key == LIBRARY_FILTER_EMPTY_ROW_KEY },
-                            settings = libraryDisplaySettings,
-                            sourceMode = libraryUiState.sourceMode,
-                            shownCount = libraryShownCount,
-                            factsLoading = libraryTitleFactsLoading,
-                            onMenuOpenChange = { browseFilterMenuOpen = it },
-                        )
+                        CompositionLocalProvider(LocalBrowseFilterStripFocus provides filterStripFocus) {
+                            LibraryFilterBar(
+                                rowTitle = section.title.takeUnless { section.key == LIBRARY_FILTER_EMPTY_ROW_KEY },
+                                settings = libraryDisplaySettings,
+                                sourceMode = libraryUiState.sourceMode,
+                                shownCount = libraryShownCount,
+                                factsLoading = libraryTitleFactsLoading,
+                                onMenuOpenChange = { browseFilterMenuOpen = it },
+                            )
+                        }
                     }
                 }
                 displayMode !is HomeContentMode.Discover -> null
@@ -5308,6 +5385,7 @@ internal fun buildHomeNextUpSeedCandidates(
     isTraktProgressActive: Boolean,
     preferFurthestEpisode: Boolean,
     nowEpochMs: Long,
+    rewatchSeedFor: (contentId: String) -> WatchingCompletedEpisode? = { null },
 ): List<CompletedSeriesCandidate> {
     PerfTelemetry.count("HomeScreen.buildHomeNextUpSeedCandidates")
     val progressSeeds = progressEntries
@@ -5346,6 +5424,16 @@ internal fun buildHomeNextUpSeedCandidates(
         if (!content.type.isSeriesTypeForContinueWatching()) return@mapNotNull null
         if (completed.seasonNumber == 0) return@mapNotNull null
         if (isMalformedNextUpSeedContentId(content.id)) return@mapNotNull null
+        // An active rewatch continues from its own furthest episode, whatever the history says:
+        // the original watch's furthest episode is the finale, which has nothing after it.
+        rewatchSeedFor(content.id)?.let { rewatch ->
+            return@mapNotNull CompletedSeriesCandidate(
+                content = content,
+                seasonNumber = rewatch.seasonNumber,
+                episodeNumber = rewatch.episodeNumber,
+                markedAtEpochMs = rewatch.markedAtEpochMs,
+            )
+        }
         CompletedSeriesCandidate(
             content = content,
             seasonNumber = completed.seasonNumber,
@@ -5444,6 +5532,7 @@ private suspend fun resolveHomeNextUpCandidate(
         todayIsoDate = todayIsoDate,
         preferFurthestEpisode = preferFurthestEpisode,
         showUnairedNextUp = showUnairedNextUp,
+        rewatchSeed = SimklRewatchRepository.rewatchSeedFor(contentId),
     )
     if (action == null) {
         // Covers the showUnairedNextUp preference: with it off, an unaired next episode yields no
@@ -5718,6 +5807,7 @@ internal fun buildHomeContinueWatchingItems(
     return when (sortMode) {
         ContinueWatchingSortMode.DEFAULT -> deduplicated.map(HomeContinueWatchingCandidate::item)
         ContinueWatchingSortMode.STREAMING_STYLE -> applyStreamingStyleSort(deduplicated, todayIsoDate)
+        ContinueWatchingSortMode.ROTATION -> applyRotationSort(deduplicated, todayIsoDate)
     }
 }
 
@@ -5725,7 +5815,36 @@ private fun applyStreamingStyleSort(
     candidates: List<HomeContinueWatchingCandidate>,
     todayIsoDate: String,
 ): List<ContinueWatchingItem> {
-    val (released, unreleased) = candidates.partition { candidate ->
+    val (released, unreleased) = partitionAired(candidates, todayIsoDate)
+
+    // Released: most recently watched first (already sorted by dedup pass)
+    return released.map(HomeContinueWatchingCandidate::item) + sortUnaired(unreleased)
+}
+
+/**
+ * Partly watched cards and New Episode / New Season cards keep the "Last watched" order at the
+ * front, newest first. The rest of Up Next follows least recently watched first, so a show finished
+ * just now goes to the back and one untouched for weeks comes forward. Unaired episodes go last, as
+ * in [applyStreamingStyleSort].
+ */
+private fun applyRotationSort(
+    candidates: List<HomeContinueWatchingCandidate>,
+    todayIsoDate: String,
+): List<ContinueWatchingItem> {
+    val (released, unreleased) = partitionAired(candidates, todayIsoDate)
+    val (front, rotating) = released.partition { candidate ->
+        !candidate.item.isNextUp || candidate.item.isReleaseAlert
+    }
+    return front.map(HomeContinueWatchingCandidate::item) +
+        rotating.sortedBy(HomeContinueWatchingCandidate::lastUpdatedEpochMs).map(HomeContinueWatchingCandidate::item) +
+        sortUnaired(unreleased)
+}
+
+private fun partitionAired(
+    candidates: List<HomeContinueWatchingCandidate>,
+    todayIsoDate: String,
+): Pair<List<HomeContinueWatchingCandidate>, List<HomeContinueWatchingCandidate>> =
+    candidates.partition { candidate ->
         val item = candidate.item
         if (!item.isNextUp) {
             true // in-progress items are always "released"
@@ -5739,11 +5858,9 @@ private fun applyStreamingStyleSort(
         }
     }
 
-    // Released: most recently watched first (already sorted by dedup pass)
-    val sortedReleased = released.map(HomeContinueWatchingCandidate::item)
-
-    // Unaired: soonest air date first; unknown dates go to the end
-    val sortedUnreleased = unreleased
+// Unaired: soonest air date first; unknown dates go to the end
+private fun sortUnaired(unreleased: List<HomeContinueWatchingCandidate>): List<ContinueWatchingItem> =
+    unreleased
         .sortedWith { a, b ->
             val dateA = a.item.released?.takeIf { it.isNotBlank() }
             val dateB = b.item.released?.takeIf { it.isNotBlank() }
@@ -5755,9 +5872,6 @@ private fun applyStreamingStyleSort(
             }
         }
         .map(HomeContinueWatchingCandidate::item)
-
-    return sortedReleased + sortedUnreleased
-}
 
 internal data class CompletedSeriesCandidate(
     val content: WatchingContentRef,

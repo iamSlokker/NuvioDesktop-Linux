@@ -1232,11 +1232,13 @@
   <string name="continue_watching_upcoming">Nadchodzące</string>
   <string name="settings_continue_watching_section_sort_order">KOLEJNOŚĆ SORTOWANIA</string>
   <string name="settings_continue_watching_sort_mode_title">Kolejność sortowania</string>
-  <string name="settings_continue_watching_sort_mode_description">Ostatnio oglądane zachowuje kolejność, w jakiej oglądasz. Najpierw wyemitowane przenosi odcinki z Następne w kolejce, które jeszcze się nie ukazały, na koniec, od najbliższego, dzięki czemu początek wiersza to zawsze coś, co możesz odtworzyć.</string>
+  <string name="settings_continue_watching_sort_mode_description">Ostatnio oglądane zachowuje kolejność, w jakiej oglądasz. Najpierw wyemitowane przenosi odcinki z Następne w kolejce, które jeszcze się nie ukazały, na koniec, od najbliższego, dzięki czemu początek wiersza to zawsze coś, co możesz odtworzyć. Rotacja zostawia na początku rozpoczęte i nowe odcinki, a potem wysuwa do przodu seriale, których nie oglądasz najdłużej.</string>
   <string name="settings_continue_watching_sort_mode_default">Ostatnio oglądane</string>
   <string name="settings_continue_watching_sort_mode_default_desc">Sortuj wszystko według czasu ostatniego oglądania</string>
   <string name="settings_continue_watching_sort_mode_streaming">Najpierw wyemitowane</string>
   <string name="settings_continue_watching_sort_mode_streaming_desc">Niewyemitowane odcinki Następny trafiają na koniec, najbliższe jako pierwsze</string>
+  <string name="settings_continue_watching_sort_mode_rotation">Rotacja</string>
+  <string name="settings_continue_watching_sort_mode_rotation_desc">Wysuwa do przodu seriale, których nie oglądasz najdłużej</string>
   <string name="settings_continue_watching_section_card_style">STYL KARTY</string>
   <string name="settings_continue_watching_section_on_launch">PRZY URUCHOMIENIU</string>
   <string name="settings_continue_watching_section_up_next_behavior">ZACHOWANIE NASTĘPNEGO</string>
@@ -1249,7 +1251,7 @@
   <string name="settings_continue_watching_style_poster_description">Karta z grafiką na pierwszym planie</string>
   <string name="settings_continue_watching_style_wide">Szeroki</string>
   <string name="settings_continue_watching_style_wide_description">Pozioma karta z informacjami</string>
-  <string name="settings_continue_watching_up_next_description">Gdy włączone, Następny zawsze kontynuuje od najdalej obejrzanego odcinka. Gdy wyłączone, kontynuuje od ostatnio obejrzanego. Przydatne przy ponownym oglądaniu wcześniejszych odcinków.</string>
+  <string name="settings_continue_watching_up_next_description">Gdy włączone, Następny zawsze kontynuuje od najdalej obejrzanego odcinka. Gdy wyłączone, kontynuuje od ostatnio obejrzanego. Przydatne przy ponownym oglądaniu wcześniejszych odcinków. Ponowne oglądanie w SIMKL zawsze kontynuuje od swojego ostatniego odcinka.</string>
   <string name="settings_continue_watching_up_next_title">Następny od najdalszego odcinka</string>
   <string name="settings_continue_watching_use_episode_thumbnails_description">Preferuj miniatury odcinków, gdy są dostępne.</string>
   <string name="settings_continue_watching_use_episode_thumbnails_title">Preferuj miniatury odcinków w Kontynuuj oglądanie</string>

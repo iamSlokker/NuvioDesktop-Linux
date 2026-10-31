@@ -1,5 +1,6 @@
 package com.nuvio.app.features.settings
 
+import androidx.compose.material.icons.rounded.MusicNote
 import com.nuvio.app.core.ui.ditheredBackground
 import com.nuvio.app.core.storage.PortableMode
 import androidx.compose.animation.AnimatedVisibility
@@ -37,6 +38,7 @@ import androidx.compose.material.icons.rounded.Language
 import androidx.compose.material.icons.rounded.Info
 import androidx.compose.material.icons.rounded.Keyboard
 import androidx.compose.material.icons.rounded.Bedtime
+import androidx.compose.material.icons.rounded.Theaters
 import androidx.compose.material.icons.rounded.Image
 import androidx.compose.material.icons.rounded.Lightbulb
 import androidx.compose.material.icons.rounded.Link
@@ -212,6 +214,7 @@ private fun settingsSearchEntries(
     val posterServicePage = resolve(Res.string.compose_settings_page_poster_service)
     val simklPage = resolve(Res.string.compose_settings_page_simkl)
     val yamtrackPage = resolve(Res.string.compose_settings_page_yamtrack)
+    val youTubePage = resolve(Res.string.compose_settings_page_youtube)
     val lightsPage = resolve(Res.string.compose_settings_page_lights)
     val seekrPage = resolve(Res.string.compose_settings_page_seekr)
     val screensaverPage = resolve(Res.string.compose_settings_page_screensaver)
@@ -1063,6 +1066,15 @@ private fun settingsSearchEntries(
             key = "app-font",
             title = resolve(Res.string.settings_appearance_app_font),
             description = resolve(Res.string.settings_appearance_app_font_player_note),
+            pageLabel = layoutPage,
+            section = resolve(Res.string.settings_appearance_section_display),
+            icon = Icons.Rounded.Palette,
+        )
+        addRow(
+            page = SettingsPage.Appearance,
+            key = "app-font-scale",
+            title = resolve(Res.string.settings_appearance_app_font_scale),
+            description = resolve(Res.string.settings_appearance_app_font_scale_description),
             pageLabel = layoutPage,
             section = resolve(Res.string.settings_appearance_section_display),
             icon = Icons.Rounded.Palette,
@@ -1978,6 +1990,7 @@ private fun settingsSearchEntries(
             PlaybackSearchRow("separate-next-up", resolve(Res.string.settings_continue_watching_separate_next_up_title), resolve(Res.string.settings_continue_watching_separate_next_up_description)),
             PlaybackSearchRow("separate-upcoming", resolve(Res.string.settings_continue_watching_separate_upcoming_title), resolve(Res.string.settings_continue_watching_separate_upcoming_description)),
             PlaybackSearchRow("unaired-next-up", resolve(Res.string.settings_continue_watching_show_unaired_next_up_title), resolve(Res.string.settings_continue_watching_show_unaired_next_up_description)),
+            PlaybackSearchRow("relative-countdown", resolve(Res.string.settings_continue_watching_relative_countdown_title), resolve(Res.string.settings_continue_watching_relative_countdown_description)),
             PlaybackSearchRow("blur-next-up", resolve(Res.string.settings_continue_watching_blur_next_up_title), resolve(Res.string.settings_continue_watching_blur_next_up_description)),
         ),
     )
@@ -2405,6 +2418,29 @@ private fun settingsSearchEntries(
         )
     }
 
+    // fork:ytmusic-login — desktop only (the login window is a desktop browser).
+    if (isDesktop) {
+        addPage(
+            page = SettingsPage.YouTubeAccount,
+            key = "youtube-account",
+            title = youTubePage,
+            description = resolve(Res.string.settings_youtube_description),
+            category = generalCategory,
+            icon = Icons.Rounded.Link,
+        )
+        addRow(
+            page = SettingsPage.YouTubeAccount,
+            key = "youtube-sign-in",
+            title = resolve(Res.string.settings_youtube_sign_in),
+            description = resolve(Res.string.settings_youtube_explainer),
+            pageLabel = youTubePage,
+            section = youTubePage,
+            category = generalCategory,
+            icon = Icons.Rounded.Link,
+            anchor = SettingsScrollAnchor.searchKey("youtube-account"),
+        )
+    }
+
     if (isDesktop) {
         val screensaverSection = resolve(Res.string.settings_screensaver_section_title)
         val shutdownSection = resolve(Res.string.settings_screensaver_section_shutdown)
@@ -2435,6 +2471,66 @@ private fun settingsSearchEntries(
                 section = row.sectionOverride ?: screensaverSection,
                 category = generalCategory,
                 icon = Icons.Rounded.Bedtime,
+            )
+        }
+
+        val preshowPage = resolve(Res.string.compose_settings_page_preshow)
+        addPage(
+            page = SettingsPage.Preshow,
+            key = "preshow",
+            title = preshowPage,
+            description = resolve(Res.string.settings_preshow_description),
+            category = generalCategory,
+            icon = Icons.Rounded.Theaters,
+        )
+        listOf(
+            PlaybackSearchRow("preshow-trailers", "Number of trailers", "How many trailers of similar titles play before a film. Switch trailers on or off under Running order.", resolve(Res.string.settings_preshow_section_trailers)),
+            PlaybackSearchRow("preshow-keep-audio", resolve(Res.string.settings_preshow_keep_audio_alive), resolve(Res.string.settings_preshow_keep_audio_alive_description), PRESHOW_SECTION_RUNNING_ORDER),
+            PlaybackSearchRow("ai-trivia-enabled", resolve(Res.string.settings_ai_trivia_enabled), resolve(Res.string.settings_ai_trivia_enabled_description), PRESHOW_SECTION_RUNNING_ORDER),
+            PlaybackSearchRow("preshow-lineup", "Pre-show running order", "Cinema intro, sound system trailer (bumper), trailers, trivia, rating card and feature presentation: switch each on or off and choose the order.", PRESHOW_SECTION_RUNNING_ORDER),
+        ).forEach { row ->
+            addRow(
+                page = SettingsPage.Preshow,
+                key = row.key,
+                title = row.title,
+                description = row.description,
+                pageLabel = preshowPage,
+                section = row.sectionOverride ?: preshowPage,
+                category = generalCategory,
+                icon = Icons.Rounded.Theaters,
+            )
+        }
+
+        // fork:music
+        val musicPage = resolve(Res.string.compose_settings_page_music)
+        addPage(
+            page = SettingsPage.Music,
+            key = "music",
+            title = musicPage,
+            description = resolve(Res.string.settings_music_description),
+            category = generalCategory,
+            icon = Icons.Rounded.MusicNote,
+        )
+        listOf(
+            PlaybackSearchRow("music-show-tab", resolve(Res.string.settings_music_show_tab), resolve(Res.string.settings_music_show_tab_description), resolve(Res.string.settings_music_section_general)),
+            PlaybackSearchRow("music-reduced-motion", resolve(Res.string.settings_music_reduced_motion), resolve(Res.string.settings_music_reduced_motion_description), resolve(Res.string.settings_music_section_general)),
+            PlaybackSearchRow("music-fanart-key", resolve(Res.string.settings_music_fanart_key), resolve(Res.string.settings_music_fanart_key_description), resolve(Res.string.settings_music_section_sources)),
+            PlaybackSearchRow("music-lastfm-key", resolve(Res.string.settings_music_lastfm_key), resolve(Res.string.settings_music_lastfm_key_description), resolve(Res.string.settings_music_section_sources)),
+            PlaybackSearchRow("music-audiodb-key", resolve(Res.string.settings_music_audiodb_key), resolve(Res.string.settings_music_audiodb_key_description), resolve(Res.string.settings_music_section_sources)),
+            PlaybackSearchRow("music-where-next", resolve(Res.string.settings_music_where_next), resolve(Res.string.settings_music_where_next_description), resolve(Res.string.settings_music_section_sources)),
+            PlaybackSearchRow("music-mb-offline", resolve(Res.string.settings_music_mb_offline), resolve(Res.string.settings_music_mb_offline_absent), resolve(Res.string.settings_music_section_sources)),
+            PlaybackSearchRow("music-keep-audio-alive", resolve(Res.string.settings_music_keep_audio_alive), resolve(Res.string.settings_music_keep_audio_alive_description), resolve(Res.string.settings_music_section_playback)),
+            PlaybackSearchRow("music-skip-non-music", resolve(Res.string.settings_music_skip_non_music), resolve(Res.string.settings_music_skip_non_music_description), resolve(Res.string.settings_music_section_playback)),
+        ).forEach { row ->
+            addRow(
+                page = SettingsPage.Music,
+                key = row.key,
+                title = row.title,
+                description = row.description,
+                pageLabel = musicPage,
+                section = row.sectionOverride ?: musicPage,
+                category = generalCategory,
+                icon = Icons.Rounded.MusicNote,
             )
         }
 
@@ -2508,9 +2604,12 @@ private fun settingsSearchEntries(
         if (!isDesktop) {
             add(SettingsPage.KeyboardShortcuts)
             add(SettingsPage.Screensaver)
+            add(SettingsPage.Preshow)
+            add(SettingsPage.Music)
             add(SettingsPage.Seekr)
             add(SettingsPage.Lights)
             add(SettingsPage.DiscordPresence)
+            add(SettingsPage.YouTubeAccount)
         }
     }
     val indexedPages = entries.mapNotNull { (it.target as? SettingsSearchTarget.Page)?.page }.toSet()
