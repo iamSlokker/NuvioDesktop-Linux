@@ -7734,3 +7734,12 @@ svg {
   font-weight: 600;
   letter-spacing: 0.02em;
 }
+
+/* Linux: no drop shadow on the player's panels. The Linux HUD is painted on the CPU (WebKitGTK
+ * without compositing, see controls_overlay.cpp), and a panel's blurred shadow was blurred again on
+ * every repaint of anything inside it: scrolling the subtitle list or the subtitle Style tab ran at
+ * about 40 fps instead of 60, and long lists felt worse still. On Windows the WebView composites the
+ * panel once and the shadow costs nothing, so it stays there. */
+.player.linux-host :is(.track-panel, .track-panel.wide, .iptv-panel) {
+  box-shadow: none !important;
+}
