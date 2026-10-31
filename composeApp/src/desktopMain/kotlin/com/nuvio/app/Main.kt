@@ -302,6 +302,9 @@ private class MouseFiveShiftEventQueue : EventQueue() {
     }
 }
 
+/** Percent added or removed per Ctrl+plus / Ctrl+minus press; a multiple of the settings slider's step (5). */
+private const val UI_SCALE_KEY_STEP_PERCENT = 10
+
 private const val SwallowedClickReplayDelayMs = 32
 private const val SwallowedClickReplayGuardMs = 400L
 // Long enough for the closed menu's popup to leave the composition before the click is re-sent.
@@ -627,6 +630,12 @@ fun main(args: Array<String>) {
             title = if (smokePlayerUrl == null) "Nuvio HTPC" else "Nuvio Player Smoke",
             state = windowState,
             icon = painterResource(NuvioDesktopIconPath),
+            // An arrow no control took, often because the control holding focus left the screen: on a music page,
+            // focus goes back onto the page (see MusicKeyboard). Window-level so it also runs with nothing focused.
+            onKeyEvent = { event ->
+                com.nuvio.app.core.ui.arrowFocusDirection(event) != null &&
+                    com.nuvio.app.features.music.MusicKeyboard.onUnhandledArrow()
+            },
         ) {
             remember {
                 System.out.println(
@@ -655,6 +664,7 @@ fun main(args: Array<String>) {
                         "Info: (DesktopStartup) Window side effect after " +
                             "${System.currentTimeMillis() - desktopStartupStartedAt}ms"
                     )
+                    com.nuvio.app.core.storage.DesktopStorage.prewarmStoresAsync()
                 }
                 window.background = NuvioDesktopNativeBackground
                 window.rootPane.background = NuvioDesktopNativeBackground
@@ -858,6 +868,17 @@ fun main(args: Array<String>) {
                         DesktopNavigationGestureBridge.requestBack(DesktopBackRequestSource.Mouse)
                     }
                 }
+                // Keyboard or mouse: focus rings show only while navigation keys (a pad sends these too) are what is
+                // being used; moving, clicking or scrolling the mouse hides them again (see KeyboardInputMode).
+                val inputModeListener = AWTEventListener { event ->
+                    when (event.id) {
+                        KeyEvent.KEY_PRESSED -> if ((event as KeyEvent).keyCode in KEYBOARD_NAVIGATION_KEYS) {
+                            com.nuvio.app.core.ui.KeyboardInputMode.active = true
+                        }
+                        MouseEvent.MOUSE_MOVED, MouseEvent.MOUSE_PRESSED, MouseEvent.MOUSE_DRAGGED, MouseEvent.MOUSE_WHEEL ->
+                            com.nuvio.app.core.ui.KeyboardInputMode.active = false
+                    }
+                }
                 val mouseFiveShiftEventQueue = MouseFiveShiftEventQueue()
                 // Diagnostic: minimize/restore fires on the AWT thread regardless of Compose's
                 // render state, so these timestamps can be lined up against the BingeAdvance logs to
@@ -903,6 +924,11 @@ fun main(args: Array<String>) {
                     mouseBackButtonListener,
                     AWTEvent.MOUSE_EVENT_MASK,
                 )
+                Toolkit.getDefaultToolkit().addAWTEventListener(
+                    inputModeListener,
+                    AWTEvent.KEY_EVENT_MASK or AWTEvent.MOUSE_EVENT_MASK or AWTEvent.MOUSE_MOTION_EVENT_MASK or
+                        AWTEvent.MOUSE_WHEEL_EVENT_MASK,
+                )
                 onDispose {
                     linuxPictureInPicture?.close()
                     window.removeWindowListener(pictureInPictureWindowListener)
@@ -915,6 +941,7 @@ fun main(args: Array<String>) {
                     window.removeWindowStateListener(windowStateListener)
                     KeyboardFocusManager.getCurrentKeyboardFocusManager().removeKeyEventDispatcher(backNavigationDispatcher)
                     Toolkit.getDefaultToolkit().removeAWTEventListener(mouseBackButtonListener)
+                    Toolkit.getDefaultToolkit().removeAWTEventListener(inputModeListener)
                     mouseFiveShiftEventQueue.uninstall()
                     uninstallFullscreenShortcuts()
                     unregisterFullscreenToggle()
@@ -1039,6 +1066,30 @@ fun main(args: Array<String>) {
                                     ?: return@onKeyEvent false
                                 return@onKeyEvent true
                             }
+                            // Ctrl+plus / Ctrl+minus / Ctrl+0 resize the whole UI, as in a browser.
+                            // Works on every screen, including the music Library and Stage view, and
+                            // changes the same setting as Settings > Appearance > App UI scale.
+                            // Shift is allowed because "+" is Shift+= on most layouts.
+                            if (event.isCtrlPressed) {
+                                when (event.key) {
+                                    Key.Equals, Key.Plus, Key.NumPadAdd -> {
+                                        com.nuvio.app.features.settings.ThemeSettingsRepository
+                                            .stepDesktopAppUiScalePercent(UI_SCALE_KEY_STEP_PERCENT)
+                                        return@onKeyEvent true
+                                    }
+                                    Key.Minus, Key.NumPadSubtract -> {
+                                        com.nuvio.app.features.settings.ThemeSettingsRepository
+                                            .stepDesktopAppUiScalePercent(-UI_SCALE_KEY_STEP_PERCENT)
+                                        return@onKeyEvent true
+                                    }
+                                    Key.Zero, Key.NumPad0 -> {
+                                        com.nuvio.app.features.settings.ThemeSettingsRepository
+                                            .setDesktopAppUiScalePercent(0)
+                                        return@onKeyEvent true
+                                    }
+                                    else -> Unit
+                                }
+                            }
                             if (event.isCtrlPressed) return@onKeyEvent false
                             // Compose text fields may leave ordinary key-down events unconsumed.
                             // Do not turn content searches or Settings edits into global navigation.
@@ -1051,6 +1102,7 @@ fun main(args: Array<String>) {
                                 AppShortcutAction.OpenDiscover,
                                 AppShortcutAction.OpenCalendar,
                                 AppShortcutAction.OpenLiveTv,
+                                AppShortcutAction.OpenMusic,
                                 // Routed through App so it inherits the same guard the other
                                 // navigation shortcuts get: nothing fires while the player is up.
                                 AppShortcutAction.ToggleGameMode -> {
@@ -1061,6 +1113,13 @@ fun main(args: Array<String>) {
                                     toggleDesktopAppFullscreen(window)
                                     true
                                 }
+                                AppShortcutAction.FocusMusicPlayer ->
+                                    com.nuvio.app.features.music.MusicKeyboard.togglePlayerFocus()
+                                // Home takes the trailer key itself; reaching here on a music page it has no trailer to
+                                // toggle, so it (a pad's Y) moves to and from the player instead.
+                                AppShortcutAction.ToggleTrailer ->
+                                    com.nuvio.app.features.music.MusicKeyboard.pageShowing() &&
+                                        com.nuvio.app.features.music.MusicKeyboard.togglePlayerFocus()
                                 AppShortcutAction.GoBack -> {
                                     DesktopNavigationGestureBridge.requestBack()
                                     true
@@ -1232,3 +1291,9 @@ private fun swallowHeldSelectKey(event: KeyEvent): Boolean {
         else -> false
     }
 }
+
+/** The keys that mean "moving around with the keyboard" (or a pad's D-pad and A, which arrive as these). */
+private val KEYBOARD_NAVIGATION_KEYS = setOf(
+    KeyEvent.VK_UP, KeyEvent.VK_DOWN, KeyEvent.VK_LEFT, KeyEvent.VK_RIGHT,
+    KeyEvent.VK_TAB, KeyEvent.VK_ENTER, KeyEvent.VK_PAGE_UP, KeyEvent.VK_PAGE_DOWN, KeyEvent.VK_HOME, KeyEvent.VK_END,
+)

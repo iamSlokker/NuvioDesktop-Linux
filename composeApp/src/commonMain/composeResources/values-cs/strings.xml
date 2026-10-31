@@ -1232,11 +1232,13 @@
   <string name="continue_watching_upcoming">Připravované</string>
   <string name="settings_continue_watching_section_sort_order">ŘAZENÍ</string>
   <string name="settings_continue_watching_sort_mode_title">Řazení</string>
-  <string name="settings_continue_watching_sort_mode_description">Naposledy zhlédnuté ponechá řadu v pořadí, v jakém jste věci sledovali. Odvysílané první přesune epizody v Další na řadě, které ještě nebyly odvysílány, na konec, nejbližší první, takže na začátku řady je vždy něco, co můžete přehrát.</string>
+  <string name="settings_continue_watching_sort_mode_description">Naposledy zhlédnuté ponechá řadu v pořadí, v jakém jste věci sledovali. Odvysílané první přesune epizody v Další na řadě, které ještě nebyly odvysílány, na konec, nejbližší první, takže na začátku řady je vždy něco, co můžete přehrát. Rotace ponechá na začátku rozkoukané a nové epizody a potom posune dopředu seriály, které jste nejdéle nesledovali.</string>
   <string name="settings_continue_watching_sort_mode_default">Naposledy zhlédnuté</string>
   <string name="settings_continue_watching_sort_mode_default_desc">Seřadit vše podle toho, kdy jste to naposledy sledovali</string>
   <string name="settings_continue_watching_sort_mode_streaming">Odvysílané první</string>
   <string name="settings_continue_watching_sort_mode_streaming_desc">Neodvysílané epizody v Další na řadě jsou na konci, nejbližší první</string>
+  <string name="settings_continue_watching_sort_mode_rotation">Rotace</string>
+  <string name="settings_continue_watching_sort_mode_rotation_desc">Posune dopředu seriály, které jste nejdéle nesledovali</string>
   <string name="settings_continue_watching_section_card_style">Styl karty plakátu</string>
   <string name="settings_continue_watching_section_on_launch">PŘI SPUŠTĚNÍ</string>
   <string name="settings_continue_watching_section_up_next_behavior">CHOVÁNÍ DALŠÍ NA ŘADĚ</string>
@@ -1249,7 +1251,7 @@
   <string name="settings_continue_watching_style_poster_description">Karta plakátu zaměřená na grafiku</string>
   <string name="settings_continue_watching_style_wide">Široký</string>
   <string name="settings_continue_watching_style_wide_description">Horizontální karta s vysokou hustotou informací</string>
-  <string name="settings_continue_watching_up_next_description">Zapněte pro opakované sledování.</string>
+  <string name="settings_continue_watching_up_next_description">Zapněte pro opakované sledování. Opakované sledování přes SIMKL vždy pokračuje od svého posledního dílu.</string>
   <string name="settings_continue_watching_up_next_title">Další na řadě od nejdále zhlédnuté</string>
   <string name="settings_continue_watching_use_episode_thumbnails_description">Upřednostňovat náhledy epizod, pokud jsou k dispozici.</string>
   <string name="settings_continue_watching_use_episode_thumbnails_title">Upřednostňovat náhledy epizod v Pokračovat ve sledování</string>

@@ -7,7 +7,8 @@ package com.nuvio.app.features.player.desktop
  * There is deliberately no queue: an evicted hero needs fresh foreground eligibility.
  */
 internal class LinuxPlayerOwnership(private val lifecycleLock: Any) {
-    enum class Priority { HERO, PLAYER }
+    // Music sits between: it holds off hero trailers and theme songs, and a film evicts it.
+    enum class Priority { HERO, MUSIC, PLAYER }
     class Request internal constructor(internal val owner: Any, internal val priority: Priority)
     private class Active(val request: Request, val quiesce: () -> Unit, val release: () -> Unit) {
         var prepared = false // Guarded by stateLock.
@@ -15,16 +16,27 @@ internal class LinuxPlayerOwnership(private val lifecycleLock: Any) {
     private val stateLock = Any()
     private var requested: Request? = null
     private var active: Active? = null
+    // Owners that give way to any request while they are not in use (a paused music track).
+    private val yielding = mutableSetOf<Any>() // Guarded by stateLock.
+
+    fun setYielding(owner: Any, value: Boolean) = synchronized(stateLock) {
+        if (value) yielding.add(owner) else yielding.remove(owner)
+    }
 
     fun request(owner: Any, priority: Priority): Request? = synchronized(stateLock) {
         if (listOfNotNull(requested, active?.request).any {
-                it.owner !== owner && it.priority > priority
+                it.owner !== owner && it.owner !in yielding && it.priority > priority
             }) return@synchronized null
         requested?.takeIf { it.owner === owner && it.priority == priority }
             ?: Request(owner, priority).also { requested = it }
     }
 
     fun isCurrent(request: Request): Boolean = synchronized(stateLock) { requested === request }
+
+    /** Whether another owner has the native player now (claimed, and not giving way). */
+    fun heldByOther(owner: Any): Boolean = synchronized(stateLock) {
+        active?.request?.owner?.let { it !== owner && it !in yielding } == true
+    }
 
     fun owns(request: Request): Boolean = synchronized(stateLock) { active?.request === request }
 

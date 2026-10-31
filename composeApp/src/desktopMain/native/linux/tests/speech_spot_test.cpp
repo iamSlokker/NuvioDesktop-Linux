@@ -44,6 +44,11 @@ int main() {
                 "bytes per second of a remote source");
         require(linuxSpeechSourceBytesPerSecond("/media/a.mkv", 6000000000LL, 6000.0) < 0, "local files cost nothing");
         require(linuxSpeechSourceBytesPerSecond("https://host/live.m3u8", -1, 0.0) < 0, "unknown size");
+        const auto muxed = linuxSpeechSpotInput("https://host/a.mkv", "", "2");
+        require(muxed.url == "https://host/a.mkv" && muxed.aid == "2", "a muxed source decodes the player's track");
+        const auto youtube = linuxSpeechSpotInput("https://host/video", "https://host/audio", "2");
+        require(youtube.url == "https://host/audio" && youtube.aid.empty(),
+                "a separate audio stream is decoded on its own, without the player's track number");
 
         const auto dir = std::filesystem::temp_directory_path() / "nuvio-speech-spot-test";
         std::filesystem::remove_all(dir);

@@ -95,6 +95,7 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.currentStateAsState
 import com.nuvio.app.features.games.GameModeController
+import com.nuvio.app.features.simkl.SimklRewatchRepository
 import com.nuvio.app.features.streams.StreamPrefetchService
 import com.nuvio.app.core.ui.NuvioAsyncImage as AsyncImage
 import com.nuvio.app.core.build.AppFeaturePolicy
@@ -172,6 +173,7 @@ import com.nuvio.app.features.trakt.TraktCommentsSettings
 import com.nuvio.app.features.trakt.TraktConnectionMode
 import com.nuvio.app.features.trakt.TraktListTab
 import com.nuvio.app.features.trakt.TraktSettingsRepository
+import com.nuvio.app.features.themesong.DetailsThemeSong // fork:themesong
 import com.nuvio.app.features.trailer.TrailerPlaybackResolver
 import com.nuvio.app.features.trailer.TrailerPlaybackSource
 import com.nuvio.app.features.trailer.TrailerResolution
@@ -752,12 +754,21 @@ fun MetaDetailsScreen(
                 val movieProgress = progressByVideoId[meta.id]
                     ?.takeUnless { it.isCompleted }
                 val cwPrefs by ContinueWatchingPreferencesRepository.uiState.collectAsStateWithLifecycle()
-                val seriesAction = remember(watchProgressUiState.entries, watchedUiState.items, meta, todayIsoDate, cwPrefs.upNextFromFurthestEpisode) {
+                val simklRewatchUiState by SimklRewatchRepository.uiState.collectAsStateWithLifecycle()
+                val seriesAction = remember(
+                    watchProgressUiState.entries,
+                    watchedUiState.items,
+                    meta,
+                    todayIsoDate,
+                    cwPrefs.upNextFromFurthestEpisode,
+                    simklRewatchUiState.sessions,
+                ) {
                     meta.seriesPrimaryAction(
                         entries = watchProgressUiState.entries,
                         watchedItems = watchedUiState.items,
                         todayIsoDate = todayIsoDate,
                         preferFurthestEpisode = cwPrefs.upNextFromFurthestEpisode,
+                        rewatchSeed = SimklRewatchRepository.rewatchSeedFor(meta.id),
                     ) ?: meta.seriesRestartAction(
                         entries = watchProgressUiState.entries,
                         watchedItems = watchedUiState.items,
@@ -2862,6 +2873,21 @@ fun MetaDetailsScreen(
                                 onDismiss = { recapBoundary = null },
                             )
                         }
+
+                        DetailsThemeSong( // fork:themesong
+                            metaType = meta.type,
+                            metaName = meta.name,
+                            releaseInfo = meta.releaseInfo,
+                            metaId = meta.id,
+                            deferredWorkAllowed = deferredMetaWorkAllowed,
+                            leavingDetails = isLeavingDetails,
+                            heroTrailerAudible = heroTrailerSourceUrl != null && heroTrailerPlayWhenReady && !heroTrailerMuted,
+                            modalVisible = heroTrailerModalVisible,
+                            // An auto-playing trailer with sound is resolving or counting down.
+                            heroTrailerPending = heroTrailerPlaybackEnabled && heroTrailerCandidate != null &&
+                                !heroTrailerManualOnly && !heroTrailerFinished && !heroTrailerDismissed &&
+                                !heroTrailerMuted,
+                        )
 
                         if (inAppTrailerPlaybackEnabled) {
                             TrailerPlayerPopup(

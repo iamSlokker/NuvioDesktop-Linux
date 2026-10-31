@@ -25,6 +25,21 @@ inline double linuxSpeechSourceBytesPerSecond(const std::string &source, int64_t
     return fileSize > 0 && duration > 0.0 ? (double)fileSize / duration : -1.0;
 }
 
+// What a spot decodes. With a separate audio stream (a YouTube video and its own audio) that
+// stream is the audio being heard and a complete file on its own, so it is decoded instead of the
+// video URL (which has no sound), and the player's track number does not apply to it. As in the
+// Windows bridge.
+struct LinuxSpeechSpotInput {
+    std::string url;
+    std::string aid;
+};
+
+inline LinuxSpeechSpotInput linuxSpeechSpotInput(const std::string &source, const std::string &separateAudio,
+                                                 const std::string &aid) {
+    if (!separateAudio.empty()) return {separateAudio, ""};
+    return {source, aid};
+}
+
 // Returns 0 on success, -1 when it cannot start, -2 when the decode did not reach the spot's end.
 inline int linuxDecodeSpeechSpot(const std::string &source, const std::vector<std::string> &headers,
                                  const std::string &aid, double startSeconds, double durationSeconds,

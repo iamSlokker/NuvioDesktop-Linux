@@ -7,6 +7,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
@@ -31,6 +32,7 @@ import com.nuvio.app.features.player.desktop.linuxHeroPlayWhenReady
 import com.nuvio.app.features.player.desktop.heroTrailerHostUsesFullBounds
 import com.nuvio.app.features.player.desktop.TRAILER_AUDIO_NORMALIZATION_FILTER
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
 private val trailerSurfaceLog = Logger.withTag("HomeHeroTrailerSurface")
 
@@ -65,18 +67,29 @@ actual fun HomeHeroTrailerSurface(
     onNavChromeDismiss: () -> Unit,
     onVolumeChange: (Int) -> Unit,
     onSurfaceDisposed: () -> Unit,
+    normalizeAudio: Boolean, // fork:preshow
+    preshow: Boolean, // fork:preshow
+    libraryLabel: String,
+    inLibrary: Boolean,
+    onAddToLibrary: () -> Unit,
+    audioOnly: Boolean, // fork:linux
 ) {
     val supported = DesktopHostOs.current == DesktopHostOs.WINDOWS ||
         DesktopHostOs.current == DesktopHostOs.MACOS || DesktopHostOs.current == DesktopHostOs.LINUX
-    val effectivePlayWhenReady = linuxHeroPlayWhenReady(playWhenReady, home = true)
+    // The home gate is for the home hero; the pre-show (in the player route) and theme songs (details
+    // page) play elsewhere.
+    val effectivePlayWhenReady = linuxHeroPlayWhenReady(playWhenReady, home = !preshow && !audioOnly)
     val latestOnError = rememberUpdatedState(onError)
     val latestOnReady = rememberUpdatedState(onReady)
     val latestOnEnded = rememberUpdatedState(onEnded)
     val latestOnNavChromeDismiss = rememberUpdatedState(onNavChromeDismiss)
     val latestOnVolumeChange = rememberUpdatedState(onVolumeChange)
     val latestOnSurfaceDisposed = rememberUpdatedState(onSurfaceDisposed)
+    val latestOnAddToLibrary = rememberUpdatedState(onAddToLibrary)
     // The settings toggle gates sound on/off; the shared slider sets the level.
-    val effectiveVolume = if (muted) 0 else volume.coerceIn(0, 100)
+    // fork:preshow - the pre-show has neither: it always plays at one fixed level.
+    val effectiveVolume = if (preshow) PRESHOW_VOLUME else if (muted) 0 else volume.coerceIn(0, 100)
+    val effectiveMuted = !preshow && muted // fork:preshow
 
     if (!supported) {
         LaunchedEffect(sourceUrl) {
@@ -94,7 +107,9 @@ actual fun HomeHeroTrailerSurface(
             focusTraversalKeysEnabled = false
         }
     }
-    val controller = remember(host) { NativePlayerController(host, linuxHeroSurface = true) }
+    val controller = remember(host) {
+        NativePlayerController(host, linuxHeroSurface = true, linuxHeroAudioOnly = audioOnly)
+    }
     val backgroundHex = remember(backgroundColor) { backgroundColor.toHeroTrailerHex() }
     var firstPaintComplete by remember { mutableStateOf(false) }
     var playbackRevealReady by remember { mutableStateOf(false) }
@@ -158,6 +173,11 @@ actual fun HomeHeroTrailerSurface(
                         latestOnVolumeChange.value(value.toInt().coerceIn(0, 100))
                         true
                     }
+                    // Pre-show "add to library" pill; the page marks itself done, Kotlin does the saving.
+                    "preshowAddToLibrary" -> {
+                        latestOnAddToLibrary.value()
+                        true
+                    }
                     // The WebView2 grabbed OS focus (e.g. a click on the mute/volume chrome).
                     // Hand keyboard focus straight back to the Compose home root so navigation
                     // keeps working; the trailer surface itself never keeps focus.
@@ -179,7 +199,10 @@ actual fun HomeHeroTrailerSurface(
         )
     }
 
-    LaunchedEffect(controller, sourceUrl, backgroundHex) {
+    var forbiddenRetries by remember(sourceUrl) { mutableIntStateOf(0) } // fork:trailer-403
+
+    LaunchedEffect(controller, sourceUrl, forbiddenRetries, backgroundHex, normalizeAudio) { // fork:preshow fork:trailer-403
+        val attachScope = this // fork:trailer-403
         playbackRevealReady = false
         // Push hero-trailer overlay state first so attach() forwards it to the controls page.
         controller.updateControls(
@@ -192,14 +215,16 @@ actual fun HomeHeroTrailerSurface(
                     title = title,
                     meta = meta,
                     description = description,
-                    muted = muted,
+                    muted = effectiveMuted, // fork:preshow
                     volume = effectiveVolume,
+                    libraryLabel = if (preshow) libraryLabel else "",
+                    inLibrary = inLibrary,
                     navDismissEdge = navDismissEdge,
                     navDismissBandFraction = navDismissBandFraction,
                 ),
             ),
         )
-        trailerSurfaceLog.i { "attach video=${sourceUrl.take(80)} audio=${sourceAudioUrl?.take(60)} muted=$muted vol=$effectiveVolume" }
+        trailerSurfaceLog.i { "attach video=${sourceUrl.take(80)} audio=${sourceAudioUrl?.take(60)} muted=$effectiveMuted vol=$effectiveVolume preshow=$preshow" }
         controller.attach(
             sourceUrl = sourceUrl,
             sourceAudioUrl = sourceAudioUrl?.takeIf { it.isNotBlank() },
@@ -214,16 +239,30 @@ actual fun HomeHeroTrailerSurface(
             animeSvpEnabled = false,
             onError = { message ->
                 trailerSurfaceLog.w { "playback error: $message" }
-                latestOnError.value()
+                // fork:trailer-403 - a googlevideo 403 re-opens the same URL after a pause first.
+                val retryInMs = forbiddenStreamRetryDelayMs(message, forbiddenRetries)
+                if (retryInMs != null) {
+                    trailerSurfaceLog.i { "re-opening in ${retryInMs}ms (retry ${forbiddenRetries + 1})" }
+                    attachScope.launch {
+                        delay(retryInMs)
+                        forbiddenRetries++
+                    }
+                } else {
+                    latestOnError.value()
+                }
             },
             // Tells the controls page it is a passive hero surface from the very first script
             // run, so it never grabs keyboard focus (which would break TV navigation).
-            controlsPageUrlSuffix = "?heroTrailer=1",
+            controlsPageUrlSuffix = if (preshow) "?heroTrailer=1&preshow=1" else "?heroTrailer=1", // fork:preshow
+            initMpvOptions = heroTrailerAudioInitOptions(effectiveMuted, effectiveVolume, normalizeAudio, preshow) + // fork:preshow
+                youtubeStreamMpvOptions(sourceUrl),
         )
     }
 
     // mpv "mute"/"volume" properties queue until the handle exists, so they survive the async attach.
-    LaunchedEffect(controller, sourceUrl, muted, effectiveVolume) {
+    LaunchedEffect(controller, sourceUrl, forbiddenRetries, effectiveMuted, effectiveVolume) { // fork:trailer-403
+        // fork:preshow - the pre-show level never changes after attach, and the init options set it.
+        if (preshow) return@LaunchedEffect
         controller.updateControls(
             PlayerControlsState(
                 isLoading = true,
@@ -234,14 +273,14 @@ actual fun HomeHeroTrailerSurface(
                     title = title,
                     meta = meta,
                     description = description,
-                    muted = muted,
+                    muted = effectiveMuted, // fork:preshow
                     volume = effectiveVolume,
                     navDismissEdge = navDismissEdge,
                     navDismissBandFraction = navDismissBandFraction,
                 ),
             ),
         )
-        controller.setMpvProperty("mute", if (muted) "yes" else "no")
+        controller.setMpvProperty("mute", if (effectiveMuted) "yes" else "no")
         controller.setMpvProperty("volume", effectiveVolume.toString())
         // Reflect programmatic ([ / ]) volume changes on the overlay slider immediately.
         controller.setHeroTrailerVolume(effectiveVolume)
@@ -254,10 +293,10 @@ actual fun HomeHeroTrailerSurface(
     // player's own bar detector, on upstream's quick cadence (a frame every 400 ms, settled after
     // four agreeing ones) rather than the film's five seconds of learning. The mode is re-applied
     // when the handle attaches.
-    LaunchedEffect(controller, sourceUrl) {
+    LaunchedEffect(controller, sourceUrl, forbiddenRetries) { // fork:trailer-403
         controller.setResizeMode(com.nuvio.app.features.player.PlayerResizeMode.AutoCrop, quickAutoCrop = true)
-        // Trailer loudness is wildly inconsistent between uploads; smooth it out in real time.
-        controller.setMpvProperty("af", TRAILER_AUDIO_NORMALIZATION_FILTER)
+        // fork:preshow - the loudness filter is an init option on attach (heroTrailerAudioInitOptions),
+        // not set here: changing `af` on a live stream rebuilds the audio chain.
     }
 
     LaunchedEffect(controller, effectivePlayWhenReady, sourceUrl.takeIf { DesktopHostOs.current == DesktopHostOs.LINUX }) {
@@ -267,11 +306,18 @@ actual fun HomeHeroTrailerSurface(
         } else if (playWhenReady) controller.play() else controller.pause()
     }
 
-    LaunchedEffect(controller, sourceUrl, effectivePlayWhenReady) {
+    LaunchedEffect(controller, sourceUrl, forbiddenRetries, effectivePlayWhenReady) { // fork:trailer-403
         var endedReported = false
         var readyReported = false
+        val stallWatchdog = TrailerStallWatchdog() // fork:preshow
+        val fadeOut = PreshowFadeOut(controller) // fork:preshow
         while (true) {
             val snapshot = controller.snapshotOffUiThread()
+            // fork:preshow
+            stallWatchdog.poll(snapshot.positionMs, effectivePlayWhenReady, readyReported, endedReported)?.let { stuckMs ->
+                trailerSurfaceLog.w { "playback stalled for ${stuckMs}ms at ${snapshot.positionMs}ms" }
+                latestOnError.value()
+            }
             // A first paint can be a static startup frame while mpv is still buffering.
             // Reveal only once playback is genuinely advancing, keeping the artwork visible
             // through that otherwise noticeable frozen-frame interval.
@@ -287,6 +333,7 @@ actual fun HomeHeroTrailerSurface(
                 trailerSurfaceLog.i { "playback moving; reveal at ${snapshot.positionMs}ms" }
                 latestOnReady.value()
             }
+            if (preshow) fadeOut.maybeStart(this, readyReported, snapshot.positionMs, snapshot.durationMs) // fork:preshow
             if (snapshot.isEnded && !endedReported) {
                 endedReported = true
                 latestOnEnded.value()

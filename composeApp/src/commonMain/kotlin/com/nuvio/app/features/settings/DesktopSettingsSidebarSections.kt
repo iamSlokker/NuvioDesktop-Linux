@@ -123,6 +123,7 @@ internal fun desktopSettingsSidebarSubItems(
             subPage(SettingsPage.TraktAuthentication),
             subPage(SettingsPage.SimklAuthentication),
             subPage(SettingsPage.YamtrackAuthentication),
+            if (isDesktop) subPage(SettingsPage.YouTubeAccount) else null,
             if (isDesktop) subPage(SettingsPage.Seekr) else null,
             if (isDesktop) subPage(SettingsPage.Lights) else null,
             if (isDesktop) subPage(SettingsPage.DiscordPresence) else null,
@@ -152,6 +153,20 @@ internal fun desktopSettingsSidebarSubItems(
         SettingsPage.Screensaver -> listOfNotNull(
             section(SettingsPage.Screensaver, Res.string.settings_screensaver_section_title),
             if (platformOffersScreensaverShutdown) section(SettingsPage.Screensaver, Res.string.settings_screensaver_section_shutdown) else null,
+        )
+        SettingsPage.Music -> listOf( // fork:music
+            section(SettingsPage.Music, Res.string.settings_music_section_general),
+            section(SettingsPage.Music, Res.string.settings_music_section_sources),
+            section(SettingsPage.Music, Res.string.settings_music_section_playback),
+        )
+        SettingsPage.Preshow -> listOf(
+            sectionTitled(SettingsPage.Preshow, PRESHOW_SECTION_RUNNING_ORDER),
+            section(SettingsPage.Preshow, Res.string.settings_preshow_section_trailers),
+            sectionTitled(SettingsPage.Preshow, PRESHOW_SECTION_RATING_CARD),
+            sectionTitled(SettingsPage.Preshow, PRESHOW_SECTION_PREVIOUSLY_ON),
+            sectionTitled(SettingsPage.Preshow, PRESHOW_SECTION_POST_SHOW),
+            section(SettingsPage.Preshow, Res.string.settings_theme_song_section),
+            sectionTitled(SettingsPage.Preshow, PRESHOW_SECTION_CLIP_SOURCES),
         )
         SettingsPage.Games -> listOf(
             section(SettingsPage.Games, Res.string.settings_games_title),

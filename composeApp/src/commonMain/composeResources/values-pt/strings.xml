@@ -1232,11 +1232,13 @@
   <string name="continue_watching_upcoming">Próximos</string>
   <string name="settings_continue_watching_section_sort_order">ORDEM DE ORDENAÇÃO</string>
   <string name="settings_continue_watching_sort_mode_title">Ordem de ordenação</string>
-  <string name="settings_continue_watching_sort_mode_description">Último visto mantém a linha pela ordem em que viste as coisas. Emitidos primeiro move os episódios de A Seguir que ainda não foram emitidos para o fim, os mais próximos primeiro, para que o início da linha seja sempre algo que possas reproduzir.</string>
+  <string name="settings_continue_watching_sort_mode_description">Último visto mantém a linha pela ordem em que viste as coisas. Emitidos primeiro move os episódios de A Seguir que ainda não foram emitidos para o fim, os mais próximos primeiro, para que o início da linha seja sempre algo que possas reproduzir. Rotação mantém no início os episódios que estás a meio e os episódios novos e depois traz para a frente as séries que não vês há mais tempo.</string>
   <string name="settings_continue_watching_sort_mode_default">Visto por último</string>
   <string name="settings_continue_watching_sort_mode_default_desc">Ordena tudo pela última vez que viste</string>
   <string name="settings_continue_watching_sort_mode_streaming">Emitidos primeiro</string>
   <string name="settings_continue_watching_sort_mode_streaming_desc">Os episódios Seguinte ainda não emitidos ficam no fim, os mais próximos primeiro</string>
+  <string name="settings_continue_watching_sort_mode_rotation">Rotação</string>
+  <string name="settings_continue_watching_sort_mode_rotation_desc">Traz para a frente as séries que não vês há mais tempo</string>
   <string name="settings_continue_watching_section_card_style">Estilo dos Cartões de Póster</string>
   <string name="settings_continue_watching_section_on_launch">AO INICIAR</string>
   <string name="settings_continue_watching_section_up_next_behavior">COMPORTAMENTO DO SEGUINTE</string>
@@ -1249,7 +1251,7 @@
   <string name="settings_continue_watching_style_poster_description">Cartão de póster focado na imagem</string>
   <string name="settings_continue_watching_style_wide">Panorâmico</string>
   <string name="settings_continue_watching_style_wide_description">Cartão horizontal com mais informação</string>
-  <string name="settings_continue_watching_up_next_description">Ativa para voltar a ver.</string>
+  <string name="settings_continue_watching_up_next_description">Ativa para voltar a ver. Ao voltar a ver com o SIMKL, continua sempre a partir do último episódio dessa sessão.</string>
   <string name="settings_continue_watching_up_next_title">Seguinte a partir do mais avançado</string>
   <string name="settings_continue_watching_use_episode_thumbnails_description">Preferir miniaturas dos episódios quando disponíveis.</string>
   <string name="settings_continue_watching_use_episode_thumbnails_title">Preferir miniaturas de episódios no Continuar a Ver</string>

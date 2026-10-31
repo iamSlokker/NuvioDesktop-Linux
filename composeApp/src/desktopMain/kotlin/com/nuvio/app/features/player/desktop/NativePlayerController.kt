@@ -1,5 +1,7 @@
 package com.nuvio.app.features.player.desktop
 
+import com.nuvio.app.features.preroll.PostShowController
+import com.nuvio.app.features.preroll.PostShowKey
 import com.nuvio.app.core.i18n.localizedString
 import androidx.compose.ui.graphics.Color
 import co.touchlab.kermit.Logger
@@ -103,6 +105,10 @@ internal const val TRAILER_AUDIO_NORMALIZATION_FILTER = "dynaudnorm=f=150:g=15"
 internal class NativePlayerController(
     private val host: NativePlayerHost,
     private val linuxHeroSurface: Boolean = false,
+    // Linux: the music player (see LinuxPlayerOwnership.Priority.MUSIC and resumeLinuxMusic).
+    private val linuxMusicSurface: Boolean = false,
+    // Linux: a hero surface that only plays sound (a theme song in a 1px host); no geometry gate.
+    private val linuxHeroAudioOnly: Boolean = false,
     private val linuxMprisOwner: () -> LinuxMprisSession = { LinuxMediaSession.owner },
 ) : PlayerEngineController {
     init {
@@ -166,7 +172,14 @@ internal class NativePlayerController(
     private var linuxHeroActive = false
     @Volatile
     private var linuxHeroResumePosition: Pair<String, Long>? = null
-    private val linuxHeroGeometry = LinuxHeroHostGeometry.install(DesktopHostOs.current, linuxHeroSurface, host) {
+    // Linux music lost (or never got) the one native player to a film; play() brings it back.
+    @Volatile
+    private var linuxMusicEvicted = false
+    @Volatile
+    private var linuxMusicDurationMs = 0L
+    @Volatile
+    private var linuxMusicYielding = false
+    private val linuxHeroGeometry = LinuxHeroHostGeometry.install(DesktopHostOs.current, linuxHeroSurface && !linuxHeroAudioOnly, host) {
         attachPending()
     }
     private val linuxEscape = LinuxPlayerEscape(DesktopHostOs.current)
@@ -184,7 +197,7 @@ internal class NativePlayerController(
     // Experimental native-Wayland HDR session (Linux main player only; default-off setting).
     @Volatile
     private var linuxLastSnapshot: Pair<Long, Long>? = null // handle to position, for fallback.
-    private val linuxHdr = if (DesktopHostOs.current == DesktopHostOs.LINUX && !linuxHeroSurface) {
+    private val linuxHdr = if (DesktopHostOs.current == DesktopHostOs.LINUX && !linuxHeroSurface && !linuxMusicSurface) {
         LinuxHdrSessionCoordinator(
             host = LinuxHdrHost(),
             environment = LinuxHdrSessionEnvironment,
@@ -278,8 +291,16 @@ internal class NativePlayerController(
         // Re-applies the last user-set volume ([persistedVolumeFraction]) once the fresh mpv
         // instance exists, so volume carries over between episodes. Only the main player passes true.
         restoreVolume: Boolean = false,
+        // fork:preshow - extra "key=value" mpv init options applied before mpv_initialize/loadfile.
+        // For anything that must be in place before the first audio frame (volume, mute, af):
+        // as runtime properties they land after create() returns, after loading has started,
+        // which rebuilds the audio chain mid-start and is audible as a dip or blip.
+        initMpvOptions: List<String> = emptyList(),
     ) {
         if (disposed) return
+        linuxMusicEvicted = false
+        // A paused track gives the one Linux player to a hero trailer, theme song or pre-show.
+        setLinuxMusicYielding(!playWhenReady)
         if (enableUserMpvOptions || animeSvpEnabled) mayHostVapourSynth = true
         // A network-share source (\\host\share, file://host/…) from an addon or scraper would make
         // Windows authenticate to that host and hand it the user's NTLM hash.
@@ -369,6 +390,7 @@ internal class NativePlayerController(
                 // and cache-pause-wait.
                 addAll(com.nuvio.app.features.iptv.iptvLiveBufferMpvOptions(sourceUrl))
                 addAll(com.nuvio.app.features.iptv.iptvRewindMpvOptions(sourceUrl))
+                addAll(initMpvOptions) // fork:preshow
                 // An init option rather than a runtime property: mpv filters text subtitles as it
                 // parses them, so it has to be set before the first track loads. Only ever turned
                 // on here, never forced off, so an mpv.conf that enables it keeps working.
@@ -409,17 +431,40 @@ internal class NativePlayerController(
         }
     }
 
+    private fun setLinuxMusicYielding(yielding: Boolean) {
+        if (!linuxMusicSurface || DesktopHostOs.current != DesktopHostOs.LINUX) return
+        linuxMusicYielding = yielding
+        linuxOwnership.setYielding(this, yielding)
+    }
+
+    // A music attach that lost the request to another owner is off the player until play().
+    private fun noteLinuxMusicLost(ownership: LinuxPlayerOwnership.Request?) {
+        if (linuxMusicSurface && ownership != null && !linuxOwnership.isCurrent(ownership)) linuxMusicEvicted = true
+    }
+
     private fun attachPending() {
         if (disposed) return
         val pending = pendingSource ?: return
         val linux = DesktopHostOs.current == DesktopHostOs.LINUX
         if (linux && linuxHeroSurface && !linuxHeroActive) return
         if (linuxHeroGeometry?.canAttach() == false) return
+        // Neither a paused track nor a theme song takes the one Linux player from what is playing.
+        if (linux && (linuxHeroAudioOnly || (linuxMusicSurface && linuxMusicYielding)) && linuxOwnership.heldByOther(this)) {
+            if (linuxMusicSurface) linuxMusicEvicted = true
+            return
+        }
         val ownership = if (linux) {
             linuxOwnership.request(
                 this,
-                if (linuxHeroSurface) LinuxPlayerOwnership.Priority.HERO else LinuxPlayerOwnership.Priority.PLAYER,
-            ) ?: return
+                when {
+                    linuxHeroSurface -> LinuxPlayerOwnership.Priority.HERO
+                    linuxMusicSurface -> LinuxPlayerOwnership.Priority.MUSIC
+                    else -> LinuxPlayerOwnership.Priority.PLAYER
+                },
+            ) ?: run {
+                if (linuxMusicSurface) linuxMusicEvicted = true
+                return
+            }
         } else null
         val generation = attachGeneration.incrementAndGet()
         fun current(): Boolean = !disposed && generation == attachGeneration.get() &&
@@ -427,6 +472,7 @@ internal class NativePlayerController(
             (ownership == null || linuxOwnership.isCurrent(ownership))
         SwingUtilities.invokeLater {
             if (disposed || !host.isDisplayable || (linux && !current())) {
+                noteLinuxMusicLost(ownership)
                 return@invokeLater
             }
             // Swing interop may have changed bounds since the request was queued.
@@ -474,7 +520,10 @@ internal class NativePlayerController(
                             SwingUtilities.invokeLater { if (current()) pending.onError(error.message) }
                             return@synchronized
                         }
-                        if (!claimed) return@synchronized
+                        if (!claimed) {
+                            noteLinuxMusicLost(ownership)
+                            return@synchronized
+                        }
                     }
                     // Replacement is intentionally sequential. Both operations remain on this
                     // worker, so a slow native shutdown delays the next stream without freezing
@@ -492,6 +541,7 @@ internal class NativePlayerController(
                     }
                     if (pending.tracePlaybackStart) PlaybackStartTrace.mark("nativeAttachThread")
                     if (!current()) {
+                        noteLinuxMusicLost(ownership)
                         return@synchronized
                     }
                     var newHandle = 0L
@@ -546,7 +596,7 @@ internal class NativePlayerController(
                         } else {
                             handle = newHandle
                             if (linux) linuxHandleSourceUrl = pending.sourceUrl
-                            if (linux && !linuxHeroSurface) NativePlayerBridge.runJavaScript(newHandle, LINUX_PLAYER_MENU_SCRIPT)
+                            if (linux && !linuxHeroSurface && !linuxMusicSurface) NativePlayerBridge.runJavaScript(newHandle, LINUX_PLAYER_MENU_SCRIPT)
                             diagnosticsOverlayEnabled = false
                             true
                         }
@@ -554,6 +604,7 @@ internal class NativePlayerController(
                     if (!keepHandle) {
                         NativePlayerBridge.dispose(newHandle)
                         if (linux) linuxOwnership.forget(this)
+                        noteLinuxMusicLost(ownership)
                         return@synchronized
                     }
                     if (DesktopHostOs.current == DesktopHostOs.LINUX) SwingUtilities.invokeLater {
@@ -619,6 +670,7 @@ internal class NativePlayerController(
         linuxHeroActive = false
         linuxHeroGeometry?.cancel()
         retainLinuxHeroPosition()
+        if (linuxMusicSurface) linuxMusicEvicted = true
         linuxHdr?.onPlayerReplaced()
         unpublishLinuxPlayerHandle()
     }
@@ -631,12 +683,13 @@ internal class NativePlayerController(
     }
 
     private fun retainLinuxHeroPosition() {
-        if (!linuxHeroSurface) return
+        if (!linuxHeroSurface && !linuxMusicSurface) return
         val (current, source) = synchronized(handleLock) { handle to linuxHandleSourceUrl }
         if (current == 0L) return
         val position = runCatching {
             NativePlayerBridge.positionMs(current).takeIf { it > 0L && !NativePlayerBridge.isEnded(current) }
         }.getOrNull() ?: return
+        if (linuxMusicSurface) linuxMusicDurationMs = runCatching { NativePlayerBridge.durationMs(current) }.getOrDefault(0L)
         // Keep the saved position separate from source selection; apply it only when
         // the retained surface resumes the matching trailer.
         if (source != null) linuxHeroResumePosition = source to position
@@ -1512,8 +1565,13 @@ internal class NativePlayerController(
             }
             "toggleFullscreen" -> toggleDesktopAppFullscreen(SwingUtilities.getWindowAncestor(host))
             // The HUD's Escape (with nothing of its own to close). The back button still sends "back".
+            // A D-pad key while the post-show cards are up (the controls page forwards them: it holds keyboard focus).
+            "postShowKey" -> PostShowController.press(value.toInt())
             "escapeBack" -> {
-                if (escapeShouldGoWindowed()) {
+                if (PostShowController.active.value) {
+                    // Escape closes the post-show cards instead of leaving the player.
+                    PostShowController.press(PostShowKey.Back)
+                } else if (escapeShouldGoWindowed()) {
                     toggleDesktopAppFullscreen(SwingUtilities.getWindowAncestor(host))
                 } else {
                     handlePlayerEvent("back", value)
@@ -1651,6 +1709,14 @@ internal class NativePlayerController(
 
     fun snapshot(): PlayerPlaybackSnapshot {
         val current = handle
+        if (current == 0L && linuxMusicEvicted) {
+            // Off the native player (see resumeLinuxMusic): paused where it was, not loading.
+            return PlayerPlaybackSnapshot(
+                isLoading = false,
+                durationMs = linuxMusicDurationMs,
+                positionMs = linuxHeroResumePosition?.second ?: 0L,
+            )
+        }
         if (current == 0L) return PlayerPlaybackSnapshot(isLoading = true)
         return runCatching {
             val isLoading = NativePlayerBridge.isLoading(current)
@@ -1682,7 +1748,10 @@ internal class NativePlayerController(
     fun dispose() {
         disposed = true
         linuxHdr?.dispose()
-        if (DesktopHostOs.current == DesktopHostOs.LINUX) linuxOwnership.cancel(this)
+        if (DesktopHostOs.current == DesktopHostOs.LINUX) {
+            linuxOwnership.cancel(this)
+            linuxOwnership.setYielding(this, false)
+        }
         linuxMpris?.close()
         linuxMpris = null
         linuxPiPInput?.close()
@@ -1825,6 +1894,11 @@ internal class NativePlayerController(
     }
 
     override fun play() {
+        setLinuxMusicYielding(false)
+        if (linuxMusicEvicted && handle == 0L) {
+            resumeLinuxMusic()
+            return
+        }
         // Restore the full prefetch budget before resuming, so mpv refills immediately instead of
         // draining the frozen buffer until the next snapshot poll notices playback resumed.
         releaseMeteredPrefetchFreeze()
@@ -1833,12 +1907,42 @@ internal class NativePlayerController(
 
     override fun pause() {
         handle.takeIf { it != 0L }?.let { NativePlayerBridge.setPaused(it, true) }
+        setLinuxMusicYielding(true)
+    }
+
+    /**
+     * Linux has one native player at a time and a film takes it from the music player (which the
+     * film has paused anyway). Pressing play afterwards opens the track again where it was, with
+     * mpv's start option, the way the music surface opens a track part way in.
+     */
+    private fun resumeLinuxMusic() {
+        linuxMusicEvicted = false
+        val resume = linuxHeroResumePosition
+        pendingSource = pendingSource?.let { pending ->
+            val atMs = resume?.takeIf { it.first == pending.sourceUrl }?.second
+            if (atMs == null) {
+                pending.copy(playWhenReady = true)
+            } else {
+                pending.copy(
+                    playWhenReady = true,
+                    initialPositionMs = 0L,
+                    extraMpvOptions = pending.extraMpvOptions.filterNot { it.startsWith("start=") } +
+                        "start=${atMs / 1000}.${(atMs % 1000).toString().padStart(3, '0')}",
+                )
+            }
+        } ?: return
+        if (host.isDisplayable) attachPending()
     }
 
     override fun seekTo(positionMs: Long) {
         // A seek can invalidate the cache the freeze was protecting; let the demuxer refill at the
         // preset rate. The snapshot poll re-freezes once the new position has a resumable buffer.
         releaseMeteredPrefetchFreeze()
+        if (linuxMusicEvicted && handle == 0L) {
+            // Off the native player: the track reopens here on play.
+            linuxHeroResumePosition?.let { (source, _) -> linuxHeroResumePosition = source to positionMs.coerceAtLeast(0L) }
+            return
+        }
         val current = handle.takeIf { it != 0L } ?: return
         if (liveCacheOnlySeeks()) {
             NativePlayerBridge.seekWithinCacheTo(current, positionMs)
@@ -3115,6 +3219,8 @@ internal fun PlayerControlsState.toControlsJson(
         append(',')
         appendJsonField("hiddenHudButtons", hiddenHudButtons)
         append(',')
+        appendJsonField("hudButtonOrder", hudButtonOrder)
+        append(',')
         appendJsonField("alwaysShowClock", alwaysShowClock)
         append(',')
         appendJsonField("playbackSpeedFineIncrementsEnabled", playbackSpeedFineIncrementsEnabled)
@@ -3327,11 +3433,17 @@ internal fun PlayerControlsState.toControlsJson(
         append(',')
         appendJsonField("heroTrailerVolume", heroTrailer.volume)
         append(',')
+        appendJsonField("heroTrailerLibraryLabel", heroTrailer.libraryLabel)
+        append(',')
+        appendJsonField("heroTrailerInLibrary", heroTrailer.inLibrary)
+        append(',')
         appendJsonField("heroTrailerNavDismissEdge", heroTrailer.navDismissEdge)
         append(',')
         appendJsonField("heroTrailerNavDismissBandFraction", heroTrailer.navDismissBandFraction.toDouble())
         append(',')
         appendJsonField("streamFailoverEnabled", streamFailoverEnabled)
+        append(',')
+        appendJsonField("postShowInput", heroTrailer.postShowInput)
         append('}')
     }
 
