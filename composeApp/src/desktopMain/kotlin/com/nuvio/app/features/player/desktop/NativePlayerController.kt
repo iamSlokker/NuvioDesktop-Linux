@@ -177,6 +177,8 @@ internal class NativePlayerController(
     private var linuxMusicEvicted = false
     @Volatile
     private var linuxMusicDurationMs = 0L
+    @Volatile
+    private var linuxMusicYielding = false
     private val linuxHeroGeometry = LinuxHeroHostGeometry.install(DesktopHostOs.current, linuxHeroSurface && !linuxHeroAudioOnly, host) {
         attachPending()
     }
@@ -298,9 +300,7 @@ internal class NativePlayerController(
         if (disposed) return
         linuxMusicEvicted = false
         // A paused track gives the one Linux player to a hero trailer, theme song or pre-show.
-        if (linuxMusicSurface && DesktopHostOs.current == DesktopHostOs.LINUX) {
-            linuxOwnership.setYielding(this, !playWhenReady)
-        }
+        setLinuxMusicYielding(!playWhenReady)
         if (enableUserMpvOptions || animeSvpEnabled) mayHostVapourSynth = true
         // A network-share source (\\host\share, file://host/…) from an addon or scraper would make
         // Windows authenticate to that host and hand it the user's NTLM hash.
@@ -431,12 +431,28 @@ internal class NativePlayerController(
         }
     }
 
+    private fun setLinuxMusicYielding(yielding: Boolean) {
+        if (!linuxMusicSurface || DesktopHostOs.current != DesktopHostOs.LINUX) return
+        linuxMusicYielding = yielding
+        linuxOwnership.setYielding(this, yielding)
+    }
+
+    // A music attach that lost the request to another owner is off the player until play().
+    private fun noteLinuxMusicLost(ownership: LinuxPlayerOwnership.Request?) {
+        if (linuxMusicSurface && ownership != null && !linuxOwnership.isCurrent(ownership)) linuxMusicEvicted = true
+    }
+
     private fun attachPending() {
         if (disposed) return
         val pending = pendingSource ?: return
         val linux = DesktopHostOs.current == DesktopHostOs.LINUX
         if (linux && linuxHeroSurface && !linuxHeroActive) return
         if (linuxHeroGeometry?.canAttach() == false) return
+        // Neither a paused track nor a theme song takes the one Linux player from what is playing.
+        if (linux && (linuxHeroAudioOnly || (linuxMusicSurface && linuxMusicYielding)) && linuxOwnership.heldByOther(this)) {
+            if (linuxMusicSurface) linuxMusicEvicted = true
+            return
+        }
         val ownership = if (linux) {
             linuxOwnership.request(
                 this,
@@ -456,6 +472,7 @@ internal class NativePlayerController(
             (ownership == null || linuxOwnership.isCurrent(ownership))
         SwingUtilities.invokeLater {
             if (disposed || !host.isDisplayable || (linux && !current())) {
+                noteLinuxMusicLost(ownership)
                 return@invokeLater
             }
             // Swing interop may have changed bounds since the request was queued.
@@ -503,7 +520,10 @@ internal class NativePlayerController(
                             SwingUtilities.invokeLater { if (current()) pending.onError(error.message) }
                             return@synchronized
                         }
-                        if (!claimed) return@synchronized
+                        if (!claimed) {
+                            noteLinuxMusicLost(ownership)
+                            return@synchronized
+                        }
                     }
                     // Replacement is intentionally sequential. Both operations remain on this
                     // worker, so a slow native shutdown delays the next stream without freezing
@@ -521,6 +541,7 @@ internal class NativePlayerController(
                     }
                     if (pending.tracePlaybackStart) PlaybackStartTrace.mark("nativeAttachThread")
                     if (!current()) {
+                        noteLinuxMusicLost(ownership)
                         return@synchronized
                     }
                     var newHandle = 0L
@@ -583,6 +604,7 @@ internal class NativePlayerController(
                     if (!keepHandle) {
                         NativePlayerBridge.dispose(newHandle)
                         if (linux) linuxOwnership.forget(this)
+                        noteLinuxMusicLost(ownership)
                         return@synchronized
                     }
                     if (DesktopHostOs.current == DesktopHostOs.LINUX) SwingUtilities.invokeLater {
@@ -1872,7 +1894,7 @@ internal class NativePlayerController(
     }
 
     override fun play() {
-        if (linuxMusicSurface && DesktopHostOs.current == DesktopHostOs.LINUX) linuxOwnership.setYielding(this, false)
+        setLinuxMusicYielding(false)
         if (linuxMusicEvicted && handle == 0L) {
             resumeLinuxMusic()
             return
@@ -1885,7 +1907,7 @@ internal class NativePlayerController(
 
     override fun pause() {
         handle.takeIf { it != 0L }?.let { NativePlayerBridge.setPaused(it, true) }
-        if (linuxMusicSurface && DesktopHostOs.current == DesktopHostOs.LINUX) linuxOwnership.setYielding(this, true)
+        setLinuxMusicYielding(true)
     }
 
     /**

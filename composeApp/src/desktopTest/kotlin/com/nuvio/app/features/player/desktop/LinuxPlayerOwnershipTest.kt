@@ -76,6 +76,16 @@ class LinuxPlayerOwnershipTest {
         assertNull(f.ownership.request("hero", LinuxPlayerOwnership.Priority.HERO))
     }
 
+    @Test fun heldByOtherIgnoresTheCallerAndYieldingOwners() {
+        val f = Fixture()
+        assertFalse(f.ownership.heldByOther("theme song"))
+        f.open(f.request("hero"))
+        assertTrue(f.ownership.heldByOther("theme song"))
+        assertFalse(f.ownership.heldByOther("hero"))
+        f.ownership.setYielding("hero", true)
+        assertFalse(f.ownership.heldByOther("theme song"))
+    }
+
     @Test fun fullPlayerReplacesHeroAndCannotBePreemptedByHero() {
         val f = Fixture()
         f.open(f.request("hero"))

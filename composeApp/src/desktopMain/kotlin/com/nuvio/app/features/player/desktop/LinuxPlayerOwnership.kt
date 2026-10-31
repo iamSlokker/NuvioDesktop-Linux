@@ -33,6 +33,11 @@ internal class LinuxPlayerOwnership(private val lifecycleLock: Any) {
 
     fun isCurrent(request: Request): Boolean = synchronized(stateLock) { requested === request }
 
+    /** Whether another owner has the native player now (claimed, and not giving way). */
+    fun heldByOther(owner: Any): Boolean = synchronized(stateLock) {
+        active?.request?.owner?.let { it !== owner && it !in yielding } == true
+    }
+
     fun owns(request: Request): Boolean = synchronized(stateLock) { active?.request === request }
 
     fun cancel(owner: Any) = synchronized(stateLock) {

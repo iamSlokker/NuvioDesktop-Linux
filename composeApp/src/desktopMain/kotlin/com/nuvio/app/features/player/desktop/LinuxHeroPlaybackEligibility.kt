@@ -3,6 +3,9 @@ package com.nuvio.app.features.player.desktop
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.map
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.nuvio.app.features.home.components.HomeHeroTrailerGate
@@ -27,12 +30,18 @@ internal fun linuxHeroPlayWhenReady(playWhenReady: Boolean, home: Boolean = fals
         val active by HomeHeroTrailerGate.homeActive.collectAsState()
         active
     } else true
-    val music by MusicPlayback.player.state.collectAsState()
+    // Only the playing flag: the state also carries the position, rewritten on every music poll.
+    val musicPlayingFlow = remember {
+        MusicPlayback.player.state.map { it.isActive && it.playWhenReady }.distinctUntilChanged()
+    }
+    val musicPlaying by musicPlayingFlow.collectAsState(
+        initial = MusicPlayback.player.state.value.let { it.isActive && it.playWhenReady },
+    )
     return linuxHeroPlaybackEligible(
         playWhenReady,
         lifecycle == Lifecycle.State.RESUMED,
         homeActive,
-        musicPlaying = music.isActive && music.playWhenReady,
+        musicPlaying = musicPlaying,
     )
 }
 
