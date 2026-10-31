@@ -16,10 +16,16 @@ internal class LinuxPlayerOwnership(private val lifecycleLock: Any) {
     private val stateLock = Any()
     private var requested: Request? = null
     private var active: Active? = null
+    // Owners that give way to any request while they are not in use (a paused music track).
+    private val yielding = mutableSetOf<Any>() // Guarded by stateLock.
+
+    fun setYielding(owner: Any, value: Boolean) = synchronized(stateLock) {
+        if (value) yielding.add(owner) else yielding.remove(owner)
+    }
 
     fun request(owner: Any, priority: Priority): Request? = synchronized(stateLock) {
         if (listOfNotNull(requested, active?.request).any {
-                it.owner !== owner && it.priority > priority
+                it.owner !== owner && it.owner !in yielding && it.priority > priority
             }) return@synchronized null
         requested?.takeIf { it.owner === owner && it.priority == priority }
             ?: Request(owner, priority).also { requested = it }

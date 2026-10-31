@@ -26,6 +26,11 @@ class LinuxHeroPlaybackEligibilityTest {
         ))
     }
 
+    @Test fun aPlayingMusicTrackHoldsHeroesBack() {
+        assertFalse(linuxHeroPlaybackEligible(playWhenReady = true, routeResumed = true, musicPlaying = true))
+        assertTrue(linuxHeroPlaybackEligible(playWhenReady = true, routeResumed = true, musicPlaying = false))
+    }
+
     @Test fun unmutedStartupUsesSharedVolumeWithinItsExistingBounds() {
         for ((input, expected) in listOf(-1 to 0, 0 to 0, 60 to 60, 100 to 100, 150 to 100)) {
             assertEquals(listOf("mute=no", "volume=$expected"), linuxHeroStartupAudioOptions(

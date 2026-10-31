@@ -64,6 +64,18 @@ class LinuxPlayerOwnershipTest {
         assertEquals("create music", f.events.last())
     }
 
+    @Test fun pausedMusicYieldsToHeroesAndTakesThePlayerBackOnPlay() {
+        val f = Fixture()
+        f.open(f.request("music", LinuxPlayerOwnership.Priority.MUSIC))
+        f.ownership.setYielding("music", true)
+        f.open(f.request("theme song"))
+        assertEquals(listOf("create music", "dispose music", "create theme song"), f.events)
+        f.ownership.setYielding("music", false)
+        f.open(f.request("music", LinuxPlayerOwnership.Priority.MUSIC))
+        assertEquals("create music", f.events.last())
+        assertNull(f.ownership.request("hero", LinuxPlayerOwnership.Priority.HERO))
+    }
+
     @Test fun fullPlayerReplacesHeroAndCannotBePreemptedByHero() {
         val f = Fixture()
         f.open(f.request("hero"))

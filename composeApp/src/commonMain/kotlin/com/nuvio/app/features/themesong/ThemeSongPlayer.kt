@@ -103,6 +103,7 @@ fun ThemeSongPlayer(
                 meta = "",
                 description = "",
                 modifier = Modifier.size(1.dp),
+                audioOnly = true, // fork:linux
                 onReady = {},
                 onEnded = {
                     val expectedMs = playing.durationMs

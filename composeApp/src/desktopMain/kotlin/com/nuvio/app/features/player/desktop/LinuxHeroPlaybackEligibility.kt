@@ -6,13 +6,17 @@ import androidx.compose.runtime.getValue
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.nuvio.app.features.home.components.HomeHeroTrailerGate
+import com.nuvio.app.features.music.MusicPlayback
 import com.nuvio.app.features.player.PlayerControlsState
 
 internal fun linuxHeroPlaybackEligible(
     playWhenReady: Boolean,
     routeResumed: Boolean,
     homeActive: Boolean = true,
-): Boolean = playWhenReady && routeResumed && homeActive
+    // A playing music track holds the one Linux player (LinuxPlayerOwnership.Priority.MUSIC); a hero
+    // asking for it then would only be refused and leave its black host over the artwork.
+    musicPlaying: Boolean = false,
+): Boolean = playWhenReady && routeResumed && homeActive && !musicPlaying
 
 /** The shared surfaces/timers stay intact; only Linux native ownership is gated. */
 @Composable
@@ -23,7 +27,13 @@ internal fun linuxHeroPlayWhenReady(playWhenReady: Boolean, home: Boolean = fals
         val active by HomeHeroTrailerGate.homeActive.collectAsState()
         active
     } else true
-    return linuxHeroPlaybackEligible(playWhenReady, lifecycle == Lifecycle.State.RESUMED, homeActive)
+    val music by MusicPlayback.player.state.collectAsState()
+    return linuxHeroPlaybackEligible(
+        playWhenReady,
+        lifecycle == Lifecycle.State.RESUMED,
+        homeActive,
+        musicPlaying = music.isActive && music.playWhenReady,
+    )
 }
 
 // Native create loads media before queued properties are replayed. Set the shared

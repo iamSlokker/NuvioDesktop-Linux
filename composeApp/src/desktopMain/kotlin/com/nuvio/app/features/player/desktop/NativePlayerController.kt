@@ -107,6 +107,8 @@ internal class NativePlayerController(
     private val linuxHeroSurface: Boolean = false,
     // Linux: the music player (see LinuxPlayerOwnership.Priority.MUSIC and resumeLinuxMusic).
     private val linuxMusicSurface: Boolean = false,
+    // Linux: a hero surface that only plays sound (a theme song in a 1px host); no geometry gate.
+    private val linuxHeroAudioOnly: Boolean = false,
     private val linuxMprisOwner: () -> LinuxMprisSession = { LinuxMediaSession.owner },
 ) : PlayerEngineController {
     init {
@@ -173,7 +175,9 @@ internal class NativePlayerController(
     // Linux music lost (or never got) the one native player to a film; play() brings it back.
     @Volatile
     private var linuxMusicEvicted = false
-    private val linuxHeroGeometry = LinuxHeroHostGeometry.install(DesktopHostOs.current, linuxHeroSurface, host) {
+    @Volatile
+    private var linuxMusicDurationMs = 0L
+    private val linuxHeroGeometry = LinuxHeroHostGeometry.install(DesktopHostOs.current, linuxHeroSurface && !linuxHeroAudioOnly, host) {
         attachPending()
     }
     private val linuxEscape = LinuxPlayerEscape(DesktopHostOs.current)
@@ -293,6 +297,10 @@ internal class NativePlayerController(
     ) {
         if (disposed) return
         linuxMusicEvicted = false
+        // A paused track gives the one Linux player to a hero trailer, theme song or pre-show.
+        if (linuxMusicSurface && DesktopHostOs.current == DesktopHostOs.LINUX) {
+            linuxOwnership.setYielding(this, !playWhenReady)
+        }
         if (enableUserMpvOptions || animeSvpEnabled) mayHostVapourSynth = true
         // A network-share source (\\host\share, file://host/…) from an addon or scraper would make
         // Windows authenticate to that host and hand it the user's NTLM hash.
@@ -659,6 +667,7 @@ internal class NativePlayerController(
         val position = runCatching {
             NativePlayerBridge.positionMs(current).takeIf { it > 0L && !NativePlayerBridge.isEnded(current) }
         }.getOrNull() ?: return
+        if (linuxMusicSurface) linuxMusicDurationMs = runCatching { NativePlayerBridge.durationMs(current) }.getOrDefault(0L)
         // Keep the saved position separate from source selection; apply it only when
         // the retained surface resumes the matching trailer.
         if (source != null) linuxHeroResumePosition = source to position
@@ -1678,6 +1687,14 @@ internal class NativePlayerController(
 
     fun snapshot(): PlayerPlaybackSnapshot {
         val current = handle
+        if (current == 0L && linuxMusicEvicted) {
+            // Off the native player (see resumeLinuxMusic): paused where it was, not loading.
+            return PlayerPlaybackSnapshot(
+                isLoading = false,
+                durationMs = linuxMusicDurationMs,
+                positionMs = linuxHeroResumePosition?.second ?: 0L,
+            )
+        }
         if (current == 0L) return PlayerPlaybackSnapshot(isLoading = true)
         return runCatching {
             val isLoading = NativePlayerBridge.isLoading(current)
@@ -1709,7 +1726,10 @@ internal class NativePlayerController(
     fun dispose() {
         disposed = true
         linuxHdr?.dispose()
-        if (DesktopHostOs.current == DesktopHostOs.LINUX) linuxOwnership.cancel(this)
+        if (DesktopHostOs.current == DesktopHostOs.LINUX) {
+            linuxOwnership.cancel(this)
+            linuxOwnership.setYielding(this, false)
+        }
         linuxMpris?.close()
         linuxMpris = null
         linuxPiPInput?.close()
@@ -1852,6 +1872,7 @@ internal class NativePlayerController(
     }
 
     override fun play() {
+        if (linuxMusicSurface && DesktopHostOs.current == DesktopHostOs.LINUX) linuxOwnership.setYielding(this, false)
         if (linuxMusicEvicted && handle == 0L) {
             resumeLinuxMusic()
             return
@@ -1864,6 +1885,7 @@ internal class NativePlayerController(
 
     override fun pause() {
         handle.takeIf { it != 0L }?.let { NativePlayerBridge.setPaused(it, true) }
+        if (linuxMusicSurface && DesktopHostOs.current == DesktopHostOs.LINUX) linuxOwnership.setYielding(this, true)
     }
 
     /**
@@ -1894,6 +1916,11 @@ internal class NativePlayerController(
         // A seek can invalidate the cache the freeze was protecting; let the demuxer refill at the
         // preset rate. The snapshot poll re-freezes once the new position has a resumable buffer.
         releaseMeteredPrefetchFreeze()
+        if (linuxMusicEvicted && handle == 0L) {
+            // Off the native player: the track reopens here on play.
+            linuxHeroResumePosition?.let { (source, _) -> linuxHeroResumePosition = source to positionMs.coerceAtLeast(0L) }
+            return
+        }
         val current = handle.takeIf { it != 0L } ?: return
         if (liveCacheOnlySeeks()) {
             NativePlayerBridge.seekWithinCacheTo(current, positionMs)

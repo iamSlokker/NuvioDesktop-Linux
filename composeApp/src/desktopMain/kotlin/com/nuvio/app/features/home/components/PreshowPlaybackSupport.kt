@@ -96,7 +96,9 @@ internal class TrailerStallWatchdog {
     /** Returns how long playback has been stuck the first time it counts as stalled, else null. */
     fun poll(positionMs: Long, playWhenReady: Boolean, ready: Boolean, ended: Boolean): Long? {
         val nowMs = System.currentTimeMillis()
-        if (positionMs != lastPositionMs) {
+        // A pause is not a stall: without this, the first poll after a pause longer than the limit
+        // failed the track before playback could move again (fork:linux, see the Linux music resume).
+        if (positionMs != lastPositionMs || !playWhenReady) {
             lastPositionMs = positionMs
             lastProgressAtMs = nowMs
         }

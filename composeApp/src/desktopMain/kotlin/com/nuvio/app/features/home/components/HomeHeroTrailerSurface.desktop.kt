@@ -72,10 +72,13 @@ actual fun HomeHeroTrailerSurface(
     libraryLabel: String,
     inLibrary: Boolean,
     onAddToLibrary: () -> Unit,
+    audioOnly: Boolean, // fork:linux
 ) {
     val supported = DesktopHostOs.current == DesktopHostOs.WINDOWS ||
         DesktopHostOs.current == DesktopHostOs.MACOS || DesktopHostOs.current == DesktopHostOs.LINUX
-    val effectivePlayWhenReady = linuxHeroPlayWhenReady(playWhenReady, home = true)
+    // The home gate is for the home hero; the pre-show (in the player route) and theme songs (details
+    // page) play elsewhere.
+    val effectivePlayWhenReady = linuxHeroPlayWhenReady(playWhenReady, home = !preshow && !audioOnly)
     val latestOnError = rememberUpdatedState(onError)
     val latestOnReady = rememberUpdatedState(onReady)
     val latestOnEnded = rememberUpdatedState(onEnded)
@@ -104,7 +107,9 @@ actual fun HomeHeroTrailerSurface(
             focusTraversalKeysEnabled = false
         }
     }
-    val controller = remember(host) { NativePlayerController(host, linuxHeroSurface = true) }
+    val controller = remember(host) {
+        NativePlayerController(host, linuxHeroSurface = true, linuxHeroAudioOnly = audioOnly)
+    }
     val backgroundHex = remember(backgroundColor) { backgroundColor.toHeroTrailerHex() }
     var firstPaintComplete by remember { mutableStateOf(false) }
     var playbackRevealReady by remember { mutableStateOf(false) }

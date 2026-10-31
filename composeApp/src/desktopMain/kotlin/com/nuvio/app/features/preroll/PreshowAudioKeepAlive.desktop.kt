@@ -28,6 +28,10 @@ internal actual object PreshowAudioKeepAlive {
     private val generation = AtomicLong(0)
 
     actual fun start(owner: String) {
+        // fork:linux - Java Sound opens ALSA devices directly, which can take a hardware device away
+        // from mpv; PipeWire and PulseAudio keep the output open between clips on their own.
+        if (com.nuvio.app.features.player.desktop.DesktopHostOs.current ==
+            com.nuvio.app.features.player.desktop.DesktopHostOs.LINUX) return
         synchronized(lock) {
             holders[owner] = generation.incrementAndGet()
             if (worker?.isAlive == true) return

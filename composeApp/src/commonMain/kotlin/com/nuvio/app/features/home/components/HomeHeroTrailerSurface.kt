@@ -58,4 +58,7 @@ expect fun HomeHeroTrailerSurface(
     libraryLabel: String = "",
     inLibrary: Boolean = false,
     onAddToLibrary: () -> Unit = {},
+    // fork:linux - sound only, from a 1px host (theme songs). Linux plays it outside the home screen
+    // and without waiting for real video bounds.
+    audioOnly: Boolean = false,
 )
