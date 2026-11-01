@@ -625,11 +625,21 @@ void LinuxControlsOverlay::runJavaScript(const std::string &script) {
     state_->scheduleDelivery();
 }
 
+// WebKit sets its cursor on the web view's own GdkWindow the first time the pointer moves over it,
+// and a child's cursor wins over the toplevel's. So the whole tree has to change, not only the top.
+static void setWindowTreeCursor(GdkWindow *window, GdkCursor *cursor) {
+    gdk_window_set_cursor(window, cursor);
+    GList *children = gdk_window_get_children(window);
+    for (GList *child = children; child; child = child->next)
+        setWindowTreeCursor(GDK_WINDOW(child->data), cursor);
+    g_list_free(children);
+}
+
 void LinuxControlsOverlay::setCursorHidden(bool hidden) {
     GtkThread::get().post([self = state_, hidden] {
         if (self->closing || !self->window) return;
         GdkCursor *cursor = hidden ? gdk_cursor_new_for_display(self->display, GDK_BLANK_CURSOR) : nullptr;
-        gdk_window_set_cursor(gtk_widget_get_window(self->window), cursor);
+        setWindowTreeCursor(gtk_widget_get_window(self->window), cursor);
         if (cursor) g_object_unref(cursor);
     });
 }
