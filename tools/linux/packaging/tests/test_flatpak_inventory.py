@@ -38,6 +38,9 @@ class FlatpakNativeInventoryTest(unittest.TestCase):
         (canonical / 'lib/native').mkdir()
         (canonical / 'lib/native/nuvio-hdr-probe').write_bytes(b'fixture helper')
         (canonical / 'lib/native/nuvio-hdr-probe').chmod(0o755)
+        (canonical / verify.TORRSERVER).parent.mkdir(parents=True)
+        (canonical / verify.TORRSERVER).write_bytes(b'fixture torrserver')
+        (canonical / verify.TORRSERVER).chmod(0o755)
         (canonical / 'lib/native/libmpv.so.2').symlink_to('libmpv.so.2.5.0')
         (canonical / 'lib/native/libmpv.so.2.5.0').write_bytes(b'fixture mpv')
         self.info = dict(application_id='com.example.NuvioFixture', channel='nightly')
@@ -45,6 +48,7 @@ class FlatpakNativeInventoryTest(unittest.TestCase):
         native_fixture.smoke(evidence, canonical)
         (self.work / 'artifacts').mkdir()
         native_evidence.archive(self.work, self.work / 'artifacts/Nuvio-native-image-inputs-aaaaaaaaaaaa.tar', 1)
+        (self.work / 'artifacts/Nuvio-TorrServer-source-aaaaaaaaaaaa.tar.gz').write_bytes(b't' * 4096)
         runtime_repo = json.loads((pathlib.Path(verify.__file__).parent / 'flatpak-repo/repo.json').read_text())['runtime_repo']
         # A real bundle header (unsigned CI contract) plus padding past the size floor.
         (self.work / 'artifacts/Nuvio.flatpak').write_bytes(flatpak_bundle.fixture_bundle(
@@ -81,8 +85,9 @@ class FlatpakNativeInventoryTest(unittest.TestCase):
             if args[3] == '-R':
                 self.assertEqual(IMAGE, args[-1])
                 return self.listing()
-            if args[-1].endswith('/lib/native/nuvio-hdr-probe'):
-                return '-00755 0 0 4096 ' + args[-1] + '\n'
+            if args[-1].endswith(('/lib/native/nuvio-hdr-probe', '/' + verify.TORRSERVER)):
+                path = self.exported / args[-1][len(IMAGE) + 1:]
+                return '-%05o 0 0 4096 %s\n' % (path.stat().st_mode & 0o7777, args[-1]) if path.is_file() else ''
             raise AssertionError(args)
         self.assertEqual('cat', args[2])
         if args[-1] == '/metadata':
@@ -140,6 +145,19 @@ class FlatpakNativeInventoryTest(unittest.TestCase):
                 change(self.exported)
                 with self.assertRaisesRegex(ValueError, message):
                     self.audit()
+
+    def test_exported_torrserver_must_be_executable(self):
+        (self.exported / verify.TORRSERVER).chmod(0o644)
+        with self.assertRaisesRegex(ValueError, 'non-executable TorrServer'):
+            self.audit()
+        (self.exported / verify.TORRSERVER).unlink()
+        with self.assertRaisesRegex(ValueError, 'non-executable TorrServer'):
+            self.audit()
+
+    def test_missing_torrserver_source_archive_blocks_every_format(self):
+        (self.work / 'artifacts/Nuvio-TorrServer-source-aaaaaaaaaaaa.tar.gz').unlink()
+        with self.assertRaisesRegex(ValueError, 'TorrServer source archive'):
+            self.audit()
 
     def test_missing_smoke_record_or_evidence_archive_blocks_the_flatpak(self):
         (self.work / 'native-image/smoke.json').write_text(json.dumps(dict(status='FAIL', runs=[])))

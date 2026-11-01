@@ -23,6 +23,9 @@ fi
 cp tools/linux/packaging/public-client.properties local.properties
 offline=()
 [[ ${NUVIO_GRADLE_OFFLINE:-0} != 1 ]] || offline=(--offline)
+# TorrServer, the Linux P2P engine (torrserver/build.py): pinned source and Go, vendored
+# modules, a static binary that must answer /echo before anything else is built.
+python3 tools/linux/packaging/torrserver/build.py /output
 gradle_flags=(-Pnuvio.desktop.channel="$NUVIO_BUILD_CHANNEL"
   --no-daemon --no-configuration-cache --no-build-cache --max-workers=2
   -Pkotlin.compiler.execution.strategy=in-process

@@ -93,6 +93,16 @@ must be rebuilt with that library. Source/build material for other static
 combinations must be resolved separately; dynamic replacement is not a universal
 relink solution.
 
+For a modified TorrServer (GPL-3.0, the Linux P2P engine): it is a separate program that
+Nuvio starts from `lib/resources/torrserver/linux-amd64/TorrServer`, so a modified build of
+the same name can take that file's place in an installed copy (Flatpak and AppImage need a
+rebuilt package, as above). `NuvioDesktop-Linux-<version>-source-torrserver.tar.gz` carries
+the pinned tag archive, the vendored Go modules and `BUILD.txt` with the exact Go version
+and build command. To build it into the packages, change `torrserver/manifest.json` (new
+archive URL and SHA-256, or a patched copy) and run the packaging build as above;
+`torrserver/build.py` rebuilds and self-tests it every time. Nuvio starts any executable it
+finds there; a replacement must keep TorrServer's HTTP API on `--port`/`--ip`/`--path`.
+
 The canonical runtime audit, CPU fixtures and package verification remain
 mandatory. Their pass is not acceptance of real playback, GPU, audio hardware,
 HDR, or a modified sandbox. Preserve production security flags.

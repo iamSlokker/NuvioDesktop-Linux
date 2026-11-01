@@ -1,0 +1,21 @@
+{
+  "schema_version": 1,
+  "version": "MatriX.148",
+  "license": "GPL-3.0",
+  "homepage": "https://github.com/YouROK/TorrServer",
+  "source": {
+    "url": "https://codeload.github.com/YouROK/TorrServer/tar.gz/refs/tags/MatriX.148",
+    "sha256": "8105ba4c7ccff6676444b75d2ffb20b826bacfa12f74d4ab00ffbc42cac4d0c8",
+    "top": "TorrServer-MatriX.148"
+  },
+  "go": {
+    "version": "go1.26.10",
+    "url": "https://go.dev/dl/go1.26.10.linux-amd64.tar.gz",
+    "sha256": "ccfe7ae822d2c2f41f4fe7c956199967a4dac22d0ee0d2b2bfdb440aab3b20c5"
+  },
+  "build": {
+    "package": "./cmd",
+    "tags": "nosqlite",
+    "ldflags": "-s -w -checklinkname=0 -buildid= -X server/version.Version=MatriX.148"
+  }
+}

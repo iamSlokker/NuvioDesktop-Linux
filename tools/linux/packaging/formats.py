@@ -74,6 +74,10 @@ Description: {CONFIG['display_name']}
     run('dpkg-deb', '--root-owner-group', '--build', deb, artifacts / f'nuvio-desktop_{version}_amd64.deb')
     shutil.copy2(image / 'release-info.json', artifacts / 'release-info.json')
     archive_application_source(work, artifacts, info)
+    # TorrServer's corresponding source (GPL-3.0): the pinned tag, its vendored Go modules and
+    # the build steps (torrserver/build.py); SOURCE-MAP.json lists it for every package.
+    shutil.copy2(work / 'torrserver/Nuvio-TorrServer-source.tar.gz',
+                 artifacts / f'Nuvio-TorrServer-source-{info["git_commit"][:12]}.tar.gz')
     # Exact native-image input JARs, manifest, native-image reports and the smoke
     # record; also the material needed to rebuild/relink the executable.
     native_evidence.archive(work, artifacts / f'Nuvio-native-image-inputs-{info["git_commit"][:12]}.tar',

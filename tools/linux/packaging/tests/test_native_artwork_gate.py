@@ -43,11 +43,12 @@ class NativeArtworkGateTest(unittest.TestCase):
                      'lib/native/libmpv.so.2', 'share/applications/com.nuvio.media.desktop.desktop',
                      'share/icons/hicolor/512x512/apps/com.nuvio.media.desktop.png',
                      'share/licenses/Nuvio/COPYING', 'share/licenses/quickjs-kt/LICENSE',
-                     'share/licenses/mpv/LICENSE.GPL']:
+                     'share/licenses/mpv/LICENSE.GPL', verify.TORRSERVER, 'share/licenses/TorrServer/LICENSE',
+                     'share/licenses/TorrServer/NOTICE.txt']:
             path = image / name
             path.parent.mkdir(parents=True, exist_ok=True)
             path.write_bytes(b'fixture, not a native binary')
-            if name.startswith('bin/'):
+            if name.startswith('bin/') or name == verify.TORRSERVER:
                 path.chmod(0o755)
         shutil.copyfile(Path(verify.__file__).parent / 'com.nuvio.media.desktop.desktop',
                         image / 'share/applications/com.nuvio.media.desktop.desktop')
@@ -60,6 +61,7 @@ class NativeArtworkGateTest(unittest.TestCase):
         work = root / 'work'
         (work / 'artifacts').mkdir()
         native_evidence.archive(work, work / 'artifacts/Nuvio-native-image-inputs-aaaaaaaaaaaa.tar', 1)
+        (work / 'artifacts/Nuvio-TorrServer-source-aaaaaaaaaaaa.tar.gz').write_bytes(b't' * 4096)
         return work, image
 
     def audit(self, kind, embed_all=True, mutate=None):
@@ -87,6 +89,13 @@ class NativeArtworkGateTest(unittest.TestCase):
                     patch.object(verify, 'check_appimage_runtime', return_value={}):
                 verify.artifacts(work, kind)
             return json.loads((work / ('artifacts/' + kind + '-audit.json')).read_text())
+
+    def test_both_native_formats_require_an_executable_torrserver(self):
+        for kind in ('deb', 'appimage'):
+            for change, message in [(lambda image: (image / verify.TORRSERVER).unlink(), 'Missing/empty required artifact'),
+                                    (lambda image: (image / verify.TORRSERVER).chmod(0o644), 'Non-executable')]:
+                with self.subTest(kind=kind, message=message), self.assertRaisesRegex(ValueError, message):
+                    self.audit(kind, mutate=change)
 
     def test_both_native_format_verifiers_check_input_jars_and_executable_bytes(self):
         for kind in ('deb', 'appimage'):

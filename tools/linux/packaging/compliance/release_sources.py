@@ -8,8 +8,8 @@ Writes, next to the packages in <work>/artifacts:
                                                 tool) for the native executable and its JDK libraries
   SOURCE-MAP.json                               every package -> the source assets that cover it
 
-The application and private WebKit/GTK source archives are already produced by
-formats.py/webkit.stage. All inputs are verified against pinned hashes; nothing
+The application, TorrServer and private WebKit/GTK source archives are already produced by
+formats.py (torrserver/build.py)/webkit.stage. All inputs are verified against pinned hashes; nothing
 here is uploaded. This is the delivery mechanism, not a legal determination.
 Packages no longer contain Temurin (it is only the build JDK inside the builder
 OCI, a separately reviewed scope), so its source is no longer a package asset.
@@ -166,7 +166,10 @@ def build(work, media_cache, ubuntu_cache, offline=False):
     native_inputs = sorted(artifacts.glob('Nuvio-native-image-inputs-*.tar'))
     if len(native_inputs) != 1:
         raise ValueError('Expected exactly one Nuvio-native-image-inputs archive')
-    common = [application, produced['media'], *produced['graalvm'], native_inputs[0]]
+    torrserver = sorted(artifacts.glob('Nuvio-TorrServer-source-*.tar.gz'))
+    if len(torrserver) != 1:
+        raise ValueError('Expected exactly one Nuvio-TorrServer-source archive')
+    common = [application, produced['media'], *produced['graalvm'], native_inputs[0], torrserver[0]]
     packages = {}
     for pattern, kind in (('*.deb', 'deb'), ('*.flatpak', 'flatpak'), ('*.AppImage', 'appimage')):
         for package in sorted(artifacts.glob(pattern)):
