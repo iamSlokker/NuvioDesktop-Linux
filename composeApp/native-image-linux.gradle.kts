@@ -267,6 +267,9 @@ val linuxNativeCompile = tasks.register<Exec>("linuxNativeCompile") {
             add("-O$linuxNativeOptimize")
             // As on Windows: java.net.URL http(s) is off by default in an image.
             add("--enable-url-protocols=http,https")
+            // Auto Sync decodes old subtitles by name (windows-1251, KOI8-R, Big5...): native-image
+            // leaves those out unless asked, and the detector then quietly falls back to UTF-8.
+            add("-H:+AddAllCharsets")
             if (linuxNativeQa) {
                 add("--exact-reachability-metadata")
                 // A run-time option in GraalVM CE 25.0.2 ("Could not find option" with upstream's
