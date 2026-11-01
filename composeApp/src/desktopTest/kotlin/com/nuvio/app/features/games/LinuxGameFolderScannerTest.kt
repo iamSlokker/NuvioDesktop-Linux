@@ -136,4 +136,14 @@ class LinuxGameFolderScannerTest {
         assertEquals(128, scan(root).candidates.size)
     }
 
+    @Test
+    fun `a second drive under run media is not a system folder`() {
+        assertFalse(LinuxGameDiscovery.isSystemPath("/run/media/user/Games"))
+        assertFalse(LinuxGameDiscovery.isSystemPath("/home/user/Games"))
+        assertTrue(LinuxGameDiscovery.isSystemPath("/run/user/1000"))
+        assertTrue(LinuxGameDiscovery.isSystemPath("/run/mediafoo"))
+        assertTrue(LinuxGameDiscovery.isSystemPath("/run"))
+        assertTrue(LinuxGameDiscovery.isSystemPath("/usr/games"))
+        assertTrue(LinuxGameDiscovery.isSystemPath("/"))
+    }
 }
