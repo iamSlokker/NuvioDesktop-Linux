@@ -225,7 +225,8 @@ internal fun LazyListScope.keyboardShortcutsContent(isTablet: Boolean) {
         val escWindowedFirst by playerEscWindowedFirstState().collectAsState()
         var rebinding by remember { mutableStateOf<PlayerShortcutAction?>(null) }
         Column(verticalArrangement = Arrangement.spacedBy(NuvioTokens.Space.s18)) {
-            playerRowSections.forEachIndexed { sectionIndex, (title, specs) ->
+            playerRowSections.forEachIndexed { sectionIndex, (title, allSpecs) ->
+                val specs = allSpecs.filter { it.action != PlayerShortcutAction.CycleSvp || platformOffersSvp } // fork:linux
                 val sectionActions = specs.mapNotNull { it.action }
                 SettingsSection(
                     title = stringResource(title),

@@ -21,5 +21,8 @@ internal actual val platformOffersLowVramMode: Boolean
 internal actual val platformOffersScreensaverShutdown: Boolean
     get() = !isLinuxHost
 
+internal actual val platformOffersSvp: Boolean
+    get() = !isLinuxHost
+
 internal actual val platformListsWindowsOnlyPlaybackRowsInSearch: Boolean
     get() = !isLinuxHost
