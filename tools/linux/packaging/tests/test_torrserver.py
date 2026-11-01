@@ -148,6 +148,18 @@ class TorrServerRecipeTest(unittest.TestCase):
         self.assertIn('resourceDir = "${os.resourceName}-$archName"', backend)
         self.assertEqual('lib/resources/torrserver/linux-amd64/TorrServer', stage.TORRSERVER)
 
+    def test_appimage_assembly_does_not_ask_ldd_about_the_static_binary(self):
+        # ldd exits non-zero on a static ELF, which stopped the AppImage in the first stable build.
+        from webkit import stage as appimage_stage
+        self.assertEqual(stage.TORRSERVER, appimage_stage.TORRSERVER)
+        image = self.root / 'image'
+        for name in (stage.TORRSERVER, 'lib/nuvio', 'lib/native/libmpv.so.2'):
+            (image / name).parent.mkdir(parents=True, exist_ok=True)
+            (image / name).write_bytes(b'\x7fELF fixture')
+        (image / 'release-info.json').write_text('{}')
+        self.assertEqual({'lib/nuvio', 'lib/native/libmpv.so.2'},
+                         {p.relative_to(image).as_posix() for p in appimage_stage.dynamic_elves(image)})
+
     def test_native_build_compiles_torrserver_with_network_before_gradle(self):
         script = (PACKAGING / 'native-build.sh').read_text()
         build_phase = script[script.index('[[ $phase == build ]]'):]

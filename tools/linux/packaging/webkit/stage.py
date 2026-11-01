@@ -18,6 +18,9 @@ ASSEMBLY_INPUTS = ['build.py', 'formats.py', 'verify.py', 'fetch.py', 'config.js
                    'webkit/stage.py', 'webkit/contract.py', 'webkit/package.py', 'webkit/nuvio-appimage']
 
 
+TORRSERVER = 'lib/resources/torrserver/linux-amd64/TorrServer'
+
+
 def assembly_identity():
     files = {name: hashlib.sha256((HERE.parent / name).read_bytes()).hexdigest() for name in ASSEMBLY_INPUTS}
     identity = hashlib.sha256(json.dumps(files, sort_keys=True).encode()).hexdigest()
@@ -43,6 +46,13 @@ def is_elf(path):
         return False
     with path.open('rb') as stream:
         return stream.read(4) == b'\x7fELF'
+
+
+def dynamic_elves(image):
+    """The ELF files whose libraries the AppImage must carry. TorrServer is static (Go, CGO off):
+    it needs none, and ldd refuses it. verify.py checks that it really is static."""
+    return [p for p in image.rglob('*') if not p.is_symlink() and is_elf(p)
+            and p.relative_to(image).as_posix() != TORRSERVER]
 
 
 def copy_common_licenses(source, destination):
@@ -203,7 +213,7 @@ def stage(image, generation, resource_sources):
         owner(pathlib.Path('/usr/bin') / tool)
     subprocess.run(['gio-querymodules', str(native / 'gio/modules')], check=True)
     copied.add('lib/native/gio/modules/giomodule.cache')
-    pending = [p for p in image.rglob('*') if not p.is_symlink() and is_elf(p)]
+    pending = dynamic_elves(image)
     seen = set()
     # lib/ last: libjawt.so resolves libawt.so to the copy the native executable already loaded.
     env = dict(os.environ, LD_LIBRARY_PATH=f'{native}:{image}/lib/runtime/lib:{image}/lib')
