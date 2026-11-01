@@ -12,6 +12,7 @@
 #include "live_cache_seek.h"
 #include "auto_crop.h"
 #include "speech_spot.h"
+#include "subtitle_add.h"
 
 #include <algorithm>
 #include <cctype>
@@ -229,6 +230,7 @@ struct Player {
     bool liveHrSeekOffsetApplied = false;
     double liveSeekTargetSeconds = -1.0;
     std::chrono::steady_clock::time_point liveSeekIssuedAt{};
+    LinuxSubtitleAdds subtitleAdds; // Addon subtitles added off the caller's thread, under operations.
     bool ownsX11Lifetime = false;
     // Experimental native-Wayland HDR session: no Canvas, X11 lifetime, HUD or thumbnails.
     bool hdrSession = false;
@@ -426,6 +428,15 @@ struct Player {
                 }
                 if (translated.loaded) { fileReady = true; ended = false; }
                 if (translated.restarted) ended = false;
+                if (event->event_id == MPV_EVENT_COMMAND_REPLY && LinuxSubtitleAdds::owns(event->reply_userdata)) {
+                    std::string url;
+                    const bool wanted = subtitleAdds.current(event->reply_userdata);
+                    const auto repair = subtitleAdds.finished(event->reply_userdata, event->error, url);
+                    if (wanted && event->error < 0)
+                        std::fprintf(stderr, "Linux sub-add: %s\n", mpv_error_string(event->error));
+                    if (repair && !applyLinuxSubtitleRepair(mpv, *repair))
+                        std::fprintf(stderr, "Linux sub-add: an abandoned subtitle could not be taken out\n");
+                }
                 // The demuxer offset of a cache-only live seek is per seek: it ends with the restart.
                 if (event->event_id == MPV_EVENT_PLAYBACK_RESTART && liveHrSeekOffsetApplied) {
                     mpv_set_property_string(mpv, "hr-seek-demuxer-offset", "0");
@@ -1276,6 +1287,7 @@ JNI_METHOD(jboolean, selectSubtitleTrack)(JNIEnv *env, jobject, jlong handle, ji
     // The shared startup policy can disable subtitles even without track enumeration.
     return withPlayer(env, handle, [&](Player &p) -> jboolean {
         std::string value = trackId < 0 ? "no" : std::to_string(trackId);
+        p.subtitleAdds.abandon(p.mpv, value);
         return mpv_set_property_string(p.mpv, "sid", value.c_str()) >= 0;
     });
 }
@@ -1283,20 +1295,22 @@ JNI_METHOD(void, addSubtitleUrl)(JNIEnv *env, jobject, jlong handle, jstring url
     withPlayer(env, handle, [&](Player &p) {
         std::string subtitle = text(env, url);
         if (subtitle.empty()) return;
-        const char *command[] = {"sub-add", subtitle.c_str(), "select", nullptr};
-        checkMpv(mpv_command(p.mpv, command), "sub-add");
+        // Asynchronous: the download no longer holds this thread or the operation lock (subtitle_add.h).
+        checkMpv(p.subtitleAdds.add(p.mpv, subtitle), "sub-add");
     });
 }
 JNI_METHOD(void, clearExternalSubtitles)(JNIEnv *env, jobject, jlong handle) {
     withPlayer(env, handle, [&](Player &p) {
+        p.subtitleAdds.abandon(p.mpv, "no");
         removeExternalSubtitleTracks(p);
         checkMpv(mpv_set_property_string(p.mpv, "sid", "no"), "sid");
     });
 }
 JNI_METHOD(void, clearExternalSubtitlesAndSelect)(JNIEnv *env, jobject, jlong handle, jint trackId) {
     withPlayer(env, handle, [&](Player &p) {
-        removeExternalSubtitleTracks(p);
         std::string value = trackId >= 0 ? std::to_string(trackId) : "no";
+        p.subtitleAdds.abandon(p.mpv, value);
+        removeExternalSubtitleTracks(p);
         checkMpv(mpv_set_property_string(p.mpv, "sid", value.c_str()), "sid");
     });
 }

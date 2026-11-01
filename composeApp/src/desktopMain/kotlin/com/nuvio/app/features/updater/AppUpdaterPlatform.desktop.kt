@@ -127,6 +127,10 @@ actual object AppUpdaterPlatform {
         store.putString(inPlaceApplyKey, if (enabled) "on" else "off")
     }
 
+    // Partial (delta) downloads are refused in this fork: only a whole archive can be checked
+    // against GitHub's SHA-256, so the full size is what an update really downloads.
+    actual suspend fun estimateDownloadBytes(assetUrl: String): Long? = null
+
     actual suspend fun downloadApk(
         assetUrl: String,
         assetName: String,

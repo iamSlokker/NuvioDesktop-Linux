@@ -32,6 +32,7 @@ import com.nuvio.app.features.player.desktop.NativePlayerHost
 import com.nuvio.app.features.player.desktop.linuxHeroPlayWhenReady
 import com.nuvio.app.features.player.desktop.heroTrailerHostUsesFullBounds
 import com.nuvio.app.features.player.desktop.TRAILER_AUDIO_NORMALIZATION_FILTER
+import com.nuvio.app.features.preroll.mpvAudioFilterValue
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
@@ -233,7 +234,7 @@ actual fun HeroTrailerPlayerSurface(
         // Fill the hero and trim bars baked into the video, as on Home (HomeHeroTrailerSurface).
         controller.setResizeMode(com.nuvio.app.features.player.PlayerResizeMode.AutoCrop, quickAutoCrop = true)
         // Trailer loudness is wildly inconsistent between uploads; smooth it out in real time.
-        controller.setMpvProperty("af", TRAILER_AUDIO_NORMALIZATION_FILTER)
+        controller.setMpvProperty("af", mpvAudioFilterValue(TRAILER_AUDIO_NORMALIZATION_FILTER))
     }
 
     LaunchedEffect(controller, effectivePlayWhenReady, sourceUrl.takeIf { DesktopHostOs.current == DesktopHostOs.LINUX }) {

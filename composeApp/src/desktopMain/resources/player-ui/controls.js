@@ -6050,9 +6050,12 @@ const renderChrome = () => {
   if (isChromeHidden || activeModal) hideControlTooltip();
   // Never hide the cursor in hero-trailer mode — it's a background surface, not the
   // focused player, so the OS/app cursor must behave normally.
-  if (!isHeroTrailerSurface && !state.heroTrailerMode && isChromeHidden !== lastCursorHidden) {
-    lastCursorHidden = isChromeHidden;
-    send("cursorVisibility", isChromeHidden ? 0 : 1);
+  // Nor while the post-show cards are up: the chrome is hidden then, but the cards are clickable,
+  // and the native side hides the cursor for the whole window, not just the video box.
+  const cursorHidden = isChromeHidden && !state.postShowInput;
+  if (!isHeroTrailerSurface && !state.heroTrailerMode && cursorHidden !== lastCursorHidden) {
+    lastCursorHidden = cursorHidden;
+    send("cursorVisibility", cursorHidden ? 0 : 1);
   }
   syncHudSubtitleClearance(isChromeHidden);
   root.classList.toggle("source-visible", Boolean(!showError && !isPlaying && !state.isLoading && (state.streamTitle || state.providerName)));
@@ -8334,3 +8337,62 @@ updateViewportUiScale();
 focusShortcutRoot();
 render();
 send("controlsReady", 0);
+
+// fork:linux - wheel scrolling in the HUD's panels. WebKitGTK's own wheel animation restarted its
+// ease-in on every wheel event, so a fast wheel barely moved a panel until the wheel stopped. The
+// Linux overlay turns that animation off (controls_overlay.cpp); notch-sized steps glide here
+// instead, moving from the first frame and retargeting on each notch. Fine deltas (touchpads,
+// high-resolution wheels) keep scrolling natively, and handlers that took the wheel are left alone.
+if (linuxHost) {
+  const wheelGlides = new WeakMap();
+  const wheelScroller = (start, delta) => {
+    for (let el = start instanceof Element ? start : null; el && el !== document.body; el = el.parentElement) {
+      const overflow = getComputedStyle(el).overflowY;
+      if (overflow !== "auto" && overflow !== "scroll") continue;
+      const max = el.scrollHeight - el.clientHeight;
+      if (max < 1) continue;
+      const glide = wheelGlides.get(el);
+      const from = glide ? glide.target : el.scrollTop;
+      if ((delta > 0 && from < max - 0.5) || (delta < 0 && from > 0.5)) return el;
+    }
+    return null;
+  };
+  window.addEventListener("wheel", event => {
+    if (event.defaultPrevented || event.ctrlKey || event.deltaMode !== WheelEvent.DOM_DELTA_PIXEL) return;
+    const delta = event.deltaY;
+    if (Math.abs(delta) < 40 || Math.abs(event.deltaX) > Math.abs(delta)) return;
+    const el = wheelScroller(event.target, delta);
+    if (!el) return;
+    event.preventDefault();
+    let glide = wheelGlides.get(el);
+    if (!glide) {
+      glide = { target: el.scrollTop, last: el.scrollTop, frame: 0 };
+      wheelGlides.set(el, glide);
+    }
+    glide.target = Math.min(el.scrollHeight - el.clientHeight, Math.max(0, glide.target + delta));
+    if (glide.frame) return;
+    const step = () => {
+      // Anything else that moved the panel (the scrollbar, a focus jump, a re-render) ends the glide.
+      if (Math.abs(el.scrollTop - glide.last) > 1) {
+        wheelGlides.delete(el);
+        return;
+      }
+      const remaining = glide.target - el.scrollTop;
+      if (Math.abs(remaining) <= 1) {
+        el.scrollTop = glide.target;
+        wheelGlides.delete(el);
+        return;
+      }
+      const before = el.scrollTop;
+      el.scrollTop += Math.sign(remaining) * Math.max(1, Math.round(Math.abs(remaining) * 0.3));
+      // The panel shrank under the target (content removed): stop where it ends.
+      if (el.scrollTop === before) {
+        wheelGlides.delete(el);
+        return;
+      }
+      glide.last = el.scrollTop;
+      glide.frame = requestAnimationFrame(step);
+    };
+    glide.frame = requestAnimationFrame(step);
+  }, { passive: false });
+}
