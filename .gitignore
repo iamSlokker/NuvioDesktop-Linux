@@ -32,6 +32,7 @@ tools
 /tools/*
 !/tools/linux/
 /tools/linux/*
+!/tools/linux/umbra_sync_checklist.py
 !/tools/linux/media-runtime/
 /tools/linux/media-runtime/*
 !/tools/linux/media-runtime/Containerfile
