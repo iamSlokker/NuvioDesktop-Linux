@@ -59,9 +59,9 @@ and its thumbnail probe checks the helper's effective software-only options.
   Values come from mpv properties/events; unknown duration/position/cache is represented
   as zero/current position until mpv makes it available.
 - `setVolume`, `volume`, `setMute`, `isMuted`, `setMpvProperty`, `setResizeMode`.
-- `setSubtitleDelayMs`, `setSubtitleAssStyleMode`, `applySubtitleStyle`: basic mpv
-  property mapping required by the shared controller's startup configuration. This
-  is not the full upstream ASS track-sensitive styling system.
+- `setSubtitleDelayMs`, `setSubtitleAssStyleMode`, `applySubtitleStyle`: the Windows
+  rules in `subtitle_style.h`. The override level and size follow the selected track's
+  codec, so the ASS size control never resizes an SRT; `linux_subtitle_style_test`.
 - Audio/subtitle track enumeration and selection, and external subtitle management,
   through the existing shared track menus.
 - `chaptersJson`, `toggleStatsOverlay`: chapter metadata and mpv diagnostics, as
