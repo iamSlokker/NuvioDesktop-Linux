@@ -1,6 +1,7 @@
 package com.nuvio.app.features.youtubemusic
 
 import co.touchlab.kermit.Logger
+import com.nuvio.app.core.build.hostProcessBuilder
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.ensureActive
 import kotlinx.serialization.json.Json
@@ -77,7 +78,7 @@ internal object YouTubeMusicBrowserLogin {
         var window: Process? = null
         try {
             // Step 1: the visible sign-in window, with nothing that marks it as automated.
-            window = ProcessBuilder(signInCommand(browser, profileDir))
+            window = hostProcessBuilder(signInCommand(browser, profileDir))
                 .redirectErrorStream(true)
                 .redirectOutput(ProcessBuilder.Redirect.DISCARD)
                 .start()
@@ -100,7 +101,7 @@ internal object YouTubeMusicBrowserLogin {
         var reader: Process? = null
         var cdp: CdpConnection? = null
         try {
-            reader = ProcessBuilder(cookieReadCommand(browser, profileDir))
+            reader = hostProcessBuilder(cookieReadCommand(browser, profileDir))
                 .redirectErrorStream(true)
                 .redirectOutput(ProcessBuilder.Redirect.DISCARD)
                 .start()

@@ -273,7 +273,7 @@ class WebKitBuildTest(unittest.TestCase):
                 '[ "$WEBKIT_FORCE_SANDBOX" = 1 ]\n'
                 '[ "$GST_PLUGIN_SCANNER_1_0" = "$GST_PLUGIN_SCANNER" ]\n'
                 'cat "$GDK_PIXBUF_MODULE_FILE" "$GTK_IM_MODULE_FILE"\n'
-                'printf "%s\\n" "$GIO_MODULE_DIR" "$GST_PLUGIN_SCANNER" "$LD_LIBRARY_PATH" "$GDK_BACKEND" "$@"\n'
+                'printf "%s\\n" "$NUVIO_HOST_XDG_DATA_DIRS" "$GIO_MODULE_DIR" "$GST_PLUGIN_SCANNER" "$LD_LIBRARY_PATH" "$GDK_BACKEND" "$@"\n'
                 'IFS= read -r input\nprintf "%s\\n" "$input"\n')
             (root / 'lib/nuvio').chmod(0o755)
             launcher = root / 'bin/nuvio-desktop'
@@ -284,10 +284,11 @@ class WebKitBuildTest(unittest.TestCase):
                 with self.subTest(entry=entry):
                     result = subprocess.check_output(['/bin/sh', str(entry), 'one two', '--fixture'], text=True,
                                                      input='fixture stdin\n',
-                                                     env=dict(os.environ, TMPDIR=tmp, WEBKIT_FORCE_SANDBOX='0')).splitlines()
+                                                     env=dict(os.environ, TMPDIR=tmp, WEBKIT_FORCE_SANDBOX='0',
+                                                              XDG_DATA_DIRS='/host/share')).splitlines()
                     self.assertEqual(result, [str(root / 'lib/native/gdk-pixbuf-2.0/2.10.0/loaders/fixture.so'),
                                               str(root / 'lib/native/gtk-3.0/3.0.0/immodules/fixture.so'),
-                                              str(root / 'lib/native/gio/modules'), str(root / 'bin/nuvio-gst-plugin-scanner'),
+                                              '/host/share', str(root / 'lib/native/gio/modules'), str(root / 'bin/nuvio-gst-plugin-scanner'),
                                               f'{root}/lib/native:{root}/lib/runtime/lib',
                                               'x11', 'one two', '--fixture', 'fixture stdin'])
             self.assertEqual(list(pathlib.Path(tmp).glob('nuvio-modules.*')), [])

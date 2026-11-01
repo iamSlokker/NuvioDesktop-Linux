@@ -1,5 +1,6 @@
 package com.nuvio.app.features.games
 
+import com.nuvio.app.core.build.hostProcessBuilder
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.File
@@ -103,7 +104,7 @@ object GameLauncher {
             ?.let(::File)
             ?: target.workingDirectory?.let(::File)?.takeIf(File::isDirectory)
             ?: executable.parentFile
-        val process = ProcessBuilder(command)
+        val process = hostProcessBuilder(command)
             .directory(workingDirectory)
             .redirectInput(ProcessBuilder.Redirect.PIPE)
             .redirectOutput(ProcessBuilder.Redirect.DISCARD)
@@ -147,7 +148,7 @@ object GameLauncher {
             osName.contains("mac") -> listOf("open", target)
             else -> listOf("xdg-open", target)
         }
-        ProcessBuilder(command)
+        hostProcessBuilder(command)
             .redirectInput(ProcessBuilder.Redirect.PIPE)
             .redirectOutput(ProcessBuilder.Redirect.DISCARD)
             .redirectError(ProcessBuilder.Redirect.DISCARD)

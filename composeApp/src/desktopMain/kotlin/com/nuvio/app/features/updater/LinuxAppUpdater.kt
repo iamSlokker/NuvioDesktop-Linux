@@ -1,6 +1,7 @@
 package com.nuvio.app.features.updater
 
 import com.nuvio.app.LinuxDesktopRelaunch
+import com.nuvio.app.core.build.hostProcessBuilder
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -503,9 +504,7 @@ internal fun isDirectoryWritable(directory: Path): Boolean = runCatching {
 private fun pathOrNull(value: String): Path? = runCatching { Path.of(value) }.getOrNull()
 
 /** Host tools must not inherit the packaged runtime's private library path. */
-private fun hostProcess(command: List<String>): ProcessBuilder = ProcessBuilder(command).apply {
-    environment().remove("LD_LIBRARY_PATH")
-    environment().remove("LD_PRELOAD")
+private fun hostProcess(command: List<String>): ProcessBuilder = hostProcessBuilder(command).apply {
     redirectInput(File("/dev/null"))
 }
 
