@@ -61,7 +61,8 @@ def software_vulkan_device(loader):
             kind = int.from_bytes(properties.raw[16:20], 'little')
             name = properties.raw[20:276].split(b'\0', 1)[0].decode()
             if kind == CPU_DEVICE and name.startswith('llvmpipe'):
-                names.append(name)
+                if name not in names:  # A Flatpak GL extension can list one driver twice.
+                    names.append(name)
     finally:
         vk.vkDestroyInstance(instance, None)
     if len(names) != 1:
