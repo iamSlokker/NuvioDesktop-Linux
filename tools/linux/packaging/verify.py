@@ -20,6 +20,8 @@ from artwork_contract import release_rules, verify_packaged_artwork
 from notice_contract import TARGET as NOTICE_TARGET, expected as notice_files, verify_packaged_notices
 from flatpak_bundle import check_unpublished_bundle
 import native_evidence
+from stage import TORRSERVER
+from torrserver.build import check_static as check_static_torrserver
 
 FORBIDDEN = [b'/home/hmacedo', b'/var/home/hmacedo', b'/home/linuxbrew', b'/opt/homebrew',
              b'/source/', b'/work/prefix', b'/recipes/']
@@ -102,16 +104,20 @@ def check_hdr_probe(root):
     return dict(file=HDR_PROBE, needed=sorted(needed), runpath=runpath[0])
 
 
-def flatpak_hdr_probe(repository, ref):
-    """The exported bundle, not only staging, carries an executable helper."""
-    target = '/files/lib/nuvio-desktop/' + HDR_PROBE
+def flatpak_executable(repository, ref, relative, label):
+    """The exported bundle, not only staging, carries `relative` as an executable file."""
+    target = '/files/lib/nuvio-desktop/' + relative
     listing = subprocess.check_output(['ostree', '--repo=' + str(repository), 'ls', ref, target], text=True)
     fields = listing.strip().split(maxsplit=4)
     # ostree ls: type+octal-mode, uid, gid, size, path (see flatpak_jar_names).
     if (len(listing.strip().splitlines()) != 1 or len(fields) != 5 or fields[4] != target
             or not re.fullmatch(r'-[0-7]{5}', fields[0]) or int(fields[0][1:], 8) & 0o7111 != 0o111):
-        raise ValueError('Missing/non-executable HDR capability helper in Flatpak bundle')
-    return dict(file=HDR_PROBE, mode=fields[0])
+        raise ValueError(f'Missing/non-executable {label} in Flatpak bundle')
+    return dict(file=relative, mode=fields[0])
+
+
+def flatpak_hdr_probe(repository, ref):
+    return flatpak_executable(repository, ref, HDR_PROBE, 'HDR capability helper')
 
 
 def check_webkit_relocation(image, required=False):
@@ -206,6 +212,7 @@ REQUIRED = ['bin/nuvio', 'bin/nuvio-desktop', 'lib/nuvio', 'lib/runtime/lib/libj
             'share/applications/com.nuvio.media.desktop.desktop',
             'share/icons/hicolor/512x512/apps/com.nuvio.media.desktop.png',
             'share/licenses/Nuvio/COPYING', 'share/licenses/quickjs-kt/LICENSE', 'share/licenses/mpv/LICENSE.GPL',
+            TORRSERVER, 'share/licenses/TorrServer/LICENSE', 'share/licenses/TorrServer/NOTICE.txt',
             str(native_evidence.GRAALVM_NOTICES / 'LICENSE.txt')]
 
 SCHEME_HANDLER = 'x-scheme-handler/nuvio'
@@ -269,7 +276,7 @@ def check_image(root, evidence, require_smoke=False, smoke_identity=False):
     for rel in REQUIRED:
         if not (root / rel).is_file() or (root / rel).stat().st_size == 0:
             raise ValueError('Missing/empty required artifact: ' + rel)
-    for rel in ['bin/nuvio', 'bin/nuvio-desktop', 'lib/nuvio']:
+    for rel in ['bin/nuvio', 'bin/nuvio-desktop', 'lib/nuvio', TORRSERVER]:
         if not os.access(root / rel, os.X_OK):
             raise ValueError('Non-executable launcher: ' + rel)
     native = native_evidence.verify(root, evidence)
@@ -317,6 +324,11 @@ def check_image(root, evidence, require_smoke=False, smoke_identity=False):
         if rel.startswith('lib/native/') and PLATFORM.match(p.name):
             raise ValueError('Bundled platform ABI/graphics driver: ' + rel)
         check_abi(p, rel)
+        if rel == TORRSERVER:
+            # The one static ELF (Go, CGO off): nothing to resolve, and ldd refuses it.
+            check_static_torrserver(p)
+            elf_records.append(dict(file=rel, static=True))
+            continue
         dynamic = subprocess.check_output(['readelf', '-d', str(p)], text=True)
         if (root / 'share/nuvio-webkit/runtime.json').is_file():
             from webkit.contract import ENGINE_FILES, PROCESSES
@@ -413,6 +425,10 @@ def artifacts(work, formats):
     if len(archives) != 1:
         raise ValueError('Missing/ambiguous native-image evidence archive in artifacts')
     evidence_archive = native_evidence.check_archive(work, archives[0])
+    # Corresponding source of the bundled TorrServer (GPL-3.0), from torrserver/build.py.
+    torrserver_sources = sorted(dest.glob('Nuvio-TorrServer-source-*.tar.gz'))
+    if len(torrserver_sources) != 1 or torrserver_sources[0].stat().st_size < 4096:
+        raise ValueError('Missing/ambiguous TorrServer source archive in artifacts')
     for suffix in wanted:
         files = list(dest.glob('*.' + suffix))
         if len(files) != 1 or files[0].stat().st_size < 4096:
@@ -468,6 +484,7 @@ def artifacts(work, formats):
                 desktop_entry = check_desktop_entry(subprocess.check_output(
                     ['ostree', '--repo=' + tmp, 'cat', ref, exported]).decode(), 'Flatpak ' + exported)
                 hdr_probe = flatpak_hdr_probe(tmp, ref)
+                torrserver = flatpak_executable(tmp, ref, TORRSERVER, 'TorrServer')
                 # Inspect the exported bytes, not just the canonical input or release
                 # stamp: no JAR or JVM may ship, and the exported executable, manifest
                 # and notices must be the ones bound to the retained native-image inputs.
@@ -488,7 +505,7 @@ def artifacts(work, formats):
                 notices = verify_packaged_notices(image)
                 (dest / 'flatpak-audit.json').write_text(json.dumps(
                     dict(source=info, ref=ref, metadata=metadata.decode(), onnx=onnx, artwork=artwork,
-                         notices=notices, hdr_probe=hdr_probe, bundle=bundle, backend=backend,
+                         notices=notices, hdr_probe=hdr_probe, torrserver=torrserver, bundle=bundle, backend=backend,
                          native_image=native_summary(native, module_resources), native_payloads=payloads,
                          smoke=smoke, native_image_evidence=evidence_archive, desktop_entry=desktop_entry), indent=2) + '\n')
             if not (work / 'flatpak-build/metadata').is_file():

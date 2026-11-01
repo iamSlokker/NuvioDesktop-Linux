@@ -12,6 +12,8 @@ from fetch import CONFIG
 from notice_contract import stage_notices
 import native_evidence
 
+TORRSERVER = 'lib/resources/torrserver/linux-amd64/TorrServer'
+
 
 def remove_build_data(destination, contract):
     """Build-only media SDK data (HDR probe protocol XML) never enters the image."""
@@ -55,6 +57,12 @@ def stage(work, source=pathlib.Path('/source'), media=pathlib.Path('/media'),
     shutil.copy2(work / 'native/nuvio-hdr-probe', native / 'nuvio-hdr-probe')
     # quickjs-kt's JNI library rebuilt with the binding local-frame patch (quickjs-kt/README.md).
     shutil.copy2(work / 'native/libquickjs.so', native / 'libquickjs.so')
+    # TorrServer (torrserver/build.py): PackagedResources reads lib/resources/ beside lib/nuvio,
+    # and the P2P backend starts it from there; Nuvio Engine is Windows-only.
+    torrserver = destination / TORRSERVER
+    torrserver.parent.mkdir(parents=True)
+    shutil.copy2(work / 'torrserver/TorrServer', torrserver)
+    torrserver.chmod(0o755)
     here = source / 'tools/linux/packaging'
     shutil.copy2(here / 'nuvio-desktop', destination / 'bin/nuvio-desktop')
     (destination / 'bin/nuvio-desktop').chmod(0o755)
@@ -69,6 +77,7 @@ def stage(work, source=pathlib.Path('/source'), media=pathlib.Path('/media'),
     quickjs_licenses.mkdir(parents=True)
     for src, name in [('LICENSE.txt', 'LICENSE'), ('quickjs/LICENSE', 'LICENSE.QuickJS'), ('c-vector/LICENSE', 'LICENSE.c-vector')]:
         shutil.copy2(quickjs / src, quickjs_licenses / name)
+    shutil.copytree(work / 'torrserver/licenses', share / 'licenses/TorrServer')
     shutil.copytree(source / 'composeApp/src/desktopMain/resources/player-shaders',
                     licenses / 'player-shaders', ignore=shutil.ignore_patterns('*.glsl'))
     # GraalVM CE notices, the manifest of the exact native-image inputs, the input

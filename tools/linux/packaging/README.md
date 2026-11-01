@@ -160,6 +160,20 @@ gates and the default-off toggle are in the
 [HDR design](../../../docs/linux-hdr10-design.md#packaging-implemented-ci-rebuild-pending);
 HDR output is unverified on HDR hardware.
 
+**TorrServer (P2P).** Nuvio Engine is a Windows DLL, so Linux streams torrents through
+TorrServer, which the P2P backend starts as a child process on 127.0.0.1.
+`torrserver/build.py` runs first in the build phase: it verifies the pinned tag archive and
+Go toolchain (`torrserver/manifest.json`), downloads and verifies the Go modules (go.sum and the
+checksum database), vendors them, and builds a static binary (CGO off, `-trimpath`, empty
+build ID) from the vendor tree alone. The binary must answer `/echo` with its version on a
+loopback port before anything else is built. `stage.py` installs it as
+`lib/resources/torrserver/linux-amd64/TorrServer`, where `PackagedResources` (beside
+`lib/nuvio`) finds it, with its own, Go's and every vendored module's notices in
+`share/licenses/TorrServer/`. `verify.py` requires it executable and static in every format;
+the tag archive, the vendored modules and the build steps go out as
+`Nuvio-TorrServer-source-<commit12>.tar.gz`, listed for every package in SOURCE-MAP.json.
+None of these files are builder-seed inputs.
+
 Canonical layout:
 
 ```text
@@ -170,6 +184,7 @@ lib/lib*.so                JDK libraries native-image emitted (libawt, libfontma
 lib/app/                   nuvio.cfg (-D options applied at run time), skiko, build stamp; no JAR
 lib/runtime/lib/           java.home: libjawt.so and font properties from GraalVM
 lib/native/                player_bridge, nuvio-hdr-probe, mpv and private media ELF closure
+lib/resources/torrserver/  linux-amd64/TorrServer: static TorrServer for P2P (torrserver/build.py)
 share/nuvio-native-image/  inputs.json: exact native-image inputs (JAR names/SHA-256, arguments, GraalVM)
 share/licenses/            GraalVM/, jar-notices/ (the input JARs' notice files), anime-mapping/, media, ...
 share/                     desktop/icon metadata, media provenance
