@@ -21,7 +21,7 @@ from verify import entries, scan_bytes, check_webkit_relocation
 from formats import PLATFORM
 from build import development_source
 import build as packaging_build
-from flatpak import launcher_text
+from flatpak import grant_input_device, launcher_text
 
 
 class PackagingContractTest(unittest.TestCase):
@@ -247,6 +247,16 @@ class PackagingContractTest(unittest.TestCase):
         for forbidden in ['--socket=session-bus', '--socket=system-bus', '--device=all',
                           '--filesystem=host', '--filesystem=home', '--talk-name=org.freedesktop.Flatpak']:
             self.assertNotIn(forbidden, permissions)
+
+    def test_flatpak_metadata_grants_controllers_through_input(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            metadata = pathlib.Path(tmp) / 'metadata'
+            metadata.write_text('[Application]\nname=x\n\n[Context]\nshared=network;ipc;\ndevices=dri;\n')
+            grant_input_device(metadata)
+            self.assertIn('\ndevices=dri;input;\n', metadata.read_text())
+            # Anything but the expected line stops the build rather than shipping no controllers.
+            with self.assertRaisesRegex(ValueError, 'devices=dri'):
+                grant_input_device(metadata)
 
     def test_desktop_entry_matches_the_windows_wm_class(self):
         # Docks pair XWayland windows with the desktop entry by StartupWMClass; LinuxWindowClass.kt

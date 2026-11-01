@@ -301,7 +301,7 @@ claim. Default Flatpak XDG config/data/cache directories persist normally.
 | MPRIS | Explicit `org.mpris.MediaPlayer2.Nuvio` ownership; desktop/player acceptance still required. |
 | Notifications | Desktop OS notifications remain unimplemented; standard portal availability does not add them. |
 | Inhibition/screensaver | Existing portal is preferred. ScreenSaver allowed; logind fallback is not granted and GNOME/Mutter-specific probes are not exposed. App-idle fallback and generic Wayland limitations remain. |
-| Controllers | `dri` does not expose evdev input; no physical controller acceptance or permission bypass is claimed. |
+| Controllers | `flatpak.grant_input_device` adds `input` to the devices in the metadata, because the runner's Flatpak 1.12 refuses `--device=input` at build-finish. Needs Flatpak 1.15.6+ on the user's side; older clients ignore it and see no controllers. It exposes evdev nodes, and only those the user may read (controllers, through udev's uaccess). No physical controller acceptance is claimed. |
 
 For local Flatpak export, the pinned GNOME Platform must already be installed.
 The build does not register remotes, install runtimes into user/system state, or
