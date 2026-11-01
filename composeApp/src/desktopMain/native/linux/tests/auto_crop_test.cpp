@@ -114,6 +114,43 @@ void testLearningAppliesThenLocks() {
     require(host.crops.size() == 1, "the same crop is not set again");
 }
 
+// Mode 4, the hero trailer's: four agreeing samples 400 ms apart decide it, once.
+void testQuickDecision() {
+    FakeHost host;
+    host.bars = letterbox(140.0 / 1080);
+    LinuxAutoCrop crop(host);
+    Clock::time_point now{};
+    crop.setEnabled(true, now, true);
+    run(crop, now, 1s);
+    require(host.crops.empty(), "no zoom before four samples");
+    run(crop, now, 1s);
+    require(host.crops == std::vector<std::string>{"1920x800+0+140"}, "quick crop within two seconds");
+    require(crop.locked(), "quick decides once");
+
+    // Samples that disagree by more than 1.5% of the frame do not zoom in until they settle.
+    FakeHost shifting;
+    LinuxAutoCrop unsettled(shifting);
+    Clock::time_point later{};
+    unsettled.setEnabled(true, later, true);
+    int ticks = 0;
+    run(unsettled, later, 3s, [&] { shifting.bars = letterbox(ticks++ / 4 % 2 ? 0.10 : 0.12); });
+    require(shifting.crops.empty() && !unsettled.locked(), "unsettled samples never zoom in");
+    shifting.bars = letterbox(0.11);
+    run(unsettled, later, 2s);
+    require(!shifting.crops.empty() && unsettled.locked(), "settled samples decide");
+
+    // Leaving the mode forgets it: the next plain Auto Crop takes its usual five seconds.
+    FakeHost plain;
+    plain.bars = letterbox(140.0 / 1080);
+    LinuxAutoCrop again(plain);
+    Clock::time_point start{};
+    again.setEnabled(true, start, true);
+    again.setEnabled(false, start);
+    again.setEnabled(true, start);
+    run(again, start, 4s);
+    require(plain.crops.empty(), "mode 3 keeps its learning time after mode 4");
+}
+
 void testDarkScenesNeverTighten() {
     FakeHost host;
     host.bars = letterbox(140.0 / 1080);
@@ -288,6 +325,7 @@ int main(int argc, char **argv) {
     try {
         testDetection();
         testLearningAppliesThenLocks();
+        testQuickDecision();
         testDarkScenesNeverTighten();
         testLooseningAfterLockAndCroppedGrabs();
         testDisableAndNewFileClearTheCrop();

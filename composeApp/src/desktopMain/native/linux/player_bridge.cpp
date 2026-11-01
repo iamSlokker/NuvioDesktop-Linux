@@ -1181,9 +1181,11 @@ JNI_METHOD(jboolean, isMuted)(JNIEnv *env, jobject, jlong handle) {
 JNI_METHOD(void, setResizeMode)(JNIEnv *env, jobject, jlong handle, jint mode) {
     withPlayer(env, handle, [&](Player &p) {
         p.property("keepaspect", mode == 1 ? "no" : "yes");
-        // Auto crop (3) fills like Zoom once video-crop has trimmed the bars (auto_crop.h).
-        p.property("panscan", mode == 2 || mode == 3 ? "1" : "0");
-        p.autoCrop.setEnabled(mode == 3, LinuxAutoCrop::Clock::now());
+        // Auto crop (3, and 4 for the hero trailer's quick decision) fills like Zoom once video-crop
+        // has trimmed the bars (auto_crop.h).
+        const bool autoCrop = mode == 3 || mode == 4;
+        p.property("panscan", mode == 2 || autoCrop ? "1" : "0");
+        p.autoCrop.setEnabled(autoCrop, LinuxAutoCrop::Clock::now(), mode == 4);
     });
 }
 
