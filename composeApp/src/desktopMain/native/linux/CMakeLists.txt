@@ -155,6 +155,14 @@ target_include_directories(linux_speech_spot_test PRIVATE "${MPV_INCLUDE_DIR}" "
 target_link_libraries(linux_speech_spot_test PRIVATE "${MPV_LIBRARY}")
 set_target_properties(linux_speech_spot_test PROPERTIES BUILD_RPATH "${MPV_LIBRARY_DIR}")
 
+# Addon subtitle adds off the caller's thread (subtitle_add.h): real libmpv, loopback HTTP only.
+add_executable(linux_subtitle_add_test EXCLUDE_FROM_ALL tests/subtitle_add_test.cpp)
+target_compile_features(linux_subtitle_add_test PRIVATE cxx_std_17)
+target_compile_options(linux_subtitle_add_test PRIVATE -Wall -Wextra -Werror)
+target_include_directories(linux_subtitle_add_test PRIVATE "${MPV_INCLUDE_DIR}" "${CMAKE_CURRENT_SOURCE_DIR}")
+target_link_libraries(linux_subtitle_add_test PRIVATE "${MPV_LIBRARY}" Threads::Threads)
+set_target_properties(linux_subtitle_add_test PROPERTIES BUILD_RPATH "${MPV_LIBRARY_DIR}")
+
 # Real-libmpv separate-audio regression probe: null outputs, no display/GTK/JNI.
 add_executable(linux_separate_audio_test EXCLUDE_FROM_ALL tests/separate_audio_test.cpp)
 target_compile_features(linux_separate_audio_test PRIVATE cxx_std_17)
