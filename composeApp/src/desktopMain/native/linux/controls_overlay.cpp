@@ -394,6 +394,10 @@ struct LinuxControlsOverlay::State : std::enable_shared_from_this<State> {
         // Keep the transparent GTK surface CPU-painted for this spike; mpv's GPU
         // backend is untouched. Avoid an extra opaque accelerated child surface.
         webkit_settings_set_hardware_acceleration_policy(settings, WEBKIT_HARDWARE_ACCELERATION_POLICY_NEVER);
+        // WebKitGTK's wheel animation restarts its ease-in on every wheel event, so a fast wheel or
+        // a touchpad (events every frame) barely moves a panel until the input stops. Scroll by the
+        // wheel's own deltas instead; scrollTo({behavior: "smooth"}) from the HUD is unaffected.
+        webkit_settings_set_enable_smooth_scrolling(settings, FALSE);
         GdkRGBA transparent{0, 0, 0, 0};
         webkit_web_view_set_background_color(view, &transparent);
         gtk_container_add(GTK_CONTAINER(window), GTK_WIDGET(view));
