@@ -127,16 +127,9 @@ actual object AppUpdaterPlatform {
         store.putString(inPlaceApplyKey, if (enabled) "on" else "off")
     }
 
-    actual suspend fun estimateDownloadBytes(assetUrl: String): Long? = withContext(Dispatchers.IO) {
-        if (deltaDisabledThisSession || !isInPlaceUpdateEnabled()) return@withContext null
-        val target = inPlaceTarget() ?: return@withContext null
-        runCatching {
-            val source = HttpZipRangeSource(updaterHttpClient, assetUrl)
-            val index = ZipDelta.readIndex(source)
-            val plan = ZipDelta.plan(index.entries, target.installRoot, launcherExeName) ?: return@runCatching null
-            plan.changedCompressedBytes.takeIf { it <= source.length * deltaMaxShare }
-        }.getOrNull()
-    }
+    // Partial (delta) downloads are refused in this fork: only a whole archive can be checked
+    // against GitHub's SHA-256, so the full size is what an update really downloads.
+    actual suspend fun estimateDownloadBytes(assetUrl: String): Long? = null
 
     actual suspend fun downloadApk(
         assetUrl: String,
