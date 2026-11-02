@@ -1,3 +1,35 @@
+// fork:linux - HUD preferences. The Linux overlay's WebKit context is ephemeral, so localStorage dies
+// with every player. Kotlin keeps these values (LinuxHudPreferences.kt): they arrive in the page URL,
+// ahead of the reads further down, and each write is reported back. Only the Linux URL has the param.
+(() => {
+  const keys = ["nuvioShowRemainingTime", "nuvioContextMenuCloseOnSelect", "nuvioSourcePanelWidth"];
+  try {
+    const seed = new URLSearchParams(location.search).get("linuxHudPrefs");
+    if (seed === null) return;
+    seed.split(",").forEach(entry => {
+      const colon = entry.indexOf(":");
+      if (colon > 0 && keys.includes(entry.slice(0, colon))) window.localStorage.setItem(entry.slice(0, colon), entry.slice(colon + 1));
+    });
+    const report = (key, value) => {
+      if (!keys.includes(key)) return;
+      const bridge = window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.player;
+      if (bridge) bridge.postMessage({ type: `linuxHudPref_${key}`, value });
+    };
+    const storage = Object.getPrototypeOf(window.localStorage);
+    const { setItem, removeItem } = storage;
+    storage.setItem = function (key, value) {
+      setItem.call(this, key, value);
+      report(key, value === "true" ? 1 : value === "false" ? 0 : Number(value));
+    };
+    storage.removeItem = function (key) {
+      removeItem.call(this, key);
+      report(key, -1);
+    };
+  } catch (_err) {
+    // Without storage the HUD keeps its defaults, as it does when localStorage itself throws.
+  }
+})();
+
 // Known at first script run (from the page URL): this controls page is a passive hero
 // trailer surface, so it must never take keyboard focus or hide the cursor.
 const isHeroTrailerSurface = (() => {

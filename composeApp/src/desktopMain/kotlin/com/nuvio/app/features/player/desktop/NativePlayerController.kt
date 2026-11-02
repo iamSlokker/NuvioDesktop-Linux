@@ -426,6 +426,10 @@ internal class NativePlayerController(
                     append('&')
                     append(suffix)
                 }
+                if (DesktopHostOs.current == DesktopHostOs.LINUX) {
+                    append('&')
+                    append(LinuxHudPreferences.urlParameter())
+                }
             },
             tracePlaybackStart = tracePlaybackStart,
             restoreVolume = restoreVolume,
@@ -1432,6 +1436,10 @@ internal class NativePlayerController(
         }
         if (type == "seekFailureTargetMs") {
             lastSeekFailureTargetMs = value.toLong().coerceAtLeast(0L)
+            return
+        }
+        if (type.startsWith(LinuxHudPreferences.EVENT_PREFIX)) {
+            LinuxHudPreferences.record(type, value)
             return
         }
         val errorPrefix = when {
