@@ -63,6 +63,8 @@ cmake --build /output/native --parallel "$NUVIO_BUILD_JOBS" \
 /output/native/linux_speech_spot_test
 /output/native/linux_live_cache_seek_test
 /output/native/linux_hud_labels_carry_test
+cmake --build /output/native --target linux_video_output_failure_test
+/output/native/linux_video_output_failure_test
 /output/native/linux_subtitle_add_test
 /output/native/linux_http_recovery_test
 /output/native/linux_audio_recovery_test

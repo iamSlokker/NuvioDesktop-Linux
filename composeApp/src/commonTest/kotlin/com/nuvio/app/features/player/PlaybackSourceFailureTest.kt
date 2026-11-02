@@ -7,6 +7,13 @@ import kotlin.test.assertNull
 class PlaybackSourceFailureTest {
 
     @Test
+    fun `only the bridge's video output report skips failover`() {
+        assertEquals(true, playbackErrorIsVideoOutput("$PLAYBACK_VIDEO_OUTPUT_FAILURE: Nuvio needs a working Vulkan driver"))
+        assertEquals(false, playbackErrorIsVideoOutput("Playback loading failed: no audio or video data played"))
+        assertEquals(false, playbackErrorIsVideoOutput("https: HTTP error 429 Too Many Requests"))
+    }
+
+    @Test
     fun `recognizes AIOStreams debrid rate limit placeholder`() {
         val url = "https://aio.myaio.xyz/cache/hash/seg.ts?loop=1&title=Too+many+requests&" +
             "body=Your+debrid+provider+is+rate-limiting+requests."

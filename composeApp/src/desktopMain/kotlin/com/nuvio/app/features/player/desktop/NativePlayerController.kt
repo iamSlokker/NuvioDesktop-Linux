@@ -1414,6 +1414,10 @@ internal class NativePlayerController(
                 transientMessageForNextAttach = null
                 showPresetPill(pillTitle, pillValue, durationMs = 5000)
             }
+            if (DesktopHostOs.current == DesktopHostOs.LINUX && !linuxHeroSurface && !linuxMusicSurface) {
+                LinuxEmbeddingOptions.noticeOnce(PlayerSettingsRepository.uiState.value.desktopCustomMpvOptions)
+                    ?.let { showPresetPill("mpv options", it, durationMs = 8000) }
+            }
         }
         if (type == "seekFailureTargetMs") {
             lastSeekFailureTargetMs = value.toLong().coerceAtLeast(0L)

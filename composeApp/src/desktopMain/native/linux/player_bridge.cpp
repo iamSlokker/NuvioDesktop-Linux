@@ -7,6 +7,7 @@
 #include "separate_audio.h"
 #include "http_recovery_events.h"
 #include "audio_passthrough_recovery.h"
+#include "video_output_failure.h"
 #include "player_session_options.h"
 #include "hdr_wayland_session.h"
 #include "live_cache_seek.h"
@@ -225,6 +226,7 @@ struct Player {
     int lastVideoHdr = -1; // Event thread only; never carried to a replacement player.
     LinuxHttpRecoveryEvents recoveryEvents; // Protected by operations, including seek issuance.
     LinuxAudioPassthroughRecovery audioRecovery; // Same operation lock and per-player lifetime.
+    LinuxVideoOutputFailures videoOutputFailures; // Same.
     // Live TV cache-only seeks (live_cache_seek.h), under operations: whether the last one left
     // hr-seek-demuxer-offset set, and its target, so held arrow steps chain off a seek in flight.
     bool liveHrSeekOffsetApplied = false;
@@ -407,6 +409,8 @@ struct Player {
                 std::lock_guard<std::mutex> lock(operations);
                 if (stopping) break;
                 translated = recoveryEvents.accept(*event, LinuxHttpRecoveryEvents::Clock::now());
+                // The HDR session has its own fallback to this player for the same verdict.
+                if (!hdrSession) videoOutputFailures.filter(*event, recoveryEvents, translated);
                 if (!translated.failure && !recoveryEvents.failed()) {
                     const auto audio = audioRecovery.accept(mpv, *event);
                     audioRecovered = audio.recovered;
