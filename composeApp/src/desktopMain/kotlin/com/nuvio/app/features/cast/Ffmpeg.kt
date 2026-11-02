@@ -1,6 +1,7 @@
 package com.nuvio.app.features.cast
 
 import co.touchlab.kermit.Logger
+import com.nuvio.app.core.build.hostProcessBuilder
 import java.io.File
 import java.util.Locale
 import java.util.concurrent.TimeUnit
@@ -80,7 +81,7 @@ internal object Ffmpeg {
             addAll(listOf("-map", "0:v:0", "-map", "0:a:0?", "-c", "copy", "-tag:v", "hvc1", "-strict", "unofficial"))
             addAll(listOf("-movflags", "frag_keyframe+delay_moov+default_base_moof", "-f", "mp4", "pipe:1"))
         }
-        return ProcessBuilder(command)
+        return hostProcessBuilder(command)
             .redirectError(ProcessBuilder.Redirect.DISCARD)
             .start()
     }
@@ -89,7 +90,7 @@ internal object Ffmpeg {
         val exe = ffprobe ?: return null
         val command = listOf(exe.absolutePath, "-v", "error") + inputHeaderArgs(headers) + args + url
         return runCatching {
-            val process = ProcessBuilder(command).redirectError(ProcessBuilder.Redirect.DISCARD).start()
+            val process = hostProcessBuilder(command).redirectError(ProcessBuilder.Redirect.DISCARD).start()
             val output = process.inputStream.bufferedReader().readText()
             if (!process.waitFor(60, TimeUnit.SECONDS)) {
                 process.destroyForcibly()

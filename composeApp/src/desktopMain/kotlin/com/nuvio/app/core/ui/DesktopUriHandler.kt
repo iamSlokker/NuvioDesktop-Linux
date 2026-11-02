@@ -2,6 +2,8 @@ package com.nuvio.app.core.ui
 
 import androidx.compose.ui.platform.UriHandler
 import co.touchlab.kermit.Logger
+import com.nuvio.app.core.build.LinuxHostProcess
+import com.nuvio.app.features.player.desktop.DesktopHostOs
 import java.awt.Desktop
 import java.net.URI
 import java.util.Locale
@@ -19,6 +21,8 @@ private val uriHandlerLog = Logger.withTag("UriHandler")
  *
  * Only http(s) goes that way: ShellExecute also runs executables and hands other schemes to whatever
  * claims them. Everything else, and any failure, keeps the Desktop API.
+ *
+ * Linux sends http(s) to xdg-open for its own reason: see [LinuxHostProcess.open].
  */
 internal object DesktopUriHandler : UriHandler {
     private val isWindows = System.getProperty("os.name").orEmpty().lowercase(Locale.ROOT).contains("win")
@@ -26,7 +30,16 @@ internal object DesktopUriHandler : UriHandler {
     override fun openUri(uri: String) {
         val parsed = runCatching { URI(uri) }.getOrNull()
         val scheme = parsed?.scheme?.lowercase(Locale.ROOT)
-        if (isWindows && (scheme == "http" || scheme == "https") && openWithShell(uri)) return
+        val web = scheme == "http" || scheme == "https"
+        if (isWindows && web && openWithShell(uri)) return
+        if (DesktopHostOs.current == DesktopHostOs.LINUX && web) {
+            LinuxHostProcess.open(uri, fallback = { browse(parsed, uri) })
+            return
+        }
+        browse(parsed, uri)
+    }
+
+    private fun browse(parsed: URI?, uri: String) {
         runCatching { Desktop.getDesktop().browse(parsed ?: URI(uri)) }
             .onFailure { error -> uriHandlerLog.w(error) { "could not open link ${uri.substringBefore('?')}" } }
     }

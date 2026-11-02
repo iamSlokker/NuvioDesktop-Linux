@@ -8,6 +8,8 @@ export GDK_BACKEND=x11
 # before WebProcessPool creation; the private engine rejects disable requests.
 export WEBKIT_FORCE_SANDBOX=1
 export GSETTINGS_SCHEMA_DIR="$image/share/glib-2.0/schemas"
+# Host programs get the original value back (LinuxHostProcess); a relaunch keeps the first one.
+export NUVIO_HOST_XDG_DATA_DIRS="${NUVIO_HOST_XDG_DATA_DIRS-${XDG_DATA_DIRS-}}"
 export XDG_DATA_DIRS="$image/share:/usr/local/share:/usr/share"
 export GIO_MODULE_DIR="$image/lib/native/gio/modules"
 export GIO_EXTRA_MODULES="$GIO_MODULE_DIR"

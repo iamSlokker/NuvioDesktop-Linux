@@ -1,5 +1,6 @@
 package com.nuvio.app.features.player
 
+import com.nuvio.app.core.build.hostProcessBuilder
 import java.io.File
 import java.io.IOException
 import java.net.URI
@@ -60,7 +61,7 @@ internal class LinuxExternalPlayerDiscovery(
 internal fun isLinuxPlayerExecutable(file: File): Boolean = file.isFile && file.canExecute()
 
 private fun isLinuxPlayerFlatpakInstalled(launcher: String, appId: String): Boolean = runCatching {
-    val process = ProcessBuilder(launcher, "info", "--show-ref", appId)
+    val process = hostProcessBuilder(listOf(launcher, "info", "--show-ref", appId))
         .redirectOutput(ProcessBuilder.Redirect.DISCARD)
         .redirectError(ProcessBuilder.Redirect.DISCARD)
         .start()
@@ -146,7 +147,7 @@ internal fun linuxSystemPlayerCommand(source: String, discovery: LinuxExternalPl
 
 /** Same detached stdio/working-directory contract as upstream, with bounded early failure detection. */
 internal fun startLinuxExternalPlayerProcess(command: List<String>): Process {
-    val process = ProcessBuilder(command)
+    val process = hostProcessBuilder(command)
         .apply { File(command.first()).parentFile?.takeIf(File::isDirectory)?.let(::directory) }
         .redirectOutput(ProcessBuilder.Redirect.DISCARD)
         .redirectError(ProcessBuilder.Redirect.DISCARD)
