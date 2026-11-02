@@ -2738,10 +2738,10 @@ private fun buildDesktopUserMpvOptions(initialPlaybackSpeed: Float): List<String
     val settings = PlayerSettingsRepository.uiState.value
     return buildList {
         add("@nuvio-config-mode=${settings.desktopMpvConfigMode.name.lowercase()}")
-        // Resolved natively: only the bridge can ask DXGI what the adapter actually has, and the
-        // trimmed pipeline has to be in place before mpv_initialize (the first frame is the one that
-        // would abort). Windows-only marker — the macOS bridge forwards unknown entries to mpv.
-        if (DesktopHostOs.current == DesktopHostOs.WINDOWS) {
+        // Resolved natively: only the bridge can ask DXGI (on Linux, Vulkan) what the adapter actually
+        // has, and the trimmed pipeline has to be in place before mpv_initialize (the first frame is the
+        // one that would abort). Not on macOS, whose bridge forwards unknown entries to mpv.
+        if (DesktopHostOs.current == DesktopHostOs.WINDOWS || DesktopHostOs.current == DesktopHostOs.LINUX) {
             add("@nuvio-low-vram=${settings.desktopLowVramMode.name.lowercase()}")
         }
         val useNuvioOptions = settings.desktopMpvConfigMode != DesktopMpvConfigMode.Full

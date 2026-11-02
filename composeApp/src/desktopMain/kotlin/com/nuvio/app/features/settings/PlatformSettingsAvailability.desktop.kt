@@ -17,9 +17,9 @@ internal actual val platformOffersHdrUiCompensation: Boolean
 internal actual val platformOffersCloseToTray: Boolean
     get() = !isLinuxHost || com.nuvio.app.core.ui.LinuxStatusNotifierTray.trayExists
 
-// The @nuvio-low-vram marker is only sent to, and only parsed by, the Windows bridge.
+// The @nuvio-low-vram marker is sent to, and parsed by, the Windows and Linux bridges.
 internal actual val platformOffersLowVramMode: Boolean
-    get() = !isLinuxHost
+    get() = true
 
 // logind's PowerOff; the Flatpak has no system bus, and giving it one would be a new permission.
 internal actual val platformOffersScreensaverShutdown: Boolean

@@ -67,6 +67,8 @@ cmake --build /output/native --target linux_video_source_size_test
 cmake --build /output/native --target linux_tone_mapping_test
 /output/native/linux_tone_mapping_test
 /output/native/linux_speech_spot_test
+cmake --build /output/native --target linux_low_vram_test
+/output/native/linux_low_vram_test
 /output/native/linux_live_cache_seek_test
 cmake --build /output/native --target linux_seek_coalesce_test
 /output/native/linux_seek_coalesce_test
