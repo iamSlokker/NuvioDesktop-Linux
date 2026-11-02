@@ -79,6 +79,7 @@ import com.nuvio.app.features.player.desktop.ensureNativePlayerBridgeLoaded
 import com.nuvio.app.features.player.desktop.installDesktopAppFullscreenShortcuts
 import com.nuvio.app.features.player.desktop.registerDesktopAppFullscreenToggle
 import com.nuvio.app.features.player.desktop.registerDesktopPictureInPictureHandler
+import com.nuvio.app.features.player.desktop.repairLinuxWindowedSizeAfterFullscreen
 import com.nuvio.app.features.player.desktop.setDesktopPictureInPicture
 import com.nuvio.app.features.player.desktop.suspendNativeBorderlessFullscreen
 import com.nuvio.app.features.player.desktop.toggleDesktopAppFullscreen
@@ -840,6 +841,7 @@ fun main(args: Array<String>) {
                     } else if (windowState.placement == WindowPlacement.Fullscreen) {
                         windowState.placement = restoreWindowPlacement.value
                         desktopAppFullscreenState.value = false
+                        repairLinuxWindowedSizeAfterFullscreen(window, DesktopWindowModeStorage::restoredWindowedGeometry)
                     } else {
                         restoreWindowPlacement.value = windowState.placement
                             .takeUnless { it == WindowPlacement.Fullscreen }
