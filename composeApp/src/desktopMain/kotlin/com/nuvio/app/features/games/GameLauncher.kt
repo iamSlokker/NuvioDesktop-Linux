@@ -163,7 +163,8 @@ object GameLauncher {
  * A Windows drive letter (`C:\...`) is one letter followed by a colon, never by `://`, so it does not
  * match; the scheme grammar is RFC 3986's, which is what the OS handler registry keys on.
  */
-fun isProtocolLaunchTarget(path: String): Boolean = PROTOCOL_LAUNCH_TARGET.containsMatchIn(path.trim())
+fun isProtocolLaunchTarget(path: String): Boolean = PROTOCOL_LAUNCH_TARGET.containsMatchIn(path.trim()) ||
+    (linuxGamesHost() && path.trim().startsWith("lutris:")) // fork:linux - Lutris's URLs have no "//".
 
 private val PROTOCOL_LAUNCH_TARGET = Regex("^[a-zA-Z][a-zA-Z0-9+.-]*://")
 
