@@ -1,0 +1,4 @@
+<resources>
+    <!-- fork:linux  File drops into the sealed Flatpak (kept out of strings.xml so upstream merges never touch them). -->
+    <string name="linux_portal_drop_not_shared">This file is outside the Flatpak sandbox and the file manager did not share it. Add its folder under Settings, Local Library, then play it from there.</string>
+</resources>

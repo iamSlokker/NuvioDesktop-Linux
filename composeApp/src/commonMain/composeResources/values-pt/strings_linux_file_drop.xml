@@ -1,0 +1,3 @@
+<resources>
+    <string name="linux_portal_drop_not_shared">Este ficheiro está fora do sandbox do Flatpak e o gestor de ficheiros não o partilhou. Adiciona a pasta em Definições, Biblioteca local, e reproduz a partir daí.</string>
+</resources>
