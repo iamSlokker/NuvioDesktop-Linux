@@ -169,7 +169,10 @@ def build(work, media_cache, ubuntu_cache, offline=False):
     torrserver = sorted(artifacts.glob('Nuvio-TorrServer-source-*.tar.gz'))
     if len(torrserver) != 1:
         raise ValueError('Expected exactly one Nuvio-TorrServer-source archive')
-    common = [application, produced['media'], *produced['graalvm'], native_inputs[0], torrserver[0]]
+    innertubex = sorted(artifacts.glob('Nuvio-InnerTubeX-source-*.tar.gz'))
+    if len(innertubex) != 1:
+        raise ValueError('Expected exactly one Nuvio-InnerTubeX-source archive')
+    common = [application, produced['media'], *produced['graalvm'], native_inputs[0], torrserver[0], innertubex[0]]
     packages = {}
     for pattern, kind in (('*.deb', 'deb'), ('*.flatpak', 'flatpak'), ('*.AppImage', 'appimage')):
         for package in sorted(artifacts.glob(pattern)):
@@ -188,7 +191,8 @@ def build(work, media_cache, ubuntu_cache, offline=False):
             maven='Maven JARs are compiled into the native executable, not shipped. Their notice files ship under '
                   'share/licenses/jar-notices; the exact input JARs, native-image arguments and metadata hashes are in '
                   'Nuvio-native-image-inputs-*.tar. The last reviewed set (125 JARs) was Apache-2.0 or MIT; '
-                  'the current set needs the same review',
+                  'the current set needs the same review. InnerTubeX is GPL-3.0, with its source in '
+                  'Nuvio-InnerTubeX-source-*.tar.gz',
             graalvm='GraalVM CE 25.0.2 sources are the pinned upstream commits; upstream publishes no source bundle and '
                     'its labsjdk-builder recipe is not public (see dependency-source-retention.md)',
             notices='License texts for every bundled component ship inside each package under share/licenses'),

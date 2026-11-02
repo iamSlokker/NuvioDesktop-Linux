@@ -78,6 +78,9 @@ Description: {CONFIG['display_name']}
     # the build steps (torrserver/build.py); SOURCE-MAP.json lists it for every package.
     shutil.copy2(work / 'torrserver/Nuvio-TorrServer-source.tar.gz',
                  artifacts / f'Nuvio-TorrServer-source-{info["git_commit"][:12]}.tar.gz')
+    # InnerTubeX's (GPL-3.0): the pinned tag archive of the JAR compiled into the executable.
+    shutil.copy2(work / 'innertubex/Nuvio-InnerTubeX-source.tar.gz',
+                 artifacts / f'Nuvio-InnerTubeX-source-{info["git_commit"][:12]}.tar.gz')
     # Exact native-image input JARs, manifest, native-image reports and the smoke
     # record; also the material needed to rebuild/relink the executable.
     native_evidence.archive(work, artifacts / f'Nuvio-native-image-inputs-{info["git_commit"][:12]}.tar',

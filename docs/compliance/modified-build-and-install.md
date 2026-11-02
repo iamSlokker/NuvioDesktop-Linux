@@ -103,6 +103,11 @@ archive URL and SHA-256, or a patched copy) and run the packaging build as above
 `torrserver/build.py` rebuilds and self-tests it every time. Nuvio starts any executable it
 finds there; a replacement must keep TorrServer's HTTP API on `--port`/`--ip`/`--path`.
 
+For a modified InnerTubeX (GPL-3.0, the second stream resolver for music):
+`NuvioDesktop-Linux-<version>-source-innertubex.tar.gz` is the tag archive of the JAR compiled
+into the executable. Point the dependency in `composeApp/build.gradle.kts` at your build, update
+`tools/linux/packaging/innertubex_source.py` to match, and run the packaging build as above.
+
 The canonical runtime audit, CPU fixtures and package verification remain
 mandatory. Their pass is not acceptance of real playback, GPU, audio hardware,
 HDR, or a modified sandbox. Preserve production security flags.

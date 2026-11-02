@@ -62,6 +62,7 @@ class NativeArtworkGateTest(unittest.TestCase):
         (work / 'artifacts').mkdir()
         native_evidence.archive(work, work / 'artifacts/Nuvio-native-image-inputs-aaaaaaaaaaaa.tar', 1)
         (work / 'artifacts/Nuvio-TorrServer-source-aaaaaaaaaaaa.tar.gz').write_bytes(b't' * 4096)
+        (work / 'artifacts/Nuvio-InnerTubeX-source-aaaaaaaaaaaa.tar.gz').write_bytes(b'i' * 4096)
         return work, image
 
     def audit(self, kind, embed_all=True, mutate=None):

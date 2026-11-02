@@ -429,6 +429,9 @@ def artifacts(work, formats):
     torrserver_sources = sorted(dest.glob('Nuvio-TorrServer-source-*.tar.gz'))
     if len(torrserver_sources) != 1 or torrserver_sources[0].stat().st_size < 4096:
         raise ValueError('Missing/ambiguous TorrServer source archive in artifacts')
+    innertubex_sources = sorted(dest.glob('Nuvio-InnerTubeX-source-*.tar.gz'))
+    if len(innertubex_sources) != 1 or innertubex_sources[0].stat().st_size < 4096:
+        raise ValueError('Missing/ambiguous InnerTubeX source archive in artifacts')
     for suffix in wanted:
         files = list(dest.glob('*.' + suffix))
         if len(files) != 1 or files[0].stat().st_size < 4096:

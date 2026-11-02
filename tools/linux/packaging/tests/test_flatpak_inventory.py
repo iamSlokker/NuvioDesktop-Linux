@@ -49,6 +49,7 @@ class FlatpakNativeInventoryTest(unittest.TestCase):
         (self.work / 'artifacts').mkdir()
         native_evidence.archive(self.work, self.work / 'artifacts/Nuvio-native-image-inputs-aaaaaaaaaaaa.tar', 1)
         (self.work / 'artifacts/Nuvio-TorrServer-source-aaaaaaaaaaaa.tar.gz').write_bytes(b't' * 4096)
+        (self.work / 'artifacts/Nuvio-InnerTubeX-source-aaaaaaaaaaaa.tar.gz').write_bytes(b'i' * 4096)
         runtime_repo = json.loads((pathlib.Path(verify.__file__).parent / 'flatpak-repo/repo.json').read_text())['runtime_repo']
         # A real bundle header (unsigned CI contract) plus padding past the size floor.
         (self.work / 'artifacts/Nuvio.flatpak').write_bytes(flatpak_bundle.fixture_bundle(
