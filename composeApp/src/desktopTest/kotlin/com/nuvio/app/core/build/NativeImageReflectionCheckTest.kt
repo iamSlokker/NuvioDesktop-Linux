@@ -32,6 +32,10 @@ class NativeImageReflectionCheckTest {
 
     private val allowed = listOf(
         Allowed(
+            "core/build/LinuxRuntimeProbes.kt", "Class.forName(name)",
+            "Self-test over the literal Supabase names just above it; failing here is what the probe is for.",
+        ),
+        Allowed(
             "core/build/AppClassArchive.kt", "Class.forName(\"jdk.internal.misc.CDS\")",
             "JVM class-archive training only; guarded by -XX:+AutoCreateSharedArchive, which the native build never has.",
         ),
