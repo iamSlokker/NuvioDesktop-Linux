@@ -297,6 +297,7 @@ internal fun LazyListScope.appearanceSettingsContent(
                         modifier = Modifier.settingsScrollAnchor(SettingsScrollAnchor.searchKey("start-windowed")),
                         onCheckedChange = DesktopWindowStartupPreference::setStartWindowed,
                     )
+                    if (platformOffersCloseToTray) {
                     SettingsGroupDivider(isTablet = isTablet)
                     SettingsSwitchRow(
                         title = stringResource(Res.string.settings_appearance_close_to_tray),
@@ -306,6 +307,7 @@ internal fun LazyListScope.appearanceSettingsContent(
                         modifier = Modifier.settingsScrollAnchor(SettingsScrollAnchor.searchKey("close-to-tray")),
                         onCheckedChange = DesktopWindowStartupPreference::setCloseToTray,
                     )
+                    }
                     SettingsGroupDivider(isTablet = isTablet)
                 }
                 SettingsSwitchRow(

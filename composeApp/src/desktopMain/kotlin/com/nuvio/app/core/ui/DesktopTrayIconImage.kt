@@ -64,6 +64,8 @@ internal fun loadDesktopWindowIconImages(url: URL): List<Image> =
  * breaks into specks; the drawn copies are area-averaged with the rim one pixel wide at their
  * size. They sit beside the master as `sizes/<name>-<size>.png`.
  */
+internal fun trayIconVariant(url: URL, size: Int): BufferedImage? = iconVariant(url, size)
+
 private fun iconVariant(url: URL, size: Int): BufferedImage? =
     loadPrerenderedVariant(url, size) ?: loadCroppedIconMaster(url)?.let { resampleTo(it, size) }
 
