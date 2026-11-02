@@ -33,7 +33,7 @@ class ReleaseSourcesTest(unittest.TestCase):
         self.engine({'libfoo1': '1', 'libgtk-3-0': '1', 'libunbundled0': '9'})
         for name in ('app.deb', 'app.flatpak', 'app.AppImage', 'Nuvio-source-aaaaaaaaaaaa.tar.gz',
                      'Nuvio-AppImage-runtime-source-y.tar.gz', 'Nuvio-native-image-inputs-aaaaaaaaaaaa.tar',
-                     'Nuvio-TorrServer-source-aaaaaaaaaaaa.tar.gz'):
+                     'Nuvio-TorrServer-source-aaaaaaaaaaaa.tar.gz', 'Nuvio-InnerTubeX-source-aaaaaaaaaaaa.tar.gz'):
             (self.artifacts / name).write_bytes(name.encode())
 
     def runtime(self, packages, builder='e' * 64, recipe='f' * 64):
@@ -138,7 +138,7 @@ class ReleaseSourcesTest(unittest.TestCase):
         self.assertEqual({'app.deb', 'app.flatpak', 'app.AppImage'}, set(written['packages']))
         names = lambda package: {s['name'] for s in written['packages'][package]['sources']}
         common = {'Nuvio-source-aaaaaaaaaaaa.tar.gz', 'Nuvio-media-source-aaaaaaaaaaaa.tar.gz',
-                  'Nuvio-native-image-inputs-aaaaaaaaaaaa.tar', 'Nuvio-TorrServer-source-aaaaaaaaaaaa.tar.gz',
+                  'Nuvio-native-image-inputs-aaaaaaaaaaaa.tar', 'Nuvio-TorrServer-source-aaaaaaaaaaaa.tar.gz', 'Nuvio-InnerTubeX-source-aaaaaaaaaaaa.tar.gz',
                   *(Path(spec['path']).name for spec in rs.graalvm_source_specs())}
         self.assertEqual(common, names('app.deb'))
         self.assertFalse(any('jdk-sources' in name for name in names('app.deb')))

@@ -172,6 +172,12 @@ loopback port before anything else is built. `stage.py` installs it as
 `share/licenses/TorrServer/`. `verify.py` requires it executable and static in every format;
 the tag archive, the vendored modules and the build steps go out as
 `Nuvio-TorrServer-source-<commit12>.tar.gz`, listed for every package in SOURCE-MAP.json.
+
+**InnerTubeX (music).** The second stream resolver is compiled in with `-Pnuvio.innertubex=true`,
+as upstream's CI does, so the build phase needs JitPack. It is GPL-3.0: `innertubex_source.py`
+keeps the pinned tag archive as `Nuvio-InnerTubeX-source-<commit12>.tar.gz` and fails if
+`build.gradle.kts` compiles another version. The "linux innertubex" probe fails a smoke run of an
+image without it, so local preflights need the same flag.
 None of these files are builder-seed inputs.
 
 Canonical layout:

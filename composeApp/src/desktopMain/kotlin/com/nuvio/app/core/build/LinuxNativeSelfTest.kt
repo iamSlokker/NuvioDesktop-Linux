@@ -77,6 +77,13 @@ internal object LinuxNativeSelfTest {
                 "EUC-KR",
             ).onEach { name -> java.nio.charset.Charset.forName(name) }.size.toString()
         }
+
+        // Found by name, so a build without it, or without its metadata, would only show as tracks
+        // that do not play. Local preflights need -Pnuvio.innertubex=true too.
+        probe("linux innertubex") {
+            com.nuvio.app.features.music.MusicStreamFallbacks.active?.name
+                ?: error("not in this image: built without -Pnuvio.innertubex=true, or its metadata is missing")
+        }
         // kotlinx.serialization reaches an object's, a sealed base's or an enum's serializer by
         // reflection. Navigation builds every route's serializer right after sign-in, a screen the
         // signed-out smoke never shows; a native build once crashed there on TabsRoute (2026-10-18).
