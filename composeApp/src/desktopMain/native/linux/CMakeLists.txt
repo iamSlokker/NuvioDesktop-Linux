@@ -48,6 +48,8 @@ target_link_libraries(player_bridge PRIVATE JNI::JNI JNI::AWT Threads::Threads "
     PkgConfig::GTK3 PkgConfig::WEBKITGTK "${X11_LIBRARY}")
 target_link_options(player_bridge PRIVATE "LINKER:-z,defs")
 
+target_sources(player_bridge PRIVATE logind_power.cpp)
+
 get_filename_component(MPV_LIBRARY_DIR "${MPV_LIBRARY}" DIRECTORY)
 option(NUVIO_PACKAGE_BUILD "Use relocatable jpackage Linux library layout" OFF)
 set_target_properties(player_bridge PROPERTIES
@@ -217,6 +219,13 @@ target_compile_features(linux_gamepad_test PRIVATE cxx_std_17)
 target_compile_definitions(linux_gamepad_test PRIVATE NUVIO_GAMEPAD_TEST)
 target_compile_options(linux_gamepad_test PRIVATE -Wall -Wextra -Werror)
 target_include_directories(linux_gamepad_test PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}")
+
+# logind PowerOff against a fake logind on a private bus (tests/logind_power_test.py).
+add_executable(linux_logind_power_probe EXCLUDE_FROM_ALL tests/logind_power_probe.cpp logind_power.cpp)
+target_compile_features(linux_logind_power_probe PRIVATE cxx_std_17)
+target_include_directories(linux_logind_power_probe PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}")
+target_include_directories(linux_logind_power_probe SYSTEM PRIVATE ${JNI_INCLUDE_DIRS})
+target_link_libraries(linux_logind_power_probe PRIVATE PkgConfig::GTK3 Threads::Threads)
 
 # Read-only idle backend lifecycle probe; does not initialize mpv or GTK.
 add_executable(linux_screensaver_idle_probe EXCLUDE_FROM_ALL

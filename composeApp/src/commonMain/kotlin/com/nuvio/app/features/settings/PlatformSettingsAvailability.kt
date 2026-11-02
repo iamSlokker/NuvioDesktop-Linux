@@ -15,7 +15,7 @@ internal expect val platformOffersHdrUiCompensation: Boolean
 /** "Low VRAM Mode": only the Windows player bridge reads it. */
 internal expect val platformOffersLowVramMode: Boolean
 
-/** The screensaver's "Shut down the PC" section: the Linux screensaver only dims. */
+/** The screensaver's "Shut down the PC" section: on Linux, only where logind will do it unasked. */
 internal expect val platformOffersScreensaverShutdown: Boolean
 
 /**
