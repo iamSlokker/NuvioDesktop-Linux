@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="linux_youtube_no_browser">Nebyl nalezen žádný podporovaný prohlížeč. Pro přihlášení k YouTube Music nainstalujte Chrome, Edge, Brave, Chromium, Vivaldi, Operu nebo Firefox.</string>
+    <string name="linux_youtube_flatpak_unavailable">Přihlášení k YouTube otevírá prohlížeč nainstalovaný v systému, ke kterému se verze Nuvia pro Flatpak ze svého sandboxu nedostane, takže zde není k dispozici. Verze .deb a AppImage ho podporují.</string>
+</resources>

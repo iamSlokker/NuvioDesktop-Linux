@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="linux_youtube_no_browser">Fant ingen støttet nettleser. Installer Chrome, Edge, Brave, Chromium, Vivaldi, Opera eller Firefox for å logge på YouTube Music.</string>
+    <string name="linux_youtube_flatpak_unavailable">YouTube-pålogging åpner en nettleser som er installert på systemet, og Flatpak-versjonen av Nuvio når den ikke fra sandkassen sin, så det er ikke tilgjengelig her. Versjonene .deb og AppImage støtter det.</string>
+</resources>

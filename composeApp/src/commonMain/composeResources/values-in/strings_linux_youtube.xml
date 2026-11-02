@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="linux_youtube_no_browser">Tidak ditemukan peramban yang didukung. Pasang Chrome, Edge, Brave, Chromium, Vivaldi, Opera, atau Firefox untuk masuk ke YouTube Music.</string>
+    <string name="linux_youtube_flatpak_unavailable">Masuk ke YouTube membuka peramban yang terpasang di sistem Anda, yang tidak dapat dijangkau Nuvio versi Flatpak dari sandbox-nya, jadi fitur ini tidak tersedia di sini. Versi .deb dan AppImage mendukungnya.</string>
+</resources>

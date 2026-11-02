@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="linux_youtube_no_browser">Desteklenen bir tarayıcı bulunamadı. YouTube Music'te oturum açmak için Chrome, Edge, Brave, Chromium, Vivaldi, Opera veya Firefox kur.</string>
+    <string name="linux_youtube_flatpak_unavailable">YouTube oturumu, sisteminde kurulu bir tarayıcıyı açar; Nuvio'nun Flatpak sürümü korumalı alanından bu tarayıcıya erişemediği için bu özellik burada kullanılamaz. .deb ve AppImage sürümleri bunu destekler.</string>
+</resources>
