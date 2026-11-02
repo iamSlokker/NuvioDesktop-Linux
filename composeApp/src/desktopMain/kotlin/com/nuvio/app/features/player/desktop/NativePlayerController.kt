@@ -197,7 +197,13 @@ internal class NativePlayerController(
         }
     } else null
 
-    private val linuxPiPInput = LinuxPiPSurfaceInput.install(DesktopHostOs.current, host) { handlePlayerEvent("toggle", 0.0) }
+    private val linuxPiPInput = LinuxPiPSurfaceInput.install(
+        DesktopHostOs.current, host,
+        if (DesktopHostOs.current != DesktopHostOs.LINUX) null else LinuxPiPHud(host, { runCatching { snapshot() }.getOrNull() },
+            toggle = { handlePlayerEvent("toggle", 0.0) },
+            exit = { handlePlayerEvent("pictureInPicture", 0.0) },
+            seek = { handlePlayerEvent("scrubFinish", it.toDouble()) }),
+    ) { handlePlayerEvent("toggle", 0.0) }
 
     // Experimental native-Wayland HDR session (Linux main player only; default-off setting).
     @Volatile
