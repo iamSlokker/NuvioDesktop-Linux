@@ -47,6 +47,31 @@ internal data class PortalChooserRequest(
     val filter: PortalFileFilter? = null,
 )
 
+private val DocumentPortalPath = Regex("^/run/user/\\d+/doc/[^/]+/(.+)$")
+
+/**
+ * What to show for a stored path: a document portal path says nothing to the person who picked it, so
+ * this is where it really is when the portal says (xdg-desktop-portal 1.18 and later), else its name.
+ */
+internal fun portalDisplayPath(
+    path: String,
+    hostPath: (String) -> String? = ::documentPortalHostPath,
+): String {
+    val name = DocumentPortalPath.find(path)?.groupValues?.get(1) ?: return path
+    return hostPath(path)?.takeIf { it.isNotBlank() } ?: name
+}
+
+private fun documentPortalHostPath(path: String): String? = runCatching {
+    val view = java.nio.file.Files.getFileAttributeView(
+        java.nio.file.Path.of(path),
+        java.nio.file.attribute.UserDefinedFileAttributeView::class.java,
+    )
+    val value = java.nio.ByteBuffer.allocate(view.size("document-portal.host-path"))
+    view.read("document-portal.host-path", value)
+    value.flip()
+    Charsets.UTF_8.decode(value).toString()
+}.getOrNull()
+
 internal object LinuxFileChooserPortalNative {
     /** Returns `[status, uri, message]`; see file_chooser_portal.h. */
     external fun choose(

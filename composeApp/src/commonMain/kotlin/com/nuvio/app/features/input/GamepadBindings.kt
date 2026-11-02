@@ -40,7 +40,7 @@ expect fun setMouseKeyboard(enabled: Boolean)
 data class GamepadMappingRow(
     val button: GamepadButton,
     val browsingLabel: String,
-    val playerLabel: String,
+    val playerLabel: String?, // Null: this control does nothing during playback here.
 )
 
 /** The current layout. Read-only — per-button rebinding is not part of this phase. */

@@ -78,6 +78,7 @@ import com.nuvio.app.features.locallibrary.LocalCatalog
 import com.nuvio.app.features.locallibrary.LocalDirectoryPicker
 import com.nuvio.app.features.locallibrary.LocalFolder
 import com.nuvio.app.features.locallibrary.LocalFolderType
+import com.nuvio.app.features.locallibrary.SandboxPathPicker
 import com.nuvio.app.features.locallibrary.LocalLibraryRepository
 import com.nuvio.app.features.locallibrary.LocalLibraryPlaybackPreference
 import com.nuvio.app.features.locallibrary.LocalLibraryUiState
@@ -464,7 +465,7 @@ private fun LocalFolderRow(folder: LocalFolder, itemCount: Int, last: Boolean, o
             text = buildAnnotatedString {
                 // Full path, so the drive is always visible — two drives can hold folders with
                 // identical names and the heading already carries the type.
-                append(folder.path)
+                append(SandboxPathPicker.displayPath(folder.path))
                 withStyle(SpanStyle(color = tokens.colors.textMuted)) {
                     append("  \u00B7  ")
                     append(countText)

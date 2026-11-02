@@ -426,7 +426,7 @@ private fun GamepadSection(isTablet: Boolean) {
                     ShortcutRow(
                         shortcut = Shortcut(row.browsingLabel, key(row.button.displayName)),
                         isTablet = isTablet,
-                        description = stringResource(Res.string.settings_shortcuts_gamepad_in_player, row.playerLabel),
+                        description = row.playerLabel?.let { stringResource(Res.string.settings_shortcuts_gamepad_in_player, it) },
                     )
                 }
             }

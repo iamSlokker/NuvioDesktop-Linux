@@ -205,12 +205,11 @@ internal fun desktopSettingsSidebarSubItems(
         }
         SettingsPage.KeyboardShortcuts -> listOf(
             section(SettingsPage.KeyboardShortcuts, Res.string.settings_shortcuts_navigation),
-            // Literal titles, matching KeyboardShortcutsPage's own.
-            sectionTitled(SettingsPage.KeyboardShortcuts, "Player · Playback"),
-            sectionTitled(SettingsPage.KeyboardShortcuts, "Player · Tracks & Panels"),
-            sectionTitled(SettingsPage.KeyboardShortcuts, "Player · Video Enhancement"),
-            sectionTitled(SettingsPage.KeyboardShortcuts, "Controller"),
-            sectionTitled(SettingsPage.KeyboardShortcuts, "Controller · Buttons"),
+            section(SettingsPage.KeyboardShortcuts, Res.string.settings_shortcuts_section_player_playback),
+            section(SettingsPage.KeyboardShortcuts, Res.string.settings_shortcuts_section_player_tracks),
+            section(SettingsPage.KeyboardShortcuts, Res.string.settings_shortcuts_section_player_video),
+            section(SettingsPage.KeyboardShortcuts, Res.string.settings_shortcuts_controller),
+            section(SettingsPage.KeyboardShortcuts, Res.string.settings_shortcuts_controller_buttons),
         )
         else -> emptyList()
     }
