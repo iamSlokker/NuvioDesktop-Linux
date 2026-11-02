@@ -21,6 +21,15 @@ class LinuxFileChooserPortalTest {
     }
 
     @Test
+    fun `a document portal path shows where it really is, or else its name`() {
+        val portal = "/run/user/1000/doc/ab12cd34/Filmes"
+        assertEquals("/home/me/Filmes", portalDisplayPath(portal) { "/home/me/Filmes" })
+        assertEquals("Filmes", portalDisplayPath(portal) { null })
+        assertEquals("Filmes", portalDisplayPath(portal) { "" })
+        assertEquals("/home/me/Filmes", portalDisplayPath("/home/me/Filmes") { error("not a portal path") })
+    }
+
+    @Test
     fun `cancelling is not a failure`() {
         assertEquals(PortalChoice.Cancelled, portalChoice(arrayOf("1", "", "")))
     }

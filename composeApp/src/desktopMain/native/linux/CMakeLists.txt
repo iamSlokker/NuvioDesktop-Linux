@@ -32,7 +32,7 @@ if(NOT EXISTS "${MPV_INCLUDE_DIR}/mpv/client.h" OR
     message(FATAL_ERROR "libmpv headers/library not found; set MPV_ROOT to the mpv installation prefix")
 endif()
 
-add_library(player_bridge SHARED player_bridge.cpp awt_view_resolver.cpp controls_overlay.cpp seek_thumbnails.cpp playback_inhibitor.cpp screensaver_idle.cpp mpris_session.cpp linux_gamepad.cpp window_chrome.cpp window_chrome_jni.cpp pip_geometry_jni.cpp hdr_wayland_session.cpp flatpak_update.cpp flatpak_update_jni.cpp file_chooser_portal.cpp file_chooser_portal_jni.cpp)
+add_library(player_bridge SHARED player_bridge.cpp x11_error_handler_guard.cpp awt_view_resolver.cpp controls_overlay.cpp seek_thumbnails.cpp playback_inhibitor.cpp screensaver_idle.cpp mpris_session.cpp linux_gamepad.cpp window_chrome.cpp window_chrome_jni.cpp pip_geometry_jni.cpp hdr_wayland_session.cpp flatpak_update.cpp flatpak_update_jni.cpp file_chooser_portal.cpp file_chooser_portal_jni.cpp)
 target_sources(player_bridge PRIVATE status_notifier.cpp status_notifier_jni.cpp)
 # Optional X11 idle fallback. Wayland sessions never use an XWayland global idle estimate.
 find_path(XSS_INCLUDE_DIR NAMES X11/extensions/scrnsaver.h)
@@ -258,6 +258,21 @@ target_compile_options(linux_video_output_failure_test PRIVATE -Wall -Wextra -We
 target_include_directories(linux_video_output_failure_test PRIVATE "${MPV_INCLUDE_DIR}" "${CMAKE_CURRENT_SOURCE_DIR}")
 target_link_libraries(linux_video_output_failure_test PRIVATE "${MPV_LIBRARY}")
 set_target_properties(linux_video_output_failure_test PROPERTIES BUILD_RPATH "${MPV_LIBRARY_DIR}")
+
+# An X error after a video output failed to start (x11_error_handler_guard.cpp): real libmpv, loaded the
+# way the JVM loads the bridge, on a real X server.
+add_library(linux_x11_error_guard_probe SHARED EXCLUDE_FROM_ALL tests/x11_error_guard_probe.cpp x11_error_handler_guard.cpp)
+target_compile_features(linux_x11_error_guard_probe PRIVATE cxx_std_17)
+target_compile_options(linux_x11_error_guard_probe PRIVATE -Wall -Wextra -Werror)
+target_include_directories(linux_x11_error_guard_probe PRIVATE "${MPV_INCLUDE_DIR}" "${CMAKE_CURRENT_SOURCE_DIR}")
+target_include_directories(linux_x11_error_guard_probe SYSTEM PRIVATE "${X11_INCLUDE_DIR}")
+target_link_libraries(linux_x11_error_guard_probe PRIVATE ${CMAKE_DL_LIBS} "${MPV_LIBRARY}" "${X11_LIBRARY}")
+set_target_properties(linux_x11_error_guard_probe PROPERTIES BUILD_RPATH "${MPV_LIBRARY_DIR}")
+add_executable(linux_x11_error_guard_test EXCLUDE_FROM_ALL tests/x11_error_guard_test.cpp)
+target_compile_features(linux_x11_error_guard_test PRIVATE cxx_std_17)
+target_compile_options(linux_x11_error_guard_test PRIVATE -Wall -Wextra -Werror)
+target_link_libraries(linux_x11_error_guard_test PRIVATE ${CMAKE_DL_LIBS})
+add_dependencies(linux_x11_error_guard_test linux_x11_error_guard_probe)
 
 # Deterministic chrome policy fixtures; no display, WM, mpv or JNI initialization.
 add_executable(linux_pip_geometry_dispatch_test EXCLUDE_FROM_ALL tests/pip_geometry_dispatch_test.cpp)

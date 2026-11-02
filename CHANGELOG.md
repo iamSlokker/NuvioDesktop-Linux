@@ -95,12 +95,14 @@
 - **Subtitle Style By Track Type** - The ASS size control no longer resizes SRT tracks, an empty font becomes sans-serif, and no default track flashes at the start.
 - **Seeking Like Windows** - Timeline seeks go by keyframe, held arrow keys send far fewer requests, and a seek can no longer run into the end of the file.
 - **Shader Cache** - Compiled shaders are kept between launches, and the stats overlay matches the Windows size.
-- **Low VRAM Mode** - Low VRAM Mode works on Linux and is shown again; Auto reads the GPU's Vulkan memory heaps.
+- **Low VRAM Mode** - Low VRAM Mode works on Linux and is shown again; Auto trims integrated graphics and GPUs with under 2 GB of video memory, as on Windows.
 - **HUD Preferences** - Time remaining, close menu after selecting and the source panel width now survive a new player.
 - **Video Quality Label** - The player shows labels like 4K HDR, and badges know the decoded size.
 - **Player Logs** - The player now writes session logs to the logs folder, with media URLs reduced to their host.
 - **Trailer Quality** - Trailers now prefer 1440p, then 4K, then 1080p.
 - **No Vulkan Message** - With no working Vulkan driver the player stops and says why, and custom mpv options it cannot honour are named on screen.
+- **No Crash After A Failed Video Output** - when the video output could not start, a harmless X error could close the whole app; it now stays open.
+- **Nuvio Engine On Linux** - the in-process P2P engine the Windows app uses now runs on Linux too, with its 2, 5 or 10 GB disk cache, torrent profile and download window. TorrServer stays as the other choice under Settings.
 - **Playback Failure Message** - A failed open now reads as on Windows, which also lets the TorBox node hop work, and a dead torrent says no peers answered.
 - **Go Live Without A Seekable Cache** - Clicking Go live reopens the channel when mpv has nothing seekable, instead of doing nothing.
 - **Flatpak File Chooser** - Folder and file pickers use the system portal.

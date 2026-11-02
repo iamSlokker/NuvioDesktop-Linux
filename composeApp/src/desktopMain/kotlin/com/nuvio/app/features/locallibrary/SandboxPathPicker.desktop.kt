@@ -3,12 +3,15 @@ package com.nuvio.app.features.locallibrary
 import com.nuvio.app.core.i18n.localizedString
 import com.nuvio.app.core.portal.LinuxFileChooserPortal
 import com.nuvio.app.core.portal.PortalFileFilter
+import com.nuvio.app.core.portal.portalDisplayPath
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import nuvio.composeapp.generated.resources.*
 
 internal actual object SandboxPathPicker {
     actual val required: Boolean get() = LinuxFileChooserPortal.applies
+
+    actual fun displayPath(path: String): String = portalDisplayPath(path)
 
     actual suspend fun pickFolder(): String? = withContext(Dispatchers.IO) {
         LinuxFileChooserPortal.chooseFolder(localizedString(Res.string.linux_portal_choose_folder))

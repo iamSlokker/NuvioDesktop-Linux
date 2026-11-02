@@ -6,7 +6,7 @@
 // all, and deband, sigmoid/linear light and peak detection are the other source-sized allocations.
 //
 // Auto asks Vulkan where Windows asks DXGI. An integrated GPU reports its share of system memory here
-// rather than a token pool, so Auto trims it only when that share really is small.
+// where DXGI reports a token pool, so the device type has to say what the size says on Windows.
 
 #include <dlfcn.h>
 #include <algorithm>
@@ -57,7 +57,8 @@ constexpr uint64_t kLinuxLowVramThresholdBytes = 2ull * 1024 * 1024 * 1024;
 // When Vulkan cannot answer the full pipeline stays: one machine crashing is a smaller failure than
 // every machine silently losing scaler quality to a broken probe.
 inline bool linuxLowVramActive(const std::string &mode, const std::optional<LinuxVulkanDevice> &device) {
-    return mode == "on" || (mode == "auto" && device && device->deviceLocalBytes < kLinuxLowVramThresholdBytes);
+    return mode == "on" || (mode == "auto" && device &&
+        (device->type == 1 || device->deviceLocalBytes < kLinuxLowVramThresholdBytes));
 }
 
 namespace linux_low_vram_detail {

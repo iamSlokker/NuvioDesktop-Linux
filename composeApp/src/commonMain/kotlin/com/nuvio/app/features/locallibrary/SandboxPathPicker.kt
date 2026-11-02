@@ -9,4 +9,5 @@ internal expect object SandboxPathPicker {
     val required: Boolean
     suspend fun pickFolder(): String?
     suspend fun pickShaderFile(): String?
+    fun displayPath(path: String): String
 }

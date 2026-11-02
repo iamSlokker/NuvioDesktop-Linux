@@ -1,6 +1,8 @@
 package com.nuvio.app.features.input
 
+import com.nuvio.app.features.player.PlayerShortcutAction
 import com.nuvio.app.features.player.desktop.DesktopHostOs
+import com.nuvio.app.features.settings.platformOffersSvp
 import com.nuvio.app.core.i18n.localizedString
 import kotlinx.coroutines.flow.StateFlow
 import nuvio.composeapp.generated.resources.*
@@ -34,7 +36,10 @@ actual fun gamepadMappingRows(): List<GamepadMappingRow> = GamepadButton.entries
     GamepadMappingRow(
         button = button,
         browsingLabel = describe(binding.browsing),
-        playerLabel = describe(binding.player),
+        // fork:linux - SVP stays Windows-only, so the stick does nothing there during playback.
+        playerLabel = describe(binding.player).takeUnless {
+            binding.player == GamepadTarget.PlayerAction(PlayerShortcutAction.CycleSvp) && !platformOffersSvp
+        },
     )
 }
 

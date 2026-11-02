@@ -328,7 +328,7 @@ class GamepadInputTest {
         assertEquals("Jump to top", rows.getValue(GamepadButton.RightStickUp).browsingLabel)
 
         rows.values.forEach { row ->
-            listOf(row.browsingLabel, row.playerLabel).forEach { label ->
+            listOfNotNull(row.browsingLabel, row.playerLabel).forEach { label ->
                 assertTrue(label.isNotBlank(), "${row.button.displayName} has a blank label")
                 assertTrue(
                     label.none { it in "←→↑↓" },

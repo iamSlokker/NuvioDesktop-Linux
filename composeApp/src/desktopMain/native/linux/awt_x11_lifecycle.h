@@ -3,6 +3,7 @@
 #include <jni.h>
 #include <jawt.h>
 #include <X11/Xlib.h>
+#include "x11_error_handler_guard.h"
 #include <mutex>
 #include <stdexcept>
 
@@ -42,6 +43,7 @@ public:
             env->DeleteLocalRef(wrapper);
             if (!toolkitHandler_ || env->ExceptionCheck())
                 throw std::runtime_error("Unable to preserve the XToolkit error handler.");
+            linuxReplaceFatalX11Default(toolkitHandler_);
         });
     }
 
