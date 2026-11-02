@@ -16,6 +16,10 @@
       "glob": "audiosync/**"
     },
     {
+      "module": "java.base",
+      "glob": "jdk/internal/icu/impl/data/icudt*/nfc.nrm"
+    },
+    {
       "module": "java.desktop",
       "glob": "com/sun/swing/internal/plaf/basic/resources/basic_*.properties"
     },
