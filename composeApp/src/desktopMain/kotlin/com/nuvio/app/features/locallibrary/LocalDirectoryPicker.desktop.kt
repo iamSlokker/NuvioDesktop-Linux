@@ -1,5 +1,6 @@
 package com.nuvio.app.features.locallibrary
 
+import com.nuvio.app.core.portal.LinuxFileChooserPortal
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import javax.swing.JFileChooser
@@ -11,6 +12,9 @@ import com.nuvio.app.core.i18n.localizedString
 internal actual object LocalDirectoryPicker {
 
     actual suspend fun pick(): String? = withContext(Dispatchers.IO) {
+        if (LinuxFileChooserPortal.applies) {
+            return@withContext LinuxFileChooserPortal.chooseFolder(localizedString(Res.string.local_library_choose_a_media_folder))
+        }
         val holder = arrayOfNulls<String>(1)
         val run = Runnable {
             runCatching { UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName()) }

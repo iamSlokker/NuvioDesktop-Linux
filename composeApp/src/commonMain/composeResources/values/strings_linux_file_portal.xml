@@ -1,0 +1,9 @@
+<resources>
+    <!-- fork:linux  The Flatpak's portal file chooser (kept out of strings.xml so upstream merges never touch them). -->
+    <string name="linux_portal_chooser_failed">Could not open the system file chooser. The Flatpak version needs xdg-desktop-portal and a portal backend for your desktop.</string>
+    <string name="linux_portal_choose_folder">Choose folder</string>
+    <string name="linux_portal_choose_folder_description">Opens the system file chooser. The Flatpak version cannot reach a typed path outside its sandbox, so choose the folder here.</string>
+    <string name="linux_portal_add_shader_folder">Add folder…</string>
+    <string name="linux_portal_add_shader_file">Add shader file…</string>
+    <string name="linux_portal_shader_filter">mpv shaders</string>
+</resources>

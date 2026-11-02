@@ -32,7 +32,7 @@ if(NOT EXISTS "${MPV_INCLUDE_DIR}/mpv/client.h" OR
     message(FATAL_ERROR "libmpv headers/library not found; set MPV_ROOT to the mpv installation prefix")
 endif()
 
-add_library(player_bridge SHARED player_bridge.cpp awt_view_resolver.cpp controls_overlay.cpp seek_thumbnails.cpp playback_inhibitor.cpp screensaver_idle.cpp mpris_session.cpp linux_gamepad.cpp window_chrome.cpp window_chrome_jni.cpp pip_geometry_jni.cpp hdr_wayland_session.cpp flatpak_update.cpp flatpak_update_jni.cpp)
+add_library(player_bridge SHARED player_bridge.cpp awt_view_resolver.cpp controls_overlay.cpp seek_thumbnails.cpp playback_inhibitor.cpp screensaver_idle.cpp mpris_session.cpp linux_gamepad.cpp window_chrome.cpp window_chrome_jni.cpp pip_geometry_jni.cpp hdr_wayland_session.cpp flatpak_update.cpp flatpak_update_jni.cpp file_chooser_portal.cpp file_chooser_portal_jni.cpp)
 # Optional X11 idle fallback. Wayland sessions never use an XWayland global idle estimate.
 find_path(XSS_INCLUDE_DIR NAMES X11/extensions/scrnsaver.h)
 if(XSS_INCLUDE_DIR)
@@ -235,6 +235,13 @@ add_executable(linux_flatpak_update_probe EXCLUDE_FROM_ALL tests/flatpak_update_
 target_compile_features(linux_flatpak_update_probe PRIVATE cxx_std_17)
 target_compile_options(linux_flatpak_update_probe PRIVATE -Wall -Wextra -Werror)
 target_link_libraries(linux_flatpak_update_probe PRIVATE PkgConfig::GTK3)
+
+# Private-bus file chooser and file transfer portal contract (tests/file_chooser_portal_test.py).
+add_executable(linux_file_chooser_portal_probe EXCLUDE_FROM_ALL tests/file_chooser_portal_probe.cpp file_chooser_portal.cpp)
+target_compile_features(linux_file_chooser_portal_probe PRIVATE cxx_std_17)
+target_compile_options(linux_file_chooser_portal_probe PRIVATE -Wall -Wextra -Werror)
+target_include_directories(linux_file_chooser_portal_probe SYSTEM PRIVATE "${X11_INCLUDE_DIR}" "${X11_PROTOCOL_INCLUDE_DIR}")
+target_link_libraries(linux_file_chooser_portal_probe PRIVATE PkgConfig::GTK3 "${X11_LIBRARY}")
 
 add_executable(linux_pip_hud_visibility_test EXCLUDE_FROM_ALL tests/pip_hud_visibility_test.cpp)
 target_compile_features(linux_pip_hud_visibility_test PRIVATE cxx_std_17)

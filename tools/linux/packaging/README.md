@@ -297,7 +297,7 @@ claim. Default Flatpak XDG config/data/cache directories persist normally.
 | Discord IPC | Only the host `discord-ipc-0` socket and Flatpak Discord's runtime directory are exposed; absence is nonfatal. A host Discord started after Nuvio is only seen after Nuvio restarts (the single socket is bind-mounted at launch); Flatpak Discord is seen at any time. Other clients are covered only if they publish `discord-ipc-0`. |
 | Game import/launch | Host game folders and launchers are not exposed; no Steam/Proton/host-spawn implementation. Sandbox-visible executables only. |
 | External players | Host PATH/programs and `flatpak run` delegation are unavailable; portal/system opening is conditional and needs acceptance. |
-| Local media, downloads, backup, shaders | Swing pickers are not portal pickers. Only sandbox-visible paths work by default; no broad host access added. A separately designed portal integration/user-granted path is needed for arbitrary files. |
+| Local media, downloads, backup, shaders, pre-show, subtitles, Discover files | Every picker goes through the FileChooser portal (`LinuxFileChooserPortal.kt`), which grants what the user chose as a persistent `/run/user/<uid>/doc` path; no filesystem permission is added. Typed paths outside the sandbox still cannot work. |
 | MPRIS | Explicit `org.mpris.MediaPlayer2.Nuvio` ownership; desktop/player acceptance still required. |
 | Notifications | Desktop OS notifications remain unimplemented; standard portal availability does not add them. |
 | Inhibition/screensaver | Existing portal is preferred. ScreenSaver allowed; logind fallback is not granted and GNOME/Mutter-specific probes are not exposed. App-idle fallback and generic Wayland limitations remain. |
