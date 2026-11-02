@@ -415,6 +415,12 @@ struct LinuxControlsOverlay::State : std::enable_shared_from_this<State> {
             std::fprintf(stderr, "Linux controls load failed: %s\n", error->message);
             return FALSE;
         }), nullptr);
+        // A WebProcess that dies (its Bubblewrap sandbox refused to start, say) only leaves an empty
+        // HUD behind, so at least leave a trace of why.
+        g_signal_connect(view, "web-process-terminated", G_CALLBACK(+[](WebKitWebView *,
+            WebKitWebProcessTerminationReason reason, gpointer) {
+            std::fprintf(stderr, "Linux controls: WebProcess terminated (reason %d)\n", static_cast<int>(reason));
+        }), nullptr);
         g_signal_connect(view, "button-press-event", G_CALLBACK(+[](GtkWidget *widget, GdkEventButton *,
             gpointer) -> gboolean {
             // Internal WebView focus is enough for mouse controls. Leave X11
