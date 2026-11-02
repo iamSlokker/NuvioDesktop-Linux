@@ -1,0 +1,6 @@
+<resources>
+    <string name="linux_appimage_links_section">Ligações</string>
+    <string name="linux_appimage_links_title">Abrir ligações nuvio:// com este AppImage</string>
+    <string name="linux_appimage_links_description">Os convites de Watch Party e as ligações "Abrir no Nuvio" abrem este AppImage. Adiciona uma entrada oculta só para o teu utilizador, e desligar esta opção remove-a. Mantém o AppImage no mesmo sítio, ou abre-o uma vez depois de o mudares.</string>
+    <string name="linux_appimage_links_failed">Não foi possível alterar o programa das ligações nuvio://: %1$s</string>
+</resources>

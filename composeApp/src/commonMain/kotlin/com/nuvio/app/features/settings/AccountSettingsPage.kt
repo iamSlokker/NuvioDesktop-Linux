@@ -523,6 +523,8 @@ private fun AccountSettingsBody(
                 }
             }
         }
+
+        NuvioLinkRegistrationSection(isTablet = isTablet)
     }
 
     pendingPortableMode?.let { enable ->

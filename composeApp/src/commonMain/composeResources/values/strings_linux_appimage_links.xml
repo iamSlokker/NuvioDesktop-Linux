@@ -1,0 +1,7 @@
+<resources>
+    <!-- fork:linux  The AppImage nuvio:// link registration (kept out of strings.xml so upstream merges never touch them). -->
+    <string name="linux_appimage_links_section">Links</string>
+    <string name="linux_appimage_links_title">Open nuvio:// links with this AppImage</string>
+    <string name="linux_appimage_links_description">Watch Party invites and "Open in Nuvio" links open this AppImage. Adds a hidden desktop entry for your user only, and turning this off removes it. Keep the AppImage in the same place, or start it once after moving it.</string>
+    <string name="linux_appimage_links_failed">Could not change the nuvio:// link handler: %1$s</string>
+</resources>
