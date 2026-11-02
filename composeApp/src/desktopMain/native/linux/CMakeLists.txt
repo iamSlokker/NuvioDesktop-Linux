@@ -133,6 +133,14 @@ target_compile_features(linux_live_cache_seek_test PRIVATE cxx_std_17)
 target_compile_options(linux_live_cache_seek_test PRIVATE -Wall -Wextra -Werror)
 target_include_directories(linux_live_cache_seek_test PRIVATE "${MPV_INCLUDE_DIR}" "${CMAKE_CURRENT_SOURCE_DIR}")
 
+# Windows' seek policy (seek_coalesce.h): keyframes, coalescing, end guard. Real libmpv, null outputs.
+add_executable(linux_seek_coalesce_test EXCLUDE_FROM_ALL tests/seek_coalesce_test.cpp)
+target_compile_features(linux_seek_coalesce_test PRIVATE cxx_std_17)
+target_compile_options(linux_seek_coalesce_test PRIVATE -Wall -Wextra -Werror)
+target_include_directories(linux_seek_coalesce_test PRIVATE "${MPV_INCLUDE_DIR}" "${CMAKE_CURRENT_SOURCE_DIR}")
+target_link_libraries(linux_seek_coalesce_test PRIVATE "${MPV_LIBRARY}")
+set_target_properties(linux_seek_coalesce_test PROPERTIES BUILD_RPATH "${MPV_LIBRARY_DIR}")
+
 # HUD label map kept aside from coalesced controls payloads (hud_labels_carry.h): pure strings.
 add_executable(linux_hud_labels_carry_test EXCLUDE_FROM_ALL tests/hud_labels_carry_test.cpp)
 target_compile_features(linux_hud_labels_carry_test PRIVATE cxx_std_17)

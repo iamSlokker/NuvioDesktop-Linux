@@ -10,6 +10,7 @@
 #include "player_session_options.h"
 #include "hdr_wayland_session.h"
 #include "live_cache_seek.h"
+#include "seek_coalesce.h"
 #include "auto_crop.h"
 #include "speech_spot.h"
 #include "subtitle_add.h"
@@ -231,6 +232,7 @@ struct Player {
     bool liveHrSeekOffsetApplied = false;
     double liveSeekTargetSeconds = -1.0;
     std::chrono::steady_clock::time_point liveSeekIssuedAt{};
+    LinuxSeekCoalescer seeks; // Windows' seek policy (seek_coalesce.h); changed under operations.
     LinuxSubtitleAdds subtitleAdds; // Addon subtitles added off the caller's thread, under operations.
     LinuxSubtitleAssMode subtitleAssMode; // sub-ass-override per selected track, under operations.
     bool ownsX11Lifetime = false;
@@ -380,6 +382,7 @@ struct Player {
         double position = number("time-pos");
         double buffered = number("demuxer-cache-time", -1.0);
         if (buffered < position) buffered = position + number("demuxer-cache-duration");
+        if (seeks.deferred() >= 0.0) position = seeks.deferred();
         bool paused = flag("pause");
         bool loading = !fileReady || flag("seeking") || flag("paused-for-cache") ||
             (flag("core-idle") && !paused && !ended && !flag("eof-reached"));
@@ -401,7 +404,8 @@ struct Player {
         attached.set_value(ready);
         if (!ready) return;
         while (!stopping) {
-            mpv_event *event = mpv_wait_event(mpv, 0.2);
+            // A coalesced seek is due by the clock, so it needs a finer tick than the idle wait.
+            mpv_event *event = mpv_wait_event(mpv, seeks.deferred() >= 0.0 ? 0.05 : 0.2);
             if (stopping) break;
             LinuxHttpRecoveryEvents::Result translated;
             bool audioRecovered = false;
@@ -427,8 +431,10 @@ struct Player {
                 }
                 if (translated.started) {
                     fileReady = ended = false;
+                    seeks.reset();
                 }
-                if (translated.loaded) { fileReady = true; ended = false; }
+                if (translated.loaded) { fileReady = true; ended = false; seeks.reset(); }
+                if (const auto due = seeks.takeDue(LinuxSeekCoalescer::Clock::now())) issueStepSeek(*due);
                 if (translated.restarted) ended = false;
                 if (event->event_id == MPV_EVENT_COMMAND_REPLY && LinuxSubtitleAdds::owns(event->reply_userdata)) {
                     std::string url;
@@ -557,6 +563,18 @@ struct Player {
             lastVideoHdr = hdr;
             emit(env, "videoParams", hdr);
         }
+    }
+
+    // Never throws: the event loop's trailing seek has no caller to report to.
+    void issueStepSeek(double target) {
+        const auto now = LinuxHttpRecoveryEvents::Clock::now();
+        const int result = recoveryEvents.commandSeek(mpv, std::llround(target * 1000.0), kLinuxStepSeekMode, 0.0, now);
+        if (result < 0) {
+            std::fprintf(stderr, "Linux coalesced seek: %s\n", mpv_error_string(result));
+            return;
+        }
+        ended = false;
+        seeks.issued(target, now);
     }
 
     double number(const char *name, double unavailable = 0.0) {
@@ -1087,10 +1105,28 @@ JNI_METHOD(void, setPaused)(JNIEnv *env, jobject, jlong handle, jboolean paused)
     });
 }
 JNI_METHOD(void, seekTo)(JNIEnv *env, jobject, jlong handle, jlong position) {
-    withPlayer(env, handle, [&](Player &p) { seek(p, std::max<jlong>(0, position), "absolute+exact"); });
+    withPlayer(env, handle, [&](Player &p) {
+        const double target = LinuxSeekCoalescer::clamp(static_cast<double>(position) / 1000.0, p.number("duration"));
+        seek(p, std::llround(target * 1000.0), kLinuxTimelineSeekMode);
+        p.seeks.issued(target, LinuxSeekCoalescer::Clock::now());
+    });
 }
 JNI_METHOD(void, seekBy)(JNIEnv *env, jobject, jlong handle, jlong offset) {
-    withPlayer(env, handle, [&](Player &p) { seek(p, offset, "relative+exact"); });
+    withPlayer(env, handle, [&](Player &p) {
+        LinuxSeekCoalescer::StepInput input;
+        input.offsetSeconds = static_cast<double>(offset) / 1000.0;
+        input.duration = p.number("duration");
+        input.seeking = p.flag("seeking");
+        input.cachedUntil = p.number("demuxer-cache-time", -1.0);
+        input.localFile = linuxSeekSourceIsLocal(p.speechSource);
+        const double position = p.number("time-pos", -1.0);
+        if (position >= 0.0) input.timePos = position;
+        const auto now = LinuxSeekCoalescer::Clock::now();
+        const auto step = p.seeks.step(input, now);
+        if (!step || step->deferred) return;
+        seek(p, std::llround(step->target * 1000.0), kLinuxStepSeekMode);
+        p.seeks.issued(step->target, now);
+    });
 }
 JNI_METHOD(void, seekToCachedLiveEdge)(JNIEnv *env, jobject, jlong handle, jlong cushionMs) {
     withPlayer(env, handle, [&](Player &p) {
@@ -1151,7 +1187,10 @@ JNI_METHOD(void, setMute)(JNIEnv *env, jobject, jlong handle, jboolean muted) {
     });
 }
 JNI_METHOD(jlong, positionMs)(JNIEnv *env, jobject, jlong handle) {
-    return withPlayer(env, handle, [](Player &p) { return milliseconds(p.number("time-pos")); });
+    return withPlayer(env, handle, [](Player &p) {
+        const double deferred = p.seeks.deferred();
+        return milliseconds(deferred >= 0.0 ? deferred : p.number("time-pos"));
+    });
 }
 JNI_METHOD(jlong, durationMs)(JNIEnv *env, jobject, jlong handle) {
     return withPlayer(env, handle, [](Player &p) { return milliseconds(p.number("duration")); });
