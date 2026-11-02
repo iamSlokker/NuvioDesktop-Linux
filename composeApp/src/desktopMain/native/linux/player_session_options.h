@@ -31,6 +31,24 @@ inline LinuxMpvOptionList linuxX11EmbeddingOptions(long long canvasXid) {
     };
 }
 
+// Windows' HDR baseline (startMpv), applied before shared and custom options, so those still win.
+// HDR reaches the embedded player's SDR surface through these. Windows also sets
+// tone-mapping-mode=hybrid, which mpv 0.41 no longer has: that option is rejected on both platforms.
+inline LinuxMpvOptionList linuxToneMappingDefaults() {
+    return {
+        {"target-colorspace-hint", "auto"},
+        {"target-colorspace-hint-mode", "target"},
+        {"target-contrast", "auto"},
+        {"tone-mapping", "bt.2446a"},
+        {"tone-mapping-param", "0.5"},
+        {"gamut-mapping-mode", "perceptual"},
+        {"hdr-compute-peak", "yes"},
+        {"hdr-peak-percentile", "99.8"},
+        {"hdr-peak-decay-rate", "20"},
+        {"hdr-contrast-recovery", "0.3"},
+    };
+}
+
 struct LinuxHdrSessionConfig {
     // Exact Vulkan device name selected by the capability policy; empty keeps mpv's choice.
     std::string vulkanDevice;

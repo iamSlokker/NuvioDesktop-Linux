@@ -977,14 +977,22 @@ internal class NativePlayerController(
         val current = PlayerSettingsRepository.uiState.value.desktopHdrMode
         val next = modes[(modes.indexOf(current) + 1) % modes.size]
         PlayerSettingsRepository.setDesktopHdrMode(next)
-        showPresetPill(localizedString(Res.string.player_hud_hdr_mode), localizedString(next.labelRes))
+        showPresetPill(localizedString(Res.string.player_hud_hdr_mode), hdrModePillValue(next))
         linuxHdr?.onHdrModeChanged(next)
+    }
+
+    private fun hdrModePillValue(mode: DesktopHdrMode): String = localizedString(mode.labelRes).let { label ->
+        if (DesktopHostOs.current == DesktopHostOs.LINUX) {
+            linuxHdrModePillValue(mode, label, LinuxHdrSessionSettings.enabledState.value)
+        } else {
+            label
+        }
     }
 
     private fun selectDesktopHdrMode(index: Int) {
         DesktopHdrMode.entries.getOrNull(index)?.let { mode ->
             PlayerSettingsRepository.setDesktopHdrMode(mode)
-            showPresetPill(localizedString(Res.string.player_hud_hdr_mode), localizedString(mode.labelRes))
+            showPresetPill(localizedString(Res.string.player_hud_hdr_mode), hdrModePillValue(mode))
             linuxHdr?.onHdrModeChanged(mode)
         }
     }

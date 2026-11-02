@@ -659,6 +659,7 @@ void applyExtraMpvOptions(mpv_handle *mpv, const std::vector<std::string> &optio
             {"stream-buffer-size", "1MiB"}, {"hr-seek", "no"}, {"volume-max", "200"},
         };
         for (const auto &entry : defaults) apply(entry.first, entry.second, true);
+        for (const auto &entry : linuxToneMappingDefaults()) apply(entry.first, entry.second, true);
         if (source.find("://") != std::string::npos && source.rfind("file://", 0) != 0) {
             apply("stream-lavf-o", "reconnect=1,reconnect_streamed=1,reconnect_delay_max=5", true);
         }

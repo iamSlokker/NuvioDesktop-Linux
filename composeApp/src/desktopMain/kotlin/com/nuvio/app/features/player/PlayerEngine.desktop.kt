@@ -54,6 +54,8 @@ import com.nuvio.app.features.player.desktop.DesktopHostOs
 import com.nuvio.app.features.player.desktop.DesktopPlayerLaunchShield
 import com.nuvio.app.features.player.desktop.NativePlayerController
 import com.nuvio.app.features.player.desktop.applyLinuxBaseVideoProfile
+import com.nuvio.app.features.player.desktop.linuxColorGradeApplies
+import com.nuvio.app.features.player.desktop.linuxEmbeddedHdrInfoLabel
 import com.nuvio.app.features.player.desktop.applyLinuxShaderProfile
 import com.nuvio.app.features.preroll.PostShowController
 import com.nuvio.app.features.preroll.PostShowKey
@@ -1100,11 +1102,12 @@ private fun NativePlayerSurface(
                         val shaderLabel = shader?.label
                         controller.setPlaybackInfo(
                             session = "$playbackAttemptId:${sourceUrl.hashCode()}",
-                            hdrLabel = null,
+                            hdrLabel = if (settings.desktopMpvConfigMode == DesktopMpvConfigMode.Full) null
+                                else linuxEmbeddedHdrInfoLabel(videoState.isHdr),
                             svpActive = false,
                             videoLabel = when {
                                 settings.desktopMpvConfigMode == DesktopMpvConfigMode.Full -> ""
-                                videoState.isHdr == false -> localizedString(settings.desktopColorProfile.labelRes)
+                                linuxColorGradeApplies(settings.desktopHdrMode, videoState.isHdr) -> localizedString(settings.desktopColorProfile.labelRes)
                                 else -> localizedString(DesktopColorProfile.Neutral.labelRes)
                             },
                             shaderLabel = shaderLabel,

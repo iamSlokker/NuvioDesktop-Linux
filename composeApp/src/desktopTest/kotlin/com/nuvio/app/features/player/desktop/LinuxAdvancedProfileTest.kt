@@ -11,7 +11,7 @@ class LinuxAdvancedProfileTest {
         base.copy(desktopMpvPropertyOverrides = mapOf(*overrides))
 
     @Test fun defaultsKeepTheBridgeBaselineAndLeaveInterpolationAlone() {
-        assertEquals(listOf("deband-grain" to "0", "target-contrast" to "auto"), linuxAdvancedProfileProperties(base))
+        assertEquals(listOf("deband-grain" to "0"), linuxAdvancedProfileProperties(base))
     }
 
     @Test fun filmGrainDisplayTypeAndInterpolationAreApplied() {
@@ -21,7 +21,6 @@ class LinuxAdvancedProfileTest {
             DESKTOP_INTERPOLATION_OVERRIDE_KEY to "yes",
         )).toMap()
         assertEquals("32", properties["deband-grain"])
-        assertEquals("inf", properties["target-contrast"])
         assertEquals("display-resample", properties["video-sync"])
         assertEquals("yes", properties["interpolation"])
     }

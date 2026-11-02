@@ -147,6 +147,14 @@ target_include_directories(linux_auto_crop_test PRIVATE "${MPV_INCLUDE_DIR}" "${
 target_link_libraries(linux_auto_crop_test PRIVATE "${MPV_LIBRARY}")
 set_target_properties(linux_auto_crop_test PROPERTIES BUILD_RPATH "${MPV_LIBRARY_DIR}")
 
+# Windows' HDR baseline and the runtime target modes against real libmpv with null outputs.
+add_executable(linux_tone_mapping_test EXCLUDE_FROM_ALL tests/tone_mapping_test.cpp)
+target_compile_features(linux_tone_mapping_test PRIVATE cxx_std_17)
+target_compile_options(linux_tone_mapping_test PRIVATE -Wall -Wextra -Werror)
+target_include_directories(linux_tone_mapping_test PRIVATE "${MPV_INCLUDE_DIR}" "${CMAKE_CURRENT_SOURCE_DIR}")
+target_link_libraries(linux_tone_mapping_test PRIVATE "${MPV_LIBRARY}")
+set_target_properties(linux_tone_mapping_test PROPERTIES BUILD_RPATH "${MPV_LIBRARY_DIR}")
+
 # Subtitle sync's audio decodes (speech_spot.h) with real libmpv: ao=pcm to a file, no device.
 add_executable(linux_speech_spot_test EXCLUDE_FROM_ALL tests/speech_spot_test.cpp)
 target_compile_features(linux_speech_spot_test PRIVATE cxx_std_17)
