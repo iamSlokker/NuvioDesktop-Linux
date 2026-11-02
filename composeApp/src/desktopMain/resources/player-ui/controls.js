@@ -5778,7 +5778,9 @@ iptvLiveBadge.addEventListener("click", event => {
   // any pause in the provider's delivery longer than the gap left shows up as a stall. The bridge
   // picks the target from mpv's own seekable cache range rather than this side's bufferedMs; a
   // seek past that range threw the cache away and restarted from the connection.
-  send("goLive", IPTV_GO_LIVE_CUSHION_MS);
+  // fork:linux - a click may reopen the channel when the cache cannot be seeked; the automatic jumps
+  // above stay plain goLive, or a channel with no seekable range would reopen itself for ever.
+  send(linuxHost ? "goLiveUser" : "goLive", IPTV_GO_LIVE_CUSHION_MS);
 });
 
 // Typing a channel number: digits collect in a box and the number is sent after a pause.

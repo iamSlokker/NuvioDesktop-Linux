@@ -1094,6 +1094,31 @@ JNI_METHOD(void, seekToCachedLiveEdge)(JNIEnv *env, jobject, jlong handle, jlong
         if (target >= 0.0) issueCachedSeek(p, cache, target);
     });
 }
+// Go live from the user's click (Linux only; the shared method above stays as Windows has it). Says
+// when the cache cannot be seeked, so Kotlin can reopen the channel. Returns a LinuxGoLiveStep.
+extern "C" JNIEXPORT jint JNICALL
+Java_com_nuvio_app_features_player_desktop_LinuxGoLiveNative_goLive(JNIEnv *env, jobject, jlong handle, jlong cushionMs) {
+    return withPlayer(env, handle, [&](Player &p) -> jint {
+        const double timePos = p.number("time-pos", -1.0);
+        const auto cache = liveCacheState(p);
+        const auto step = linuxGoLiveStep(cache, timePos, cushionMs);
+        if (step == LinuxGoLiveStep::Seek) {
+            issueCachedSeek(p, cache, linuxCachedLiveEdgeTarget(cache, timePos, cushionMs));
+        } else if (step == LinuxGoLiveStep::NoSeekableRange) {
+            // Which of mpv's conditions failed on this channel: the streams it reads and its own view.
+            std::string tracks;
+            const int64_t count = p.integer("track-list/count");
+            for (int64_t index = 0; index < count; ++index) {
+                const std::string prefix = "track-list/" + std::to_string(index) + "/";
+                if (!p.flag((prefix + "selected").c_str())) continue;
+                tracks += p.stringProperty((prefix + "type").c_str()) + ":" + p.stringProperty((prefix + "codec").c_str()) + " ";
+            }
+            std::fprintf(stderr, "Linux go live: no seekable range pos=%.2f cacheEnd=%.2f tracks=%s state=%s\n", timePos,
+                cache.cacheEnd, tracks.c_str(), p.stringProperty("demuxer-cache-state").c_str());
+        }
+        return static_cast<jint>(step);
+    });
+}
 JNI_METHOD(void, seekWithinCacheTo)(JNIEnv *env, jobject, jlong handle, jlong positionMs) {
     withPlayer(env, handle, [&](Player &p) { seekWithinCache(p, (double)positionMs / 1000.0, "live seek"); });
 }

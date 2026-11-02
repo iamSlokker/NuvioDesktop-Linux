@@ -249,6 +249,9 @@ internal fun PlayerScreenRuntime.tryNextIptvFormat(reason: String): Boolean {
 private fun failedFormat(url: String): String =
     IptvPlaybackSession.active.value?.candidates?.firstOrNull { it.url == url }?.format ?: "?"
 
+/** Go live's way back to the edge when the buffer cannot be seeked: only a new connection can do it. */
+internal const val IPTV_REOPEN_FOR_LIVE_EVENT = "iptvReopenForLive"
+
 /** Opens [url] as a fresh attempt; the same URL again is a reconnect (the engine keys on the attempt). */
 private fun PlayerScreenRuntime.reopenIptvSource(url: String) {
     activeInitialPositionMs = 0L
@@ -285,6 +288,11 @@ internal fun PlayerScreenRuntime.handleIptvControlsEvent(type: String, value: Do
             IptvGroups.ids(content).getOrNull(value.toInt())?.let { iptvPanelGroup = it }
         }
         "iptvPanelPlay" -> playFromIptvPanel(value.toInt())
+        IPTV_REOPEN_FOR_LIVE_EVENT -> {
+            IptvPlaybackLog.i { "go live with no seekable cache; reopening the channel" }
+            playbackSourceFailureActive = false
+            reopenIptvSource(activeSourceUrl)
+        }
         else -> return false
     }
     return true

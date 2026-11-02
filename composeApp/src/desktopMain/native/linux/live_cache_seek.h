@@ -110,3 +110,18 @@ inline double linuxCachedLiveEdgeTarget(const LinuxLiveCacheState &cache, double
     if (target < 0.0 || target <= timePos + kLinuxLiveEdgeMinJumpSeconds) return -1.0;
     return target;
 }
+
+// What Go live can do. mpv only reports a seekable range when every selected audio and video stream
+// has two keyframes in it and the streams' ranges overlap (update_seek_ranges in demux.c), so a channel
+// that never flags keyframes, or a selected stream that delivers nothing, leaves the cache full and
+// unseekable: ranges=0 with a minute cached. A seek there would miss the cache and fall through to the
+// connection, which cannot seek, so the only way back to the edge is a new connection.
+enum class LinuxGoLiveStep { Seek = 0, AlreadyLive = 1, NoSeekableRange = 2 };
+
+inline LinuxGoLiveStep linuxGoLiveStep(const LinuxLiveCacheState &cache, double timePos, long long cushionMs) {
+    if (linuxCachedLiveEdgeTarget(cache, timePos, cushionMs) >= 0.0) return LinuxGoLiveStep::Seek;
+    // Unknown position or end: nothing shows the player is behind, so nothing to reopen for.
+    if (!cache.ranges.empty() || cache.cacheEnd <= 0.0 || timePos < 0.0) return LinuxGoLiveStep::AlreadyLive;
+    const double behind = cache.cacheEnd - timePos - (double)std::max(0LL, cushionMs) / 1000.0;
+    return behind > kLinuxLiveEdgeMinJumpSeconds ? LinuxGoLiveStep::NoSeekableRange : LinuxGoLiveStep::AlreadyLive;
+}
