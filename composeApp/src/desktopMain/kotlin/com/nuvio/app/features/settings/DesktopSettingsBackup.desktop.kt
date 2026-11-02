@@ -21,6 +21,8 @@ import java.util.Properties
 import java.util.zip.ZipEntry
 import java.util.zip.ZipInputStream
 import java.util.zip.ZipOutputStream
+import com.nuvio.app.core.portal.LinuxFileChooserPortal
+import com.nuvio.app.core.portal.PortalFileFilter
 import javax.swing.JFileChooser
 import javax.swing.JOptionPane
 import javax.swing.UIManager
@@ -287,6 +289,8 @@ private fun settingsPropertiesForBackup(file: Path, includeCredentials: Boolean)
 
 // Swing's default look-and-feel has no UI classes in the packaged runtime, so a chooser or option
 // pane built before one is installed throws "no ComponentUI class". The other pickers do the same.
+private val PortalBackupFilter = PortalFileFilter("Nuvio settings backup (*.zip)", listOf("*.zip"))
+
 private fun installSystemLookAndFeel() {
     runCatching { UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName()) }
 }
@@ -294,7 +298,15 @@ private fun installSystemLookAndFeel() {
 internal actual object DesktopSettingsBackup {
     actual fun create(includeCredentials: Boolean): DesktopSettingsBackupResult {
         installSystemLookAndFeel()
+        val portal = LinuxFileChooserPortal.applies
         val chosen = runCatching {
+            if (portal) {
+                return@runCatching LinuxFileChooserPortal.saveFile(
+                    title = localizedString(Res.string.settings_backup_back_up_nuvio_settings),
+                    suggestedName = "nuvio-settings-${LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd-HHmmss"))}.zip",
+                    filter = PortalBackupFilter,
+                )?.let { Path.of(it) }
+            }
             val chooser = JFileChooser().apply {
                 dialogTitle = localizedString(Res.string.settings_backup_back_up_nuvio_settings)
                 fileFilter = FileNameExtensionFilter("Nuvio settings backup (*.zip)", "zip")
@@ -308,7 +320,8 @@ internal actual object DesktopSettingsBackup {
                 localizedString(Res.string.settings_backup_picker_failed, error.message ?: error::class.simpleName.orEmpty()),
             )
         } ?: return DesktopSettingsBackupResult.Cancelled
-        val destination = if (chosen.extension.equals("zip", ignoreCase = true)) {
+        // In the Flatpak, exactly as returned: the document portal only keeps the name the user picked.
+        val destination = if (portal || chosen.extension.equals("zip", ignoreCase = true)) {
             chosen
         } else {
             chosen.resolveSibling("${chosen.fileName}.zip")
@@ -365,7 +378,8 @@ internal actual object DesktopSettingsBackup {
                 Files.deleteIfExists(temporary)
                 throw error
             }
-            DesktopSettingsBackupResult.Saved(destination.toString())
+            // A document portal path means nothing to the reader; the name is what they chose.
+            DesktopSettingsBackupResult.Saved(if (portal) destination.fileName.toString() else destination.toString())
         }.getOrElse { error ->
             DesktopSettingsBackupResult.Failed(error.message ?: localizedString(Res.string.settings_backup_unable_to_create_settings_backup))
         }
@@ -374,6 +388,11 @@ internal actual object DesktopSettingsBackup {
     actual fun import(): DesktopSettingsImportResult {
         installSystemLookAndFeel()
         val selected = runCatching {
+            if (LinuxFileChooserPortal.applies) {
+                return@runCatching LinuxFileChooserPortal
+                    .openFile(localizedString(Res.string.settings_backup_import_nuvio_settings), PortalBackupFilter)
+                    ?.let { java.io.File(it) }
+            }
             val chooser = JFileChooser(DesktopStorage.rootDir.toFile()).apply {
                 dialogTitle = localizedString(Res.string.settings_backup_import_nuvio_settings)
                 fileFilter = FileNameExtensionFilter("Nuvio settings backup (*.zip)", "zip")

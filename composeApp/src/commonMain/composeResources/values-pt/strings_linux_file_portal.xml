@@ -1,0 +1,8 @@
+<resources>
+    <string name="linux_portal_chooser_failed">Não foi possível abrir o seletor de ficheiros do sistema. A versão Flatpak precisa do xdg-desktop-portal e de um backend de portal para o teu ambiente de trabalho.</string>
+    <string name="linux_portal_choose_folder">Escolher pasta</string>
+    <string name="linux_portal_choose_folder_description">Abre o seletor de ficheiros do sistema. A versão Flatpak não chega a um caminho escrito à mão fora do sandbox, por isso escolhe a pasta aqui.</string>
+    <string name="linux_portal_add_shader_folder">Adicionar pasta…</string>
+    <string name="linux_portal_add_shader_file">Adicionar ficheiro de shader…</string>
+    <string name="linux_portal_shader_filter">Shaders do mpv</string>
+</resources>

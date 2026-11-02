@@ -329,6 +329,7 @@ internal fun LazyListScope.preshowSettingsContent(isTablet: Boolean) {
                     isTablet = isTablet,
                     onSave = PreshowSettings::setLocalFolder,
                 )
+                SandboxFolderRow(isTablet = isTablet, onChosen = PreshowSettings::setLocalFolder)
                 listOf(
                     "cinema_intro" to "Cinema intro clips",
                     "bumper" to "Bumper clips",

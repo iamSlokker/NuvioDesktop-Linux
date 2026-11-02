@@ -4595,6 +4595,7 @@ private fun CustomShaderPathsDialog(
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
+                SandboxShaderPathButtons { path -> value = appendPathLine(value, path) }
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.End,

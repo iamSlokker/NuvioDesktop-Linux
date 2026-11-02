@@ -502,3 +502,13 @@ cmake --build composeApp/build/native/linux --target linux_flatpak_update_probe
 python3 composeApp/src/desktopMain/native/linux/tests/flatpak_update_test.py \
   composeApp/build/native/linux/linux_flatpak_update_probe
 ```
+
+The Flatpak's pickers (and the FileTransfer call a file drop needs) go through `file_chooser_portal.cpp`
+(`org.freedesktop.portal.FileChooser` and `FileTransfer`; JNI in
+`file_chooser_portal_jni.cpp`). The same kind of private-bus suite replays their outcomes:
+
+```sh
+cmake --build composeApp/build/native/linux --target linux_file_chooser_portal_probe
+python3 composeApp/src/desktopMain/native/linux/tests/file_chooser_portal_test.py \
+  composeApp/build/native/linux/linux_file_chooser_portal_probe
+```
