@@ -1,0 +1,5 @@
+<resources>
+    <!-- fork:linux  The AppImage HUD sandbox check (kept out of strings.xml so upstream merges never touch them). -->
+    <string name="linux_appimage_hud_blocked_title">The player's on-screen controls cannot start</string>
+    <string name="linux_appimage_hud_blocked">This system blocks the user namespaces that the AppImage's web sandbox needs, so the controls would stay empty. Install the .deb or Flatpak version, or allow user namespaces for this AppImage (on Ubuntu, with an AppArmor profile). Details: %1$s</string>
+</resources>

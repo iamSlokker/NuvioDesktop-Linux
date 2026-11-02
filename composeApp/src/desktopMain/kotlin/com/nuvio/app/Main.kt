@@ -496,6 +496,7 @@ fun main(args: Array<String>) {
     com.nuvio.app.features.settings.applyPendingSettingsImport(com.nuvio.app.core.storage.DesktopStorage.rootDir)
     // Not from a nativeSmoke launch: it would point the user's nuvio:// links at the build folder.
     if (!com.nuvio.app.core.build.NativeImageSupport.selfTestRequested) DesktopUrlScheme.registerInBackground()
+    if (!com.nuvio.app.core.build.NativeImageSupport.selfTestRequested) com.nuvio.app.features.player.desktop.LinuxAppImageHudSandbox.checkInBackground()
     // Held as the pending link until the app's navigation is up to take it. Straight to the link
     // queue rather than handleAppUrl, whose Trakt-callback check loads profile stores this early.
     launchUrl?.let(com.nuvio.app.core.deeplink.AppDeepLinkRepository::handleUrl)
