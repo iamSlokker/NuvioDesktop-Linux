@@ -56,6 +56,15 @@ internal object LinuxNativeSelfTest {
             LinuxInhibitionNative.release(handle)
             if (handle == 0L) "no backend (expected on a private bus)" else "acquired and released"
         }
+
+        // SubtitleCharsetDetector falls back to UTF-8 without a word when one of these is missing.
+        probe("linux charsets") {
+            listOf(
+                "windows-1250", "windows-1251", "windows-1252", "windows-1253", "windows-1254", "windows-1255",
+                "windows-1256", "windows-1258", "windows-874", "TIS-620", "KOI8-R", "GB18030", "Big5", "Shift_JIS",
+                "EUC-KR",
+            ).onEach { name -> java.nio.charset.Charset.forName(name) }.size.toString()
+        }
         // kotlinx.serialization reaches an object's, a sealed base's or an enum's serializer by
         // reflection. Navigation builds every route's serializer right after sign-in, a screen the
         // signed-out smoke never shows; a native build once crashed there on TabsRoute (2026-10-18).
