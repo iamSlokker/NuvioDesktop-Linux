@@ -1132,7 +1132,7 @@ fun main(args: Array<String>) {
                                 // Accept the drag hover if it carries a file list.
                                 @Suppress("OPT_IN_USAGE")
                                 (event.nativeEvent as? DropTargetDragEvent)
-                                    ?.isDataFlavorSupported(DataFlavor.javaFileListFlavor) == true
+                                    ?.let { it.isDataFlavorSupported(DataFlavor.javaFileListFlavor) || com.nuvio.app.core.portal.LinuxFlatpakFileDrop.canAccept(it) } == true
                             },
                             target = object : DragAndDropTarget {
                                 @Suppress("OPT_IN_USAGE")
@@ -1141,7 +1141,9 @@ fun main(args: Array<String>) {
                                         ?: return false
                                     drop.acceptDrop(DnDConstants.ACTION_COPY)
                                     val transferable = drop.transferable
-                                    val handled = if (transferable.isDataFlavorSupported(DataFlavor.javaFileListFlavor)) {
+                                    val handled = if (com.nuvio.app.core.portal.LinuxFileChooserPortal.applies) {
+                                        com.nuvio.app.core.portal.LinuxFlatpakFileDrop.handle(transferable)
+                                    } else if (transferable.isDataFlavorSupported(DataFlavor.javaFileListFlavor)) {
                                         @Suppress("UNCHECKED_CAST")
                                         val files = transferable.getTransferData(DataFlavor.javaFileListFlavor)
                                             as List<java.io.File>
