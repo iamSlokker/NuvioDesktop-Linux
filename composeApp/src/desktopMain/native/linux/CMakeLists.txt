@@ -171,6 +171,12 @@ target_include_directories(linux_separate_audio_test PRIVATE "${MPV_INCLUDE_DIR}
 target_link_libraries(linux_separate_audio_test PRIVATE "${MPV_LIBRARY}")
 set_target_properties(linux_separate_audio_test PROPERTIES BUILD_RPATH "${MPV_LIBRARY_DIR}")
 
+# The player's session logs (session_log.h): files in a temp folder; no libmpv, display or JNI.
+add_executable(linux_session_log_test EXCLUDE_FROM_ALL tests/session_log_test.cpp)
+target_compile_features(linux_session_log_test PRIVATE cxx_std_17)
+target_compile_options(linux_session_log_test PRIVATE -Wall -Wextra -Werror)
+target_include_directories(linux_session_log_test PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}")
+
 # HTTP/seek event translation and null-output libmpv probe; no display/GTK/JNI.
 add_executable(linux_http_recovery_test EXCLUDE_FROM_ALL tests/http_recovery_test.cpp)
 target_compile_features(linux_http_recovery_test PRIVATE cxx_std_17)

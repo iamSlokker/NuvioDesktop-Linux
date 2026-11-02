@@ -6,6 +6,7 @@
 #include "seek_thumbnails.h"
 #include "separate_audio.h"
 #include "http_recovery_events.h"
+#include "session_log.h"
 #include "audio_passthrough_recovery.h"
 #include "player_session_options.h"
 #include "hdr_wayland_session.h"
@@ -21,6 +22,7 @@
 #include <chrono>
 #include <cmath>
 #include <cstdio>
+#include <cstdlib>
 #include <future>
 #include <iomanip>
 #include <limits>
@@ -220,6 +222,9 @@ struct Player {
     std::atomic<bool> stopping{false};
     std::atomic<bool> fileReady{false};
     std::atomic<bool> ended{false};
+    LinuxPlayerLog log; // Started in create, before the player is published.
+    LinuxLogRepeatLimit logRepeats; // Event thread only.
+    bool logVerbose = false;
     int64_t lastShaderSize = -1;
     std::string lastShaderMedia;
     int lastVideoHdr = -1; // Event thread only; never carried to a replacement player.
@@ -457,6 +462,7 @@ struct Player {
                     }
                 }
             }
+            writeSessionLog(*event, translated);
             // No operation lock across JNI callbacks. The sink preserves this order on the EDT.
             translated.deliverFailure([&](const std::string &name, double value) { emit(env, name, value); });
             if (audioRecovered) emit(env, "audioPassthroughFallback", 1.0);
@@ -500,6 +506,35 @@ struct Player {
             }
         }
         vm->DetachCurrentThread();
+    }
+
+    // The session log's lifecycle markers and mpv's warnings and errors; with NUVIO_MPV_VERBOSE set,
+    // everything mpv delivers. Never under the operation lock: it opens a file per line.
+    void writeSessionLog(const mpv_event &event, const LinuxHttpRecoveryEvents::Result &translated) {
+        switch (event.event_id) {
+            case MPV_EVENT_LOG_MESSAGE: {
+                const auto *message = static_cast<const mpv_event_log_message *>(event.data);
+                if (!message || (!logVerbose && message->log_level > MPV_LOG_LEVEL_WARN)) break;
+                const std::string line = std::string("[") + (message->prefix ? message->prefix : "") + "] " +
+                    (message->level ? message->level : "") + ": " + (message->text ? message->text : "");
+                const auto decision = logRepeats.accept(line, LinuxLogRepeatLimit::Clock::now());
+                if (!decision.note.empty()) log.append(decision.note);
+                if (decision.write) log.append(line);
+                break;
+            }
+            case MPV_EVENT_START_FILE: log.bridge("start file"); break;
+            case MPV_EVENT_FILE_LOADED: log.bridge("file loaded"); break;
+            case MPV_EVENT_PLAYBACK_RESTART: log.bridge("playback restart"); break;
+            case MPV_EVENT_END_FILE: {
+                const auto *end = static_cast<const mpv_event_end_file *>(event.data);
+                if (end) log.bridge("end file reason=" + std::to_string(static_cast<int>(end->reason)) +
+                    " error=" + mpv_error_string(end->error));
+                break;
+            }
+            case MPV_EVENT_SHUTDOWN: log.bridge("shutdown"); break;
+            default: break;
+        }
+        if (translated.failure) log.bridge("reported " + translated.failure->event);
     }
 
     void reportShaderMedia(JNIEnv *env, const mpv_node *params) {
@@ -585,7 +620,10 @@ struct Player {
         int result = mpv_set_property_string(mpv, name, value.c_str());
         // Shared preferences include optional/init-only properties. Diagnose failures rather
         // than aborting playback; required commands below use checkMpv instead.
-        if (result < 0) std::fprintf(stderr, "Linux mpv property %s: %s\n", name, mpv_error_string(result));
+        if (result < 0) {
+            std::fprintf(stderr, "Linux mpv property %s: %s\n", name, mpv_error_string(result));
+            log.bridge(std::string("property ") + name + ": " + mpv_error_string(result));
+        }
     }
 };
 
@@ -974,9 +1012,10 @@ void applyStartOptions(mpv_handle *mpv, bool playWhenReady, jlong initialPositio
 template<class AfterInitialize>
 void initializeAndLoad(Player &player, const std::string &source, AfterInitialize afterInitialize) {
     checkMpv(mpv_initialize(player.mpv), "mpv_initialize");
-    // SPDIF recovery needs mpv's exact verbose PCM-fallback marker. Other
-    // messages are discarded, never forwarded or written to a new log sink.
-    const char *recoveryLogLevel = player.stringProperty("audio-spdif").empty() ? "warn" : "v";
+    // SPDIF recovery needs mpv's exact verbose PCM-fallback marker. Verbose lines are
+    // not kept, unless NUVIO_MPV_VERBOSE asks for them in the session log.
+    player.logVerbose = std::getenv("NUVIO_MPV_VERBOSE") != nullptr;
+    const char *recoveryLogLevel = player.logVerbose || !player.stringProperty("audio-spdif").empty() ? "v" : "warn";
     checkMpv(mpv_request_log_messages(player.mpv, recoveryLogLevel), "request recovery log events");
     checkMpv(mpv_observe_property(player.mpv, 1, "video-params", MPV_FORMAT_NODE), "observe video-params");
     afterInitialize();
@@ -1015,6 +1054,12 @@ JNI_METHOD(jlong, create)(
         if (!eventSink) throw std::runtime_error("Native player event sink is required.");
         auto player = std::make_shared<Player>();
         player->reserveX11Lifetime();
+        const std::string controlsUrl = text(env, controlsPageUrl);
+        player->log.begin(controlsUrl.find("heroTrailer=1") != std::string::npos);
+        const bool remote = source.find("://") != std::string::npos && source.rfind("file://", 0) != 0;
+        player->log.bridge("initialize requested source=" + (remote ? source : std::string("(local file)")) + " audio=" +
+            (sourceAudioUrl ? "yes" : "no") + " playWhenReady=" + (playWhenReady == JNI_TRUE ? "yes" : "no") +
+            " initialMs=" + std::to_string(initialPositionMs));
         if (env->GetJavaVM(&player->vm) != JNI_OK) throw std::runtime_error("GetJavaVM failed.");
         LinuxAwtX11Lifecycle::prepare(env);
         retainEventSink(env, *player, eventSink);
@@ -1035,7 +1080,7 @@ JNI_METHOD(jlong, create)(
         player->speechSeparateAudio = audio;
         initializeAndLoad(*player, source, [] {});
         std::weak_ptr<Player> weak = player;
-        player->controls = LinuxControlsOverlay::create(hostViewPtr, text(env, controlsPageUrl),
+        player->controls = LinuxControlsOverlay::create(hostViewPtr, controlsUrl,
             [weak](const std::string &name, double value) {
                 if (auto current = weak.lock()) current->controlsMessage(name, value);
             },
@@ -1056,6 +1101,11 @@ JNI_METHOD(jlong, create)(
         }
         return publishPlayer(player);
     });
+}
+
+// Where logs/ goes: DesktopStorage.rootDir, as on Windows.
+JNI_METHOD(void, setDataDirectory)(JNIEnv *env, jobject, jstring directory) {
+    guarded(env, [&] { LinuxPlayerLog::setDataDirectory(text(env, directory)); });
 }
 
 JNI_METHOD(void, dispose)(JNIEnv *env, jobject, jlong handle) {
@@ -1397,6 +1447,8 @@ LINUX_HDR_METHOD(jlong, create)(
             throw std::runtime_error("The loaded libmpv has no Wayland Vulkan context.");
         auto player = std::make_shared<Player>();
         player->hdrSession = true;
+        player->log.begin(false);
+        player->log.bridge("HDR session requested initialMs=" + std::to_string(initialPositionMs));
         if (env->GetJavaVM(&player->vm) != JNI_OK) throw std::runtime_error("GetJavaVM failed.");
         retainEventSink(env, *player, eventSink);
         std::setlocale(LC_NUMERIC, "C");

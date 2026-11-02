@@ -66,6 +66,8 @@ cmake --build /output/native --parallel "$NUVIO_BUILD_JOBS" \
 /output/native/linux_subtitle_add_test
 /output/native/linux_http_recovery_test
 /output/native/linux_audio_recovery_test
+cmake --build /output/native --target linux_session_log_test
+/output/native/linux_session_log_test
 # Display variables are unset above; the canonical runtime must report waylandvk.
 /output/native/linux_hdr_session_test --expect-wayland=yes
 python3 tools/linux/packaging/stage.py /output
