@@ -9,6 +9,16 @@
 
 using LinuxMpvOptionList = std::vector<std::pair<std::string, std::string>>;
 
+// Windows' startup baseline for diagnostics and the compiled-shader cache, applied before shared and
+// custom options, so those still win. The stats overlay renders at about 75% of its default size. The
+// shader cache needs its directory too (config=no leaves mpv without one), which Kotlin supplies.
+inline LinuxMpvOptionList linuxStartupDefaults() {
+    return {
+        {"script-opts", "stats-font_size=15,stats-border_size=1.25"},
+        {"gpu-shader-cache", "yes"},
+    };
+}
+
 // The accepted embedded X11/AWT Canvas player. These boundaries are applied after
 // shared/custom options so saved desktop options cannot replace them. Order and
 // values are the existing SDR contract; the HDR session must never change them.

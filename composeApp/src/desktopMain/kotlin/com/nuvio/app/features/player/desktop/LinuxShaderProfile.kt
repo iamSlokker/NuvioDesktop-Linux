@@ -1,6 +1,7 @@
 package com.nuvio.app.features.player.desktop
 
 import com.nuvio.app.core.i18n.localizedString
+import com.nuvio.app.core.storage.DesktopStorage
 import com.nuvio.app.features.player.DesktopAnimeMode
 import com.nuvio.app.features.player.DesktopAnimeShaderSkipReason
 import com.nuvio.app.features.player.DesktopVideoSourceSize
@@ -8,6 +9,17 @@ import com.nuvio.app.features.player.PlayerSettingsUiState
 import com.nuvio.app.features.player.desktopActiveAnimeMode
 import com.nuvio.app.features.player.planDesktopAnimeShaders
 import java.io.File
+import java.nio.file.Files
+import java.nio.file.Path
+
+/**
+ * config=no leaves mpv with no cache location, so without this every launch recompiles the whole
+ * gpu-next pipeline, Anime4K and custom chains included. Null when the folder cannot be made: mpv
+ * then runs without a cache, as it did before.
+ */
+internal fun linuxShaderCacheOption(root: Path = DesktopStorage.rootDir): String? = runCatching {
+    "gpu-shader-cache-dir=" + Files.createDirectories(root.toAbsolutePath().resolve("shader-cache"))
+}.getOrNull()
 
 // mpv's CLI-only glsl-shader/list-action aliases are not libmpv options. Use the canonical
 // glsl-shaders property, also accepted by the existing custom mpv options path.

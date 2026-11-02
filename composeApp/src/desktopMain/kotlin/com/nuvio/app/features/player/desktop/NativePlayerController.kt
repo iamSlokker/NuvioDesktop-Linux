@@ -2713,6 +2713,7 @@ private fun buildDesktopUserMpvOptions(initialPlaybackSpeed: Float): List<String
                 hostOs = DesktopHostOs.current,
                 playbackSpeed = initialPlaybackSpeed,
             ).forEach { (name, value) -> add("$name=$value") }
+            if (DesktopHostOs.current == DesktopHostOs.LINUX) linuxShaderCacheOption()?.let(::add)
             // Nuvio's stats overlay in place of the built-in one (same script name, so the
             // diagnostics binding still finds it). `scripts`, not `scripts-append`: mpv's option
             // API rejects the -append suffix. A `scripts=` line in the custom options box is
