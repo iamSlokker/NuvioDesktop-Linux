@@ -110,7 +110,7 @@ class LinuxShaderProfileTest {
                 desktopAnimeModeAutoEnabled = true, desktopAnimeSessionOverride = null,
                 desktopAnimeSkipUltraHdEnabled = true, desktopAnimeMode = DesktopAnimeMode.Off)
             fun apply(settings: PlayerSettingsUiState) =
-                f.controller!!.applyLinuxShaderProfile(settings, true, DesktopVideoSourceSize(64, 64), confirmedSdr = true)
+                f.controller!!.applyLinuxShaderProfile(settings, true, DesktopVideoSourceSize(64, 64))
             apply(base)
             f.controller!!.play()
             f.waitFor { (f.values()["time-pos"]?.toDoubleOrNull() ?: 0.0) > 0.2 }
@@ -201,7 +201,7 @@ class LinuxShaderProfileTest {
                         desktopAnimeModeAutoEnabled = true, desktopAnimeSessionOverride = null)
                     val customWins = mode == DesktopMpvConfigMode.Replace || mode == DesktopMpvConfigMode.Full
                     f.awaitValue("glsl-shaders", if (customWins) shader.toString() else "")
-                    f.controller!!.applyLinuxShaderProfile(settings, true, DesktopVideoSourceSize(64, 64), confirmedSdr = true)
+                    f.controller!!.applyLinuxShaderProfile(settings, true, DesktopVideoSourceSize(64, 64))
                     f.awaitValue("glsl-shaders", if (customWins) shader.toString() else
                         DesktopAnimeShaders.shaderPaths(DesktopAnimeMode.ModeAFast).joinToString(":"))
                     f.assertIntegration(f.values())

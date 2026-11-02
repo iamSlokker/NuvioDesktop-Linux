@@ -14,15 +14,49 @@ import java.io.File
 internal fun linuxShaderPathList(paths: List<String>): String =
     paths.joinToString(":") { it.replace(":", "\\:") }
 
-/** [shaderOpts] is the `glsl-shader-opts` value the chain needs (the Sharpen menu's CAS strength). */
-internal data class LinuxShaderProfile(val chain: String, val label: String?, val shaderOpts: String = "")
+/**
+ * [shaderOpts] is the `glsl-shader-opts` value the chain needs (the Sharpen menu's CAS strength).
+ * [animeTuned] says an Anime4K or custom chain actually runs, which selects the scaling and deband
+ * of [linuxAnimeScalingProperties].
+ */
+internal data class LinuxShaderProfile(
+    val chain: String,
+    val label: String?,
+    val shaderOpts: String = "",
+    val animeTuned: Boolean = false,
+)
+
+/**
+ * The scaler and deband half of applyDesktopAnimeProfile: Stremio-Kai's anime base with a chain
+ * running, the bridge's live-action baseline otherwise (with the Advanced menu's Upscaling choice).
+ * Not hqdn3d: it is a GPL filter and the bundled FFmpeg is an LGPL build, so mpv cannot load it.
+ */
+internal fun linuxAnimeScalingProperties(settings: PlayerSettingsUiState, animeTuned: Boolean): List<Pair<String, String>> {
+    val overrides = settings.desktopMpvPropertyOverrides
+    val filmGrain = overrides[DESKTOP_FILM_GRAIN_OVERRIDE_KEY]
+    return if (animeTuned) {
+        listOf("scale" to "ewa_lanczos", "cscale" to "ewa_lanczos", "scale-blur" to "1.05", "deband-threshold" to "45",
+            "deband-grain" to desktopDebandGrain(filmGrain, "20"))
+    } else {
+        listOf("scale" to (overrides["scale"] ?: "spline36"), "cscale" to "lanczos", "scale-blur" to "0.0",
+            "deband-threshold" to "35", "deband-grain" to desktopDebandGrain(filmGrain, "0"))
+    }
+}
+
+internal fun NativePlayerController.applyLinuxAnimeScaling(settings: PlayerSettingsUiState, animeTuned: Boolean) {
+    val customNames = desktopCustomMpvOptionNames(settings.desktopCustomMpvOptions)
+    withVideoProfile {
+        for ((key, value) in linuxAnimeScalingProperties(settings, animeTuned)) {
+            if (shouldApplyNuvioRuntimeMpvProperty(settings.desktopMpvConfigMode, customNames, key)) setMpvProperty(key, value)
+        }
+    }
+}
 
 /** Shader selection only: no grading, scaling, vf, hwdec, HDR, RTX or SVP mutations. */
 internal fun linuxShaderProfile(
     settings: PlayerSettingsUiState,
     isAnime: Boolean,
     sourceSize: DesktopVideoSourceSize?,
-    confirmedSdr: Boolean = false,
 ): LinuxShaderProfile? {
     if (!shouldApplyNuvioRuntimeMpvProperty(settings.desktopMpvConfigMode,
             desktopCustomMpvOptionNames(settings.desktopCustomMpvOptions),
@@ -32,9 +66,10 @@ internal fun linuxShaderProfile(
     val casSharpness = desktopCasSharpness(settings.desktopMpvPropertyOverrides[DESKTOP_SHARPEN_OVERRIDE_KEY])
     val casPath = casSharpness?.let { DesktopAnimeShaders.casSharpenPath() }
     val shaderOpts = if (casPath != null) "nuvio_cas_sharpness=$casSharpness" else ""
-    // Ownership is checked first: explicit Replace/Full options belong to the user.
-    // Session forces and the UHD preference only affect selection AFTER media eligibility.
-    if (!confirmedSdr || sourceSize == null || sourceSize.width <= 0 || sourceSize.height <= 0)
+    // Ownership is checked first: explicit Replace/Full options belong to the user. As on Windows the
+    // chains also run on HDR sources; the wait is for the size the UHD preference needs, which arrives
+    // with the first video-params.
+    if (sourceSize == null || sourceSize.width <= 0 || sourceSize.height <= 0)
         return LinuxShaderProfile(linuxShaderPathList(listOfNotNull(casPath)), null, shaderOpts)
     val active = desktopActiveAnimeMode(settings.desktopAnimeMode, settings.desktopAnimeModeAutoEnabled,
         settings.desktopAnimeSessionOverride, isAnime)
@@ -60,16 +95,16 @@ internal fun linuxShaderProfile(
         plan.preset != null -> "Anime4K ${localizedString(plan.preset.labelRes)}"
         else -> File(custom).nameWithoutExtension
     }
-    return LinuxShaderProfile(linuxShaderPathList(paths + listOfNotNull(casPath)), label, shaderOpts)
+    return LinuxShaderProfile(linuxShaderPathList(paths + listOfNotNull(casPath)), label, shaderOpts,
+        animeTuned = paths.isNotEmpty())
 }
 
 internal fun NativePlayerController.applyLinuxShaderProfile(
     settings: PlayerSettingsUiState,
     isAnime: Boolean,
     sourceSize: DesktopVideoSourceSize?,
-    confirmedSdr: Boolean = false,
 ): String? {
-    val profile = linuxShaderProfile(settings, isAnime, sourceSize, confirmedSdr) ?: return null
+    val profile = linuxShaderProfile(settings, isAnime, sourceSize) ?: return null
     withVideoProfile {
         // Opts before shaders, so the chain never compiles once with a stale strength.
         setMpvProperty("glsl-shader-opts", profile.shaderOpts)

@@ -11,61 +11,47 @@ class LinuxShaderPolicyTest {
         desktopAnimeModeAutoEnabled = true, desktopMpvConfigMode = DesktopMpvConfigMode.Off)
 
     private fun sdrProfile(settings: PlayerSettingsUiState, anime: Boolean, size: DesktopVideoSourceSize?) =
-        linuxShaderProfile(settings, anime, size, confirmedSdr = true)
+        linuxShaderProfile(settings, anime, size)
 
-    private fun media(gamma: String = "bt.1886", primaries: String = "bt.709", matrix: String = "bt.709",
-                      size: DesktopVideoSourceSize? = this.size) = LinuxShaderMedia.fromEvent(
-        "${LinuxShaderMedia.EVENT_PREFIX}$gamma/$primaries/$matrix",
-        size?.let { (it.width.toLong() * 65536 + it.height).toDouble() } ?: 0.0)
-
-    @Test fun unclassifiedMediaNeverAppliesEvenWithKnownDimensions() {
-        assertEquals("", linuxShaderProfile(settings, true, size)!!.chain)
+    @Test fun chainsWaitForTheSizeAndThenRunWhateverTheColours() {
+        assertEquals("", linuxShaderProfile(settings, true, null)!!.chain)
+        assertEquals("", linuxShaderProfile(settings, true, DesktopVideoSourceSize(0, 1080))!!.chain)
+        assertEquals("", linuxShaderProfile(settings, true, DesktopVideoSourceSize(1920, -1))!!.chain)
+        // No colour input any more: HDR10, Dolby Vision and HLG run the chain, as on Windows.
+        assertTrue(linuxShaderProfile(settings, true, size)!!.chain.isNotEmpty())
         assertEquals("", linuxShaderProfile(settings.copy(desktopAnimeSessionOverride =
-            DesktopAnimeSessionOverride(DesktopAnimeMode.Hq)), true, size)!!.chain)
-        for (unknown in listOf(media(""), media("auto"), media("new-transfer"), media(primaries = ""), media(matrix = "")))
-            assertFalse(unknown.confirmedSdr)
+            DesktopAnimeSessionOverride(DesktopAnimeMode.Off)), true, size)!!.chain)
     }
 
-    @Test fun hdr10Hdr10PlusDolbyVisionAndHlgNeverQualify() {
-        for ((label, metadata) in mapOf(
-            "HDR10" to media("pq", "bt.2020", "bt.2020-ncl"),
-            "HDR10+" to media("pq", "bt.2020", "bt.2020-ncl"),
-            "Dolby Vision" to media("pq", "bt.2020", "dolbyvision"),
-            "HLG" to media("hlg", "bt.2020", "bt.2020-ncl"),
-            "PQ alias" to media("st2084"), "HLG alias" to media("arib-std-b67"),
-            "DV matrix" to media(matrix = "dolbyvision"),
-            "wide gamut" to media(primaries = "bt.2020"))) {
-            assertFalse(metadata.confirmedSdr, label)
-            for (forced in listOf(null, DesktopAnimeSessionOverride(DesktopAnimeMode.Hq))) {
-                assertEquals("", linuxShaderProfile(settings.copy(desktopAnimeSessionOverride = forced,
-                    desktopAnimeSkipUltraHdEnabled = false), true, metadata.size, metadata.confirmedSdr)!!.chain, label)
-            }
-        }
+    @Test fun theMediaEventCarriesOnlyTheSize() {
+        val packed = (1920L * 65536 + 1080).toDouble()
+        assertEquals(size, LinuxShaderMedia.fromEvent(packed).size)
+        assertNull(LinuxShaderMedia.fromEvent(0.0).size)
     }
 
-    @Test fun sdrEligibilityDimensionsAndAllTransitions() {
-        val sdr = media()
-        assertTrue(sdr.confirmedSdr)
-        val hdr = media("pq", "bt.2020", "dolbyvision")
-        val unknown = media("")
-        for (sequence in listOf(listOf(unknown, sdr, hdr, sdr, sdr), listOf(unknown, hdr, hdr, sdr, hdr))) {
-            for (m in sequence) assertEquals(m.confirmedSdr,
-                linuxShaderProfile(settings, true, m.size, m.confirmedSdr)!!.chain.isNotEmpty())
-        }
-        assertEquals("", linuxShaderProfile(settings, true, null, true)!!.chain)
-        assertEquals("", linuxShaderProfile(settings, true, DesktopVideoSourceSize(0, 1080), true)!!.chain)
-        assertEquals("", linuxShaderProfile(settings, true, DesktopVideoSourceSize(1920, -1), true)!!.chain)
-        assertTrue(linuxShaderProfile(settings, true, size, true)!!.chain.isNotEmpty())
-        assertEquals("", linuxShaderProfile(settings.copy(desktopAnimeSessionOverride =
-            DesktopAnimeSessionOverride(DesktopAnimeMode.Off)), true, size, true)!!.chain)
+    @Test fun theAnimeBaseFollowsARunningChainAndNotDetection() {
+        val anime = linuxShaderProfile(settings, true, size)!!
+        assertTrue(anime.animeTuned)
+        assertFalse(linuxShaderProfile(settings, false, size)!!.animeTuned, "undetected title, no chain")
+        assertFalse(linuxShaderProfile(settings, true, DesktopVideoSourceSize(3840, 2160))!!.animeTuned, "4K skip")
+        assertEquals(mapOf("scale" to "ewa_lanczos", "cscale" to "ewa_lanczos", "scale-blur" to "1.05",
+            "deband-threshold" to "45", "deband-grain" to "20"),
+            linuxAnimeScalingProperties(settings, true).toMap())
+        assertEquals(mapOf("scale" to "spline36", "cscale" to "lanczos", "scale-blur" to "0.0",
+            "deband-threshold" to "35", "deband-grain" to "0"),
+            linuxAnimeScalingProperties(settings, false).toMap())
+        assertEquals("ewa_hanning", linuxAnimeScalingProperties(settings.copy(
+            desktopMpvPropertyOverrides = mapOf("scale" to "ewa_hanning")), false).toMap()["scale"], "Upscaling choice kept")
+        assertEquals("32", linuxAnimeScalingProperties(settings.copy(desktopMpvPropertyOverrides =
+            mapOf(DESKTOP_FILM_GRAIN_OVERRIDE_KEY to DESKTOP_FILM_GRAIN_HEAVY)), true).toMap()["deband-grain"], "Film grain kept")
     }
 
-    @Test fun unsafeMediaStillPreservesExplicitUserOwnership() {
+    @Test fun explicitUserOwnershipWinsInReplaceAndFull() {
         for (mode in DesktopMpvConfigMode.entries) {
             val result = linuxShaderProfile(settings.copy(desktopMpvConfigMode = mode,
-                desktopCustomMpvOptions = "glsl-shaders=user.glsl"), true, size, false)
+                desktopCustomMpvOptions = "glsl-shaders=user.glsl"), true, size)
             if (mode == DesktopMpvConfigMode.Full || mode == DesktopMpvConfigMode.Replace) assertNull(result)
-            else assertEquals("", result!!.chain)
+            else assertTrue(result!!.chain.isNotEmpty(), mode.name)
         }
     }
 
@@ -109,9 +95,6 @@ class LinuxShaderPolicyTest {
             Files.writeString(second, "// shader")
             val custom = settings.copy(desktopAnimeMode = DesktopAnimeMode.CustomShader,
                 desktopCustomShaderPaths = dir.toString(), desktopCustomShaderSelectedPath = first.toString())
-            assertEquals("", linuxShaderProfile(custom, true, size, false)!!.chain)
-            assertEquals("", linuxShaderProfile(custom.copy(desktopAnimeSessionOverride =
-                DesktopAnimeSessionOverride(DesktopAnimeMode.CustomShader, first.toString())), false, size, false)!!.chain)
             assertEquals(first.toString(), sdrProfile(custom, true, size)!!.chain)
             assertEquals(second.toString(), sdrProfile(custom.copy(desktopCustomShaderSelectedPath = second.toString()), true, size)!!.chain)
             Files.setPosixFilePermissions(first, PosixFilePermissions.fromString("---------"))
