@@ -21,9 +21,9 @@ internal actual val platformOffersCloseToTray: Boolean
 internal actual val platformOffersLowVramMode: Boolean
     get() = !isLinuxHost
 
-// LinuxScreensaver is dim-only by design: it has no exit or power-off path.
+// logind's PowerOff; the Flatpak has no system bus, and giving it one would be a new permission.
 internal actual val platformOffersScreensaverShutdown: Boolean
-    get() = !isLinuxHost
+    get() = !isLinuxHost || com.nuvio.app.features.screensaver.LinuxPower.available
 
 internal actual val platformOffersSvp: Boolean
     get() = !isLinuxHost

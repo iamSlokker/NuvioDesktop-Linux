@@ -134,11 +134,11 @@ internal object DesktopScreensaver {
     private var nativeIdleUnavailable = false
 
     /**
-     * Installs the idle watch against [window]. Linux has a separate dim-only controller;
+     * Installs the idle watch against [window]. Linux has a separate controller;
      * the Windows idle/shutdown policy below and the macOS no-op remain unchanged.
      */
     fun install(window: Window, exitApplication: () -> Unit): () -> Unit {
-        if (DesktopHostOs.current == DesktopHostOs.LINUX) return LinuxScreensaver.install(window)
+        if (DesktopHostOs.current == DesktopHostOs.LINUX) return LinuxScreensaver.install(window, exitApplication)
         if (DesktopHostOs.current != DesktopHostOs.WINDOWS) return {}
         uninstall()
         owner = window
