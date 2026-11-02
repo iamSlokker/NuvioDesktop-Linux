@@ -325,20 +325,18 @@ is performed. Nuvio's idle dimming shade and optional shutdown remain separate.
 
 ## Deliberately absent
 
-`setMediaSessionMetadata` remains an explicit void no-op: Linux media sessions
-are deferred. `forceVideoRedraw` is also a no-op: mpv's X11 VO
-owns exposes and resize redraws. These calls do not claim playback success or
-supply invented playback state.
+`setMediaSessionMetadata` remains an explicit void no-op: the Windows media session
+it feeds has a Linux counterpart in MPRIS instead (`mpris_session.cpp`). `forceVideoRedraw`
+is also a no-op: mpv's X11 VO owns exposes and resize redraws. These calls do not claim
+playback success or supply invented playback state.
 
-Every other unexported `NativePlayerBridge` method remains unsupported and raises
-`UnsatisfiedLinkError` if called: video/SVP profiling,
-native window chrome/fullscreen/PiP, gamepads, media identity and system
-idle/foreground queries. Optional shortcuts for these deferred
-features should not be used during acceptance testing.
+Any other `NativePlayerBridge` method this library does not export raises
+`UnsatisfiedLinkError` if called. Their callers are Windows-only, because Linux reaches
+the same features through its own native entry points: window chrome and fullscreen
+(`window_chrome_jni.cpp`), Picture-in-Picture (`pip_geometry_jni.cpp`), gamepads
+(`linux_gamepad.cpp`), media keys (`mpris_session.cpp`), system idle (`screensaver_idle.cpp`)
+and the HDR session (`hdr_wayland_session.cpp`). Packaging lives in `tools/linux/packaging`.
 
-No PiP, gamepads, media keys, Linux native fullscreen,
-native Wayland rendering or packaging is added. Advanced HUD actions may still
-reach deferred bridge methods; this is a controls transport/embedding spike.
 Physical keyboard focus and transparent compositing over real video need manual
 testing under the Bazzite/XWayland compositor, including after resize/DPI changes.
 

@@ -1,5 +1,9 @@
 # Linux feature parity roadmap
 
+> **Historical record, not a status source.** This inventory was frozen on 2026-10-11, before most of
+> the Linux work it lists as pending. Rows here can be wrong in either direction. For the current state,
+> read the code and `CHANGELOG.md`.
+
 Audit date: **2026-10-11** (Q02 evidence refresh). This is a source and evidence inventory, not a claim that every visible setting works on Linux.
 
 | Checkpoint | Value |
