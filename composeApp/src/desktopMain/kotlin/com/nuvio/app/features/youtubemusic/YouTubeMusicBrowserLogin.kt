@@ -1,6 +1,5 @@
 package com.nuvio.app.features.youtubemusic
 
-import nuvio.composeapp.generated.resources.Res
 import nuvio.composeapp.generated.resources.linux_flatpak_youtube_explainer
 import co.touchlab.kermit.Logger
 import com.nuvio.app.core.build.hostProcessBuilder
