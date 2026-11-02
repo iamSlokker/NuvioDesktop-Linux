@@ -17,9 +17,11 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.nuvio.app.features.youtubemusic.YouTubeMusicAuth
+import com.nuvio.app.features.youtubemusic.YouTubeMusicAuthPlatform
 import com.nuvio.app.features.youtubemusic.YouTubeMusicAuthState
 import nuvio.composeapp.generated.resources.Res
 import nuvio.composeapp.generated.resources.compose_settings_page_youtube
+import nuvio.composeapp.generated.resources.linux_flatpak_youtube_explainer
 import nuvio.composeapp.generated.resources.settings_youtube_cancel
 import nuvio.composeapp.generated.resources.settings_youtube_explainer
 import nuvio.composeapp.generated.resources.settings_youtube_section_account
@@ -61,6 +63,7 @@ private fun YouTubeAccountRows(isTablet: Boolean) {
         YouTubeMusicAuth.ensureLoaded()
         YouTubeMusicAuth.state
     }.collectAsState()
+    val browserSignIn = YouTubeMusicAuthPlatform.browserSignInAvailable
     val horizontalPadding = if (isTablet) 20.dp else 16.dp
     val verticalPadding = if (isTablet) 16.dp else 14.dp
 
@@ -76,7 +79,7 @@ private fun YouTubeAccountRows(isTablet: Boolean) {
             color = MaterialTheme.colorScheme.onSurface,
         )
         Text(
-            text = stringResource(Res.string.settings_youtube_explainer),
+            text = stringResource(if (browserSignIn) Res.string.settings_youtube_explainer else Res.string.linux_flatpak_youtube_explainer),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
@@ -101,13 +104,15 @@ private fun YouTubeAccountRows(isTablet: Boolean) {
             )
         }
 
+        if (!browserSignIn && (!state.signedIn || state.sessionRejected)) YouTubeCookiePaste()
+
         Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
             when {
                 state.signingIn -> OutlinedButton(onClick = YouTubeMusicAuth::cancelSignIn) {
                     Text(stringResource(Res.string.settings_youtube_cancel))
                 }
                 state.signedIn -> {
-                    if (state.sessionRejected) {
+                    if (state.sessionRejected && browserSignIn) {
                         Button(onClick = YouTubeMusicAuth::signIn) {
                             Text(stringResource(Res.string.settings_youtube_sign_in_again))
                         }
@@ -116,6 +121,7 @@ private fun YouTubeAccountRows(isTablet: Boolean) {
                         Text(stringResource(Res.string.settings_youtube_sign_out))
                     }
                 }
+                !browserSignIn -> Unit
                 else -> Button(onClick = YouTubeMusicAuth::signIn) {
                     Text(stringResource(Res.string.settings_youtube_sign_in))
                 }

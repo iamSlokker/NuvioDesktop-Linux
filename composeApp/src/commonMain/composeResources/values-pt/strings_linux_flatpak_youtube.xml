@@ -1,0 +1,7 @@
+<resources>
+    <string name="linux_flatpak_youtube_explainer">A versão Flatpak corre isolada dos teus browsers, por isso não consegue abrir a janela de início de sessão da Google. Em vez disso, cola abaixo os cookies da tua sessão do YouTube, ou usa a versão .deb ou AppImage, que iniciam sessão diretamente.</string>
+    <string name="linux_flatpak_youtube_paste_hint">Num browser com sessão iniciada na Google, abre music.youtube.com e as ferramentas de programador (F12). Em Rede, recarrega a página, escolhe um pedido a music.youtube.com e copia o cabeçalho de pedido Cookie. Valem como a tua sessão iniciada e ficam só neste computador; o mais seguro é uma conta Google secundária.</string>
+    <string name="linux_flatpak_youtube_cookie_label">Cabeçalho Cookie</string>
+    <string name="linux_flatpak_youtube_save">Guardar cookies</string>
+    <string name="linux_flatpak_youtube_invalid">Esse texto não tem uma sessão Google (falta o SAPISID). Copia o cabeçalho Cookie inteiro de um pedido a music.youtube.com com sessão iniciada.</string>
+</resources>

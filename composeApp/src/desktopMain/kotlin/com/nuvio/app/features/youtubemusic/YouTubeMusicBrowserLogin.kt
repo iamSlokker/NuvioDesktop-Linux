@@ -1,5 +1,8 @@
 package com.nuvio.app.features.youtubemusic
 
+import com.nuvio.app.core.i18n.localizedString
+import nuvio.composeapp.generated.resources.Res
+import nuvio.composeapp.generated.resources.linux_flatpak_youtube_explainer
 import co.touchlab.kermit.Logger
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.ensureActive
@@ -65,11 +68,11 @@ internal object YouTubeMusicBrowserLogin {
     private const val DESCENDANTS_EXIT_MS = 5_000L
 
     suspend fun run(): YouTubeMusicLoginOutcome {
-        // fork:linux - the Flatpak sandbox cannot see or start the system's browsers.
-        if (!System.getenv("FLATPAK_ID").isNullOrBlank()) return YouTubeMusicLoginOutcome.Failed(
-            "YouTube sign-in opens your own Chrome, Edge, Brave or Chromium, which the Flatpak version of Nuvio " +
-                "cannot reach from its sandbox, so it is not available here. The .deb and AppImage versions support it.",
-        )
+        // fork:linux - the Flatpak sandbox cannot see or start the system's browsers. The page offers
+        // pasted cookies there and no sign-in button, so this is only a backstop.
+        if (!YouTubeMusicAuthPlatform.browserSignInAvailable) {
+            return YouTubeMusicLoginOutcome.Failed(localizedString(Res.string.linux_flatpak_youtube_explainer))
+        }
         val browser = findBrowser() ?: return YouTubeMusicLoginOutcome.Failed(
             "No Edge, Chrome, Brave or Chromium was found. Install one to sign in to YouTube Music.",
         )
