@@ -1,5 +1,6 @@
 package com.nuvio.app.features.player
 
+import com.nuvio.app.features.p2p.P2pStreamingState
 import com.nuvio.app.features.streams.StreamItem
 import io.ktor.http.Url
 
@@ -59,6 +60,18 @@ internal fun playbackSourceFailure(sourceUrl: String): PlaybackSourceFailure? {
         return PlaybackSourceFailure.DebridRateLimited
     }
     return null
+}
+
+/**
+ * What to tell the user when a torrent stream dies: mpv only saw a local connection that stopped
+ * delivering, so its "Playback loading failed" names no cause, while the swarm is what actually
+ * failed. Null when the message is something else, or when the torrent did deliver data.
+ */
+internal fun torrentStallPeerCount(message: String, state: P2pStreamingState): Int? {
+    if (!message.startsWith("Playback loading failed", ignoreCase = true)) return null
+    val streaming = state as? P2pStreamingState.Streaming ?: return null
+    if (maxOf(streaming.downloadedBytes, streaming.deliveredBytes) > 0L) return null
+    return maxOf(streaming.peers, streaming.seeds)
 }
 
 /** Detects provider failures reported by mpv/FFmpeg rather than encoded in the source URL. */

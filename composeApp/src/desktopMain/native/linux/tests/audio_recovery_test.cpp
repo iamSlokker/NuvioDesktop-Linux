@@ -137,7 +137,7 @@ int main() {
                 e.event_id = MPV_EVENT_END_FILE; e.data = &end;
                 const auto translated = http.accept(e, f.now);
                 require(translated.failure && translated.failure->event ==
-                    std::string("mpvStartupError:") + mpv_error_string(audio.error), "generic callback changed");
+                    std::string("mpvStartupError:Playback loading failed: ") + mpv_error_string(audio.error), "generic callback changed");
                 require(!http.accept(e, f.now).failure, "duplicate terminal error");
             }
         });

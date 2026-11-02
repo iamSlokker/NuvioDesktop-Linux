@@ -1049,7 +1049,11 @@ private fun PlayerScreenRuntime.presentUnrecoverablePlaybackError(
         playbackAttemptId,
         if (playerSettingsUiState.streamFailoverEnabled) "exit (failover did not apply)" else "exit (failover off)",
     )
-    exitAfterPlaybackFailure(message, playbackFailedToast)
+    val stalledPeers = if (activeTorrentInfoHash != null) torrentStallPeerCount(message, p2pStreamingState) else null
+    exitAfterPlaybackFailure(
+        stalledPeers?.let { localizedString(Res.string.p2p_no_reachable_peers, it) } ?: message,
+        playbackFailedToast,
+    )
 }
 
 internal fun PlayerScreenRuntime.exitAfterPlaybackFailure(
