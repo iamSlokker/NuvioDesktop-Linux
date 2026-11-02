@@ -1240,11 +1240,12 @@ private fun settingsSearchEntries(
             category = accountCategory,
             icon = Icons.Rounded.CloudDownload,
         )
-        addRow(
+        if (AppUpdaterPlatform.offersInPlaceUpdateOption) addRow(
             page = SettingsPage.Account,
             key = "auto-install-updates",
             title = resolve(Res.string.settings_updates_auto_install),
-            description = resolve(Res.string.settings_updates_auto_install_description),
+            description = AppUpdaterPlatform.inPlaceUpdateOptionDescription()
+                ?: resolve(Res.string.settings_updates_auto_install_description),
             pageLabel = accountPage,
             section = resolve(Res.string.settings_updates_section),
             category = accountCategory,

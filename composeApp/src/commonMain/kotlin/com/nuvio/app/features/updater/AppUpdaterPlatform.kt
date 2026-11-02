@@ -57,6 +57,12 @@ expect object AppUpdaterPlatform {
 
     fun setSnoozedUntilMs(epochMs: Long?)
 
+    /** False where [isInPlaceUpdateEnabled] changes nothing, so the setting should not be offered. */
+    val offersInPlaceUpdateOption: Boolean
+
+    /** What the option does here, when that differs from the portable ZIP's description; else null. */
+    fun inPlaceUpdateOptionDescription(): String?
+
     /** Whether verified updates are applied in place (and the app restarted) automatically. */
     fun isInPlaceUpdateEnabled(): Boolean
 
