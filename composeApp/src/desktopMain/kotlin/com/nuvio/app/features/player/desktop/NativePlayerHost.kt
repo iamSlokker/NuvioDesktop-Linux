@@ -43,7 +43,8 @@ internal class NativePlayerHost : Canvas() {
 
     override fun paint(graphics: Graphics) {
         // The host's own colour: black, or mpv's black (about 8, 8, 8) behind the Now Playing picture's rounded corners.
-        graphics.color = background ?: Color.BLACK
+        // The Home hero's SwingPanel hands down a transparent background, which paints nothing and left the window's pale grey.
+        graphics.color = background?.takeIf { it.alpha == 255 } ?: Color.BLACK
         graphics.fillRect(0, 0, width, height)
         if (!firstPaintNotified) {
             firstPaintNotified = true
