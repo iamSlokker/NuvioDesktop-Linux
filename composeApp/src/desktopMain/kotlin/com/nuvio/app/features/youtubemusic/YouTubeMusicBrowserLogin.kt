@@ -1,5 +1,7 @@
 package com.nuvio.app.features.youtubemusic
 
+import nuvio.composeapp.generated.resources.Res
+import nuvio.composeapp.generated.resources.linux_flatpak_youtube_explainer
 import co.touchlab.kermit.Logger
 import com.nuvio.app.core.build.hostProcessBuilder
 import com.nuvio.app.core.i18n.localizedString
@@ -71,10 +73,11 @@ internal object YouTubeMusicBrowserLogin {
     private const val DESCENDANTS_EXIT_MS = 5_000L
 
     suspend fun run(): YouTubeMusicLoginOutcome {
-        // fork:linux - the Flatpak sandbox cannot see or start the system's browsers.
-        if (!System.getenv("FLATPAK_ID").isNullOrBlank()) return YouTubeMusicLoginOutcome.Failed(
-            localizedString(Res.string.linux_youtube_flatpak_unavailable),
-        )
+        // fork:linux - the Flatpak sandbox cannot see or start the system's browsers. The page offers
+        // pasted cookies there and no sign-in button, so this is only a backstop.
+        if (!YouTubeMusicAuthPlatform.browserSignInAvailable) {
+            return YouTubeMusicLoginOutcome.Failed(localizedString(Res.string.linux_flatpak_youtube_explainer))
+        }
         val linuxBrowser = if (linuxLoginHost() && overrideBrowser() == null) LinuxLoginBrowsers.find() else null
         if (linuxLoginHost() && linuxBrowser == null && overrideBrowser() == null) {
             return YouTubeMusicLoginOutcome.Failed(localizedString(Res.string.linux_youtube_no_browser))
@@ -142,7 +145,7 @@ internal object YouTubeMusicBrowserLogin {
         var reader: Process? = null
         var cdp: CdpConnection? = null
         try {
-            reader = ProcessBuilder(LinuxLoginBrowsers.firefoxCookieReadCommand(browser, profileDir))
+            reader = hostProcessBuilder(LinuxLoginBrowsers.firefoxCookieReadCommand(browser, profileDir))
                 .redirectErrorStream(true)
                 .start()
             val endpoint = LinuxLoginBrowsers.awaitBidiEndpoint(reader, DEVTOOLS_PORT_TIMEOUT_MS)

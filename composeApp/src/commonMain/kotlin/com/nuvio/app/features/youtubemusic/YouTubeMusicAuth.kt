@@ -43,6 +43,9 @@ internal data class YouTubeMusicAuthState(
 )
 
 internal expect object YouTubeMusicAuthPlatform {
+    /** False where [interactiveLogin] cannot reach a browser (the sealed Linux Flatpak). */
+    val browserSignInAvailable: Boolean
+
     fun loadCookie(): String?
     fun saveCookie(cookieHeader: String?)
     fun sha1Hex(input: String): String
@@ -133,6 +136,18 @@ internal object YouTubeMusicAuth {
         }
     }
 
+    /** Signs in from cookies the user pasted; false when they hold no Google session. */
+    fun signInWithCookie(pasted: String): Boolean {
+        val header = normalizedCookieHeader(pasted) ?: return false
+        loginJob?.cancel()
+        cookie = header
+        loaded = true
+        YouTubeMusicAuthPlatform.saveCookie(header)
+        _state.value = YouTubeMusicAuthState(signedIn = true)
+        log.i { "Signed in to YouTube Music with pasted cookies" }
+        return true
+    }
+
     /** Abandons an open login window. */
     fun cancelSignIn() {
         loginJob?.cancel()
@@ -163,6 +178,16 @@ internal object YouTubeMusicAuth {
 }
 
 private val SAPISID_NAMES = listOf("SAPISID", "__Secure-3PAPISID", "__Secure-1PAPISID")
+
+/**
+ * A pasted Cookie header as one sendable line, or null when it holds no Google session. Browsers copy
+ * it with or without the `Cookie:` name, and a paste may wrap across lines.
+ */
+internal fun normalizedCookieHeader(pasted: String): String? {
+    val line = pasted.lines().joinToString(" ") { it.trim() }.trim()
+    val header = (if (line.startsWith("cookie:", ignoreCase = true)) line.drop("cookie:".length) else line).trim()
+    return header.takeIf { text -> text.none { it.isISOControl() } && sapisidFrom(text) != null }
+}
 
 /** The value Google signs requests with, found in a `name=value; name=value` cookie header. */
 internal fun sapisidFrom(cookieHeader: String): String? {
