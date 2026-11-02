@@ -32,6 +32,9 @@ void rules() {
     require(!linuxLowVramActive("off", device(GiB)), "Off is off");
     require(linuxLowVramActive("auto", device(GiB)), "Auto below 2 GiB");
     require(!linuxLowVramActive("auto", device(2 * GiB)), "2 GiB is enough");
+    require(linuxLowVramActive("auto", igpu), "Auto trims integrated graphics, whatever share of memory they report");
+    require(!linuxLowVramActive("auto", big), "a roomy discrete card keeps the full pipeline");
+    require(!linuxLowVramActive("off", igpu), "Off keeps the full pipeline on integrated graphics too");
     require(!linuxLowVramActive("auto", std::nullopt), "Auto with no answer keeps the full pipeline");
     require(!linuxLowVramActive("bogus", device(GiB)), "an unknown mode is not On");
 

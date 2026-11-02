@@ -77,6 +77,12 @@ cmake --build /output/native --target linux_seek_coalesce_test
 /output/native/linux_hud_labels_carry_test
 cmake --build /output/native --target linux_video_output_failure_test
 /output/native/linux_video_output_failure_test
+cmake --build /output/native --target linux_x11_error_guard_test
+Xvfb :77 -screen 0 640x480x24 -nolisten tcp >/dev/null 2>&1 &
+guard_xvfb=$!
+sleep 1
+DISPLAY=:77 /output/native/linux_x11_error_guard_test
+kill "$guard_xvfb"
 /output/native/linux_subtitle_add_test
 cmake --build /output/native --target linux_subtitle_style_test
 /output/native/linux_subtitle_style_test
