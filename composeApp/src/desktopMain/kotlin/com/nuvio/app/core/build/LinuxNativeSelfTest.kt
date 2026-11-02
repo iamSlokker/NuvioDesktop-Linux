@@ -49,6 +49,14 @@ internal object LinuxNativeSelfTest {
         }
         probe("linux playback") { playback() }
         probe("linux mpris") { mpris() }
+        // The P2P engine went missing from the packages once with nothing to catch it. Stage 1's
+        // linuxNativeSmoke layout has no TorrServer yet; stage.py adds it with release-info.json.
+        probe("linux p2p engine") {
+            val staged = File(System.getProperty("jpackage.app-path").orEmpty()).parentFile
+                ?.resolveSibling("release-info.json")?.isFile == true
+            val bundled = PackagedResources.open("torrserver/linux-amd64/TorrServer")?.also { it.close() } != null
+            if (staged || bundled) com.nuvio.app.features.p2p.TorrServerP2pBackend.selfTestEngine() else "no TorrServer in this layout"
+        }
         // No inhibition backend is expected on the smoke's private bus (acquire returns 0); a
         // desktop session takes and releases a real lease. Either way the JNI round trip runs.
         probe("linux inhibitor") {

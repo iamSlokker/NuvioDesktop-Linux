@@ -82,6 +82,18 @@ internal object TorrServerP2pBackend : DesktopP2pBackend {
         )
     }
 
+    /** LinuxNativeSelfTest: the real extraction, start, `/echo` and stop, with no torrent. */
+    internal fun selfTestEngine(): String = runBlocking {
+        binary.start()
+        try {
+            check(binary.isRunning()) { "TorrServer stopped answering /echo" }
+        } finally {
+            binary.stop()
+        }
+        check(!binary.isRunning()) { "TorrServer still answers after stop" }
+        "answered /echo, stopped"
+    }
+
     override suspend fun startStream(request: P2pStreamRequest): String = withContext(Dispatchers.IO) {
         stopStreamNow(stopBinary = false)
         val generation = nextStreamGeneration()
