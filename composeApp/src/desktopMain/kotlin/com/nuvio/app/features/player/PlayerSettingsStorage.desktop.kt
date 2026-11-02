@@ -349,7 +349,9 @@ internal actual object PlayerSettingsStorage {
         loadString(desktopPlayerNotificationPositionKey)
     actual fun saveDesktopPlayerNotificationPosition(position: String) =
         saveString(desktopPlayerNotificationPositionKey, position)
-    actual fun loadExternalPlayerEnabled(): Boolean? = loadBoolean(externalPlayerEnabledKey)
+    // fork:linux - a backup or sync from another install must not route the sealed Flatpak's playback outside.
+    actual fun loadExternalPlayerEnabled(): Boolean? =
+        if (ExternalPlayerPlatform.supported) loadBoolean(externalPlayerEnabledKey) else false
     actual fun saveExternalPlayerEnabled(enabled: Boolean) = saveBoolean(externalPlayerEnabledKey, enabled)
     actual fun loadExternalPlayerForwardSubtitles(): Boolean? = loadBoolean(externalPlayerForwardSubtitlesKey)
     actual fun saveExternalPlayerForwardSubtitles(enabled: Boolean) = saveBoolean(externalPlayerForwardSubtitlesKey, enabled)

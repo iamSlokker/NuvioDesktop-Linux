@@ -177,10 +177,10 @@ internal actual fun StreamRowContextMenu(
                             openInBrowser(stream)
                         }
                     },
-                    onExternal = {
+                    onExternal = if (com.nuvio.app.features.player.ExternalPlayerPlatform.supported) ({
                         menuOpen = false
                         actions.onOpenExternal(stream)
-                    },
+                    }) else null,
                     onCast = actions.onCastToDevice?.let { cast ->
                         {
                             menuOpen = false
@@ -223,7 +223,7 @@ private fun StreamActionsMenu(
     onDownload: (() -> Unit)?,
     onDownloadSeason: (() -> Unit)?,
     onOpenInBrowser: (() -> Unit)?,
-    onExternal: () -> Unit,
+    onExternal: (() -> Unit)?,
     onCast: (() -> Unit)?,
 ) {
     NuvioGlassMenuSurface(modifier = Modifier.width(244.dp)) {
@@ -238,7 +238,7 @@ private fun StreamActionsMenu(
             if (onOpenInBrowser != null) {
                 StreamActionRow(openInBrowserLabel, Icons.Rounded.Language, onOpenInBrowser)
             }
-            StreamActionRow(externalLabel, Icons.AutoMirrored.Rounded.OpenInNew, onExternal)
+            onExternal?.let { StreamActionRow(externalLabel, Icons.AutoMirrored.Rounded.OpenInNew, it) }
             if (onCast != null) {
                 StreamActionRow(castLabel, Icons.Rounded.Cast, onCast)
             }

@@ -622,7 +622,7 @@ internal fun PlayerScreenRuntime.RenderPlayerRuntimeUi() {
         showVideoSettings = isIos,
         showSources = activeVideoId != null && !isIptvPlayback,
         showEpisodes = isSeries && !isIptvPlayback,
-        showExternalPlayer = args.onOpenInExternalPlayer != null,
+        showExternalPlayer = args.onOpenInExternalPlayer != null && ExternalPlayerPlatform.supported,
         durationMs = playbackSnapshot.durationMs,
         positionMs = displayedPositionMs,
         chapters = playerChapters,
@@ -1125,7 +1125,7 @@ private fun PlayerScreenRuntime.RenderPlayerControls(displayedPositionMs: Long, 
             },
             onSourcesClick = if (activeVideoId != null) { { openSourcesPanel() } } else null,
             onEpisodesClick = if (isSeries) { { openEpisodesPanel() } } else null,
-            onOpenInExternalPlayer = args.onOpenInExternalPlayer?.let { { openInExternalPlayer() } },
+            onOpenInExternalPlayer = args.onOpenInExternalPlayer?.takeIf { ExternalPlayerPlatform.supported }?.let { { openInExternalPlayer() } },
             onSubmitIntroClick = if (
                 isSeries &&
                 playerSettingsUiState.introSubmitEnabled &&
