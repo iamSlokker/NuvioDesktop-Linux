@@ -88,6 +88,11 @@ object GameFolderScanner {
             return candidate.takeUnless { alreadyPresent }
         }
 
+        // fork:linux - Steam starts its own games, through Proton when they need it.
+        if (linux) LinuxSteamLibrary.candidates(gamesDirectory)?.let { games ->
+            return GameFolderScanResult(games.mapNotNull { keepUnlessPresent(it, resolvedPath = null) }, skippedExisting, 0)
+        }
+
         val shortcuts = if (linux) linuxChildren.filter { it.extension.equals("desktop", true) }
             else gamesDirectory.listFiles { file: File -> file.isFile && isShortcutFile(file.name) }
                 ?.sortedBy { it.name.lowercase() }.orEmpty()
