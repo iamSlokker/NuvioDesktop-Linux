@@ -295,7 +295,7 @@ internal fun GameEditorDialog(
             horizontalArrangement = Arrangement.spacedBy(12.dp),
             verticalAlignment = Alignment.Bottom,
         ) {
-            FieldColumn(stringResource(Res.string.games_editor_executable_shortcut_or_launch_url_optional), Modifier.weight(1f)) {
+            FieldColumn(stringResource(if (gamesLimitedToLaunchLinks) Res.string.linux_flatpak_games_url_label else Res.string.games_editor_executable_shortcut_or_launch_url_optional), Modifier.weight(1f)) {
                 NuvioTextField(
                     value = executablePath,
                     onValueChange = {
@@ -305,10 +305,10 @@ internal fun GameEditorDialog(
                         }
                     },
                     modifier = Modifier.fillMaxWidth(),
-                    placeholder = stringResource(platformString(Res.string.games_editor_c_games_example_game_exe_a)),
+                    placeholder = stringResource(if (gamesLimitedToLaunchLinks) Res.string.linux_flatpak_games_url_example else platformString(Res.string.games_editor_c_games_example_game_exe_a)),
                 )
             }
-            OutlinedButton(
+            if (!gamesLimitedToLaunchLinks) OutlinedButton(
                 onClick = {
                     scope.launch {
                         val selected = GameLauncher.chooseExecutable(
@@ -329,6 +329,8 @@ internal fun GameEditorDialog(
                 Text(stringResource(Res.string.games_editor_browse))
             }
         }
+
+        LinuxFlatpakGamesNotice()
 
         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             FieldColumn(stringResource(Res.string.games_editor_display_title), Modifier.weight(1f)) {
