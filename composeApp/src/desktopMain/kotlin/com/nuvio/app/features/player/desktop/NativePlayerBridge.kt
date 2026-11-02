@@ -40,6 +40,10 @@ internal object NativePlayerBridge {
                 linuxLoadFailure = error
                 log.w(error) { "Linux native player bridge unavailable; in-app playback remains disabled." }
             }
+            if (linuxLoadFailure == null) {
+                runCatching { setDataDirectory(DesktopStorage.rootDir.toAbsolutePath().toString()) }
+                    .onFailure { log.w { "Native bridge data folder not set: ${it.message}" } }
+            }
         } else {
             loadNativeLibrary()
             // Before any other call, so the player logs and shader cache land in the same data folder as
