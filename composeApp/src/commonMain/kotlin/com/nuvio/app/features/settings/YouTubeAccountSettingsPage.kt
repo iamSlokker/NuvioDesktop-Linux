@@ -17,6 +17,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.nuvio.app.core.i18n.platformString
+import com.nuvio.app.features.youtube.YouTubeFeedRepository
 import com.nuvio.app.features.youtubemusic.YouTubeMusicAuth
 import com.nuvio.app.features.youtubemusic.YouTubeMusicAuthPlatform
 import com.nuvio.app.features.youtubemusic.YouTubeMusicAuthState
@@ -53,6 +54,7 @@ internal fun LazyListScope.youTubeAccountSettingsContent(isTablet: Boolean) {
                 modifier = Modifier.settingsScrollAnchor(SettingsScrollAnchor.searchKey("youtube-account")),
             ) {
                 YouTubeAccountRows(isTablet = isTablet)
+                YouTubeTabSwitch(isTablet = isTablet) // fork:youtube-mode
             }
         }
     }
@@ -129,4 +131,17 @@ private fun YouTubeAccountRows(isTablet: Boolean) {
             }
         }
     }
+}
+
+/** fork:youtube-mode - puts the YouTube tab (home and subscriptions feeds) in the navigation. */
+@Composable
+private fun YouTubeTabSwitch(isTablet: Boolean) {
+    val enabled by remember { YouTubeFeedRepository.tabEnabled }.collectAsState()
+    SettingsSwitchRow(
+        title = "Show YouTube tab",
+        description = "Your YouTube home feed and subscriptions in their own tab, played in Nuvio's player. Needs the account above.",
+        checked = enabled == true,
+        isTablet = isTablet,
+        onCheckedChange = YouTubeFeedRepository::setTabEnabled,
+    )
 }
