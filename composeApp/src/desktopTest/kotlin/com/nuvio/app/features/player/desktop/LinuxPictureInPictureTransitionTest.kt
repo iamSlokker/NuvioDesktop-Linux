@@ -671,6 +671,8 @@ class LinuxPictureInPictureTransitionTest {
             }
         }
         override fun syncGeometry() { requestedBounds = Rectangle(bounds); events.add("sync") }
+        var onRelayout: () -> Unit = {}
+        override fun relayoutContent() { events.add("relayout"); onRelayout() }
         override fun compact(enabled: Boolean) { events.add("chrome=$enabled") }
         override fun toFront() { events.add("front") }
         override var contentInsets = Insets(0, 0, 0, 0)
