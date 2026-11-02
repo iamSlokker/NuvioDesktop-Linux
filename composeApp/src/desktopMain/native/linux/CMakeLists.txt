@@ -150,6 +150,14 @@ target_compile_features(linux_hud_labels_carry_test PRIVATE cxx_std_17)
 target_compile_options(linux_hud_labels_carry_test PRIVATE -Wall -Wextra -Werror)
 target_include_directories(linux_hud_labels_carry_test PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}")
 
+# Windows' stats size and shader cache options (player_session_options.h) against real libmpv.
+add_executable(linux_startup_defaults_test EXCLUDE_FROM_ALL tests/startup_defaults_test.cpp)
+target_compile_features(linux_startup_defaults_test PRIVATE cxx_std_17)
+target_compile_options(linux_startup_defaults_test PRIVATE -Wall -Wextra -Werror)
+target_include_directories(linux_startup_defaults_test PRIVATE "${MPV_INCLUDE_DIR}" "${CMAKE_CURRENT_SOURCE_DIR}")
+target_link_libraries(linux_startup_defaults_test PRIVATE "${MPV_LIBRARY}")
+set_target_properties(linux_startup_defaults_test PROPERTIES BUILD_RPATH "${MPV_LIBRARY_DIR}")
+
 # Auto crop (auto_crop.h): its rules against a scripted host, then real libmpv with null outputs.
 add_executable(linux_auto_crop_test EXCLUDE_FROM_ALL tests/auto_crop_test.cpp)
 target_compile_features(linux_auto_crop_test PRIVATE cxx_std_17)

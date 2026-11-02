@@ -668,6 +668,7 @@ void applyExtraMpvOptions(mpv_handle *mpv, const std::vector<std::string> &optio
     if (mode != "full") {
         // Ordinary gpu-next/streaming defaults from the Windows desktop baseline. None are
         // integration requirements: shared settings and Replace/Full remain authoritative.
+        for (const auto &entry : linuxStartupDefaults()) apply(entry.first, entry.second, true);
         const std::pair<const char *, const char *> defaults[] = {
             {"scale", "spline36"}, {"cscale", "lanczos"}, {"dscale", "mitchell"},
             {"scale-antiring", "0.7"}, {"cscale-antiring", "0.7"}, {"dscale-antiring", "0.7"},
