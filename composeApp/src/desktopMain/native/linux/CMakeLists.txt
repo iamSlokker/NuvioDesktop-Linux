@@ -33,6 +33,7 @@ if(NOT EXISTS "${MPV_INCLUDE_DIR}/mpv/client.h" OR
 endif()
 
 add_library(player_bridge SHARED player_bridge.cpp awt_view_resolver.cpp controls_overlay.cpp seek_thumbnails.cpp playback_inhibitor.cpp screensaver_idle.cpp mpris_session.cpp linux_gamepad.cpp window_chrome.cpp window_chrome_jni.cpp pip_geometry_jni.cpp hdr_wayland_session.cpp flatpak_update.cpp flatpak_update_jni.cpp)
+target_sources(player_bridge PRIVATE status_notifier.cpp status_notifier_jni.cpp)
 # Optional X11 idle fallback. Wayland sessions never use an XWayland global idle estimate.
 find_path(XSS_INCLUDE_DIR NAMES X11/extensions/scrnsaver.h)
 if(XSS_INCLUDE_DIR)
@@ -229,6 +230,12 @@ if(XSS_INCLUDE_DIR)
     target_include_directories(linux_screensaver_idle_probe SYSTEM PRIVATE "${XSS_INCLUDE_DIR}" "${X11_INCLUDE_DIR}" "${X11_PROTOCOL_INCLUDE_DIR}")
     target_link_libraries(linux_screensaver_idle_probe PRIVATE ${CMAKE_DL_LIBS} "${X11_LIBRARY}")
 endif()
+
+# Private-bus StatusNotifierItem/DBusMenu contract (tests/status_notifier_test.py).
+add_executable(linux_status_notifier_probe EXCLUDE_FROM_ALL tests/status_notifier_probe.cpp status_notifier.cpp)
+target_compile_features(linux_status_notifier_probe PRIVATE cxx_std_17)
+target_include_directories(linux_status_notifier_probe PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}")
+target_link_libraries(linux_status_notifier_probe PRIVATE PkgConfig::GTK3 Threads::Threads)
 
 # Private-bus Flatpak portal update contract (tests/flatpak_update_test.py).
 add_executable(linux_flatpak_update_probe EXCLUDE_FROM_ALL tests/flatpak_update_probe.cpp flatpak_update.cpp)

@@ -323,6 +323,21 @@ opt-in real-session test in `LinuxPlaybackInhibitorTest` uses GNOME's inhibitor
 observer; the remaining lifecycle tests use a fake backend. No hardware suspend
 is performed. Nuvio's idle dimming shade and optional shutdown remain separate.
 
+## Tray icon
+
+AWT's `TrayIcon` only speaks XEmbed, which GNOME does not have. Where a StatusNotifierWatcher with a
+registered host is on the session bus (GNOME with the AppIndicator extension, Plasma and others),
+`status_notifier.cpp` publishes a StatusNotifierItem and a flat DBusMenu on its own connection and
+thread; otherwise the XEmbed path runs, and with neither "close to notification area" is hidden.
+The Flatpak's bus filter hides the watcher, and talking to it would be a new permission, so there
+only XEmbed can answer. Test on a private bus, no display:
+
+```
+cmake --build composeApp/build/native/linux --target linux_status_notifier_probe
+python3 composeApp/src/desktopMain/native/linux/tests/status_notifier_test.py \
+  composeApp/build/native/linux/linux_status_notifier_probe
+```
+
 ## Deliberately absent
 
 `setMediaSessionMetadata` remains an explicit void no-op: Linux media sessions

@@ -317,7 +317,17 @@ private const val MacosDarkAquaAppearance = "NSAppearanceNameDarkAqua"
 private fun installDesktopTray(
     window: java.awt.Window,
     onExit: () -> Unit,
+    onAvailableChanged: (Boolean) -> Unit = {},
 ): (() -> Unit)? {
+    // fork:linux - a StatusNotifierItem where the desktop has a host for it; XEmbed below otherwise.
+    if (DesktopHostOs.current == DesktopHostOs.LINUX) {
+        Thread.currentThread().contextClassLoader.getResource(NuvioDesktopIconPath)?.let { url ->
+            com.nuvio.app.core.ui.LinuxStatusNotifierTray.install(
+                window, url, "Nuvio HTPC", localizedString(Res.string.tray_open_nuvio),
+                "Nuvio ${AppVersionPolicy.displayVersionName}", "Exit", onExit, onAvailableChanged,
+            )
+        }?.let { return it }
+    }
     if (!SystemTray.isSupported()) return null
     val iconUrl = Thread.currentThread().contextClassLoader.getResource(NuvioDesktopIconPath)
         ?: return null
@@ -699,7 +709,7 @@ fun main(args: Array<String>) {
             }
             DisposableEffect(window, closeToTray) {
                 val uninstallTray = if (closeToTray) {
-                    installDesktopTray(window, exitDesktopApplication)
+                    installDesktopTray(window, exitDesktopApplication) { trayInstalled.value = it }
                 } else {
                     null
                 }

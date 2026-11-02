@@ -15,7 +15,7 @@ internal actual val platformOffersHdrUiCompensation: Boolean
 
 // Without a tray the close button has to end the app (Main.kt), so a switch would say otherwise.
 internal actual val platformOffersCloseToTray: Boolean
-    get() = !isLinuxHost || runCatching { java.awt.SystemTray.isSupported() }.getOrDefault(false)
+    get() = !isLinuxHost || com.nuvio.app.core.ui.LinuxStatusNotifierTray.trayExists
 
 // The @nuvio-low-vram marker is only sent to, and only parsed by, the Windows bridge.
 internal actual val platformOffersLowVramMode: Boolean
