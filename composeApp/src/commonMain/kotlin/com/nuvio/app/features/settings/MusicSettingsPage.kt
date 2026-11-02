@@ -257,7 +257,7 @@ internal fun LazyListScope.musicSettingsContent(isTablet: Boolean) {
             isTablet = isTablet,
         ) {
             val keepAlive by PreshowSettings.musicKeepAudioAlive.collectAsStateWithLifecycle()
-            SettingsGroup(
+            if (platformOffersAudioKeepAlive) SettingsGroup(
                 isTablet = isTablet,
                 modifier = Modifier.settingsSearchAnchors("music-keep-audio-alive"),
             ) {

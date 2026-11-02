@@ -26,3 +26,7 @@ internal actual val platformOffersSvp: Boolean
 
 internal actual val platformListsWindowsOnlyPlaybackRowsInSearch: Boolean
     get() = !isLinuxHost
+
+// PreshowAudioKeepAlive returns straight away on Linux.
+internal actual val platformOffersAudioKeepAlive: Boolean
+    get() = !isLinuxHost

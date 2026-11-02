@@ -2490,7 +2490,7 @@ private fun settingsSearchEntries(
             PlaybackSearchRow("preshow-keep-audio", resolve(Res.string.settings_preshow_keep_audio_alive), resolve(Res.string.settings_preshow_keep_audio_alive_description), PRESHOW_SECTION_RUNNING_ORDER),
             PlaybackSearchRow("ai-trivia-enabled", resolve(Res.string.settings_ai_trivia_enabled), resolve(Res.string.settings_ai_trivia_enabled_description), PRESHOW_SECTION_RUNNING_ORDER),
             PlaybackSearchRow("preshow-lineup", "Pre-show running order", "Cinema intro, sound system trailer (bumper), trailers, trivia, rating card and feature presentation: switch each on or off and choose the order.", PRESHOW_SECTION_RUNNING_ORDER),
-        ).forEach { row ->
+        ).filter { platformOffersAudioKeepAlive || it.key != "preshow-keep-audio" }.forEach { row ->
             addRow(
                 page = SettingsPage.Preshow,
                 key = row.key,
@@ -2528,7 +2528,7 @@ private fun settingsSearchEntries(
             PlaybackSearchRow("music-lyrics-lyricsplus", resolve(Res.string.settings_music_lyrics_lyricsplus), resolve(Res.string.settings_music_lyrics_lyricsplus_description), resolve(Res.string.settings_music_section_lyrics)),
             PlaybackSearchRow("music-keep-audio-alive", resolve(Res.string.settings_music_keep_audio_alive), resolve(Res.string.settings_music_keep_audio_alive_description), resolve(Res.string.settings_music_section_playback)),
             PlaybackSearchRow("music-skip-non-music", resolve(Res.string.settings_music_skip_non_music), resolve(Res.string.settings_music_skip_non_music_description), resolve(Res.string.settings_music_section_playback)),
-        ).forEach { row ->
+        ).filter { platformOffersAudioKeepAlive || it.key != "music-keep-audio-alive" }.forEach { row ->
             addRow(
                 page = SettingsPage.Music,
                 key = row.key,
