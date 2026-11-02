@@ -59,6 +59,8 @@ cmake --build /output/native --parallel "$NUVIO_BUILD_JOBS" \
   linux_audio_recovery_test linux_hdr_session_test linux_auto_crop_test linux_speech_spot_test \
   linux_live_cache_seek_test linux_hud_labels_carry_test linux_subtitle_add_test
 /output/native/linux_separate_audio_test
+cmake --build /output/native --target linux_video_source_size_test
+/output/native/linux_video_source_size_test
 /output/native/linux_auto_crop_test
 cmake --build /output/native --target linux_tone_mapping_test
 /output/native/linux_tone_mapping_test

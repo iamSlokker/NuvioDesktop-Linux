@@ -1112,6 +1112,7 @@ private fun NativePlayerSurface(
                                 else -> localizedString(DesktopColorProfile.Neutral.labelRes)
                             },
                             shaderLabel = shaderLabel,
+                            qualityLabel = desktopVideoQualityLabel(videoState.sourceSize, videoState.isHdr),
                         )
                     }
                     return@collect

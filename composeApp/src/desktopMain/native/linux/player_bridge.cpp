@@ -12,6 +12,7 @@
 #include "live_cache_seek.h"
 #include "seek_coalesce.h"
 #include "auto_crop.h"
+#include "video_source_size.h"
 #include "speech_spot.h"
 #include "subtitle_add.h"
 #include "subtitle_style.h"
@@ -225,6 +226,7 @@ struct Player {
     int64_t lastShaderSize = -1;
     std::string lastShaderMedia;
     int lastVideoHdr = -1; // Event thread only; never carried to a replacement player.
+    LinuxVideoSizeReport videoSizeReport; // Event thread only, likewise.
     LinuxHttpRecoveryEvents recoveryEvents; // Protected by operations, including seek issuance.
     LinuxAudioPassthroughRecovery audioRecovery; // Same operation lock and per-player lifetime.
     // Live TV cache-only seeks (live_cache_seek.h), under operations: whether the last one left
@@ -529,8 +531,8 @@ struct Player {
             return value && value->format == MPV_FORMAT_STRING && value->u.string ? value->u.string : "";
         };
         const int64_t width = number("w"), height = number("h");
-        const int64_t packed = width > 0 && width <= 65535 && height > 0 && height <= 65535
-            ? width * 65536 + height : 0;
+        const int64_t packed = linuxPackedVideoSize(width, height);
+        if (videoSizeReport.changed(packed)) emit(env, "videoSourceSize", static_cast<double>(packed));
         const std::string media = "linuxShaderMedia/" + text("gamma") + "/" +
             text("primaries") + "/" + text("colormatrix");
         if (packed != lastShaderSize || media != lastShaderMedia) {
