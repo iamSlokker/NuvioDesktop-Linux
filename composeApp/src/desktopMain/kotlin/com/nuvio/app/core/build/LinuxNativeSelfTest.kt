@@ -28,6 +28,7 @@ import javax.swing.SwingUtilities
 internal object LinuxNativeSelfTest {
 
     fun run(probe: (String, () -> String) -> Unit) {
+        LinuxRuntimeProbes.run(probe)
         // native-image emits libawt & co. beside the exe and the layout adds libjawt.so under
         // runtime/lib; a second copy of either mapped from another path would split AWT's state.
         probe("linux jdk libraries") {
