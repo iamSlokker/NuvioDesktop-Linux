@@ -13,6 +13,7 @@
 #include "auto_crop.h"
 #include "speech_spot.h"
 #include "subtitle_add.h"
+#include "subtitle_style.h"
 
 #include <algorithm>
 #include <cctype>
@@ -231,6 +232,7 @@ struct Player {
     double liveSeekTargetSeconds = -1.0;
     std::chrono::steady_clock::time_point liveSeekIssuedAt{};
     LinuxSubtitleAdds subtitleAdds; // Addon subtitles added off the caller's thread, under operations.
+    LinuxSubtitleAssMode subtitleAssMode; // sub-ass-override per selected track, under operations.
     bool ownsX11Lifetime = false;
     // Experimental native-Wayland HDR session: no Canvas, X11 lifetime, HUD or thumbnails.
     bool hdrSession = false;
@@ -437,6 +439,8 @@ struct Player {
                     if (repair && !applyLinuxSubtitleRepair(mpv, *repair))
                         std::fprintf(stderr, "Linux sub-add: an abandoned subtitle could not be taken out\n");
                 }
+                if (event->event_id == MPV_EVENT_PROPERTY_CHANGE && event->reply_userdata == 2)
+                    linuxRefreshSubtitleAssMode(mpv, subtitleAssMode);
                 // The demuxer offset of a cache-only live seek is per seek: it ends with the restart.
                 if (event->event_id == MPV_EVENT_PLAYBACK_RESTART && liveHrSeekOffsetApplied) {
                     mpv_set_property_string(mpv, "hr-seek-demuxer-offset", "0");
@@ -638,6 +642,9 @@ void applyExtraMpvOptions(mpv_handle *mpv, const std::vector<std::string> &optio
             configured.insert(name);
         }
     };
+    // As on Windows, in every mode: no default/forced track shows for an instant before the
+    // preferred language is chosen. Kotlin's slang + sid=auto, sent below, replace this.
+    apply("sid", "no", true);
     if (mode != "full") {
         // Ordinary gpu-next/streaming defaults from the Windows desktop baseline. None are
         // integration requirements: shared settings and Replace/Full remain authoritative.
@@ -979,6 +986,7 @@ void initializeAndLoad(Player &player, const std::string &source, AfterInitializ
     const char *recoveryLogLevel = player.stringProperty("audio-spdif").empty() ? "warn" : "v";
     checkMpv(mpv_request_log_messages(player.mpv, recoveryLogLevel), "request recovery log events");
     checkMpv(mpv_observe_property(player.mpv, 1, "video-params", MPV_FORMAT_NODE), "observe video-params");
+    checkMpv(mpv_observe_property(player.mpv, 2, "current-tracks/sub/codec", MPV_FORMAT_STRING), "observe subtitle codec");
     afterInitialize();
     const char *load[] = {"loadfile", source.c_str(), nullptr};
     checkMpv(mpv_command(player.mpv, load), "loadfile");
@@ -1318,8 +1326,8 @@ JNI_METHOD(void, clearExternalSubtitlesAndSelect)(JNIEnv *env, jobject, jlong ha
 }
 JNI_METHOD(void, setSubtitleAssStyleMode)(JNIEnv *env, jobject, jlong handle, jstring mode, jdouble scale) {
     withPlayer(env, handle, [&](Player &p) {
-        p.property("sub-ass-override", text(env, mode));
-        p.property("sub-scale", std::to_string(scale));
+        // Mid-playback changes take effect at once; the track decides whether they reach it at all.
+        if (p.subtitleAssMode.request(text(env, mode), scale)) linuxRefreshSubtitleAssMode(p.mpv, p.subtitleAssMode, true);
     });
 }
 JNI_METHOD(void, applySubtitleStyle)(
@@ -1327,16 +1335,17 @@ JNI_METHOD(void, applySubtitleStyle)(
     jfloat outlineSize, jboolean bold, jfloat fontSize, jint position, jstring font
 ) {
     withPlayer(env, handle, [&](Player &p) {
-        std::string back = text(env, background);
-        p.property("sub-color", text(env, color));
-        p.property("sub-back-color", back);
-        p.property("sub-outline-color", text(env, outline));
-        p.property("sub-border-style", back.rfind("#00", 0) == 0 ? "outline-and-shadow" : "opaque-box");
-        p.property("sub-outline-size", std::to_string(outlineSize));
-        p.property("sub-bold", bold ? "yes" : "no");
-        p.property("sub-font-size", std::to_string(fontSize));
-        p.property("sub-pos", std::to_string(position));
-        p.property("sub-font", text(env, font));
+        LinuxSubtitleStyle style;
+        style.color = text(env, color);
+        style.background = text(env, background);
+        style.outline = text(env, outline);
+        style.outlineSize = outlineSize;
+        style.bold = bold == JNI_TRUE;
+        style.fontSize = fontSize;
+        style.position = position;
+        style.font = text(env, font);
+        linuxRefreshSubtitleAssMode(p.mpv, p.subtitleAssMode);
+        for (const auto &[name, value] : linuxSubtitleStyleProperties(style)) p.property(name.c_str(), value);
     });
 }
 

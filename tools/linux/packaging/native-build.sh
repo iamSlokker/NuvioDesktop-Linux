@@ -64,6 +64,8 @@ cmake --build /output/native --parallel "$NUVIO_BUILD_JOBS" \
 /output/native/linux_live_cache_seek_test
 /output/native/linux_hud_labels_carry_test
 /output/native/linux_subtitle_add_test
+cmake --build /output/native --target linux_subtitle_style_test
+/output/native/linux_subtitle_style_test
 /output/native/linux_http_recovery_test
 /output/native/linux_audio_recovery_test
 # Display variables are unset above; the canonical runtime must report waylandvk.
