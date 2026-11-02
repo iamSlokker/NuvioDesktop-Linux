@@ -3,7 +3,7 @@
 
 The desktop P2P backend (TorrServerP2pBackend.kt) runs TorrServer as a child process and finds a
 packaged copy through PackagedResources: `<dir of lib/nuvio>/resources/torrserver/linux-amd64/
-TorrServer`. Nuvio Engine is Windows-only, so without this binary Linux has no torrent engine.
+TorrServer`. It is the other engine choice in Settings, beside Nuvio Engine (nuvio_engine/build.py).
 
 Runs in native-build.sh's build phase (network for Go modules). Every input is pinned by SHA-256
 (manifest.json); Go modules are verified against the tag's go.sum and the Go checksum database,

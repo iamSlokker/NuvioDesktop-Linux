@@ -1,0 +1,16 @@
+{
+  "schema_version": 1,
+  "version": "v0.1.6",
+  "license": "GPL-3.0",
+  "homepage": "https://github.com/NuvioMedia/nuvio-engine",
+  "source": {
+    "url": "https://codeload.github.com/NuvioMedia/nuvio-engine/tar.gz/refs/tags/v0.1.6",
+    "sha256": "d527acb28178c382d6b01a8423d23c1cf7cf033b7623d830930328d2eee21cd3",
+    "top": "nuvio-engine-0.1.6"
+  },
+  "boost": {
+    "url": "https://archives.boost.io/release/1.86.0/source/boost_1_86_0.tar.bz2",
+    "sha256": "1bed88e40401b2cb7a1f76d4bab499e352fa4d0c5f31c0dbae64e24d34d7513b"
+  },
+  "libtorrent_commit": "740a0b9aeabe00e762cc0efe4a0f27593db2550b"
+}

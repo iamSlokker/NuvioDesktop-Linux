@@ -63,6 +63,27 @@ internal object LinuxNativeSelfTest {
         }
         // No inhibition backend is expected on the smoke's private bus (acquire returns 0); a
         // desktop session takes and releases a real lease. Either way the JNI round trip runs.
+        // The default P2P engine, loaded by path. Stage 1's smoke layout does not have it yet;
+        // verify.py requires the file in every package.
+        probe("linux nuvio engine") {
+            if (!com.nuvio.engine.internal.NuvioEngineLibrary.isAvailable) {
+                "not in this layout"
+            } else {
+                val root = java.nio.file.Files.createTempDirectory("nuvio-engine-probe").toFile()
+                try {
+                    val config = com.nuvio.engine.NuvioEngineConfig(
+                        dataDirectory = root.resolve("state").apply { mkdirs() },
+                        cacheDirectory = root.resolve("cache").apply { mkdirs() },
+                        diskCacheCapacityBytes = 0L,
+                        ramOnlyMode = true,
+                    )
+                    com.nuvio.engine.NuvioEngine.create(config).close()
+                    "${com.nuvio.engine.NuvioEngine.version}, ${com.nuvio.engine.NuvioEngine.protocolBackendVersion}"
+                } finally {
+                    root.deleteRecursively()
+                }
+            }
+        }
         probe("linux inhibitor") {
             val handle = LinuxInhibitionNative.acquire(Runnable { })
             LinuxInhibitionNative.release(handle)
