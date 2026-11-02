@@ -32,6 +32,7 @@ import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -191,10 +192,21 @@ internal fun MusicLibraryShelf(
                             )
                         }
                     }
+                    // Each count over what it counts: the artists over their column, the releases over the covers, where a
+                    // five-figure library still has room.
                     item(key = "shelf-count") {
                         ShelfColumnLayout(Modifier.padding(top = 4.dp, bottom = 12.dp), left = {
-                            Text("${state.artists.size} artists · $totalReleases releases", fontSize = 22.sp, color = colors.textMuted, maxLines = 1)
-                        }) {}
+                            Text("${state.artists.size} artists", fontSize = 22.sp, color = colors.textMuted, maxLines = 1)
+                        }) {
+                            Text(
+                                "$totalReleases releases",
+                                fontSize = 22.sp,
+                                color = colors.textMuted,
+                                maxLines = 1,
+                                // In line with the first cover (the covers' row has this much padding at its start).
+                                modifier = Modifier.padding(start = 12.dp),
+                            )
+                        }
                     }
                     val pending = state.working.filterKeys { id -> state.artists.none { it.id == id } }
                     items(pending.entries.toList(), key = { "pending:${it.key}" }) { (_, progress) ->
@@ -358,7 +370,11 @@ private fun ShelfCardRow(
 
 // The artist's column: one fixed width, so every artist (and the count over them) shares a centre line,
 // with a divider between it and the covers that runs unbroken down the shelf.
-private val SHELF_COLUMN_WIDTH = 260.dp
+// The artist column's contents are centred [SHELF_COLUMN_SHIFT] left of the column's middle (into the page margin), so the round
+// buttons (three of 40 dp, 10 apart) start about level with the left edge of the cards above the shelf, while a long name still
+// has room before the divider.
+private val SHELF_COLUMN_WIDTH = 200.dp
+private val SHELF_COLUMN_SHIFT = 26.dp
 private val SHELF_COLUMN_GAP = 28.dp
 private val SHELF_DIVIDER = Color.White.copy(alpha = 0.10f)
 
@@ -383,7 +399,7 @@ private fun ShelfColumnLayout(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(SHELF_COLUMN_GAP),
     ) {
-        Box(Modifier.width(SHELF_COLUMN_WIDTH), contentAlignment = Alignment.Center) { left() }
+        Box(Modifier.width(SHELF_COLUMN_WIDTH).offset(x = -SHELF_COLUMN_SHIFT), contentAlignment = Alignment.Center) { left() }
         content()
     }
 }
@@ -417,8 +433,36 @@ private fun ShelfArtistRow(
     val missing = row.tiles.count { it.release.needsPalette }
     LaunchedEffect(artist.id, missing) { ReleasePaletteResolver.ensure(context, artist, keys = keys, limit = 40) }
 
-    fun playTop(shuffled: Boolean) {
-        scope.launch { playTopAlbums(catalog, row.top.map { it.release }, shuffled) }
+    // What the two play buttons are doing or why they could not: shown in the count line under the name, so a press that
+    // opens nothing is no longer silent. Cleared a few seconds after a failure.
+    var notice by remember(artist.id) { mutableStateOf<String?>(null) }
+    var busy by remember(artist.id) { mutableStateOf(false) }
+
+    fun runPlay(opening: String, failed: String, play: suspend () -> Boolean) {
+        if (busy) return
+        busy = true
+        notice = opening
+        scope.launch {
+            val opened = try { play() } catch (e: kotlinx.coroutines.CancellationException) { throw e } catch (_: Throwable) { false }
+            busy = false
+            if (opened) {
+                notice = null
+            } else {
+                notice = failed
+                kotlinx.coroutines.delay(4_000)
+                if (notice == failed) notice = null
+            }
+        }
+    }
+
+    /** Left: the top albums (five, or fewer) one after the other, in order, as a queue. */
+    fun playTopQueue() = runPlay("Opening ${row.topLabel}…", "Couldn't open their top albums.") {
+        playTopAlbums(catalog, row.top.map { it.release }, shuffled = false)
+    }
+
+    /** Middle: every playable track by the artist, shuffled together. */
+    fun shuffleEverything() = runPlay("Mixing their tracks…", "Couldn't open their tracks.") {
+        playArtistMix(catalog, artist, row.tiles.map { it.release })
     }
 
     // The covers by column for the keyboard: the top albums, the rest (the divider between them is no column), then
@@ -469,7 +513,7 @@ private fun ShelfArtistRow(
             .padding(vertical = 18.dp),
         left = {
             // The artist on top, their name and count under it, then three round buttons: their hits (the top five),
-            // a shuffle of them, and the favourite star, which floats the artist to the top of the shelf.
+            // a shuffle of every playable track, and the favourite star, which floats the artist to the top of the shelf.
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.spacedBy(6.dp),
@@ -500,15 +544,16 @@ private fun ShelfArtistRow(
                         modifier = Modifier.padding(top = 4.dp),
                     )
                 }
+                val line = status ?: notice
                 val subtitle = when {
-                    status != null -> status
+                    line != null -> line
                     row.playableReleases == row.totalReleases -> "${row.totalReleases} release${if (row.totalReleases == 1) "" else "s"}"
                     else -> "${row.playableReleases} playable of ${row.totalReleases}"
                 }
                 Text(
                     subtitle,
                     style = MaterialTheme.typography.bodySmall,
-                    color = if (status != null) colors.accent else colors.textSecondary,
+                    color = if (line != null) colors.accent else colors.textSecondary,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                     textAlign = TextAlign.Center,
@@ -518,9 +563,9 @@ private fun ShelfArtistRow(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(10.dp),
                 ) {
-                    if (row.top.isNotEmpty()) {
-                        ShelfRoundButton(Icons.Rounded.LocalFireDepartment, row.topLabel) { playTop(shuffled = false) }
-                        ShelfRoundButton(Icons.Rounded.Shuffle, "Shuffle their hits") { playTop(shuffled = true) }
+                    if (row.tiles.isNotEmpty()) {
+                        ShelfRoundButton(Icons.Rounded.LocalFireDepartment, "Play ${row.topLabel} in a queue") { playTopQueue() }
+                        ShelfRoundButton(Icons.Rounded.Shuffle, "Shuffle all their playable tracks") { shuffleEverything() }
                     }
                     ShelfRoundButton(
                         icon = Icons.Rounded.Star,

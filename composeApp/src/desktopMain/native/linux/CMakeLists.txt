@@ -15,6 +15,7 @@ pkg_check_modules(WEBKITGTK REQUIRED IMPORTED_TARGET webkit2gtk-4.1)
 find_path(X11_INCLUDE_DIR NAMES X11/Xlib.h REQUIRED)
 find_path(X11_PROTOCOL_INCLUDE_DIR NAMES X11/X.h REQUIRED)
 find_library(X11_LIBRARY NAMES X11 REQUIRED)
+find_library(XEXT_LIBRARY NAMES Xext REQUIRED)
 
 set(MPV_ROOT "$ENV{MPV_ROOT}" CACHE PATH "Root containing include/mpv and lib/libmpv.so")
 if(MPV_ROOT)
@@ -32,7 +33,7 @@ if(NOT EXISTS "${MPV_INCLUDE_DIR}/mpv/client.h" OR
     message(FATAL_ERROR "libmpv headers/library not found; set MPV_ROOT to the mpv installation prefix")
 endif()
 
-add_library(player_bridge SHARED player_bridge.cpp x11_error_handler_guard.cpp awt_view_resolver.cpp controls_overlay.cpp seek_thumbnails.cpp playback_inhibitor.cpp screensaver_idle.cpp mpris_session.cpp linux_gamepad.cpp window_chrome.cpp window_chrome_jni.cpp pip_geometry_jni.cpp hdr_wayland_session.cpp flatpak_update.cpp flatpak_update_jni.cpp file_chooser_portal.cpp file_chooser_portal_jni.cpp)
+add_library(player_bridge SHARED player_bridge.cpp x11_error_handler_guard.cpp now_playing_glass.cpp awt_view_resolver.cpp controls_overlay.cpp seek_thumbnails.cpp playback_inhibitor.cpp screensaver_idle.cpp mpris_session.cpp linux_gamepad.cpp window_chrome.cpp window_chrome_jni.cpp pip_geometry_jni.cpp hdr_wayland_session.cpp flatpak_update.cpp flatpak_update_jni.cpp file_chooser_portal.cpp file_chooser_portal_jni.cpp)
 target_sources(player_bridge PRIVATE status_notifier.cpp status_notifier_jni.cpp)
 # Optional X11 idle fallback. Wayland sessions never use an XWayland global idle estimate.
 find_path(XSS_INCLUDE_DIR NAMES X11/extensions/scrnsaver.h)
@@ -46,7 +47,7 @@ target_include_directories(player_bridge PRIVATE "${MPV_INCLUDE_DIR}")
 target_include_directories(player_bridge SYSTEM PRIVATE
     ${JNI_INCLUDE_DIRS} "${X11_INCLUDE_DIR}" "${X11_PROTOCOL_INCLUDE_DIR}")
 target_link_libraries(player_bridge PRIVATE JNI::JNI JNI::AWT Threads::Threads ${CMAKE_DL_LIBS} "${MPV_LIBRARY}"
-    PkgConfig::GTK3 PkgConfig::WEBKITGTK "${X11_LIBRARY}")
+    PkgConfig::GTK3 PkgConfig::WEBKITGTK "${X11_LIBRARY}" "${XEXT_LIBRARY}")
 target_link_options(player_bridge PRIVATE "LINKER:-z,defs")
 
 target_sources(player_bridge PRIVATE logind_power.cpp)
@@ -268,6 +269,13 @@ target_include_directories(linux_x11_error_guard_probe PRIVATE "${MPV_INCLUDE_DI
 target_include_directories(linux_x11_error_guard_probe SYSTEM PRIVATE "${X11_INCLUDE_DIR}")
 target_link_libraries(linux_x11_error_guard_probe PRIVATE ${CMAKE_DL_LIBS} "${MPV_LIBRARY}" "${X11_LIBRARY}")
 set_target_properties(linux_x11_error_guard_probe PROPERTIES BUILD_RPATH "${MPV_LIBRARY_DIR}")
+# The Now Playing corners (video_corners.h) on a real X server.
+add_executable(linux_video_corners_test EXCLUDE_FROM_ALL tests/video_corners_test.cpp)
+target_compile_features(linux_video_corners_test PRIVATE cxx_std_17)
+target_compile_options(linux_video_corners_test PRIVATE -Wall -Wextra -Werror)
+target_include_directories(linux_video_corners_test PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}")
+target_include_directories(linux_video_corners_test SYSTEM PRIVATE "${X11_INCLUDE_DIR}")
+target_link_libraries(linux_video_corners_test PRIVATE "${X11_LIBRARY}" "${XEXT_LIBRARY}")
 add_executable(linux_x11_error_guard_test EXCLUDE_FROM_ALL tests/x11_error_guard_test.cpp)
 target_compile_features(linux_x11_error_guard_test PRIVATE cxx_std_17)
 target_compile_options(linux_x11_error_guard_test PRIVATE -Wall -Wextra -Werror)

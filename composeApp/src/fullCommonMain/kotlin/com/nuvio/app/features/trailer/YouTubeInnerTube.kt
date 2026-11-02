@@ -51,6 +51,12 @@ private val innerTubeLog = Logger.withTag(TRAILER_EXTRACTOR_TAG)
 internal suspend fun InAppYouTubeExtractor.searchVideos(query: String): List<YouTubeSearchHit> =
     withContext(Dispatchers.Default) {
         runCatching {
+            // fork:youtube-pause - a search is only worth sending while YouTube is answering us, or when someone waits on it.
+            val caller = com.nuvio.app.features.music.youTubeCaller()
+            if (!com.nuvio.app.features.music.mayAskYouTube(com.nuvio.app.features.music.MusicRateLimit.isBlocked(), caller?.urgent == true)) {
+                innerTubeLog.d { "[${caller?.label ?: "other"}] YouTube search \"$query\" skipped: paused after a refusal" }
+                return@runCatching emptyList<YouTubeSearchHit>()
+            }
             withTimeout(INNERTUBE_TIMEOUT_MS) {
                 val session = innerTubeSession()
                 val headers = buildMap {
@@ -78,6 +84,7 @@ internal suspend fun InAppYouTubeExtractor.searchVideos(query: String): List<You
                     timeoutMillis = TRAILER_REQUEST_TIMEOUT_MS,
                 )
                 if (!response.ok) {
+                    com.nuvio.app.features.music.MusicRateLimit.noteRefusal(response.status, response.body)
                     innerTubeLog.w { "YouTube search failed (${response.status}) for \"$query\": ${response.body.take(160)}" }
                     return@withTimeout emptyList()
                 }
@@ -97,6 +104,9 @@ internal suspend fun InAppYouTubeExtractor.searchVideos(query: String): List<You
 internal suspend fun InAppYouTubeExtractor.musicRequest(endpoint: String, params: Map<String, Any?>): String? =
     withContext(Dispatchers.Default) {
         runCatching {
+            if (com.nuvio.app.features.music.MusicRateLimit.isBlocked()) {
+                return@runCatching null.also { innerTubeLog.d { "YouTube Music $endpoint skipped: paused after a refusal" } }
+            }
             withTimeout(INNERTUBE_TIMEOUT_MS) {
                 val session = innerTubeSession()
                 val headers = buildMap {
@@ -122,6 +132,9 @@ internal suspend fun InAppYouTubeExtractor.musicRequest(endpoint: String, params
                 )
                 if (!response.ok) {
                     innerTubeLog.w { "YouTube Music $endpoint failed (${response.status}): ${response.body.take(160)}" }
+                    if (com.nuvio.app.features.music.MusicRateLimit.noteRefusal(response.status, response.body)) {
+                        innerTubeLog.w { "YouTube Music is limiting requests: pausing them for a short while" }
+                    }
                     return@withTimeout null
                 }
                 response.body
@@ -129,6 +142,61 @@ internal suspend fun InAppYouTubeExtractor.musicRequest(endpoint: String, params
         }.onFailure {
             innerTubeLog.w { "YouTube Music $endpoint failed: ${it.message}" }
         }.getOrNull()
+    }
+
+/**
+ * fork:youtube-mode - POSTs [params] to youtube.com's InnerTube [endpoint] ("browse",
+ * "account/accounts_list") as the WEB client, signed as the account from Settings > YouTube account.
+ *
+ * [pageId] acts as one of the account's brand channels. Without it YouTube answers for the Google
+ * account's own profile, which for many people has no channel at all (their channel is a brand
+ * channel), so its subscriptions are empty or long forgotten. The website picks the channel the same
+ * way: the `x-goog-pageid` header plus `onBehalfOfUser` in the request context.
+ *
+ * Returns the HTTP status and body; status 0 when the request never got an answer.
+ */
+internal suspend fun InAppYouTubeExtractor.webRequest(
+    endpoint: String,
+    params: Map<String, Any?>,
+    accountHeaders: Map<String, String>,
+    pageId: String?,
+): Pair<Int, String> =
+    withContext(Dispatchers.Default) {
+        runCatching {
+            withTimeout(INNERTUBE_TIMEOUT_MS) {
+                val session = innerTubeSession()
+                val headers = buildMap {
+                    putAll(TrailerExtractionPlatform.defaultHeaders)
+                    put("content-type", "application/json")
+                    put("origin", "https://www.youtube.com")
+                    put("x-youtube-client-name", "1")
+                    put("x-youtube-client-version", WEB_CLIENT_VERSION)
+                    if (!session.visitorData.isNullOrBlank()) put("x-goog-visitor-id", session.visitorData)
+                    putAll(accountHeaders)
+                    if (!pageId.isNullOrBlank()) put("x-goog-pageid", pageId)
+                }
+                val payload = innerTubePayload(
+                    params,
+                    clientName = "WEB",
+                    clientVersion = WEB_CLIENT_VERSION,
+                    onBehalfOfUser = pageId?.takeIf { it.isNotBlank() },
+                )
+                val response = TrailerExtractionPlatform.performRequest(
+                    url = "https://www.youtube.com/youtubei/v1/$endpoint" + keyQuery(session) + "&prettyPrint=false",
+                    method = "POST",
+                    headers = headers,
+                    body = payload.toString(),
+                    timeoutMillis = TRAILER_REQUEST_TIMEOUT_MS,
+                )
+                if (!response.ok) {
+                    com.nuvio.app.features.music.MusicRateLimit.noteRefusal(response.status, response.body)
+                    innerTubeLog.w { "YouTube $endpoint failed (${response.status}): ${response.body.take(160)}" }
+                }
+                response.status to response.body
+            }
+        }.onFailure {
+            innerTubeLog.w { "YouTube $endpoint failed: ${it.message}" }
+        }.getOrDefault(0 to "")
     }
 
 /** `?key=...` when the session has a key, else `?` alone so a following `&prettyPrint=false` still parses. */
@@ -149,11 +217,13 @@ private fun innerTubePayload(
     params: Map<String, Any?>,
     clientName: String,
     clientVersion: String,
+    onBehalfOfUser: String? = null,
 ): JsonObject {
     val fields = LinkedHashMap<String, JsonElement>()
     params.forEach { (key, value) -> if (value != null) fields[key] = toJsonElement(value) }
     fields["context"] = JsonObject(
-        mapOf(
+        listOfNotNull(
+            onBehalfOfUser?.let { "user" to JsonObject(mapOf("onBehalfOfUser" to JsonPrimitive(it))) },
             "client" to JsonObject(
                 mapOf(
                     "clientName" to JsonPrimitive(clientName),
@@ -162,7 +232,7 @@ private fun innerTubePayload(
                     "gl" to JsonPrimitive("US"),
                 ),
             ),
-        ),
+        ).toMap(),
     )
     return JsonObject(fields)
 }

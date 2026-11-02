@@ -70,6 +70,12 @@ int main() {
         for (float sample : samples) peak = std::max(peak, (double)std::fabs(sample));
         // 12000/32768 = 0.366 per channel; the mono downmix keeps the tone well above silence.
         require(peak > 0.2 && peak < 1.0, "decoded peak " + std::to_string(peak));
+
+        // The loudness measurement's format: 2 s of 24 kHz stereo float is 384000 bytes.
+        const int stereo = linuxDecodeAudioSpot(wav.string(), {}, "", 3.0, 2.0, 24000, 2, pcm.string(), nullptr);
+        require(stereo == 0, "stereo decode result " + std::to_string(stereo));
+        const auto stereoBytes = std::filesystem::file_size(pcm);
+        require(stereoBytes > 360000 && stereoBytes < 408000, "stereo decoded size " + std::to_string(stereoBytes));
         std::filesystem::remove_all(dir);
     } catch (const std::exception &error) {
         std::cerr << "FAIL: " << error.what() << '\n';
