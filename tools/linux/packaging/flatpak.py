@@ -9,6 +9,7 @@ import datetime
 import json
 import os
 import pathlib
+import re
 import shlex
 import shutil
 import subprocess
@@ -19,6 +20,21 @@ from client_config import verify_native_backend, verify_packaged_backend
 import native_evidence
 
 HERE = pathlib.Path(__file__).resolve().parent
+
+
+def grant_input_device(metadata):
+    """Adds `input` to the app's devices: controllers are read from /dev/input.
+
+    Written here because the CI runner's Flatpak (1.12, Ubuntu 22.04) refuses --device=input at
+    build-finish; the option arrived in 1.15.6. Clients older than that ignore a device name they
+    do not know, so there they simply get no controllers.
+    """
+    path = pathlib.Path(metadata)
+    text = path.read_text()
+    granted, count = re.subn(r'(?m)^devices=dri;$', 'devices=dri;input;', text)
+    if count != 1:
+        raise ValueError('Expected one devices=dri; line in the Flatpak metadata')
+    path.write_text(granted)
 
 
 def launcher_text(image):
@@ -72,7 +88,7 @@ def build(work):
     permissions = json.loads((HERE / 'flatpak-permissions.json').read_text())
     provenance = dict(app_id=app_id, runtime=runtime, runtime_version=branch,
                     runtime_commit=runtime_commit, sdk=runtime, command='nuvio-desktop',
-                    finish_args=permissions, source_commit=info['git_commit'], source_sha256=info['source_sha256'])
+                    finish_args=permissions + ['--device=input'], source_commit=info['git_commit'], source_sha256=info['source_sha256'])
     (image / 'flatpak-provenance.json').write_text(json.dumps(provenance, indent=2) + '\n')
     # Static ELF/loader checks inside an isolated build sandbox; no application,
     # GTK initialization, audio device, display socket or external service used.
@@ -92,6 +108,7 @@ test -x /app/lib/nuvio-desktop/lib/nuvio
 ' sh
 '''], check=True)
     subprocess.run(['flatpak', 'build-finish', '--command=nuvio-desktop', *permissions, str(root)], check=True)
+    grant_input_device(root / 'metadata')
     repository = work / 'flatpak-repo'
     # Branch contains channel and revision; stable and development are explicit.
     export_branch = info['channel']
