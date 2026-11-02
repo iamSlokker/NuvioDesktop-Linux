@@ -89,6 +89,10 @@ class LinuxDiscordIpcTest {
         assertEquals(Path.of("/fixture/runtime/discord-ipc-0"), paths.first())
         assertTrue(Path.of("/fixture/runtime/discord-ipc-9") in paths)
         assertTrue(Path.of("/fixture/runtime/app/com.discordapp.Discord/discord-ipc-0") in paths)
+        for (client in listOf("snap.discord", "snap.discord-canary", "snap.vesktop", "app/com.discordapp.DiscordCanary",
+            ".flatpak/dev.vencord.Vesktop/xdg-run", "app/dev.vencord.Vesktop")) {
+            assertTrue(Path.of("/fixture/runtime/$client/discord-ipc-0") in paths, client)
+        }
         assertTrue(paths.indexOf(Path.of("/fixture/tmp/discord-ipc-0")) > 9)
         assertEquals(paths.distinct(), paths)
         assertTrue(paths.all { it.isAbsolute })

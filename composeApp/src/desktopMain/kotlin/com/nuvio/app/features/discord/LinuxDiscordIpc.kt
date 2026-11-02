@@ -30,7 +30,12 @@ internal fun linuxDiscordSocketCandidates(environment: Map<String, String> = Sys
     return roots.flatMap { root ->
         // Flatpak Discord can expose its socket under the per-app runtime directory. Visibility
         // across sandboxes is not guaranteed; do not change permissions or sandbox configuration.
-        listOf(root, root.resolve("app/com.discordapp.Discord")).flatMap { directory ->
+        // Snap keeps its own directory too, and the Flatpak Vesktop publishes under .flatpak/.
+        listOf(
+            root, root.resolve("app/com.discordapp.Discord"), root.resolve("app/com.discordapp.DiscordCanary"),
+            root.resolve("snap.discord"), root.resolve("snap.discord-canary"), root.resolve("snap.vesktop"),
+            root.resolve(".flatpak/dev.vencord.Vesktop/xdg-run"), root.resolve("app/dev.vencord.Vesktop"),
+        ).flatMap { directory ->
             (0..9).map { directory.resolve("discord-ipc-$it") }
         }
     }.distinct()
