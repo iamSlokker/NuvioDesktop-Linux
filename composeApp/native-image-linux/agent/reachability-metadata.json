@@ -72,6 +72,39 @@
       ]
     },
     {
+      "type": "com.nuvio.engine.internal.NativeEventPayload",
+      "jniAccessible": true,
+      "allDeclaredConstructors": true
+    },
+    {
+      "type": "com.nuvio.engine.internal.NativeFilePayload",
+      "jniAccessible": true,
+      "allDeclaredConstructors": true
+    },
+    {
+      "type": "com.nuvio.engine.internal.NativeFilesPayload",
+      "jniAccessible": true,
+      "allDeclaredConstructors": true
+    },
+    {
+      "type": "java.lang.IllegalStateException",
+      "jniAccessible": true,
+      "allDeclaredConstructors": true
+    },
+    {
+      "type": "java.lang.String",
+      "jniAccessible": true,
+      "allDeclaredConstructors": true,
+      "methods": [
+        {
+          "name": "getBytes",
+          "parameterTypes": [
+            "java.lang.String"
+          ]
+        }
+      ]
+    },
+    {
       "type": "com.nuvio.app.features.music.InnerTubeXFallback",
       "fields": [
         {

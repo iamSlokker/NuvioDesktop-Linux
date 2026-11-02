@@ -7,6 +7,9 @@ Toolchain (dev box): MSYS2 UCRT64 GCC + static OpenSSL (`pacman -S mingw-w64-ucr
 CMake from Visual Studio Build Tools, jni.h from the Gradle JDK. The task skips with a warning when any
 of those is missing; `createDistributable` refuses to package without the DLL.
 
+On Linux, `tools/linux/packaging/nuvio_engine/build.py` builds `libnuvio_engine.so` from the same pinned tag and
+patches in the package builder; `linux-exports.map` keeps the JNI bridge visible.
+
 ## Local engine changes
 
 The checkout must carry `patches/*.patch` on top of the pinned upstream version (v0.1.6):

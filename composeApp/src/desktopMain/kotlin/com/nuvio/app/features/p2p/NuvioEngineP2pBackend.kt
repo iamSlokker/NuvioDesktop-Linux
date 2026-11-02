@@ -843,6 +843,7 @@ internal fun buildNuvioEngineConfig(
     // stream down mid-film. Upstream disables it for the same reason.
     streamInactivityTimeoutMilliseconds = 0,
     ramOnlyMode = ramOnlyMode,
+    tlsCaBundle = linuxSystemCaBundle(),
 )
 
 internal fun unexpectedStreamStopError(

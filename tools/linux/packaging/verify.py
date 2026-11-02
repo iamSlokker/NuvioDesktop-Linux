@@ -213,6 +213,7 @@ REQUIRED = ['bin/nuvio', 'bin/nuvio-desktop', 'lib/nuvio', 'lib/runtime/lib/libj
             'share/icons/hicolor/512x512/apps/com.nuvio.media.desktop.png',
             'share/licenses/Nuvio/COPYING', 'share/licenses/quickjs-kt/LICENSE', 'share/licenses/mpv/LICENSE.GPL',
             TORRSERVER, 'share/licenses/TorrServer/LICENSE', 'share/licenses/TorrServer/NOTICE.txt',
+            'lib/native/libnuvio_engine.so', 'share/licenses/NuvioEngine/LICENSE', 'share/licenses/NuvioEngine/NOTICE.txt',
             str(native_evidence.GRAALVM_NOTICES / 'LICENSE.txt')]
 
 SCHEME_HANDLER = 'x-scheme-handler/nuvio'
@@ -429,6 +430,9 @@ def artifacts(work, formats):
     torrserver_sources = sorted(dest.glob('Nuvio-TorrServer-source-*.tar.gz'))
     if len(torrserver_sources) != 1 or torrserver_sources[0].stat().st_size < 4096:
         raise ValueError('Missing/ambiguous TorrServer source archive in artifacts')
+    engine_sources = sorted(dest.glob('Nuvio-Engine-source-*.tar.gz'))
+    if len(engine_sources) != 1 or engine_sources[0].stat().st_size < 4096:
+        raise ValueError('Missing/ambiguous Nuvio Engine source archive in artifacts')
     innertubex_sources = sorted(dest.glob('Nuvio-InnerTubeX-source-*.tar.gz'))
     if len(innertubex_sources) != 1 or innertubex_sources[0].stat().st_size < 4096:
         raise ValueError('Missing/ambiguous InnerTubeX source archive in artifacts')

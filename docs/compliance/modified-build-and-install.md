@@ -103,6 +103,11 @@ archive URL and SHA-256, or a patched copy) and run the packaging build as above
 `torrserver/build.py` rebuilds and self-tests it every time. Nuvio starts any executable it
 finds there; a replacement must keep TorrServer's HTTP API on `--port`/`--ip`/`--path`.
 
+For a modified Nuvio Engine (GPL-3.0, the default P2P engine):
+`NuvioDesktop-Linux-<version>-source-nuvio-engine.tar.gz` carries the tag archive, the desktop patches,
+the patched libtorrent and Boost. `lib/native/libnuvio_engine.so` can be replaced in an installed DEB, as
+above; Flatpak and AppImage need a rebuilt package, by changing `tools/linux/packaging/nuvio_engine/`.
+
 For a modified InnerTubeX (GPL-3.0, the second stream resolver for music):
 `NuvioDesktop-Linux-<version>-source-innertubex.tar.gz` is the tag archive of the JAR compiled
 into the executable. Point the dependency in `composeApp/build.gradle.kts` at your build, update

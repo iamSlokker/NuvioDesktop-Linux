@@ -81,6 +81,9 @@ Description: {CONFIG['display_name']}
     # the build steps (torrserver/build.py); SOURCE-MAP.json lists it for every package.
     shutil.copy2(work / 'torrserver/Nuvio-TorrServer-source.tar.gz',
                  artifacts / f'Nuvio-TorrServer-source-{info["git_commit"][:12]}.tar.gz')
+    # Nuvio Engine's (GPL-3.0): the tag, the desktop patches, the patched libtorrent and Boost.
+    shutil.copy2(work / 'nuvio-engine/Nuvio-Engine-source.tar.gz',
+                 artifacts / f'Nuvio-Engine-source-{info["git_commit"][:12]}.tar.gz')
     # InnerTubeX's (GPL-3.0): the pinned tag archive of the JAR compiled into the executable.
     shutil.copy2(work / 'innertubex/Nuvio-InnerTubeX-source.tar.gz',
                  artifacts / f'Nuvio-InnerTubeX-source-{info["git_commit"][:12]}.tar.gz')

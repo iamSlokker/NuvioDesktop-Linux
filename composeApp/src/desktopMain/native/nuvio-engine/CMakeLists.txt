@@ -72,4 +72,13 @@ target_include_directories(
     PRIVATE
         "${NUVIO_JNI_INCLUDE_DIR}"
         "${NUVIO_JNI_INCLUDE_DIR}/win32"
+        "${NUVIO_JNI_INCLUDE_DIR}/linux"
 )
+
+# The engine's own map only exports its C API; this library also carries the JNI bridge.
+if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
+    get_target_property(NUVIO_ENGINE_LINK_OPTIONS nuvio_engine LINK_OPTIONS)
+    list(FILTER NUVIO_ENGINE_LINK_OPTIONS EXCLUDE REGEX "version-script")
+    list(APPEND NUVIO_ENGINE_LINK_OPTIONS "LINKER:--version-script=${CMAKE_CURRENT_LIST_DIR}/linux-exports.map")
+    set_target_properties(nuvio_engine PROPERTIES LINK_OPTIONS "${NUVIO_ENGINE_LINK_OPTIONS}")
+endif()
