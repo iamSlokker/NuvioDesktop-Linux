@@ -13,9 +13,9 @@ internal actual val platformOffersInterfaceRenderer: Boolean
 internal actual val platformOffersHdrUiCompensation: Boolean
     get() = !isLinuxHost
 
-// The @nuvio-low-vram marker is only sent to, and only parsed by, the Windows bridge.
+// The @nuvio-low-vram marker is sent to, and parsed by, the Windows and Linux bridges.
 internal actual val platformOffersLowVramMode: Boolean
-    get() = !isLinuxHost
+    get() = true
 
 // LinuxScreensaver is dim-only by design: it has no exit or power-off path.
 internal actual val platformOffersScreensaverShutdown: Boolean

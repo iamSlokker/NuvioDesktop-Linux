@@ -5,6 +5,7 @@
 #include "awt_x11_lifecycle.h"
 #include "seek_thumbnails.h"
 #include "separate_audio.h"
+#include "low_vram.h"
 #include "http_recovery_events.h"
 #include "audio_passthrough_recovery.h"
 #include "player_session_options.h"
@@ -234,6 +235,7 @@ struct Player {
     bool ownsX11Lifetime = false;
     // Experimental native-Wayland HDR session: no Canvas, X11 lifetime, HUD or thumbnails.
     bool hdrSession = false;
+    bool lowVramActive = false; // Set in create, before the player is published.
     // What the player opened, for subtitle sync's own audio decodes (speech_spot.h). Set once in
     // create, before the player is published.
     std::string speechSource;
@@ -619,12 +621,16 @@ void option(mpv_handle *mpv, const char *name, const std::string &value) {
     checkMpv(mpv_set_option_string(mpv, name, value.c_str()), name);
 }
 
-void applyExtraMpvOptions(mpv_handle *mpv, const std::vector<std::string> &options,
-                         const std::string &source) {
+// Returns whether the Low VRAM pipeline went in, which then pins its properties (low_vram.h).
+bool applyExtraMpvOptions(mpv_handle *mpv, const std::vector<std::string> &options,
+                          const std::string &source) {
     const std::string modePrefix = "@nuvio-config-mode=";
+    const std::string lowVramPrefix = "@nuvio-low-vram=";
     std::string mode = "off";
+    std::string lowVramMode = "off"; // A caller that sends no marker (a test, say) gets no probe.
     for (const auto &entry : options) {
         if (entry.rfind(modePrefix, 0) == 0) mode = entry.substr(modePrefix.size());
+        if (entry.rfind(lowVramPrefix, 0) == 0) lowVramMode = entry.substr(lowVramPrefix.size());
     }
     // Shared Kotlin omits custom entries in Off and application preferences in Full.
     // Keep Linux's safe-auto fallback in Full, but allow an explicit hwdec override.
@@ -681,6 +687,15 @@ void applyExtraMpvOptions(mpv_handle *mpv, const std::vector<std::string> &optio
         // Failed options reserve nothing; repeated custom values remain last-wins.
         apply(name, value, !userOption);
     }
+    // After everything, including the user's own options in any config mode: this is a crash guard
+    // rather than a quality preference. Anime4K and custom GLSL chains are an explicit choice and stay.
+    const std::optional<LinuxVulkanDevice> device = lowVramMode == "auto" ? linuxCachedPlaybackVulkanDevice() : std::nullopt;
+    const bool lowVram = linuxLowVramActive(lowVramMode, device);
+    std::fprintf(stderr, "Linux low-VRAM pipeline %s mode=%s device=%s deviceLocal=%lluMiB\n", lowVram ? "active" : "inactive",
+        lowVramMode.c_str(), device ? device->name.c_str() : "(not queried)",
+        device ? static_cast<unsigned long long>(device->deviceLocalBytes / (1024 * 1024)) : 0ull);
+    if (lowVram) for (const auto &entry : linuxLowVramOptions()) apply(entry.first, entry.second, true);
+    return lowVram;
 }
 
 void headerOptions(mpv_handle *mpv, std::vector<std::string> &headers) {
@@ -954,11 +969,11 @@ void retainEventSink(JNIEnv *env, Player &player, jobject eventSink) {
     if (!player.onEvent) throw std::runtime_error("Missing onPlayerEvent(String, Double).");
 }
 
-void applyPlaybackOptions(mpv_handle *mpv, const std::vector<std::string> &extraOptions,
+bool applyPlaybackOptions(mpv_handle *mpv, const std::vector<std::string> &extraOptions,
                           const std::string &source) {
     // Vendor-neutral default; Replace/Full and unmarked options can override it.
     option(mpv, "hwdec", "auto");
-    applyExtraMpvOptions(mpv, extraOptions, source);
+    return applyExtraMpvOptions(mpv, extraOptions, source);
 }
 
 void applyStartOptions(mpv_handle *mpv, bool playWhenReady, jlong initialPositionMs,
@@ -1022,7 +1037,7 @@ JNI_METHOD(jlong, create)(
         player->mpv = mpv_create();
         if (!player->mpv) throw std::runtime_error("mpv_create failed.");
 
-        applyPlaybackOptions(player->mpv, strings(env, extraMpvOptions), source);
+        player->lowVramActive = applyPlaybackOptions(player->mpv, strings(env, extraMpvOptions), source);
         // These embedding/lifecycle boundaries must win over saved desktop options.
         for (const auto &entry : linuxX11EmbeddingOptions(hostViewPtr)) option(player->mpv, entry.first.c_str(), entry.second);
         applyStartOptions(player->mpv, playWhenReady == JNI_TRUE, initialPositionMs, initialProgressFraction);
@@ -1122,7 +1137,11 @@ JNI_METHOD(void, requestSeekThumbnail)(JNIEnv *env, jobject, jlong handle, jlong
     });
 }
 JNI_METHOD(void, setMpvProperty)(JNIEnv *env, jobject, jlong handle, jstring name, jstring value) {
-    withPlayer(env, handle, [&](Player &p) { p.property(text(env, name).c_str(), text(env, value)); });
+    withPlayer(env, handle, [&](Player &p) {
+        const std::string key = text(env, name);
+        const auto pinned = p.lowVramActive ? linuxLowVramPinned(key) : std::nullopt;
+        p.property(key.c_str(), pinned ? *pinned : text(env, value));
+    });
 }
 JNI_METHOD(void, setSpeed)(JNIEnv *env, jobject, jlong handle, jfloat speed) {
     withPlayer(env, handle, [&](Player &p) {
@@ -1403,7 +1422,7 @@ LINUX_HDR_METHOD(jlong, create)(
         player->mpv = mpv_create();
         if (!player->mpv) throw std::runtime_error("mpv_create failed.");
 
-        applyPlaybackOptions(player->mpv, strings(env, extraMpvOptions), source);
+        player->lowVramActive = applyPlaybackOptions(player->mpv, strings(env, extraMpvOptions), source);
         LinuxHdrSessionConfig config;
         config.vulkanDevice = text(env, vulkanDevice);
         config.appId = text(env, appId);

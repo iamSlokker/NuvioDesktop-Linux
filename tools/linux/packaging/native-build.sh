@@ -61,6 +61,8 @@ cmake --build /output/native --parallel "$NUVIO_BUILD_JOBS" \
 /output/native/linux_separate_audio_test
 /output/native/linux_auto_crop_test
 /output/native/linux_speech_spot_test
+cmake --build /output/native --target linux_low_vram_test
+/output/native/linux_low_vram_test
 /output/native/linux_live_cache_seek_test
 /output/native/linux_hud_labels_carry_test
 /output/native/linux_subtitle_add_test

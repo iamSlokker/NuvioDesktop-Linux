@@ -44,7 +44,7 @@ target_compile_features(player_bridge PRIVATE cxx_std_17)
 target_include_directories(player_bridge PRIVATE "${MPV_INCLUDE_DIR}")
 target_include_directories(player_bridge SYSTEM PRIVATE
     ${JNI_INCLUDE_DIRS} "${X11_INCLUDE_DIR}" "${X11_PROTOCOL_INCLUDE_DIR}")
-target_link_libraries(player_bridge PRIVATE JNI::JNI JNI::AWT Threads::Threads "${MPV_LIBRARY}"
+target_link_libraries(player_bridge PRIVATE JNI::JNI JNI::AWT Threads::Threads ${CMAKE_DL_LIBS} "${MPV_LIBRARY}"
     PkgConfig::GTK3 PkgConfig::WEBKITGTK "${X11_LIBRARY}")
 target_link_options(player_bridge PRIVATE "LINKER:-z,defs")
 
@@ -154,6 +154,14 @@ target_compile_options(linux_speech_spot_test PRIVATE -Wall -Wextra -Werror)
 target_include_directories(linux_speech_spot_test PRIVATE "${MPV_INCLUDE_DIR}" "${CMAKE_CURRENT_SOURCE_DIR}")
 target_link_libraries(linux_speech_spot_test PRIVATE "${MPV_LIBRARY}")
 set_target_properties(linux_speech_spot_test PROPERTIES BUILD_RPATH "${MPV_LIBRARY_DIR}")
+
+# The Low VRAM decision and options (low_vram.h): real libmpv with null outputs, real Vulkan loader.
+add_executable(linux_low_vram_test EXCLUDE_FROM_ALL tests/low_vram_test.cpp)
+target_compile_features(linux_low_vram_test PRIVATE cxx_std_17)
+target_compile_options(linux_low_vram_test PRIVATE -Wall -Wextra -Werror)
+target_include_directories(linux_low_vram_test PRIVATE "${MPV_INCLUDE_DIR}" "${CMAKE_CURRENT_SOURCE_DIR}")
+target_link_libraries(linux_low_vram_test PRIVATE ${CMAKE_DL_LIBS} "${MPV_LIBRARY}")
+set_target_properties(linux_low_vram_test PROPERTIES BUILD_RPATH "${MPV_LIBRARY_DIR}")
 
 # Addon subtitle adds off the caller's thread (subtitle_add.h): real libmpv, loopback HTTP only.
 add_executable(linux_subtitle_add_test EXCLUDE_FROM_ALL tests/subtitle_add_test.cpp)
