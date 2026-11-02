@@ -81,6 +81,46 @@
 
 ### Fixed
 
+- **Auto Crop On Hero Trailers On Linux** - hero trailers on Home and the details page kept the black bars baked into their video on Linux: the player only knew the film's Auto Crop mode, not the trailer's quick one, so it fell back to Fit. Trailers now trim their bars within about two seconds, as they do on Windows. Windows and macOS are unchanged.
+- **Controllers Work In The Linux Flatpak** - the Flatpak had no access to `/dev/input`, so controller settings were there but no controller was ever detected, with no message. It now asks for the `input` device (Flatpak 1.15.6 or newer). Because this is a new permission, the update to this version may have to be confirmed once with `flatpak update`. Windows and macOS are unchanged.
+- **No More Controls That Do Nothing In The Linux Player** - the player's right-click menu on Linux offered RTX Super Resolution and RTX True HDR, which showed "On" with no effect, and SVP still had a keyboard shortcut and a place in the HUD button list. Those need Windows-only video processing, so they are gone from Linux; mpv's own motion interpolation stays under Advanced. Windows and macOS are unchanged.
+- **Links And System Programs From The AppImage** - browsers, players, games and other system programs started from Nuvio inherited its private library paths, and links did not reach browsers installed as Flatpaks. They now get the system's own environment back.
+- **DEB Installs What Video Needs** - minimal installs could end up without a Vulkan driver and so without video. The package now depends on one, and recommends ffmpeg for the Dolby Vision remux when casting.
+- **Auto Sync Reads Older Subtitle Encodings On Linux** - Cyrillic, Arabic, Greek, Turkish and Asian subtitles in older encodings were decoded wrongly, because the Linux build left those encodings out. They are now included.
+- **Second Music Stream Resolver On Linux** - the Linux packages were built without InnerTubeX, so tracks the built-in extractor gives up on had no second try. It is now included, with its source in the release assets.
+- **IPTV Guide And Sign-In Errors In Packages** - The Linux image now includes the data for accent-insensitive guide name matching and Supabase's sign-in error types.
+- **Controls Come Back After Picture In Picture** - leaving Picture in Picture could leave the player with no controls and the video slightly short, or with the keyboard not working until a click. Both are fixed.
+- **HDR Mode On The Embedded Player** - The HDR mode, the HUD menu and F8 now change the picture, colour profiles apply while tonemapping, and HDR tone maps with the same options as Windows.
+- **Anime Shaders On HDR** - Anime shader chains now run on HDR sources, with the anime profile's scaling and deband.
+- **Subtitle Style By Track Type** - The ASS size control no longer resizes SRT tracks, an empty font becomes sans-serif, and no default track flashes at the start.
+- **Seeking Like Windows** - Timeline seeks go by keyframe, held arrow keys send far fewer requests, and a seek can no longer run into the end of the file.
+- **Shader Cache** - Compiled shaders are kept between launches, and the stats overlay matches the Windows size.
+- **Low VRAM Mode** - Low VRAM Mode works on Linux and is shown again; Auto reads the GPU's Vulkan memory heaps.
+- **HUD Preferences** - Time remaining, close menu after selecting and the source panel width now survive a new player.
+- **Video Quality Label** - The player shows labels like 4K HDR, and badges know the decoded size.
+- **Player Logs** - The player now writes session logs to the logs folder, with media URLs reduced to their host.
+- **Trailer Quality** - Trailers now prefer 1440p, then 4K, then 1080p.
+- **No Vulkan Message** - With no working Vulkan driver the player stops and says why, and custom mpv options it cannot honour are named on screen.
+- **Playback Failure Message** - A failed open now reads as on Windows, which also lets the TorBox node hop work, and a dead torrent says no peers answered.
+- **Go Live Without A Seekable Cache** - Clicking Go live reopens the channel when mpv has nothing seekable, instead of doing nothing.
+- **Flatpak File Chooser** - Folder and file pickers use the system portal.
+- **Flatpak File Drops** - Dropped files play through the transfer portal, or explain why not.
+- **Flatpak Games** - Only launcher links are offered, and the app says so.
+- **Flatpak YouTube Cookies** - Sign in by pasting session cookies.
+- **Auto-Install Option** - Hidden in Flatpak; rewritten for AppImage and DEB.
+- **Flatpak External Player** - Hidden, as the sandbox stays sealed.
+- **AppImage Sandbox Check** - Explains an empty HUD where namespaces are blocked.
+- **AppImage Links** - Optional `nuvio://` registration.
+- **Steam Library Import** - Imports games through Steam, including Proton-only titles.
+- **Linux Wording** - Replaces Windows text in all languages.
+- **Keep Audio Awake** - Hides options that did nothing on Linux.
+- **YouTube Sign-In Browsers** - Finds more browsers, including Firefox, Snap and Flatpak.
+- **Tray Icon** - Adds StatusNotifierItem; hides close-to-tray without a tray.
+- **Idle Shutdown** - Powers off through logind on DEB and AppImage.
+- **Discord Sockets** - Finds Snap and Vesktop clients.
+- **PiP Controls** - Adds resize handles, seek and exit.
+- **Window Size After Picture In Picture** - leaving fullscreen after Picture in Picture could leave a tiny 480x270 window. It now goes back to the normal window size.
+- **Game Folders On A Second Drive** - scanning a folder under `/run/media`, where Bazzite and others mount extra drives, found no games. It now works.
 - **Loud And Calm Lyrics Are No Longer Cut Off At The Top** - on the Now Playing stage's Loud lyrics the tops of the first row's letters were sliced off ("POWER" lost its top edge), and on both Loud and Calm a word dropping in from above was clipped until it landed. The words are set tighter than the font's own line height, so they reach past their box, and the box clipped them. The clip is gone and there is more room round the lyric.
 - **Rating Prompt No Longer Hides Behind A Trailer** - the "rate what you just finished" prompt that appears after playback is drawn above every screen, so the details page (and the Home hero) kept playing their trailer in a native window that painted over it, cutting the prompt off. Both now park the trailer while the prompt is up and resume when it closes, as they already did for their own dialogs.
 - **Calm Lyrics No Longer Jumble** - on the Now Playing stage's Calm lyrics, the words not yet sung were drawn at 1.7 times their size, and because enlarging does not move the neighbours they smeared over the words beside them. Unsung words now wait at normal size and a word only grows a little (30%, dropping 22 dp) as it lands.

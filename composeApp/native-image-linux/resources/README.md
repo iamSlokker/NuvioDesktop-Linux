@@ -16,6 +16,10 @@ Linux counterparts of upstream's Windows-only globs in `../../native-image/resou
   sync (`DesktopAudioSubtitleSync`) reads with `getResourceAsStream`. No upstream topic lists the
   folder, so without this the packaged app's Auto Sync had no voice detector (Umbra snapshot
   148524e33, 2026-10-22).
+- `jdk/internal/icu/impl/data/icudt*/nfc.nrm` (module `java.base`): what `java.text.Normalizer`
+  reads for NFD and NFC. The trace only reached NFKD, so the v1.29.0 image embedded `nfkc.nrm` and
+  not this; the IPTV guide's channel name matching (`XmltvGuide.normalizeName`) uses NFD. Probe:
+  "linux normalizer".
 - `com/sun/swing/internal/plaf/{basic,metal}/resources/*_*.properties` (module `java.desktop`):
   Swing's `UIDefaults` probes a `.properties` variant of its locale bundles (`basic_en_US`, ...)
   before using the compiled `basic`/`metal` classes. The files do not exist; registering the

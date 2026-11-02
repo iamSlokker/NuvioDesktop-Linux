@@ -17,7 +17,10 @@ import java.util.concurrent.TimeUnit
 object DesktopUrlScheme {
 
     fun registerInBackground() {
-        if (!System.getProperty("os.name").orEmpty().startsWith("Windows", ignoreCase = true)) return
+        if (!System.getProperty("os.name").orEmpty().startsWith("Windows", ignoreCase = true)) {
+            com.nuvio.app.core.build.NuvioLinkRegistration.refreshInBackground()
+            return
+        }
         val exe = System.getProperty("jpackage.app-path")?.takeIf { it.isNotBlank() } ?: return
         Thread({
             runCatching { register(exe) }

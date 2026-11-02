@@ -1,13 +1,17 @@
 package com.nuvio.app.features.updater
 
 import com.nuvio.app.LinuxDesktopRelaunch
+import com.nuvio.app.core.build.hostProcessBuilder
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
+import com.nuvio.app.core.i18n.localizedString
 import nuvio.composeapp.generated.resources.Res
+import nuvio.composeapp.generated.resources.linux_updates_auto_install_description_appimage
+import nuvio.composeapp.generated.resources.linux_updates_auto_install_description_deb
 import nuvio.composeapp.generated.resources.updates_linux_asset_missing
 import org.jetbrains.compose.resources.getString
 import java.io.File
@@ -70,6 +74,20 @@ internal enum class LinuxInstallFormat(val assetExtension: String?) {
             return Unknown
         }
     }
+}
+
+/**
+ * The portal alone installs a Flatpak update, whatever the setting says, and there is nothing to
+ * apply in an install the updater does not recognise. An AppImage and a DEB do read it.
+ */
+internal fun linuxOffersInPlaceUpdateOption(format: LinuxInstallFormat): Boolean =
+    format == LinuxInstallFormat.AppImage || format == LinuxInstallFormat.Deb
+
+/** The setting's upstream text is about extracting the Windows ZIP, which no Linux package does. */
+internal fun linuxInPlaceUpdateOptionDescription(format: LinuxInstallFormat): String? = when (format) {
+    LinuxInstallFormat.AppImage -> localizedString(Res.string.linux_updates_auto_install_description_appimage)
+    LinuxInstallFormat.Deb -> localizedString(Res.string.linux_updates_auto_install_description_deb)
+    else -> null
 }
 
 /** Which releases and assets of the Linux fork's repository this install accepts. */
@@ -503,9 +521,7 @@ internal fun isDirectoryWritable(directory: Path): Boolean = runCatching {
 private fun pathOrNull(value: String): Path? = runCatching { Path.of(value) }.getOrNull()
 
 /** Host tools must not inherit the packaged runtime's private library path. */
-private fun hostProcess(command: List<String>): ProcessBuilder = ProcessBuilder(command).apply {
-    environment().remove("LD_LIBRARY_PATH")
-    environment().remove("LD_PRELOAD")
+private fun hostProcess(command: List<String>): ProcessBuilder = hostProcessBuilder(command).apply {
     redirectInput(File("/dev/null"))
 }
 

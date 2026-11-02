@@ -72,6 +72,14 @@
       ]
     },
     {
+      "type": "com.nuvio.app.features.music.InnerTubeXFallback",
+      "fields": [
+        {
+          "name": "INSTANCE"
+        }
+      ]
+    },
+    {
       "type": "com.nuvio.app.features.player.desktop.LinuxMprisCommandSink",
       "jniAccessible": true,
       "methods": [

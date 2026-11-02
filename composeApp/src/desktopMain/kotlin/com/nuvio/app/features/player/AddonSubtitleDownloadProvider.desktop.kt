@@ -97,7 +97,13 @@ internal fun subtitleDestinationWithExtension(file: File, extension: String): Fi
 }
 
 private suspend fun chooseSubtitleDestination(suggestedBaseName: String, extension: String): File? =
-    withContext(Dispatchers.Swing) {
+    if (com.nuvio.app.core.portal.LinuxFileChooserPortal.applies) withContext(Dispatchers.IO) {
+        // Exactly as returned: the document portal only keeps the name the user picked.
+        com.nuvio.app.core.portal.LinuxFileChooserPortal.saveFile(
+            title = "Save subtitle",
+            suggestedName = "${suggestedBaseName.sanitizedForFileName().ifBlank { "Subtitle" }}.$extension",
+        )?.let(::File)
+    } else withContext(Dispatchers.Swing) {
         val safeBase = suggestedBaseName.sanitizedForFileName().ifBlank { "Subtitle" }
         val initialDirectory = preferredSubtitleSaveDirectory(
             rememberedPath = runCatching {

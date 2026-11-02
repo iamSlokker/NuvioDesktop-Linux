@@ -77,6 +77,26 @@ internal class LinuxSessionIdleSource(
     internal fun awaitClosed(timeoutMs: Long): Boolean = worker.awaitTermination(timeoutMs, TimeUnit.MILLISECONDS)
 }
 
+internal object LinuxPowerNative {
+    external fun canPowerOff(): Boolean
+    external fun powerOff(): Boolean
+}
+
+/** logind, on the system bus. The Flatpak cannot reach it and never asks. */
+internal object LinuxPower {
+    val available: Boolean by lazy {
+        System.getenv("FLATPAK_ID").isNullOrBlank() && !java.io.File("/.flatpak-info").exists() && runCatching {
+            NativePlayerBridge.ensureNativeLibraryLoaded()
+            LinuxPowerNative.canPowerOff()
+        }.getOrDefault(false)
+    }
+
+    fun powerOff(): Boolean = runCatching {
+        NativePlayerBridge.ensureNativeLibraryLoaded()
+        LinuxPowerNative.powerOff()
+    }.onFailure { Logger.withTag("LinuxScreensaver").w(it) { "logind PowerOff failed" } }.getOrDefault(false)
+}
+
 internal object LinuxIdleNative {
     external fun open(): Long
     external fun query(handle: Long): Long

@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="linux_youtube_no_browser">No se encontró ningún navegador compatible. Instala Chrome, Edge, Brave, Chromium, Vivaldi, Opera o Firefox para iniciar sesión en YouTube Music.</string>
+    <string name="linux_youtube_flatpak_unavailable">El inicio de sesión de YouTube abre un navegador instalado en tu sistema, al que la versión Flatpak de Nuvio no puede acceder desde su entorno aislado, así que aquí no está disponible. Las versiones .deb y AppImage sí lo admiten.</string>
+</resources>

@@ -55,6 +55,67 @@ class LinuxGameFolderScannerTest {
         assertEquals("Portal Official", found.title)
         assertEquals(620L, found.steamAppId)
     }
+    private fun File.steamManifest(id: Long, name: String, folder: String, installed: Boolean = true) {
+        resolve("steamapps/appmanifest_$id.acf").apply { parentFile.mkdirs() }
+            .writeText("\"AppState\" {\n\t\"appid\"\t\t\"$id\"\n\t\"name\"\t\t\"$name\"\n\t\"installdir\"\t\t\"$folder\"\n}\n")
+        if (installed) resolve("steamapps/common/$folder").mkdirs()
+    }
+    @Test fun steamGamesRunThroughSteamWhateverTheirFolderHolds() = withRoot { root ->
+        root.steamManifest(620, "Portal 2", "Portal 2")
+        root.executable("steamapps/common/Portal 2/portal2.sh", true)
+        root.steamManifest(1245620, "ELDEN RING", "ELDEN RING")
+        root.resolve("steamapps/common/ELDEN RING/Game/eldenring.exe").apply { parentFile.mkdirs(); writeText("MZ") }
+        val found = scan(root).candidates
+        assertEquals(listOf("steam://rungameid/1245620", "steam://rungameid/620"), found.map { it.executablePath })
+        assertEquals(listOf(1245620L, 620L), found.map { it.steamAppId })
+        assertEquals(GameLaunchTarget.Protocol("steam://rungameid/620"), resolveGameLaunchTarget(found[1].executablePath))
+    }
+    @Test fun protonAndRuntimeToolsAreNotGames() = withRoot { root ->
+        root.steamManifest(1493710, "Proton Experimental", "Proton - Experimental")
+        root.steamManifest(2805730, "Proton 9.0", "Proton 9.0 (Beta)")
+        root.steamManifest(1628350, "Steam Linux Runtime 3.0 (sniper)", "SteamLinuxRuntime_sniper")
+        root.steamManifest(228980, "Steamworks Common Redistributables", "Steamworks Shared")
+        root.steamManifest(1826330, "Proton EasyAntiCheat Runtime", "Proton EasyAntiCheat Runtime")
+        root.steamManifest(400, "Portal", "Portal")
+        assertEquals(listOf("Portal"), scan(root).candidates.map { it.title })
+    }
+    @Test fun aGameNamedLikeAToolIsStillAGame() = withRoot { root ->
+        root.steamManifest(1, "Protonaut", "Protonaut")
+        assertEquals(listOf("Protonaut"), scan(root).candidates.map { it.title })
+    }
+    @Test fun steamManifestWithoutAFolderIsNotInstalled() = withRoot { root ->
+        root.steamManifest(620, "Portal 2", "Portal 2", installed = false)
+        root.steamManifest(400, "Portal", "Portal")
+        assertEquals(listOf(400L), scan(root).candidates.map { it.steamAppId })
+    }
+    @Test fun steamScanFollowsTheOtherLibrariesAndSkipsWhatIsAlreadyThere() = withRoot { root ->
+        val main = root.resolve("Steam")
+        val second = root.resolve("Second Drive/SteamLibrary")
+        main.steamManifest(400, "Portal", "Portal")
+        second.steamManifest(620, "Portal 2", "Portal 2")
+        main.resolve("steamapps/libraryfolders.vdf").writeText(
+            "\"libraryfolders\"\n{\n\t\"0\"\n\t{\n\t\t\"path\"\t\t\"${main.absolutePath}\"\n\t}\n" +
+                "\t\"1\"\n\t{\n\t\t\"path\"\t\t\"${second.absolutePath}\"\n\t}\n\t\"2\"\n\t{\n\t\t\"path\"\t\t\"/gone\"\n\t}\n}\n",
+        )
+        assertEquals(listOf(400L, 620L), scan(main).candidates.map { it.steamAppId })
+        val existing = GameEntry("old", title = "Old name", executablePath = "/somewhere/portal", steamAppId = 400)
+        val rescan = scan(main, listOf(existing))
+        assertEquals(listOf(620L), rescan.candidates.map { it.steamAppId })
+        assertEquals(1, rescan.skippedExisting)
+    }
+    @Test fun oneGameFolderInsideALibraryImportsOnlyThatGame() = withRoot { root ->
+        root.steamManifest(400, "Portal", "Portal")
+        root.steamManifest(620, "Portal 2", "Portal 2")
+        assertEquals(listOf(620L), scan(root.resolve("steamapps/common/Portal 2")).candidates.map { it.steamAppId })
+    }
+    @Test fun steamFolderWithoutManifestsStaysAnOrdinaryScan() = withRoot { root ->
+        val game = root.executable("steamapps/common/Hades/Hades")
+        assertEquals(game.absolutePath, scan(root).candidates.single().executablePath)
+    }
+    @Test fun lutrisUrlsAreProtocolTargets() {
+        assertEquals(GameLaunchTarget.Protocol("lutris:rungameid/12"), resolveGameLaunchTarget("lutris:rungameid/12"))
+        assertEquals(GameLaunchTarget.Protocol("heroic://launch/gog/1"), resolveGameLaunchTarget("heroic://launch/gog/1"))
+    }
     @Test fun duplicateExistingAndSameBatchShortcutAreSuppressed() = withRoot { root ->
         val target = root.executable("A Game/start.sh", true)
         desktop(root, target)
@@ -136,4 +197,14 @@ class LinuxGameFolderScannerTest {
         assertEquals(128, scan(root).candidates.size)
     }
 
+    @Test
+    fun `a second drive under run media is not a system folder`() {
+        assertFalse(LinuxGameDiscovery.isSystemPath("/run/media/user/Games"))
+        assertFalse(LinuxGameDiscovery.isSystemPath("/home/user/Games"))
+        assertTrue(LinuxGameDiscovery.isSystemPath("/run/user/1000"))
+        assertTrue(LinuxGameDiscovery.isSystemPath("/run/mediafoo"))
+        assertTrue(LinuxGameDiscovery.isSystemPath("/run"))
+        assertTrue(LinuxGameDiscovery.isSystemPath("/usr/games"))
+        assertTrue(LinuxGameDiscovery.isSystemPath("/"))
+    }
 }

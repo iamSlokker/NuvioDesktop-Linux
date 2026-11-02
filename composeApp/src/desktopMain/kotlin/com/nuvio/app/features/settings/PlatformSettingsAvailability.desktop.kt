@@ -13,13 +13,24 @@ internal actual val platformOffersInterfaceRenderer: Boolean
 internal actual val platformOffersHdrUiCompensation: Boolean
     get() = !isLinuxHost
 
-// The @nuvio-low-vram marker is only sent to, and only parsed by, the Windows bridge.
-internal actual val platformOffersLowVramMode: Boolean
-    get() = !isLinuxHost
+// Without a tray the close button has to end the app (Main.kt), so a switch would say otherwise.
+internal actual val platformOffersCloseToTray: Boolean
+    get() = !isLinuxHost || com.nuvio.app.core.ui.LinuxStatusNotifierTray.trayExists
 
-// LinuxScreensaver is dim-only by design: it has no exit or power-off path.
+// The @nuvio-low-vram marker is sent to, and parsed by, the Windows and Linux bridges.
+internal actual val platformOffersLowVramMode: Boolean
+    get() = true
+
+// logind's PowerOff; the Flatpak has no system bus, and giving it one would be a new permission.
 internal actual val platformOffersScreensaverShutdown: Boolean
+    get() = !isLinuxHost || com.nuvio.app.features.screensaver.LinuxPower.available
+
+internal actual val platformOffersSvp: Boolean
     get() = !isLinuxHost
 
 internal actual val platformListsWindowsOnlyPlaybackRowsInSearch: Boolean
+    get() = !isLinuxHost
+
+// PreshowAudioKeepAlive returns straight away on Linux.
+internal actual val platformOffersAudioKeepAlive: Boolean
     get() = !isLinuxHost

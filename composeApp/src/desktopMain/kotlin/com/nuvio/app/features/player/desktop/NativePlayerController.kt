@@ -43,6 +43,7 @@ import com.nuvio.app.features.player.DeviceLanguagePreferences
 import com.nuvio.app.features.player.ParentalWarning
 import com.nuvio.app.features.player.PlaybackStartTrace
 import com.nuvio.app.features.player.PlayerAudioLevel
+import com.nuvio.app.features.player.IPTV_REOPEN_FOR_LIVE_EVENT
 import com.nuvio.app.features.player.PlayerControlsAction
 import com.nuvio.app.features.player.PlayerControlsState
 import com.nuvio.app.features.player.PlayerEngineController
@@ -197,7 +198,13 @@ internal class NativePlayerController(
         }
     } else null
 
-    private val linuxPiPInput = LinuxPiPSurfaceInput.install(DesktopHostOs.current, host) { handlePlayerEvent("toggle", 0.0) }
+    private val linuxPiPInput = LinuxPiPSurfaceInput.install(
+        DesktopHostOs.current, host,
+        if (DesktopHostOs.current != DesktopHostOs.LINUX) null else LinuxPiPHud(host, { runCatching { snapshot() }.getOrNull() },
+            toggle = { handlePlayerEvent("toggle", 0.0) },
+            exit = { handlePlayerEvent("pictureInPicture", 0.0) },
+            seek = { handlePlayerEvent("scrubFinish", it.toDouble()) }),
+    ) { handlePlayerEvent("toggle", 0.0) }
 
     // Experimental native-Wayland HDR session (Linux main player only; default-off setting).
     @Volatile
@@ -418,6 +425,10 @@ internal class NativePlayerController(
                 controlsPageUrlSuffix.removePrefix("?").takeIf { it.isNotBlank() }?.let { suffix ->
                     append('&')
                     append(suffix)
+                }
+                if (DesktopHostOs.current == DesktopHostOs.LINUX) {
+                    append('&')
+                    append(LinuxHudPreferences.urlParameter())
                 }
             },
             tracePlaybackStart = tracePlaybackStart,
@@ -977,14 +988,22 @@ internal class NativePlayerController(
         val current = PlayerSettingsRepository.uiState.value.desktopHdrMode
         val next = modes[(modes.indexOf(current) + 1) % modes.size]
         PlayerSettingsRepository.setDesktopHdrMode(next)
-        showPresetPill(localizedString(Res.string.player_hud_hdr_mode), localizedString(next.labelRes))
+        showPresetPill(localizedString(Res.string.player_hud_hdr_mode), hdrModePillValue(next))
         linuxHdr?.onHdrModeChanged(next)
+    }
+
+    private fun hdrModePillValue(mode: DesktopHdrMode): String = localizedString(mode.labelRes).let { label ->
+        if (DesktopHostOs.current == DesktopHostOs.LINUX) {
+            linuxHdrModePillValue(mode, label, LinuxHdrSessionSettings.enabledState.value)
+        } else {
+            label
+        }
     }
 
     private fun selectDesktopHdrMode(index: Int) {
         DesktopHdrMode.entries.getOrNull(index)?.let { mode ->
             PlayerSettingsRepository.setDesktopHdrMode(mode)
-            showPresetPill(localizedString(Res.string.player_hud_hdr_mode), localizedString(mode.labelRes))
+            showPresetPill(localizedString(Res.string.player_hud_hdr_mode), hdrModePillValue(mode))
             linuxHdr?.onHdrModeChanged(mode)
         }
     }
@@ -1414,9 +1433,17 @@ internal class NativePlayerController(
                 transientMessageForNextAttach = null
                 showPresetPill(pillTitle, pillValue, durationMs = 5000)
             }
+            if (DesktopHostOs.current == DesktopHostOs.LINUX && !linuxHeroSurface && !linuxMusicSurface) {
+                LinuxEmbeddingOptions.noticeOnce(PlayerSettingsRepository.uiState.value.desktopCustomMpvOptions)
+                    ?.let { showPresetPill("mpv options", it, durationMs = 8000) }
+            }
         }
         if (type == "seekFailureTargetMs") {
             lastSeekFailureTargetMs = value.toLong().coerceAtLeast(0L)
+            return
+        }
+        if (type.startsWith(LinuxHudPreferences.EVENT_PREFIX)) {
+            LinuxHudPreferences.record(type, value)
             return
         }
         val errorPrefix = when {
@@ -1561,6 +1588,14 @@ internal class NativePlayerController(
             "goLive" -> {
                 releaseMeteredPrefetchFreeze()
                 handle.takeIf { it != 0L }?.let { NativePlayerBridge.seekToCachedLiveEdge(it, value.toLong()) }
+            }
+            "goLiveUser" -> {
+                releaseMeteredPrefetchFreeze()
+                handle.takeIf { it != 0L }?.let { current ->
+                    if (LinuxGoLiveNative.goLive(current, value.toLong()) == LINUX_GO_LIVE_NO_SEEKABLE_RANGE) {
+                        onEvent(IPTV_REOPEN_FOR_LIVE_EVENT, 0.0)
+                    }
+                }
             }
             "scrubFinish" -> {
                 val scrubHandled = onScrubFinished(value.toLong())
@@ -2663,6 +2698,14 @@ private fun String.jsEscape(): String =
         .replace("\n", "\\n")
         .replace("\r", "")
 
+/** The Linux bridge's LinuxGoLiveStep::NoSeekableRange (live_cache_seek.h). */
+private const val LINUX_GO_LIVE_NO_SEEKABLE_RANGE = 2
+
+/** Go live from a click, on the Linux bridge only. */
+internal object LinuxGoLiveNative {
+    external fun goLive(handle: Long, cushionMs: Long): Int
+}
+
 private data class PendingSource(
     val sourceUrl: String,
     val mediaTitle: String = "",
@@ -2695,10 +2738,10 @@ private fun buildDesktopUserMpvOptions(initialPlaybackSpeed: Float): List<String
     val settings = PlayerSettingsRepository.uiState.value
     return buildList {
         add("@nuvio-config-mode=${settings.desktopMpvConfigMode.name.lowercase()}")
-        // Resolved natively: only the bridge can ask DXGI what the adapter actually has, and the
-        // trimmed pipeline has to be in place before mpv_initialize (the first frame is the one that
-        // would abort). Windows-only marker — the macOS bridge forwards unknown entries to mpv.
-        if (DesktopHostOs.current == DesktopHostOs.WINDOWS) {
+        // Resolved natively: only the bridge can ask DXGI (on Linux, Vulkan) what the adapter actually
+        // has, and the trimmed pipeline has to be in place before mpv_initialize (the first frame is the
+        // one that would abort). Not on macOS, whose bridge forwards unknown entries to mpv.
+        if (DesktopHostOs.current == DesktopHostOs.WINDOWS || DesktopHostOs.current == DesktopHostOs.LINUX) {
             add("@nuvio-low-vram=${settings.desktopLowVramMode.name.lowercase()}")
         }
         val useNuvioOptions = settings.desktopMpvConfigMode != DesktopMpvConfigMode.Full
@@ -2713,6 +2756,7 @@ private fun buildDesktopUserMpvOptions(initialPlaybackSpeed: Float): List<String
                 hostOs = DesktopHostOs.current,
                 playbackSpeed = initialPlaybackSpeed,
             ).forEach { (name, value) -> add("$name=$value") }
+            if (DesktopHostOs.current == DesktopHostOs.LINUX) linuxShaderCacheOption()?.let(::add)
             // Nuvio's stats overlay in place of the built-in one (same script name, so the
             // diagnostics binding still finds it). `scripts`, not `scripts-append`: mpv's option
             // API rejects the -append suffix. A `scripts=` line in the custom options box is

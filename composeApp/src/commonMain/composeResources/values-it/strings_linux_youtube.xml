@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="linux_youtube_no_browser">Nessun browser compatibile trovato. Installa Chrome, Edge, Brave, Chromium, Vivaldi, Opera o Firefox per accedere a YouTube Music.</string>
+    <string name="linux_youtube_flatpak_unavailable">L'accesso a YouTube apre un browser installato sul sistema, che la versione Flatpak di Nuvio non può raggiungere dalla sua sandbox, quindi qui non è disponibile. Le versioni .deb e AppImage lo supportano.</string>
+</resources>

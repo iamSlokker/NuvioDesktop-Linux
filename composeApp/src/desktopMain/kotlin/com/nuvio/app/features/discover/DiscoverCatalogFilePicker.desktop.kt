@@ -1,5 +1,7 @@
 package com.nuvio.app.features.discover
 
+import com.nuvio.app.core.portal.LinuxFileChooserPortal
+import com.nuvio.app.core.portal.PortalFileFilter
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.File
@@ -10,15 +12,31 @@ import javax.swing.filechooser.FileNameExtensionFilter
 import nuvio.composeapp.generated.resources.*
 import com.nuvio.app.core.i18n.localizedString
 
+private val PortalJsonFilter = PortalFileFilter("Discover catalog (*.json)", listOf("*.json"))
+
 internal actual object DiscoverCatalogFilePicker {
 
     actual suspend fun openForImport(): String? = withContext(Dispatchers.IO) {
+        if (LinuxFileChooserPortal.applies) {
+            return@withContext LinuxFileChooserPortal
+                .openFile(localizedString(Res.string.discover_export_import_discover_row), PortalJsonFilter)
+                ?.let { File(it).readText() }
+        }
         val chosen = chooseFile(save = false, suggestedName = null) ?: return@withContext null
         chosen.readText()
     }
 
     actual suspend fun saveExport(suggestedName: String, contents: String): String? =
         withContext(Dispatchers.IO) {
+            if (LinuxFileChooserPortal.applies) {
+                val path = LinuxFileChooserPortal.saveFile(
+                    title = localizedString(Res.string.discover_export_export_discover_row),
+                    suggestedName = if (File(suggestedName).extension.isNotBlank()) suggestedName else "$suggestedName.json",
+                    filter = PortalJsonFilter,
+                ) ?: return@withContext null
+                // Exactly as returned; the document portal only keeps the name the user picked.
+                return@withContext File(path).also { it.writeText(contents) }.name
+            }
             val chosen = chooseFile(save = true, suggestedName = suggestedName)
                 ?: return@withContext null
             // Appended rather than enforced in the dialog: a user who types their own extension

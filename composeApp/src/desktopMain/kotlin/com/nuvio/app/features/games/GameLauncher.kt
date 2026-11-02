@@ -1,5 +1,6 @@
 package com.nuvio.app.features.games
 
+import com.nuvio.app.core.build.hostProcessBuilder
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.File
@@ -29,7 +30,7 @@ object GameLauncher {
                 fileFilter = if (linuxGamesHost()) object : javax.swing.filechooser.FileFilter() {
                     override fun accept(file: File): Boolean = file.isDirectory || LinuxGameDiscovery.runnable(file) ||
                         (file.extension.equals("desktop", true) && LinuxGameDiscovery.desktopTarget(file) != null)
-                    override fun getDescription(): String = "Linux executables, scripts, AppImages and game desktop entries"
+                    override fun getDescription(): String = localizedString(Res.string.linux_games_launcher_filter_apps)
                 } else FileNameExtensionFilter(localizedString(Res.string.games_launcher_filter_apps), "exe", "lnk", "url")
                 if (initialFile?.isFile == true) selectedFile = initialFile
             }
@@ -77,6 +78,7 @@ object GameLauncher {
     fun launch(game: GameEntry, onExit: (Int) -> Unit = {}): Result<Long?> = runCatching {
         val configuredPath = game.executablePath?.takeIf(String::isNotBlank)
             ?: error("${game.title} is tracked but not installed yet.")
+        require(!gameTargetOutOfReach(configuredPath)) { localizedString(Res.string.linux_flatpak_games_url_only) }
         val target = when (val resolved = resolveGameLaunchTarget(configuredPath)) {
             is GameLaunchTarget.Protocol -> {
                 launchProtocol(resolved.url, game.arguments)
@@ -103,7 +105,7 @@ object GameLauncher {
             ?.let(::File)
             ?: target.workingDirectory?.let(::File)?.takeIf(File::isDirectory)
             ?: executable.parentFile
-        val process = ProcessBuilder(command)
+        val process = hostProcessBuilder(command)
             .directory(workingDirectory)
             .redirectInput(ProcessBuilder.Redirect.PIPE)
             .redirectOutput(ProcessBuilder.Redirect.DISCARD)
@@ -147,7 +149,7 @@ object GameLauncher {
             osName.contains("mac") -> listOf("open", target)
             else -> listOf("xdg-open", target)
         }
-        ProcessBuilder(command)
+        hostProcessBuilder(command)
             .redirectInput(ProcessBuilder.Redirect.PIPE)
             .redirectOutput(ProcessBuilder.Redirect.DISCARD)
             .redirectError(ProcessBuilder.Redirect.DISCARD)
@@ -162,7 +164,8 @@ object GameLauncher {
  * A Windows drive letter (`C:\...`) is one letter followed by a colon, never by `://`, so it does not
  * match; the scheme grammar is RFC 3986's, which is what the OS handler registry keys on.
  */
-fun isProtocolLaunchTarget(path: String): Boolean = PROTOCOL_LAUNCH_TARGET.containsMatchIn(path.trim())
+fun isProtocolLaunchTarget(path: String): Boolean = PROTOCOL_LAUNCH_TARGET.containsMatchIn(path.trim()) ||
+    (linuxGamesHost() && path.trim().startsWith("lutris:")) // fork:linux - Lutris's URLs have no "//".
 
 private val PROTOCOL_LAUNCH_TARGET = Regex("^[a-zA-Z][a-zA-Z0-9+.-]*://")
 

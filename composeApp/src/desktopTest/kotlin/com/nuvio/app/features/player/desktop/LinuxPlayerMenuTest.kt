@@ -24,6 +24,16 @@ class LinuxPlayerMenuTest {
         assertTrue("[data-toggle-key=\"desktopAnimeSvpEnabled\"]" in LINUX_PLAYER_MENU_SCRIPT)
     }
 
+    @Test fun theRtxRowsTheLinuxHostRemovesStillExist() {
+        val video = controlsJs.substringAfter("const contextMenuItems = [").substringAfter("label: \"Video\"")
+            .substringBefore("label: \"Tools\"")
+        for ((action, toggle) in listOf("toggleRtxVsr" to "rtxVsrEnabled", "toggleRtxTrueHdr" to "rtxTrueHdrEnabled")) {
+            assertTrue("action: \"send:$action\", toggleKey: \"$toggle\"" in video, "the Video menu has no $action row to remove")
+            assertTrue("'send:$action'" in LINUX_PLAYER_MENU_SCRIPT)
+            assertTrue("[data-toggle-key=\"$toggle\"]" in LINUX_PLAYER_MENU_SCRIPT)
+        }
+    }
+
     @Test fun theHudButtonTheLinuxHostRemovesStillExists() {
         assertTrue("data-command=\"keyboardCycleAnimeSvp\"" in controlsHtml, "the HUD has no SVP button to remove")
         // Captured at load and re-applied by the overflow layout, so the script must edit it too.

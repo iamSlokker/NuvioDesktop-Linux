@@ -32,7 +32,8 @@ if(NOT EXISTS "${MPV_INCLUDE_DIR}/mpv/client.h" OR
     message(FATAL_ERROR "libmpv headers/library not found; set MPV_ROOT to the mpv installation prefix")
 endif()
 
-add_library(player_bridge SHARED player_bridge.cpp awt_view_resolver.cpp controls_overlay.cpp seek_thumbnails.cpp playback_inhibitor.cpp screensaver_idle.cpp mpris_session.cpp linux_gamepad.cpp window_chrome.cpp window_chrome_jni.cpp pip_geometry_jni.cpp hdr_wayland_session.cpp flatpak_update.cpp flatpak_update_jni.cpp)
+add_library(player_bridge SHARED player_bridge.cpp awt_view_resolver.cpp controls_overlay.cpp seek_thumbnails.cpp playback_inhibitor.cpp screensaver_idle.cpp mpris_session.cpp linux_gamepad.cpp window_chrome.cpp window_chrome_jni.cpp pip_geometry_jni.cpp hdr_wayland_session.cpp flatpak_update.cpp flatpak_update_jni.cpp file_chooser_portal.cpp file_chooser_portal_jni.cpp)
+target_sources(player_bridge PRIVATE status_notifier.cpp status_notifier_jni.cpp)
 # Optional X11 idle fallback. Wayland sessions never use an XWayland global idle estimate.
 find_path(XSS_INCLUDE_DIR NAMES X11/extensions/scrnsaver.h)
 if(XSS_INCLUDE_DIR)
@@ -44,9 +45,11 @@ target_compile_features(player_bridge PRIVATE cxx_std_17)
 target_include_directories(player_bridge PRIVATE "${MPV_INCLUDE_DIR}")
 target_include_directories(player_bridge SYSTEM PRIVATE
     ${JNI_INCLUDE_DIRS} "${X11_INCLUDE_DIR}" "${X11_PROTOCOL_INCLUDE_DIR}")
-target_link_libraries(player_bridge PRIVATE JNI::JNI JNI::AWT Threads::Threads "${MPV_LIBRARY}"
+target_link_libraries(player_bridge PRIVATE JNI::JNI JNI::AWT Threads::Threads ${CMAKE_DL_LIBS} "${MPV_LIBRARY}"
     PkgConfig::GTK3 PkgConfig::WEBKITGTK "${X11_LIBRARY}")
 target_link_options(player_bridge PRIVATE "LINKER:-z,defs")
+
+target_sources(player_bridge PRIVATE logind_power.cpp)
 
 get_filename_component(MPV_LIBRARY_DIR "${MPV_LIBRARY}" DIRECTORY)
 option(NUVIO_PACKAGE_BUILD "Use relocatable jpackage Linux library layout" OFF)
@@ -133,11 +136,27 @@ target_compile_features(linux_live_cache_seek_test PRIVATE cxx_std_17)
 target_compile_options(linux_live_cache_seek_test PRIVATE -Wall -Wextra -Werror)
 target_include_directories(linux_live_cache_seek_test PRIVATE "${MPV_INCLUDE_DIR}" "${CMAKE_CURRENT_SOURCE_DIR}")
 
+# Windows' seek policy (seek_coalesce.h): keyframes, coalescing, end guard. Real libmpv, null outputs.
+add_executable(linux_seek_coalesce_test EXCLUDE_FROM_ALL tests/seek_coalesce_test.cpp)
+target_compile_features(linux_seek_coalesce_test PRIVATE cxx_std_17)
+target_compile_options(linux_seek_coalesce_test PRIVATE -Wall -Wextra -Werror)
+target_include_directories(linux_seek_coalesce_test PRIVATE "${MPV_INCLUDE_DIR}" "${CMAKE_CURRENT_SOURCE_DIR}")
+target_link_libraries(linux_seek_coalesce_test PRIVATE "${MPV_LIBRARY}")
+set_target_properties(linux_seek_coalesce_test PROPERTIES BUILD_RPATH "${MPV_LIBRARY_DIR}")
+
 # HUD label map kept aside from coalesced controls payloads (hud_labels_carry.h): pure strings.
 add_executable(linux_hud_labels_carry_test EXCLUDE_FROM_ALL tests/hud_labels_carry_test.cpp)
 target_compile_features(linux_hud_labels_carry_test PRIVATE cxx_std_17)
 target_compile_options(linux_hud_labels_carry_test PRIVATE -Wall -Wextra -Werror)
 target_include_directories(linux_hud_labels_carry_test PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}")
+
+# Windows' stats size and shader cache options (player_session_options.h) against real libmpv.
+add_executable(linux_startup_defaults_test EXCLUDE_FROM_ALL tests/startup_defaults_test.cpp)
+target_compile_features(linux_startup_defaults_test PRIVATE cxx_std_17)
+target_compile_options(linux_startup_defaults_test PRIVATE -Wall -Wextra -Werror)
+target_include_directories(linux_startup_defaults_test PRIVATE "${MPV_INCLUDE_DIR}" "${CMAKE_CURRENT_SOURCE_DIR}")
+target_link_libraries(linux_startup_defaults_test PRIVATE "${MPV_LIBRARY}")
+set_target_properties(linux_startup_defaults_test PROPERTIES BUILD_RPATH "${MPV_LIBRARY_DIR}")
 
 # Auto crop (auto_crop.h): its rules against a scripted host, then real libmpv with null outputs.
 add_executable(linux_auto_crop_test EXCLUDE_FROM_ALL tests/auto_crop_test.cpp)
@@ -147,6 +166,14 @@ target_include_directories(linux_auto_crop_test PRIVATE "${MPV_INCLUDE_DIR}" "${
 target_link_libraries(linux_auto_crop_test PRIVATE "${MPV_LIBRARY}")
 set_target_properties(linux_auto_crop_test PROPERTIES BUILD_RPATH "${MPV_LIBRARY_DIR}")
 
+# Windows' HDR baseline and the runtime target modes against real libmpv with null outputs.
+add_executable(linux_tone_mapping_test EXCLUDE_FROM_ALL tests/tone_mapping_test.cpp)
+target_compile_features(linux_tone_mapping_test PRIVATE cxx_std_17)
+target_compile_options(linux_tone_mapping_test PRIVATE -Wall -Wextra -Werror)
+target_include_directories(linux_tone_mapping_test PRIVATE "${MPV_INCLUDE_DIR}" "${CMAKE_CURRENT_SOURCE_DIR}")
+target_link_libraries(linux_tone_mapping_test PRIVATE "${MPV_LIBRARY}")
+set_target_properties(linux_tone_mapping_test PROPERTIES BUILD_RPATH "${MPV_LIBRARY_DIR}")
+
 # Subtitle sync's audio decodes (speech_spot.h) with real libmpv: ao=pcm to a file, no device.
 add_executable(linux_speech_spot_test EXCLUDE_FROM_ALL tests/speech_spot_test.cpp)
 target_compile_features(linux_speech_spot_test PRIVATE cxx_std_17)
@@ -154,6 +181,14 @@ target_compile_options(linux_speech_spot_test PRIVATE -Wall -Wextra -Werror)
 target_include_directories(linux_speech_spot_test PRIVATE "${MPV_INCLUDE_DIR}" "${CMAKE_CURRENT_SOURCE_DIR}")
 target_link_libraries(linux_speech_spot_test PRIVATE "${MPV_LIBRARY}")
 set_target_properties(linux_speech_spot_test PROPERTIES BUILD_RPATH "${MPV_LIBRARY_DIR}")
+
+# The Low VRAM decision and options (low_vram.h): real libmpv with null outputs, real Vulkan loader.
+add_executable(linux_low_vram_test EXCLUDE_FROM_ALL tests/low_vram_test.cpp)
+target_compile_features(linux_low_vram_test PRIVATE cxx_std_17)
+target_compile_options(linux_low_vram_test PRIVATE -Wall -Wextra -Werror)
+target_include_directories(linux_low_vram_test PRIVATE "${MPV_INCLUDE_DIR}" "${CMAKE_CURRENT_SOURCE_DIR}")
+target_link_libraries(linux_low_vram_test PRIVATE ${CMAKE_DL_LIBS} "${MPV_LIBRARY}")
+set_target_properties(linux_low_vram_test PROPERTIES BUILD_RPATH "${MPV_LIBRARY_DIR}")
 
 # Addon subtitle adds off the caller's thread (subtitle_add.h): real libmpv, loopback HTTP only.
 add_executable(linux_subtitle_add_test EXCLUDE_FROM_ALL tests/subtitle_add_test.cpp)
@@ -163,6 +198,14 @@ target_include_directories(linux_subtitle_add_test PRIVATE "${MPV_INCLUDE_DIR}" 
 target_link_libraries(linux_subtitle_add_test PRIVATE "${MPV_LIBRARY}" Threads::Threads)
 set_target_properties(linux_subtitle_add_test PROPERTIES BUILD_RPATH "${MPV_LIBRARY_DIR}")
 
+# Windows' subtitle override, fallback and limit rules (subtitle_style.h): real libmpv, null outputs.
+add_executable(linux_subtitle_style_test EXCLUDE_FROM_ALL tests/subtitle_style_test.cpp)
+target_compile_features(linux_subtitle_style_test PRIVATE cxx_std_17)
+target_compile_options(linux_subtitle_style_test PRIVATE -Wall -Wextra -Werror)
+target_include_directories(linux_subtitle_style_test PRIVATE "${MPV_INCLUDE_DIR}" "${CMAKE_CURRENT_SOURCE_DIR}")
+target_link_libraries(linux_subtitle_style_test PRIVATE "${MPV_LIBRARY}")
+set_target_properties(linux_subtitle_style_test PROPERTIES BUILD_RPATH "${MPV_LIBRARY_DIR}")
+
 # Real-libmpv separate-audio regression probe: null outputs, no display/GTK/JNI.
 add_executable(linux_separate_audio_test EXCLUDE_FROM_ALL tests/separate_audio_test.cpp)
 target_compile_features(linux_separate_audio_test PRIVATE cxx_std_17)
@@ -171,6 +214,12 @@ target_include_directories(linux_separate_audio_test PRIVATE "${MPV_INCLUDE_DIR}
 target_link_libraries(linux_separate_audio_test PRIVATE "${MPV_LIBRARY}")
 set_target_properties(linux_separate_audio_test PROPERTIES BUILD_RPATH "${MPV_LIBRARY_DIR}")
 
+# The player's session logs (session_log.h): files in a temp folder; no libmpv, display or JNI.
+add_executable(linux_session_log_test EXCLUDE_FROM_ALL tests/session_log_test.cpp)
+target_compile_features(linux_session_log_test PRIVATE cxx_std_17)
+target_compile_options(linux_session_log_test PRIVATE -Wall -Wextra -Werror)
+target_include_directories(linux_session_log_test PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}")
+
 # HTTP/seek event translation and null-output libmpv probe; no display/GTK/JNI.
 add_executable(linux_http_recovery_test EXCLUDE_FROM_ALL tests/http_recovery_test.cpp)
 target_compile_features(linux_http_recovery_test PRIVATE cxx_std_17)
@@ -178,6 +227,14 @@ target_compile_options(linux_http_recovery_test PRIVATE -Wall -Wextra -Werror)
 target_include_directories(linux_http_recovery_test PRIVATE "${MPV_INCLUDE_DIR}" "${CMAKE_CURRENT_SOURCE_DIR}")
 target_link_libraries(linux_http_recovery_test PRIVATE "${MPV_LIBRARY}")
 set_target_properties(linux_http_recovery_test PROPERTIES BUILD_RPATH "${MPV_LIBRARY_DIR}")
+
+# The videoSourceSize event's value and timing (video_source_size.h): real libmpv, null outputs.
+add_executable(linux_video_source_size_test EXCLUDE_FROM_ALL tests/video_source_size_test.cpp)
+target_compile_features(linux_video_source_size_test PRIVATE cxx_std_17)
+target_compile_options(linux_video_source_size_test PRIVATE -Wall -Wextra -Werror)
+target_include_directories(linux_video_source_size_test PRIVATE "${MPV_INCLUDE_DIR}" "${CMAKE_CURRENT_SOURCE_DIR}")
+target_link_libraries(linux_video_source_size_test PRIVATE "${MPV_LIBRARY}")
+set_target_properties(linux_video_source_size_test PROPERTIES BUILD_RPATH "${MPV_LIBRARY_DIR}")
 
 # SPDIF recovery policy and a test-only real-libmpv shim; no display/GTK/JNI.
 add_executable(linux_audio_recovery_test EXCLUDE_FROM_ALL tests/audio_recovery_test.cpp)
@@ -193,6 +250,14 @@ target_compile_options(linux_audio_recovery_probe PRIVATE -Wall -Wextra -Werror)
 target_include_directories(linux_audio_recovery_probe PRIVATE "${MPV_INCLUDE_DIR}" "${CMAKE_CURRENT_SOURCE_DIR}")
 target_link_libraries(linux_audio_recovery_probe PRIVATE "${MPV_LIBRARY}")
 set_target_properties(linux_audio_recovery_probe PROPERTIES BUILD_RPATH "${MPV_LIBRARY_DIR}")
+
+# A video output that cannot start (video_output_failure.h): real libmpv, no display, no driver.
+add_executable(linux_video_output_failure_test EXCLUDE_FROM_ALL tests/video_output_failure_test.cpp)
+target_compile_features(linux_video_output_failure_test PRIVATE cxx_std_17)
+target_compile_options(linux_video_output_failure_test PRIVATE -Wall -Wextra -Werror)
+target_include_directories(linux_video_output_failure_test PRIVATE "${MPV_INCLUDE_DIR}" "${CMAKE_CURRENT_SOURCE_DIR}")
+target_link_libraries(linux_video_output_failure_test PRIVATE "${MPV_LIBRARY}")
+set_target_properties(linux_video_output_failure_test PROPERTIES BUILD_RPATH "${MPV_LIBRARY_DIR}")
 
 # Deterministic chrome policy fixtures; no display, WM, mpv or JNI initialization.
 add_executable(linux_pip_geometry_dispatch_test EXCLUDE_FROM_ALL tests/pip_geometry_dispatch_test.cpp)
@@ -218,6 +283,13 @@ target_compile_definitions(linux_gamepad_test PRIVATE NUVIO_GAMEPAD_TEST)
 target_compile_options(linux_gamepad_test PRIVATE -Wall -Wextra -Werror)
 target_include_directories(linux_gamepad_test PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}")
 
+# logind PowerOff against a fake logind on a private bus (tests/logind_power_test.py).
+add_executable(linux_logind_power_probe EXCLUDE_FROM_ALL tests/logind_power_probe.cpp logind_power.cpp)
+target_compile_features(linux_logind_power_probe PRIVATE cxx_std_17)
+target_include_directories(linux_logind_power_probe PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}")
+target_include_directories(linux_logind_power_probe SYSTEM PRIVATE ${JNI_INCLUDE_DIRS})
+target_link_libraries(linux_logind_power_probe PRIVATE PkgConfig::GTK3 Threads::Threads)
+
 # Read-only idle backend lifecycle probe; does not initialize mpv or GTK.
 add_executable(linux_screensaver_idle_probe EXCLUDE_FROM_ALL
     tests/screensaver_idle_probe.cpp screensaver_idle.cpp)
@@ -230,11 +302,24 @@ if(XSS_INCLUDE_DIR)
     target_link_libraries(linux_screensaver_idle_probe PRIVATE ${CMAKE_DL_LIBS} "${X11_LIBRARY}")
 endif()
 
+# Private-bus StatusNotifierItem/DBusMenu contract (tests/status_notifier_test.py).
+add_executable(linux_status_notifier_probe EXCLUDE_FROM_ALL tests/status_notifier_probe.cpp status_notifier.cpp)
+target_compile_features(linux_status_notifier_probe PRIVATE cxx_std_17)
+target_include_directories(linux_status_notifier_probe PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}")
+target_link_libraries(linux_status_notifier_probe PRIVATE PkgConfig::GTK3 Threads::Threads)
+
 # Private-bus Flatpak portal update contract (tests/flatpak_update_test.py).
 add_executable(linux_flatpak_update_probe EXCLUDE_FROM_ALL tests/flatpak_update_probe.cpp flatpak_update.cpp)
 target_compile_features(linux_flatpak_update_probe PRIVATE cxx_std_17)
 target_compile_options(linux_flatpak_update_probe PRIVATE -Wall -Wextra -Werror)
 target_link_libraries(linux_flatpak_update_probe PRIVATE PkgConfig::GTK3)
+
+# Private-bus file chooser and file transfer portal contract (tests/file_chooser_portal_test.py).
+add_executable(linux_file_chooser_portal_probe EXCLUDE_FROM_ALL tests/file_chooser_portal_probe.cpp file_chooser_portal.cpp)
+target_compile_features(linux_file_chooser_portal_probe PRIVATE cxx_std_17)
+target_compile_options(linux_file_chooser_portal_probe PRIVATE -Wall -Wextra -Werror)
+target_include_directories(linux_file_chooser_portal_probe SYSTEM PRIVATE "${X11_INCLUDE_DIR}" "${X11_PROTOCOL_INCLUDE_DIR}")
+target_link_libraries(linux_file_chooser_portal_probe PRIVATE PkgConfig::GTK3 "${X11_LIBRARY}")
 
 add_executable(linux_pip_hud_visibility_test EXCLUDE_FROM_ALL tests/pip_hud_visibility_test.cpp)
 target_compile_features(linux_pip_hud_visibility_test PRIVATE cxx_std_17)

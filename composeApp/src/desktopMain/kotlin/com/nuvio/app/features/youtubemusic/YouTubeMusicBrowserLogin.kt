@@ -1,6 +1,9 @@
 package com.nuvio.app.features.youtubemusic
 
+import nuvio.composeapp.generated.resources.linux_flatpak_youtube_explainer
 import co.touchlab.kermit.Logger
+import com.nuvio.app.core.build.hostProcessBuilder
+import com.nuvio.app.core.i18n.localizedString
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.ensureActive
 import kotlinx.serialization.json.Json
@@ -25,13 +28,17 @@ import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicInteger
 import kotlin.coroutines.coroutineContext
+import nuvio.composeapp.generated.resources.Res
+import nuvio.composeapp.generated.resources.linux_youtube_flatpak_unavailable
+import nuvio.composeapp.generated.resources.linux_youtube_no_browser
 
 /*
  * fork:ytmusic-login
  *
  * Signs in to YouTube Music in two steps, so that Google never sees an automated browser:
  *
- *  1. Google's real login page opens in a throwaway Edge / Chrome / Brave / Chromium window with a
+ *  1. Google's real login page opens in a throwaway Edge / Chrome / Brave / Chromium window (on Linux
+ *     also Vivaldi, Opera and Firefox, from the system, a Snap or a Flatpak; see LinuxLoginBrowsers) with a
  *     temporary profile and NO debugging port or automation flag. The user signs in (passkeys,
  *     security keys and 2-step prompts all work) and closes the window.
  *  2. The same profile is reopened headless with a debugging port, only to read its cookies, which
@@ -65,19 +72,28 @@ internal object YouTubeMusicBrowserLogin {
     private const val DESCENDANTS_EXIT_MS = 5_000L
 
     suspend fun run(): YouTubeMusicLoginOutcome {
-        // fork:linux - the Flatpak sandbox cannot see or start the system's browsers.
-        if (!System.getenv("FLATPAK_ID").isNullOrBlank()) return YouTubeMusicLoginOutcome.Failed(
-            "YouTube sign-in opens your own Chrome, Edge, Brave or Chromium, which the Flatpak version of Nuvio " +
-                "cannot reach from its sandbox, so it is not available here. The .deb and AppImage versions support it.",
-        )
-        val browser = findBrowser() ?: return YouTubeMusicLoginOutcome.Failed(
+        // fork:linux - the Flatpak sandbox cannot see or start the system's browsers. The page offers
+        // pasted cookies there and no sign-in button, so this is only a backstop.
+        if (!YouTubeMusicAuthPlatform.browserSignInAvailable) {
+            return YouTubeMusicLoginOutcome.Failed(localizedString(Res.string.linux_flatpak_youtube_explainer))
+        }
+        val linuxBrowser = if (linuxLoginHost() && overrideBrowser() == null) LinuxLoginBrowsers.find() else null
+        if (linuxLoginHost() && linuxBrowser == null && overrideBrowser() == null) {
+            return YouTubeMusicLoginOutcome.Failed(localizedString(Res.string.linux_youtube_no_browser))
+        }
+        val browser = linuxBrowser?.executable ?: findBrowser() ?: return YouTubeMusicLoginOutcome.Failed(
             "No Edge, Chrome, Brave or Chromium was found. Install one to sign in to YouTube Music.",
         )
-        val profileDir = Files.createTempDirectory("nuvio-ytmusic-login")
+        val firefox = linuxBrowser?.firefox == true
+        val profileDir = linuxBrowser?.createProfile() ?: Files.createTempDirectory("nuvio-ytmusic-login")
         var window: Process? = null
         try {
             // Step 1: the visible sign-in window, with nothing that marks it as automated.
-            window = ProcessBuilder(signInCommand(browser, profileDir))
+            if (firefox) LinuxLoginBrowsers.prepareFirefoxProfile(profileDir)
+            window = hostProcessBuilder(
+                if (firefox) LinuxLoginBrowsers.firefoxSignInCommand(browser, profileDir, LOGIN_URL)
+                else signInCommand(browser, profileDir),
+            )
                 .redirectErrorStream(true)
                 .redirectOutput(ProcessBuilder.Redirect.DISCARD)
                 .start()
@@ -88,7 +104,7 @@ internal object YouTubeMusicBrowserLogin {
             awaitDescendantsExit(window)
 
             // Step 2: read what the window left in the profile.
-            return readSession(browser, profileDir)
+            return if (firefox) readFirefoxSession(browser, profileDir) else readSession(browser, profileDir)
         } finally {
             window?.let { stop(it) }
             deleteRecursivelyQuietly(profileDir)
@@ -100,7 +116,7 @@ internal object YouTubeMusicBrowserLogin {
         var reader: Process? = null
         var cdp: CdpConnection? = null
         try {
-            reader = ProcessBuilder(cookieReadCommand(browser, profileDir))
+            reader = hostProcessBuilder(cookieReadCommand(browser, profileDir))
                 .redirectErrorStream(true)
                 .redirectOutput(ProcessBuilder.Redirect.DISCARD)
                 .start()
@@ -115,6 +131,35 @@ internal object YouTubeMusicBrowserLogin {
             return YouTubeMusicLoginOutcome.Success(header)
         } finally {
             runCatching { cdp?.call("Browser.close") }
+            cdp?.close()
+            reader?.let { stop(it) }
+        }
+    }
+
+    /**
+     * fork:linux - the same read for Firefox, which dropped the DevTools protocol: WebDriver BiDi over
+     * the same kind of socket, announced on the browser's output instead of in a file.
+     */
+    private fun readFirefoxSession(browser: String, profileDir: Path): YouTubeMusicLoginOutcome {
+        var reader: Process? = null
+        var cdp: CdpConnection? = null
+        try {
+            reader = hostProcessBuilder(LinuxLoginBrowsers.firefoxCookieReadCommand(browser, profileDir))
+                .redirectErrorStream(true)
+                .start()
+            val endpoint = LinuxLoginBrowsers.awaitBidiEndpoint(reader, DEVTOOLS_PORT_TIMEOUT_MS)
+                ?: return YouTubeMusicLoginOutcome.Failed("The browser could not be reopened to read the session.")
+            cdp = CdpConnection.open("$endpoint/session")
+            cdp.call("session.new", buildJsonObject { put("capabilities", JsonObject(emptyMap())) })
+            val cookies = cdp.call("storage.getCookies")["cookies"]?.jsonArray
+            val header = cookies?.let { buildCookieHeader(LinuxLoginBrowsers.plainBidiCookies(it)) }
+                ?.takeIf { sapisidFrom(it) != null }
+                ?: return YouTubeMusicLoginOutcome.Failed(
+                    "No signed-in YouTube session was found. Sign in, wait for YouTube Music to load, then close the window.",
+                )
+            return YouTubeMusicLoginOutcome.Success(header)
+        } finally {
+            runCatching { cdp?.call("browser.close") }
             cdp?.close()
             reader?.let { stop(it) }
         }
@@ -185,8 +230,11 @@ internal object YouTubeMusicBrowserLogin {
 
     // ---- Browser discovery ---------------------------------------------------------------------
 
+    private fun overrideBrowser(): String? =
+        System.getProperty("nuvio.youtubeMusic.browser")?.takeIf { Files.isExecutable(Path.of(it)) }
+
     private fun findBrowser(): String? {
-        System.getProperty("nuvio.youtubeMusic.browser")?.takeIf { Files.isExecutable(Path.of(it)) }?.let { return it }
+        overrideBrowser()?.let { return it }
         val os = System.getProperty("os.name").orEmpty().lowercase()
         val candidates = when {
             "win" in os -> windowsCandidates()

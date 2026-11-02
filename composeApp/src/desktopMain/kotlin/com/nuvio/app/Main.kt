@@ -79,6 +79,7 @@ import com.nuvio.app.features.player.desktop.ensureNativePlayerBridgeLoaded
 import com.nuvio.app.features.player.desktop.installDesktopAppFullscreenShortcuts
 import com.nuvio.app.features.player.desktop.registerDesktopAppFullscreenToggle
 import com.nuvio.app.features.player.desktop.registerDesktopPictureInPictureHandler
+import com.nuvio.app.features.player.desktop.repairLinuxWindowedSizeAfterFullscreen
 import com.nuvio.app.features.player.desktop.setDesktopPictureInPicture
 import com.nuvio.app.features.player.desktop.suspendNativeBorderlessFullscreen
 import com.nuvio.app.features.player.desktop.toggleDesktopAppFullscreen
@@ -317,7 +318,17 @@ private const val MacosDarkAquaAppearance = "NSAppearanceNameDarkAqua"
 private fun installDesktopTray(
     window: java.awt.Window,
     onExit: () -> Unit,
+    onAvailableChanged: (Boolean) -> Unit = {},
 ): (() -> Unit)? {
+    // fork:linux - a StatusNotifierItem where the desktop has a host for it; XEmbed below otherwise.
+    if (DesktopHostOs.current == DesktopHostOs.LINUX) {
+        Thread.currentThread().contextClassLoader.getResource(NuvioDesktopIconPath)?.let { url ->
+            com.nuvio.app.core.ui.LinuxStatusNotifierTray.install(
+                window, url, "Nuvio HTPC", localizedString(Res.string.tray_open_nuvio),
+                "Nuvio ${AppVersionPolicy.displayVersionName}", "Exit", onExit, onAvailableChanged,
+            )
+        }?.let { return it }
+    }
     if (!SystemTray.isSupported()) return null
     val iconUrl = Thread.currentThread().contextClassLoader.getResource(NuvioDesktopIconPath)
         ?: return null
@@ -496,6 +507,7 @@ fun main(args: Array<String>) {
     com.nuvio.app.features.settings.applyPendingSettingsImport(com.nuvio.app.core.storage.DesktopStorage.rootDir)
     // Not from a nativeSmoke launch: it would point the user's nuvio:// links at the build folder.
     if (!com.nuvio.app.core.build.NativeImageSupport.selfTestRequested) DesktopUrlScheme.registerInBackground()
+    if (!com.nuvio.app.core.build.NativeImageSupport.selfTestRequested) com.nuvio.app.features.player.desktop.LinuxAppImageHudSandbox.checkInBackground()
     // Held as the pending link until the app's navigation is up to take it. Straight to the link
     // queue rather than handleAppUrl, whose Trakt-callback check loads profile stores this early.
     launchUrl?.let(com.nuvio.app.core.deeplink.AppDeepLinkRepository::handleUrl)
@@ -699,7 +711,7 @@ fun main(args: Array<String>) {
             }
             DisposableEffect(window, closeToTray) {
                 val uninstallTray = if (closeToTray) {
-                    installDesktopTray(window, exitDesktopApplication)
+                    installDesktopTray(window, exitDesktopApplication) { trayInstalled.value = it }
                 } else {
                     null
                 }
@@ -829,6 +841,7 @@ fun main(args: Array<String>) {
                     } else if (windowState.placement == WindowPlacement.Fullscreen) {
                         windowState.placement = restoreWindowPlacement.value
                         desktopAppFullscreenState.value = false
+                        repairLinuxWindowedSizeAfterFullscreen(window, DesktopWindowModeStorage::restoredWindowedGeometry)
                     } else {
                         restoreWindowPlacement.value = windowState.placement
                             .takeUnless { it == WindowPlacement.Fullscreen }
@@ -1132,7 +1145,7 @@ fun main(args: Array<String>) {
                                 // Accept the drag hover if it carries a file list.
                                 @Suppress("OPT_IN_USAGE")
                                 (event.nativeEvent as? DropTargetDragEvent)
-                                    ?.isDataFlavorSupported(DataFlavor.javaFileListFlavor) == true
+                                    ?.let { it.isDataFlavorSupported(DataFlavor.javaFileListFlavor) || com.nuvio.app.core.portal.LinuxFlatpakFileDrop.canAccept(it) } == true
                             },
                             target = object : DragAndDropTarget {
                                 @Suppress("OPT_IN_USAGE")
@@ -1141,7 +1154,9 @@ fun main(args: Array<String>) {
                                         ?: return false
                                     drop.acceptDrop(DnDConstants.ACTION_COPY)
                                     val transferable = drop.transferable
-                                    val handled = if (transferable.isDataFlavorSupported(DataFlavor.javaFileListFlavor)) {
+                                    val handled = if (com.nuvio.app.core.portal.LinuxFileChooserPortal.applies) {
+                                        com.nuvio.app.core.portal.LinuxFlatpakFileDrop.handle(transferable)
+                                    } else if (transferable.isDataFlavorSupported(DataFlavor.javaFileListFlavor)) {
                                         @Suppress("UNCHECKED_CAST")
                                         val files = transferable.getTransferData(DataFlavor.javaFileListFlavor)
                                             as List<java.io.File>

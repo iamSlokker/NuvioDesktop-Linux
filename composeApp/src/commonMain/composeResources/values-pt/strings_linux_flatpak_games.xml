@@ -1,0 +1,6 @@
+<resources>
+    <string name="linux_flatpak_games_notice">A versão Flatpak corre isolada do sistema, por isso só arranca jogos através da ligação de um launcher, como steam://rungameid/620. Não consegue escolher nem executar programas e pastas de jogos deste computador; as versões .deb e AppImage conseguem.</string>
+    <string name="linux_flatpak_games_url_only">A versão Flatpak só consegue arrancar este jogo através da ligação de um launcher, como steam://rungameid/620. Edita o jogo e indica uma.</string>
+    <string name="linux_flatpak_games_url_label">Ligação de arranque (opcional)</string>
+    <string name="linux_flatpak_games_url_example">steam://rungameid/620</string>
+</resources>

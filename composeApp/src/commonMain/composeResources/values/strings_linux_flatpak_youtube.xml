@@ -1,0 +1,8 @@
+<resources>
+    <!-- fork:linux  YouTube session in the sealed Flatpak (kept out of strings.xml so upstream merges never touch them). -->
+    <string name="linux_flatpak_youtube_explainer">The Flatpak version runs sealed off from your browsers, so it cannot open Google's sign-in window. Paste your YouTube session cookies below instead, or use the .deb or AppImage version, which sign in directly.</string>
+    <string name="linux_flatpak_youtube_paste_hint">In a browser signed in to Google, open music.youtube.com and the developer tools (F12). In Network, reload the page, pick a request to music.youtube.com and copy its Cookie request header. They act as your signed-in session and stay on this computer; a secondary Google account is safest.</string>
+    <string name="linux_flatpak_youtube_cookie_label">Cookie header</string>
+    <string name="linux_flatpak_youtube_save">Save cookies</string>
+    <string name="linux_flatpak_youtube_invalid">No Google session found in that text (SAPISID is missing). Copy the whole Cookie header from a signed-in music.youtube.com request.</string>
+</resources>

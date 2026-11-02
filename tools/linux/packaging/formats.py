@@ -59,12 +59,15 @@ def build(work, deb_only=False):
                'libxrandr2, libxss1, '
                'libxcb1, libwayland-client0, libva2, libva-drm2, libva-x11-2, libdrm2, '
                'libasound2, libpulse0, libfontconfig1, libfreetype6, libfribidi0, libharfbuzz0b, '
-               'libssl3, zlib1g, liblcms2-2, libudev1, libgl1, ca-certificates, xdg-utils')
+               'libssl3, zlib1g, liblcms2-2, libudev1, libgl1, ca-certificates, xdg-utils, '
+               # The player only renders through Vulkan: without a driver there is no video.
+               'mesa-vulkan-drivers | vulkan-icd')
     (deb / 'DEBIAN/control').write_text(f'''Package: {CONFIG['package_name']}
 Version: {version}
 Architecture: amd64
 Maintainer: Nuvio Media
 Depends: {depends}
+Recommends: ffmpeg
 Section: video
 Priority: optional
 Description: {CONFIG['display_name']}
@@ -78,6 +81,9 @@ Description: {CONFIG['display_name']}
     # the build steps (torrserver/build.py); SOURCE-MAP.json lists it for every package.
     shutil.copy2(work / 'torrserver/Nuvio-TorrServer-source.tar.gz',
                  artifacts / f'Nuvio-TorrServer-source-{info["git_commit"][:12]}.tar.gz')
+    # InnerTubeX's (GPL-3.0): the pinned tag archive of the JAR compiled into the executable.
+    shutil.copy2(work / 'innertubex/Nuvio-InnerTubeX-source.tar.gz',
+                 artifacts / f'Nuvio-InnerTubeX-source-{info["git_commit"][:12]}.tar.gz')
     # Exact native-image input JARs, manifest, native-image reports and the smoke
     # record; also the material needed to rebuild/relink the executable.
     native_evidence.archive(work, artifacts / f'Nuvio-native-image-inputs-{info["git_commit"][:12]}.tar',

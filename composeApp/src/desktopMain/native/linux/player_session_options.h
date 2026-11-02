@@ -9,6 +9,16 @@
 
 using LinuxMpvOptionList = std::vector<std::pair<std::string, std::string>>;
 
+// Windows' startup baseline for diagnostics and the compiled-shader cache, applied before shared and
+// custom options, so those still win. The stats overlay renders at about 75% of its default size. The
+// shader cache needs its directory too (config=no leaves mpv without one), which Kotlin supplies.
+inline LinuxMpvOptionList linuxStartupDefaults() {
+    return {
+        {"script-opts", "stats-font_size=15,stats-border_size=1.25"},
+        {"gpu-shader-cache", "yes"},
+    };
+}
+
 // The accepted embedded X11/AWT Canvas player. These boundaries are applied after
 // shared/custom options so saved desktop options cannot replace them. Order and
 // values are the existing SDR contract; the HDR session must never change them.
@@ -28,6 +38,24 @@ inline LinuxMpvOptionList linuxX11EmbeddingOptions(long long canvasXid) {
         {"gpu-api", "vulkan"},
         {"gpu-context", "x11vk"},
         {"wid", std::to_string(canvasXid)},
+    };
+}
+
+// Windows' HDR baseline (startMpv), applied before shared and custom options, so those still win.
+// HDR reaches the embedded player's SDR surface through these. Windows also sets
+// tone-mapping-mode=hybrid, which mpv 0.41 no longer has: that option is rejected on both platforms.
+inline LinuxMpvOptionList linuxToneMappingDefaults() {
+    return {
+        {"target-colorspace-hint", "auto"},
+        {"target-colorspace-hint-mode", "target"},
+        {"target-contrast", "auto"},
+        {"tone-mapping", "bt.2446a"},
+        {"tone-mapping-param", "0.5"},
+        {"gamut-mapping-mode", "perceptual"},
+        {"hdr-compute-peak", "yes"},
+        {"hdr-peak-percentile", "99.8"},
+        {"hdr-peak-decay-rate", "20"},
+        {"hdr-contrast-recovery", "0.3"},
     };
 }
 

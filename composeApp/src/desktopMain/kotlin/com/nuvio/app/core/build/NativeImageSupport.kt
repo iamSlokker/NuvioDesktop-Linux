@@ -120,7 +120,10 @@ internal object NativeImageSupport {
                 var outcome: Result<String> = Result.failure(IllegalStateException("did not run"))
                 javax.swing.SwingUtilities.invokeAndWait {
                     outcome = runCatching {
-                        javax.swing.UIManager.setLookAndFeel(javax.swing.UIManager.getSystemLookAndFeelClassName())
+                        // On GNOME the system look and feel is GTK's, which the Linux image leaves out; the pickers' runCatching stays on Metal.
+                        val linux = com.nuvio.app.features.player.desktop.DesktopHostOs.current == com.nuvio.app.features.player.desktop.DesktopHostOs.LINUX
+                        runCatching { javax.swing.UIManager.setLookAndFeel(javax.swing.UIManager.getSystemLookAndFeelClassName()) }
+                            .onFailure { if (!linux) throw it }
                         val chooser = javax.swing.JFileChooser()
                         "${chooser.ui.javaClass.simpleName} filters=${chooser.choosableFileFilters.size}"
                     }

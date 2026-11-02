@@ -87,7 +87,7 @@ void deterministicTests() {
     test("new source clears HTTP and attempted seek", [] {
         Fixture f; f.playing(); f.seek(40000); f.http(); f.event(MPV_EVENT_START_FILE);
         f.end(MPV_END_FILE_REASON_ERROR);
-        require(f.callbacks.size() == 1 && f.callbacks[0].first == "mpvStartupError:loading failed", "source inherited previous evidence");
+        require(f.callbacks.size() == 1 && f.callbacks[0].first == "mpvStartupError:Playback loading failed: loading failed", "source inherited previous evidence");
     });
     test("file-loaded boundary clears speculative opening evidence", [] {
         Fixture f; f.event(MPV_EVENT_START_FILE); f.seek(40000); f.http(); f.event(MPV_EVENT_FILE_LOADED);
@@ -132,9 +132,9 @@ void deterministicTests() {
     });
     test("generic startup and playback errors retain the existing callback path", [] {
         Fixture f; f.event(MPV_EVENT_START_FILE); f.end(MPV_END_FILE_REASON_ERROR);
-        require(f.callbacks[0].first == "mpvStartupError:loading failed", "startup callback changed");
+        require(f.callbacks[0].first == "mpvStartupError:Playback loading failed: loading failed", "startup callback changed");
         f.playing(); f.end(MPV_END_FILE_REASON_ERROR, MPV_ERROR_AO_INIT_FAILED);
-        require(f.callbacks.back().first == std::string("mpvPlaybackError:") + mpv_error_string(MPV_ERROR_AO_INIT_FAILED), "generic playback callback changed");
+        require(f.callbacks.back().first == std::string("mpvPlaybackError:Playback loading failed: ") + mpv_error_string(MPV_ERROR_AO_INIT_FAILED), "generic playback callback changed");
     });
     test("successful playback restart clears HTTP and seek state", [] {
         Fixture f; f.playing(); f.seek(10000); f.http(); f.event(MPV_EVENT_PLAYBACK_RESTART); f.failSeek();

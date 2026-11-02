@@ -1,0 +1,5 @@
+<resources>
+    <!-- fork:linux  What Install Updates Automatically does in each Linux package (kept out of strings.xml so upstream merges never touch them). -->
+    <string name="linux_updates_auto_install_description_appimage">Replaces this AppImage as soon as an update has downloaded and passed verification. When this is off, or the AppImage's folder is read-only, the update is saved to your Downloads folder instead.</string>
+    <string name="linux_updates_auto_install_description_deb">Installs the downloaded, verified package straight away; your system asks for your password first. When this is off, the .deb is saved to your Downloads folder instead.</string>
+</resources>

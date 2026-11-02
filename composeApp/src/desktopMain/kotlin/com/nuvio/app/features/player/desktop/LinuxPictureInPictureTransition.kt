@@ -38,6 +38,7 @@ internal interface LinuxPictureInPictureWindow {
     fun restoredPlacementReady(placement: WindowPlacement): Boolean
     fun placeLive(placement: WindowPlacement)
     fun syncGeometry()
+    fun relayoutContent()
     fun compact(enabled: Boolean)
     fun toFront()
     val contentInsets: Insets
@@ -122,8 +123,18 @@ internal class LinuxPictureInPictureAwtWindow(
         state.size = DpSize(window.width.dp, window.height.dp)
         state.position = WindowPosition(window.x.dp, window.y.dp)
     }
+    // AWT can miss the WM's last configure on the way into fullscreen and stay at the size of the
+    // frame it just left, 37 px short, while the X window already fills the screen.
+    override fun relayoutContent() {
+        if (ownsFullscreen) window.bounds = Rectangle(window.graphicsConfiguration.bounds)
+        window.validate()
+        syncGeometry()
+    }
     override fun compact(enabled: Boolean) = applyNativeCompactPlayerWindow(window, enabled)
-    override fun toFront() = window.toFront()
+    override fun toFront() {
+        window.toFront()
+        window.requestFocus()
+    }
 }
 
 internal class LinuxPictureInPictureTransition(
@@ -416,7 +427,7 @@ internal class LinuxPictureInPictureTransition(
                 window.beginGeometry()
                 restoreHud = LinuxPiPHudRestore(window, saved.placement, now, schedule,
                     finished = { geometryOwned(false) },
-                    failed = { reason -> geometryOwned(false); System.err.println("Linux PiP HUD restore: $reason; HUD remains suppressed") })
+                    failed = { reason -> geometryOwned(false); System.err.println("Linux PiP HUD restore: $reason") })
                 restoreHud?.start()
             } else geometryOwned(false)
         }

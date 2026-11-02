@@ -1,6 +1,7 @@
 package com.nuvio.app.features.settings
 
 import androidx.compose.material.icons.rounded.MusicNote
+import com.nuvio.app.core.i18n.platformString
 import com.nuvio.app.core.ui.ditheredBackground
 import com.nuvio.app.core.storage.PortableMode
 import androidx.compose.animation.AnimatedVisibility
@@ -1240,11 +1241,12 @@ private fun settingsSearchEntries(
             category = accountCategory,
             icon = Icons.Rounded.CloudDownload,
         )
-        addRow(
+        if (AppUpdaterPlatform.offersInPlaceUpdateOption) addRow(
             page = SettingsPage.Account,
             key = "auto-install-updates",
             title = resolve(Res.string.settings_updates_auto_install),
-            description = resolve(Res.string.settings_updates_auto_install_description),
+            description = AppUpdaterPlatform.inPlaceUpdateOptionDescription()
+                ?: resolve(platformString(Res.string.settings_updates_auto_install_description)),
             pageLabel = accountPage,
             section = resolve(Res.string.settings_updates_section),
             category = accountCategory,
@@ -1477,11 +1479,11 @@ private fun settingsSearchEntries(
                 resolve(Res.string.settings_playback_show_loading_overlay),
                 resolve(Res.string.settings_playback_show_loading_overlay_description),
             ),
-            PlaybackSearchRow(
+            if (com.nuvio.app.features.player.ExternalPlayerPlatform.supported) PlaybackSearchRow(
                 "external-player",
                 resolve(Res.string.settings_playback_external_player),
                 resolve(Res.string.settings_playback_external_player_description_android),
-            ),
+            ) else null,
             if (isIos) PlaybackSearchRow(
                 "external-player-app",
                 resolve(Res.string.settings_playback_external_player_app),
@@ -1608,7 +1610,7 @@ private fun settingsSearchEntries(
             if (isDesktop) PlaybackSearchRow(
                 "desktop-audio-channels",
                 resolve(Res.string.settings_playback_desktop_audio_channels),
-                resolve(Res.string.settings_playback_desktop_audio_channels_desc),
+                resolve(platformString(Res.string.settings_playback_desktop_audio_channels_desc)),
             ) else null,
             if (isDesktop) PlaybackSearchRow(
                 "desktop-audio-dialogue-boost",
@@ -2433,7 +2435,7 @@ private fun settingsSearchEntries(
             page = SettingsPage.YouTubeAccount,
             key = "youtube-sign-in",
             title = resolve(Res.string.settings_youtube_sign_in),
-            description = resolve(Res.string.settings_youtube_explainer),
+            description = resolve(platformString(Res.string.settings_youtube_explainer)),
             pageLabel = youTubePage,
             section = youTubePage,
             category = generalCategory,
@@ -2489,7 +2491,7 @@ private fun settingsSearchEntries(
             PlaybackSearchRow("preshow-keep-audio", resolve(Res.string.settings_preshow_keep_audio_alive), resolve(Res.string.settings_preshow_keep_audio_alive_description), PRESHOW_SECTION_RUNNING_ORDER),
             PlaybackSearchRow("ai-trivia-enabled", resolve(Res.string.settings_ai_trivia_enabled), resolve(Res.string.settings_ai_trivia_enabled_description), PRESHOW_SECTION_RUNNING_ORDER),
             PlaybackSearchRow("preshow-lineup", "Pre-show running order", "Cinema intro, sound system trailer (bumper), trailers, trivia, rating card and feature presentation: switch each on or off and choose the order.", PRESHOW_SECTION_RUNNING_ORDER),
-        ).forEach { row ->
+        ).filter { platformOffersAudioKeepAlive || it.key != "preshow-keep-audio" }.forEach { row ->
             addRow(
                 page = SettingsPage.Preshow,
                 key = row.key,
@@ -2527,7 +2529,7 @@ private fun settingsSearchEntries(
             PlaybackSearchRow("music-lyrics-lyricsplus", resolve(Res.string.settings_music_lyrics_lyricsplus), resolve(Res.string.settings_music_lyrics_lyricsplus_description), resolve(Res.string.settings_music_section_lyrics)),
             PlaybackSearchRow("music-keep-audio-alive", resolve(Res.string.settings_music_keep_audio_alive), resolve(Res.string.settings_music_keep_audio_alive_description), resolve(Res.string.settings_music_section_playback)),
             PlaybackSearchRow("music-skip-non-music", resolve(Res.string.settings_music_skip_non_music), resolve(Res.string.settings_music_skip_non_music_description), resolve(Res.string.settings_music_section_playback)),
-        ).forEach { row ->
+        ).filter { platformOffersAudioKeepAlive || it.key != "music-keep-audio-alive" }.forEach { row ->
             addRow(
                 page = SettingsPage.Music,
                 key = row.key,

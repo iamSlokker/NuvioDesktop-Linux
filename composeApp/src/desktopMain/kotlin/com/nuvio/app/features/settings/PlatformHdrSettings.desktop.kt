@@ -16,7 +16,7 @@ internal actual fun PlatformHdrSettingsRows(isTablet: Boolean) {
         description = "Plays PQ/HLG HDR video in a separate fullscreen Wayland window when the " +
             "compositor, GPU and display report HDR10 support. Unverified on HDR hardware; any " +
             "failure returns to the normal player. Uses a minimal on-screen display instead of " +
-            "the full player controls.",
+            "the full player controls. Without it, HDR video is tone mapped to SDR in every HDR mode.",
         checked = enabled,
         isTablet = isTablet,
         onCheckedChange = LinuxHdrSessionSettings::setEnabled,

@@ -140,6 +140,25 @@ void testGoLive() {
     require(linuxCachedLiveEdgeTarget(linuxLiveCacheState(none.node), 10.0, 3000) < 0.0, "no cache: skipped");
 }
 
+void testGoLiveStep() {
+    CacheStateNode ranged({{60.0, 100.0}}, 120.0);
+    const auto withRange = linuxLiveCacheState(ranged.node);
+    require(linuxGoLiveStep(withRange, 90.0, 3000) == LinuxGoLiveStep::Seek, "a range is seeked inside");
+    require(linuxGoLiveStep(withRange, 115.0, 3000) == LinuxGoLiveStep::AlreadyLive, "a short jump is not worth a reopen");
+
+    // The log that found this: SIC Radical, 77 s behind with nothing seekable.
+    CacheStateNode unseekable({}, 124.03);
+    const auto noRange = linuxLiveCacheState(unseekable.node);
+    require(noRange.ranges.empty(), "fixture has no range");
+    require(linuxCachedLiveEdgeTarget(noRange, 47.0, 3000) < 0.0, "no seek target");
+    require(linuxGoLiveStep(noRange, 47.0, 3000) == LinuxGoLiveStep::NoSeekableRange, "behind with no range: reopen");
+    require(linuxGoLiveStep(noRange, 120.0, 3000) == LinuxGoLiveStep::AlreadyLive, "at the edge: nothing to do");
+    require(linuxGoLiveStep(noRange, -1.0, 3000) == LinuxGoLiveStep::AlreadyLive, "unknown position: nothing shows it is behind");
+
+    CacheStateNode empty({}, -1.0);
+    require(linuxGoLiveStep(linuxLiveCacheState(empty.node), 10.0, 3000) == LinuxGoLiveStep::AlreadyLive, "no cache yet: no reopen");
+}
+
 }  // namespace
 
 int main() {
@@ -148,6 +167,7 @@ int main() {
         testClamp();
         testDemuxerOffset();
         testGoLive();
+        testGoLiveStep();
     } catch (const std::exception &error) {
         std::cerr << "live cache seek test failed: " << error.what() << '\n';
         return 1;

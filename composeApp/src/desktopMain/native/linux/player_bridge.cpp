@@ -5,14 +5,20 @@
 #include "awt_x11_lifecycle.h"
 #include "seek_thumbnails.h"
 #include "separate_audio.h"
+#include "low_vram.h"
 #include "http_recovery_events.h"
+#include "session_log.h"
 #include "audio_passthrough_recovery.h"
+#include "video_output_failure.h"
 #include "player_session_options.h"
 #include "hdr_wayland_session.h"
 #include "live_cache_seek.h"
+#include "seek_coalesce.h"
 #include "auto_crop.h"
+#include "video_source_size.h"
 #include "speech_spot.h"
 #include "subtitle_add.h"
+#include "subtitle_style.h"
 
 #include <algorithm>
 #include <cctype>
@@ -21,6 +27,7 @@
 #include <chrono>
 #include <cmath>
 #include <cstdio>
+#include <cstdlib>
 #include <future>
 #include <iomanip>
 #include <limits>
@@ -220,20 +227,28 @@ struct Player {
     std::atomic<bool> stopping{false};
     std::atomic<bool> fileReady{false};
     std::atomic<bool> ended{false};
+    LinuxPlayerLog log; // Started in create, before the player is published.
+    LinuxLogRepeatLimit logRepeats; // Event thread only.
+    bool logVerbose = false;
     int64_t lastShaderSize = -1;
     std::string lastShaderMedia;
     int lastVideoHdr = -1; // Event thread only; never carried to a replacement player.
+    LinuxVideoSizeReport videoSizeReport; // Event thread only, likewise.
     LinuxHttpRecoveryEvents recoveryEvents; // Protected by operations, including seek issuance.
     LinuxAudioPassthroughRecovery audioRecovery; // Same operation lock and per-player lifetime.
+    LinuxVideoOutputFailures videoOutputFailures; // Same.
     // Live TV cache-only seeks (live_cache_seek.h), under operations: whether the last one left
     // hr-seek-demuxer-offset set, and its target, so held arrow steps chain off a seek in flight.
     bool liveHrSeekOffsetApplied = false;
     double liveSeekTargetSeconds = -1.0;
     std::chrono::steady_clock::time_point liveSeekIssuedAt{};
+    LinuxSeekCoalescer seeks; // Windows' seek policy (seek_coalesce.h); changed under operations.
     LinuxSubtitleAdds subtitleAdds; // Addon subtitles added off the caller's thread, under operations.
+    LinuxSubtitleAssMode subtitleAssMode; // sub-ass-override per selected track, under operations.
     bool ownsX11Lifetime = false;
     // Experimental native-Wayland HDR session: no Canvas, X11 lifetime, HUD or thumbnails.
     bool hdrSession = false;
+    bool lowVramActive = false; // Set in create, before the player is published.
     // What the player opened, for subtitle sync's own audio decodes (speech_spot.h). Set once in
     // create, before the player is published.
     std::string speechSource;
@@ -378,6 +393,7 @@ struct Player {
         double position = number("time-pos");
         double buffered = number("demuxer-cache-time", -1.0);
         if (buffered < position) buffered = position + number("demuxer-cache-duration");
+        if (seeks.deferred() >= 0.0) position = seeks.deferred();
         bool paused = flag("pause");
         bool loading = !fileReady || flag("seeking") || flag("paused-for-cache") ||
             (flag("core-idle") && !paused && !ended && !flag("eof-reached"));
@@ -399,7 +415,8 @@ struct Player {
         attached.set_value(ready);
         if (!ready) return;
         while (!stopping) {
-            mpv_event *event = mpv_wait_event(mpv, 0.2);
+            // A coalesced seek is due by the clock, so it needs a finer tick than the idle wait.
+            mpv_event *event = mpv_wait_event(mpv, seeks.deferred() >= 0.0 ? 0.05 : 0.2);
             if (stopping) break;
             LinuxHttpRecoveryEvents::Result translated;
             bool audioRecovered = false;
@@ -407,6 +424,8 @@ struct Player {
                 std::lock_guard<std::mutex> lock(operations);
                 if (stopping) break;
                 translated = recoveryEvents.accept(*event, LinuxHttpRecoveryEvents::Clock::now());
+                // The HDR session has its own fallback to this player for the same verdict.
+                if (!hdrSession) videoOutputFailures.filter(*event, recoveryEvents, translated);
                 if (!translated.failure && !recoveryEvents.failed()) {
                     const auto audio = audioRecovery.accept(mpv, *event);
                     audioRecovered = audio.recovered;
@@ -425,8 +444,10 @@ struct Player {
                 }
                 if (translated.started) {
                     fileReady = ended = false;
+                    seeks.reset();
                 }
-                if (translated.loaded) { fileReady = true; ended = false; }
+                if (translated.loaded) { fileReady = true; ended = false; seeks.reset(); }
+                if (const auto due = seeks.takeDue(LinuxSeekCoalescer::Clock::now())) issueStepSeek(*due);
                 if (translated.restarted) ended = false;
                 if (event->event_id == MPV_EVENT_COMMAND_REPLY && LinuxSubtitleAdds::owns(event->reply_userdata)) {
                     std::string url;
@@ -437,6 +458,8 @@ struct Player {
                     if (repair && !applyLinuxSubtitleRepair(mpv, *repair))
                         std::fprintf(stderr, "Linux sub-add: an abandoned subtitle could not be taken out\n");
                 }
+                if (event->event_id == MPV_EVENT_PROPERTY_CHANGE && event->reply_userdata == 2)
+                    linuxRefreshSubtitleAssMode(mpv, subtitleAssMode);
                 // The demuxer offset of a cache-only live seek is per seek: it ends with the restart.
                 if (event->event_id == MPV_EVENT_PLAYBACK_RESTART && liveHrSeekOffsetApplied) {
                     mpv_set_property_string(mpv, "hr-seek-demuxer-offset", "0");
@@ -457,6 +480,7 @@ struct Player {
                     }
                 }
             }
+            writeSessionLog(*event, translated);
             // No operation lock across JNI callbacks. The sink preserves this order on the EDT.
             translated.deliverFailure([&](const std::string &name, double value) { emit(env, name, value); });
             if (audioRecovered) emit(env, "audioPassthroughFallback", 1.0);
@@ -502,6 +526,35 @@ struct Player {
         vm->DetachCurrentThread();
     }
 
+    // The session log's lifecycle markers and mpv's warnings and errors; with NUVIO_MPV_VERBOSE set,
+    // everything mpv delivers. Never under the operation lock: it opens a file per line.
+    void writeSessionLog(const mpv_event &event, const LinuxHttpRecoveryEvents::Result &translated) {
+        switch (event.event_id) {
+            case MPV_EVENT_LOG_MESSAGE: {
+                const auto *message = static_cast<const mpv_event_log_message *>(event.data);
+                if (!message || (!logVerbose && message->log_level > MPV_LOG_LEVEL_WARN)) break;
+                const std::string line = std::string("[") + (message->prefix ? message->prefix : "") + "] " +
+                    (message->level ? message->level : "") + ": " + (message->text ? message->text : "");
+                const auto decision = logRepeats.accept(line, LinuxLogRepeatLimit::Clock::now());
+                if (!decision.note.empty()) log.append(decision.note);
+                if (decision.write) log.append(line);
+                break;
+            }
+            case MPV_EVENT_START_FILE: log.bridge("start file"); break;
+            case MPV_EVENT_FILE_LOADED: log.bridge("file loaded"); break;
+            case MPV_EVENT_PLAYBACK_RESTART: log.bridge("playback restart"); break;
+            case MPV_EVENT_END_FILE: {
+                const auto *end = static_cast<const mpv_event_end_file *>(event.data);
+                if (end) log.bridge("end file reason=" + std::to_string(static_cast<int>(end->reason)) +
+                    " error=" + mpv_error_string(end->error));
+                break;
+            }
+            case MPV_EVENT_SHUTDOWN: log.bridge("shutdown"); break;
+            default: break;
+        }
+        if (translated.failure) log.bridge("reported " + translated.failure->event);
+    }
+
     void reportShaderMedia(JNIEnv *env, const mpv_node *params) {
         // Read the delivered snapshot, never synchronously query width/height or mix observations.
         auto field = [params](const char *name) -> const mpv_node * {
@@ -519,8 +572,8 @@ struct Player {
             return value && value->format == MPV_FORMAT_STRING && value->u.string ? value->u.string : "";
         };
         const int64_t width = number("w"), height = number("h");
-        const int64_t packed = width > 0 && width <= 65535 && height > 0 && height <= 65535
-            ? width * 65536 + height : 0;
+        const int64_t packed = linuxPackedVideoSize(width, height);
+        if (videoSizeReport.changed(packed)) emit(env, "videoSourceSize", static_cast<double>(packed));
         const std::string media = "linuxShaderMedia/" + text("gamma") + "/" +
             text("primaries") + "/" + text("colormatrix");
         if (packed != lastShaderSize || media != lastShaderMedia) {
@@ -555,6 +608,18 @@ struct Player {
         }
     }
 
+    // Never throws: the event loop's trailing seek has no caller to report to.
+    void issueStepSeek(double target) {
+        const auto now = LinuxHttpRecoveryEvents::Clock::now();
+        const int result = recoveryEvents.commandSeek(mpv, std::llround(target * 1000.0), kLinuxStepSeekMode, 0.0, now);
+        if (result < 0) {
+            std::fprintf(stderr, "Linux coalesced seek: %s\n", mpv_error_string(result));
+            return;
+        }
+        ended = false;
+        seeks.issued(target, now);
+    }
+
     double number(const char *name, double unavailable = 0.0) {
         double value = unavailable;
         if (mpv_get_property(mpv, name, MPV_FORMAT_DOUBLE, &value) < 0 || !std::isfinite(value)) return unavailable;
@@ -585,7 +650,10 @@ struct Player {
         int result = mpv_set_property_string(mpv, name, value.c_str());
         // Shared preferences include optional/init-only properties. Diagnose failures rather
         // than aborting playback; required commands below use checkMpv instead.
-        if (result < 0) std::fprintf(stderr, "Linux mpv property %s: %s\n", name, mpv_error_string(result));
+        if (result < 0) {
+            std::fprintf(stderr, "Linux mpv property %s: %s\n", name, mpv_error_string(result));
+            log.bridge(std::string("property ") + name + ": " + mpv_error_string(result));
+        }
     }
 };
 
@@ -619,12 +687,16 @@ void option(mpv_handle *mpv, const char *name, const std::string &value) {
     checkMpv(mpv_set_option_string(mpv, name, value.c_str()), name);
 }
 
-void applyExtraMpvOptions(mpv_handle *mpv, const std::vector<std::string> &options,
-                         const std::string &source) {
+// Returns whether the Low VRAM pipeline went in, which then pins its properties (low_vram.h).
+bool applyExtraMpvOptions(mpv_handle *mpv, const std::vector<std::string> &options,
+                          const std::string &source) {
     const std::string modePrefix = "@nuvio-config-mode=";
+    const std::string lowVramPrefix = "@nuvio-low-vram=";
     std::string mode = "off";
+    std::string lowVramMode = "off"; // A caller that sends no marker (a test, say) gets no probe.
     for (const auto &entry : options) {
         if (entry.rfind(modePrefix, 0) == 0) mode = entry.substr(modePrefix.size());
+        if (entry.rfind(lowVramPrefix, 0) == 0) lowVramMode = entry.substr(lowVramPrefix.size());
     }
     // Shared Kotlin omits custom entries in Off and application preferences in Full.
     // Keep Linux's safe-auto fallback in Full, but allow an explicit hwdec override.
@@ -638,9 +710,13 @@ void applyExtraMpvOptions(mpv_handle *mpv, const std::vector<std::string> &optio
             configured.insert(name);
         }
     };
+    // As on Windows, in every mode: no default/forced track shows for an instant before the
+    // preferred language is chosen. Kotlin's slang + sid=auto, sent below, replace this.
+    apply("sid", "no", true);
     if (mode != "full") {
         // Ordinary gpu-next/streaming defaults from the Windows desktop baseline. None are
         // integration requirements: shared settings and Replace/Full remain authoritative.
+        for (const auto &entry : linuxStartupDefaults()) apply(entry.first, entry.second, true);
         const std::pair<const char *, const char *> defaults[] = {
             {"scale", "spline36"}, {"cscale", "lanczos"}, {"dscale", "mitchell"},
             {"scale-antiring", "0.7"}, {"cscale-antiring", "0.7"}, {"dscale-antiring", "0.7"},
@@ -659,6 +735,7 @@ void applyExtraMpvOptions(mpv_handle *mpv, const std::vector<std::string> &optio
             {"stream-buffer-size", "1MiB"}, {"hr-seek", "no"}, {"volume-max", "200"},
         };
         for (const auto &entry : defaults) apply(entry.first, entry.second, true);
+        for (const auto &entry : linuxToneMappingDefaults()) apply(entry.first, entry.second, true);
         if (source.find("://") != std::string::npos && source.rfind("file://", 0) != 0) {
             apply("stream-lavf-o", "reconnect=1,reconnect_streamed=1,reconnect_delay_max=5", true);
         }
@@ -681,6 +758,15 @@ void applyExtraMpvOptions(mpv_handle *mpv, const std::vector<std::string> &optio
         // Failed options reserve nothing; repeated custom values remain last-wins.
         apply(name, value, !userOption);
     }
+    // After everything, including the user's own options in any config mode: this is a crash guard
+    // rather than a quality preference. Anime4K and custom GLSL chains are an explicit choice and stay.
+    const std::optional<LinuxVulkanDevice> device = lowVramMode == "auto" ? linuxCachedPlaybackVulkanDevice() : std::nullopt;
+    const bool lowVram = linuxLowVramActive(lowVramMode, device);
+    std::fprintf(stderr, "Linux low-VRAM pipeline %s mode=%s device=%s deviceLocal=%lluMiB\n", lowVram ? "active" : "inactive",
+        lowVramMode.c_str(), device ? device->name.c_str() : "(not queried)",
+        device ? static_cast<unsigned long long>(device->deviceLocalBytes / (1024 * 1024)) : 0ull);
+    if (lowVram) for (const auto &entry : linuxLowVramOptions()) apply(entry.first, entry.second, true);
+    return lowVram;
 }
 
 void headerOptions(mpv_handle *mpv, std::vector<std::string> &headers) {
@@ -954,11 +1040,11 @@ void retainEventSink(JNIEnv *env, Player &player, jobject eventSink) {
     if (!player.onEvent) throw std::runtime_error("Missing onPlayerEvent(String, Double).");
 }
 
-void applyPlaybackOptions(mpv_handle *mpv, const std::vector<std::string> &extraOptions,
+bool applyPlaybackOptions(mpv_handle *mpv, const std::vector<std::string> &extraOptions,
                           const std::string &source) {
     // Vendor-neutral default; Replace/Full and unmarked options can override it.
     option(mpv, "hwdec", "auto");
-    applyExtraMpvOptions(mpv, extraOptions, source);
+    return applyExtraMpvOptions(mpv, extraOptions, source);
 }
 
 void applyStartOptions(mpv_handle *mpv, bool playWhenReady, jlong initialPositionMs,
@@ -974,11 +1060,13 @@ void applyStartOptions(mpv_handle *mpv, bool playWhenReady, jlong initialPositio
 template<class AfterInitialize>
 void initializeAndLoad(Player &player, const std::string &source, AfterInitialize afterInitialize) {
     checkMpv(mpv_initialize(player.mpv), "mpv_initialize");
-    // SPDIF recovery needs mpv's exact verbose PCM-fallback marker. Other
-    // messages are discarded, never forwarded or written to a new log sink.
-    const char *recoveryLogLevel = player.stringProperty("audio-spdif").empty() ? "warn" : "v";
+    // SPDIF recovery needs mpv's exact verbose PCM-fallback marker. Verbose lines are
+    // not kept, unless NUVIO_MPV_VERBOSE asks for them in the session log.
+    player.logVerbose = std::getenv("NUVIO_MPV_VERBOSE") != nullptr;
+    const char *recoveryLogLevel = player.logVerbose || !player.stringProperty("audio-spdif").empty() ? "v" : "warn";
     checkMpv(mpv_request_log_messages(player.mpv, recoveryLogLevel), "request recovery log events");
     checkMpv(mpv_observe_property(player.mpv, 1, "video-params", MPV_FORMAT_NODE), "observe video-params");
+    checkMpv(mpv_observe_property(player.mpv, 2, "current-tracks/sub/codec", MPV_FORMAT_STRING), "observe subtitle codec");
     afterInitialize();
     const char *load[] = {"loadfile", source.c_str(), nullptr};
     checkMpv(mpv_command(player.mpv, load), "loadfile");
@@ -1015,6 +1103,12 @@ JNI_METHOD(jlong, create)(
         if (!eventSink) throw std::runtime_error("Native player event sink is required.");
         auto player = std::make_shared<Player>();
         player->reserveX11Lifetime();
+        const std::string controlsUrl = text(env, controlsPageUrl);
+        player->log.begin(controlsUrl.find("heroTrailer=1") != std::string::npos);
+        const bool remote = source.find("://") != std::string::npos && source.rfind("file://", 0) != 0;
+        player->log.bridge("initialize requested source=" + (remote ? source : std::string("(local file)")) + " audio=" +
+            (sourceAudioUrl ? "yes" : "no") + " playWhenReady=" + (playWhenReady == JNI_TRUE ? "yes" : "no") +
+            " initialMs=" + std::to_string(initialPositionMs));
         if (env->GetJavaVM(&player->vm) != JNI_OK) throw std::runtime_error("GetJavaVM failed.");
         LinuxAwtX11Lifecycle::prepare(env);
         retainEventSink(env, *player, eventSink);
@@ -1022,7 +1116,7 @@ JNI_METHOD(jlong, create)(
         player->mpv = mpv_create();
         if (!player->mpv) throw std::runtime_error("mpv_create failed.");
 
-        applyPlaybackOptions(player->mpv, strings(env, extraMpvOptions), source);
+        player->lowVramActive = applyPlaybackOptions(player->mpv, strings(env, extraMpvOptions), source);
         // These embedding/lifecycle boundaries must win over saved desktop options.
         for (const auto &entry : linuxX11EmbeddingOptions(hostViewPtr)) option(player->mpv, entry.first.c_str(), entry.second);
         applyStartOptions(player->mpv, playWhenReady == JNI_TRUE, initialPositionMs, initialProgressFraction);
@@ -1035,7 +1129,7 @@ JNI_METHOD(jlong, create)(
         player->speechSeparateAudio = audio;
         initializeAndLoad(*player, source, [] {});
         std::weak_ptr<Player> weak = player;
-        player->controls = LinuxControlsOverlay::create(hostViewPtr, text(env, controlsPageUrl),
+        player->controls = LinuxControlsOverlay::create(hostViewPtr, controlsUrl,
             [weak](const std::string &name, double value) {
                 if (auto current = weak.lock()) current->controlsMessage(name, value);
             },
@@ -1056,6 +1150,11 @@ JNI_METHOD(jlong, create)(
         }
         return publishPlayer(player);
     });
+}
+
+// Where logs/ goes: DesktopStorage.rootDir, as on Windows.
+JNI_METHOD(void, setDataDirectory)(JNIEnv *env, jobject, jstring directory) {
+    guarded(env, [&] { LinuxPlayerLog::setDataDirectory(text(env, directory)); });
 }
 
 JNI_METHOD(void, dispose)(JNIEnv *env, jobject, jlong handle) {
@@ -1079,10 +1178,28 @@ JNI_METHOD(void, setPaused)(JNIEnv *env, jobject, jlong handle, jboolean paused)
     });
 }
 JNI_METHOD(void, seekTo)(JNIEnv *env, jobject, jlong handle, jlong position) {
-    withPlayer(env, handle, [&](Player &p) { seek(p, std::max<jlong>(0, position), "absolute+exact"); });
+    withPlayer(env, handle, [&](Player &p) {
+        const double target = LinuxSeekCoalescer::clamp(static_cast<double>(position) / 1000.0, p.number("duration"));
+        seek(p, std::llround(target * 1000.0), kLinuxTimelineSeekMode);
+        p.seeks.issued(target, LinuxSeekCoalescer::Clock::now());
+    });
 }
 JNI_METHOD(void, seekBy)(JNIEnv *env, jobject, jlong handle, jlong offset) {
-    withPlayer(env, handle, [&](Player &p) { seek(p, offset, "relative+exact"); });
+    withPlayer(env, handle, [&](Player &p) {
+        LinuxSeekCoalescer::StepInput input;
+        input.offsetSeconds = static_cast<double>(offset) / 1000.0;
+        input.duration = p.number("duration");
+        input.seeking = p.flag("seeking");
+        input.cachedUntil = p.number("demuxer-cache-time", -1.0);
+        input.localFile = linuxSeekSourceIsLocal(p.speechSource);
+        const double position = p.number("time-pos", -1.0);
+        if (position >= 0.0) input.timePos = position;
+        const auto now = LinuxSeekCoalescer::Clock::now();
+        const auto step = p.seeks.step(input, now);
+        if (!step || step->deferred) return;
+        seek(p, std::llround(step->target * 1000.0), kLinuxStepSeekMode);
+        p.seeks.issued(step->target, now);
+    });
 }
 JNI_METHOD(void, seekToCachedLiveEdge)(JNIEnv *env, jobject, jlong handle, jlong cushionMs) {
     withPlayer(env, handle, [&](Player &p) {
@@ -1092,6 +1209,31 @@ JNI_METHOD(void, seekToCachedLiveEdge)(JNIEnv *env, jobject, jlong handle, jlong
         std::fprintf(stderr, "Linux go live pos=%.2f cacheEnd=%.2f ranges=%d target=%.2f%s\n", timePos,
             cache.cacheEnd, (int)cache.ranges.size(), target, target < 0.0 ? " skipped" : "");
         if (target >= 0.0) issueCachedSeek(p, cache, target);
+    });
+}
+// Go live from the user's click (Linux only; the shared method above stays as Windows has it). Says
+// when the cache cannot be seeked, so Kotlin can reopen the channel. Returns a LinuxGoLiveStep.
+extern "C" JNIEXPORT jint JNICALL
+Java_com_nuvio_app_features_player_desktop_LinuxGoLiveNative_goLive(JNIEnv *env, jobject, jlong handle, jlong cushionMs) {
+    return withPlayer(env, handle, [&](Player &p) -> jint {
+        const double timePos = p.number("time-pos", -1.0);
+        const auto cache = liveCacheState(p);
+        const auto step = linuxGoLiveStep(cache, timePos, cushionMs);
+        if (step == LinuxGoLiveStep::Seek) {
+            issueCachedSeek(p, cache, linuxCachedLiveEdgeTarget(cache, timePos, cushionMs));
+        } else if (step == LinuxGoLiveStep::NoSeekableRange) {
+            // Which of mpv's conditions failed on this channel: the streams it reads and its own view.
+            std::string tracks;
+            const int64_t count = p.integer("track-list/count");
+            for (int64_t index = 0; index < count; ++index) {
+                const std::string prefix = "track-list/" + std::to_string(index) + "/";
+                if (!p.flag((prefix + "selected").c_str())) continue;
+                tracks += p.stringProperty((prefix + "type").c_str()) + ":" + p.stringProperty((prefix + "codec").c_str()) + " ";
+            }
+            std::fprintf(stderr, "Linux go live: no seekable range pos=%.2f cacheEnd=%.2f tracks=%s state=%s\n", timePos,
+                cache.cacheEnd, tracks.c_str(), p.stringProperty("demuxer-cache-state").c_str());
+        }
+        return static_cast<jint>(step);
     });
 }
 JNI_METHOD(void, seekWithinCacheTo)(JNIEnv *env, jobject, jlong handle, jlong positionMs) {
@@ -1122,7 +1264,11 @@ JNI_METHOD(void, requestSeekThumbnail)(JNIEnv *env, jobject, jlong handle, jlong
     });
 }
 JNI_METHOD(void, setMpvProperty)(JNIEnv *env, jobject, jlong handle, jstring name, jstring value) {
-    withPlayer(env, handle, [&](Player &p) { p.property(text(env, name).c_str(), text(env, value)); });
+    withPlayer(env, handle, [&](Player &p) {
+        const std::string key = text(env, name);
+        const auto pinned = p.lowVramActive ? linuxLowVramPinned(key) : std::nullopt;
+        p.property(key.c_str(), pinned ? *pinned : text(env, value));
+    });
 }
 JNI_METHOD(void, setSpeed)(JNIEnv *env, jobject, jlong handle, jfloat speed) {
     withPlayer(env, handle, [&](Player &p) {
@@ -1143,7 +1289,10 @@ JNI_METHOD(void, setMute)(JNIEnv *env, jobject, jlong handle, jboolean muted) {
     });
 }
 JNI_METHOD(jlong, positionMs)(JNIEnv *env, jobject, jlong handle) {
-    return withPlayer(env, handle, [](Player &p) { return milliseconds(p.number("time-pos")); });
+    return withPlayer(env, handle, [](Player &p) {
+        const double deferred = p.seeks.deferred();
+        return milliseconds(deferred >= 0.0 ? deferred : p.number("time-pos"));
+    });
 }
 JNI_METHOD(jlong, durationMs)(JNIEnv *env, jobject, jlong handle) {
     return withPlayer(env, handle, [](Player &p) { return milliseconds(p.number("duration")); });
@@ -1181,9 +1330,11 @@ JNI_METHOD(jboolean, isMuted)(JNIEnv *env, jobject, jlong handle) {
 JNI_METHOD(void, setResizeMode)(JNIEnv *env, jobject, jlong handle, jint mode) {
     withPlayer(env, handle, [&](Player &p) {
         p.property("keepaspect", mode == 1 ? "no" : "yes");
-        // Auto crop (3) fills like Zoom once video-crop has trimmed the bars (auto_crop.h).
-        p.property("panscan", mode == 2 || mode == 3 ? "1" : "0");
-        p.autoCrop.setEnabled(mode == 3, LinuxAutoCrop::Clock::now());
+        // Auto crop (3, and 4 for the hero trailer's quick decision) fills like Zoom once video-crop
+        // has trimmed the bars (auto_crop.h).
+        const bool autoCrop = mode == 3 || mode == 4;
+        p.property("panscan", mode == 2 || autoCrop ? "1" : "0");
+        p.autoCrop.setEnabled(autoCrop, LinuxAutoCrop::Clock::now(), mode == 4);
     });
 }
 
@@ -1316,8 +1467,8 @@ JNI_METHOD(void, clearExternalSubtitlesAndSelect)(JNIEnv *env, jobject, jlong ha
 }
 JNI_METHOD(void, setSubtitleAssStyleMode)(JNIEnv *env, jobject, jlong handle, jstring mode, jdouble scale) {
     withPlayer(env, handle, [&](Player &p) {
-        p.property("sub-ass-override", text(env, mode));
-        p.property("sub-scale", std::to_string(scale));
+        // Mid-playback changes take effect at once; the track decides whether they reach it at all.
+        if (p.subtitleAssMode.request(text(env, mode), scale)) linuxRefreshSubtitleAssMode(p.mpv, p.subtitleAssMode, true);
     });
 }
 JNI_METHOD(void, applySubtitleStyle)(
@@ -1325,16 +1476,17 @@ JNI_METHOD(void, applySubtitleStyle)(
     jfloat outlineSize, jboolean bold, jfloat fontSize, jint position, jstring font
 ) {
     withPlayer(env, handle, [&](Player &p) {
-        std::string back = text(env, background);
-        p.property("sub-color", text(env, color));
-        p.property("sub-back-color", back);
-        p.property("sub-outline-color", text(env, outline));
-        p.property("sub-border-style", back.rfind("#00", 0) == 0 ? "outline-and-shadow" : "opaque-box");
-        p.property("sub-outline-size", std::to_string(outlineSize));
-        p.property("sub-bold", bold ? "yes" : "no");
-        p.property("sub-font-size", std::to_string(fontSize));
-        p.property("sub-pos", std::to_string(position));
-        p.property("sub-font", text(env, font));
+        LinuxSubtitleStyle style;
+        style.color = text(env, color);
+        style.background = text(env, background);
+        style.outline = text(env, outline);
+        style.outlineSize = outlineSize;
+        style.bold = bold == JNI_TRUE;
+        style.fontSize = fontSize;
+        style.position = position;
+        style.font = text(env, font);
+        linuxRefreshSubtitleAssMode(p.mpv, p.subtitleAssMode);
+        for (const auto &[name, value] : linuxSubtitleStyleProperties(style)) p.property(name.c_str(), value);
     });
 }
 
@@ -1397,13 +1549,15 @@ LINUX_HDR_METHOD(jlong, create)(
             throw std::runtime_error("The loaded libmpv has no Wayland Vulkan context.");
         auto player = std::make_shared<Player>();
         player->hdrSession = true;
+        player->log.begin(false);
+        player->log.bridge("HDR session requested initialMs=" + std::to_string(initialPositionMs));
         if (env->GetJavaVM(&player->vm) != JNI_OK) throw std::runtime_error("GetJavaVM failed.");
         retainEventSink(env, *player, eventSink);
         std::setlocale(LC_NUMERIC, "C");
         player->mpv = mpv_create();
         if (!player->mpv) throw std::runtime_error("mpv_create failed.");
 
-        applyPlaybackOptions(player->mpv, strings(env, extraMpvOptions), source);
+        player->lowVramActive = applyPlaybackOptions(player->mpv, strings(env, extraMpvOptions), source);
         LinuxHdrSessionConfig config;
         config.vulkanDevice = text(env, vulkanDevice);
         config.appId = text(env, appId);

@@ -622,7 +622,7 @@ internal fun PlayerScreenRuntime.RenderPlayerRuntimeUi() {
         showVideoSettings = isIos,
         showSources = activeVideoId != null && !isIptvPlayback,
         showEpisodes = isSeries && !isIptvPlayback,
-        showExternalPlayer = args.onOpenInExternalPlayer != null,
+        showExternalPlayer = args.onOpenInExternalPlayer != null && ExternalPlayerPlatform.supported,
         durationMs = playbackSnapshot.durationMs,
         positionMs = displayedPositionMs,
         chapters = playerChapters,
@@ -929,6 +929,10 @@ internal fun PlayerScreenRuntime.RenderPlayerRuntimeUi() {
                     // its synthetic last-frame position to the EOF/autoplay effects.
                     playbackSourceFailureActive = true
                     PlaybackErrorLog.error(playbackAttemptId, activeSourceUrl, message)
+                    if (playbackErrorIsVideoOutput(message)) {
+                        exitAfterPlaybackFailure(message, playbackFailedToast)
+                        return@PlatformPlayerSurface
+                    }
                     if (isIptvPlayback) {
                         handleIptvPlaybackError(message, playbackFailedToast)
                         return@PlatformPlayerSurface
@@ -1049,7 +1053,11 @@ private fun PlayerScreenRuntime.presentUnrecoverablePlaybackError(
         playbackAttemptId,
         if (playerSettingsUiState.streamFailoverEnabled) "exit (failover did not apply)" else "exit (failover off)",
     )
-    exitAfterPlaybackFailure(message, playbackFailedToast)
+    val stalledPeers = if (activeTorrentInfoHash != null) torrentStallPeerCount(message, p2pStreamingState) else null
+    exitAfterPlaybackFailure(
+        stalledPeers?.let { localizedString(Res.string.p2p_no_reachable_peers, it) } ?: message,
+        playbackFailedToast,
+    )
 }
 
 internal fun PlayerScreenRuntime.exitAfterPlaybackFailure(
@@ -1125,7 +1133,7 @@ private fun PlayerScreenRuntime.RenderPlayerControls(displayedPositionMs: Long, 
             },
             onSourcesClick = if (activeVideoId != null) { { openSourcesPanel() } } else null,
             onEpisodesClick = if (isSeries) { { openEpisodesPanel() } } else null,
-            onOpenInExternalPlayer = args.onOpenInExternalPlayer?.let { { openInExternalPlayer() } },
+            onOpenInExternalPlayer = args.onOpenInExternalPlayer?.takeIf { ExternalPlayerPlatform.supported }?.let { { openInExternalPlayer() } },
             onSubmitIntroClick = if (
                 isSeries &&
                 playerSettingsUiState.introSubmitEnabled &&

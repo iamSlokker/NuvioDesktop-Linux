@@ -1,0 +1,4 @@
+<resources>
+    <string name="linux_updates_auto_install_description_appimage">Substitui este AppImage assim que uma atualização é transferida e verificada. Com esta opção desligada, ou se a pasta do AppImage for só de leitura, a atualização fica guardada na pasta Transferências.</string>
+    <string name="linux_updates_auto_install_description_deb">Instala de imediato o pacote transferido e verificado; o sistema pede primeiro a tua palavra-passe. Com esta opção desligada, o .deb fica guardado na pasta Transferências.</string>
+</resources>

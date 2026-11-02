@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="linux_audio_channels_desc">Stereo mixes surround tracks down to two channels in the player. Try it if dialogue keeps getting louder and quieter on a TV or soundbar. Auto uses the layout your system's audio output is set to.</string>
+    <string name="linux_custom_shader_paths_hint">e.g.\n/home/user/Shaders/Anime4K-Ultra.glsl\n/home/user/Shaders/MyPack</string>
+    <string name="linux_cast_no_devices">No devices found. The TV or player must be on, on the same network, and have DLNA (media sharing / UPnP) enabled. If your system runs a firewall, it must also let Nuvio reach the local network.</string>
+    <string name="linux_games_editor_path_example">/home/user/Games/Example/start.sh,  a game .desktop file,  or  steam://rungameid/620</string>
+    <string name="linux_cast_dolby_vision_needs_ffmpeg">Needs ffmpeg on this PC. Install it with your distribution's package manager.</string>
+    <string name="linux_cast_dolby_vision_flatpak">Not available in the Flatpak version, whose sandbox cannot run your system's ffmpeg.</string>
+    <string name="linux_games_launcher_filter_apps">Linux executables, scripts, AppImages and game desktop entries</string>
+    <string name="linux_games_desktop_entry_unavailable">Nuvio cannot start this .desktop file: it is missing, is not a game entry, or runs through a shell or another launcher.</string>
+    <string name="linux_updates_auto_install_description">You still confirm each update. When on, Nuvio replaces the AppImage or installs the .deb itself; when off, it saves the file to your Downloads folder.</string>
+    <string name="linux_settings_youtube_explainer">Opens Google's real sign-in page in a temporary window of a browser installed on this PC: Chrome, Edge, Brave, Chromium, Vivaldi, Opera or Firefox. Sign in there, wait for YouTube Music to load, then close the window; Nuvio then reads the session cookies and deletes the temporary profile. They are sent only for videos YouTube blocks without an account, and Nuvio never sees your password. A secondary Google account is safest.</string>
+</resources>

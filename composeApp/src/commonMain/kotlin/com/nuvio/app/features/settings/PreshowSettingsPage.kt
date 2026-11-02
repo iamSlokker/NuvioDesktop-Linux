@@ -110,6 +110,7 @@ internal fun LazyListScope.preshowSettingsContent(isTablet: Boolean) {
                     },
                     onClick = { editing = true },
                 )
+                if (platformOffersAudioKeepAlive) {
                 SettingsGroupDivider(isTablet)
                 SettingsSwitchRow(
                     title = stringResource(Res.string.settings_preshow_keep_audio_alive),
@@ -119,6 +120,7 @@ internal fun LazyListScope.preshowSettingsContent(isTablet: Boolean) {
                     modifier = Modifier.settingsSearchAnchors("preshow-keep-audio"),
                     onCheckedChange = PreshowSettings::setKeepAudioAlive,
                 )
+                }
             }
             if (editing) {
                 PreshowRunningOrderDialog(
@@ -327,6 +329,7 @@ internal fun LazyListScope.preshowSettingsContent(isTablet: Boolean) {
                     isTablet = isTablet,
                     onSave = PreshowSettings::setLocalFolder,
                 )
+                SandboxFolderRow(isTablet = isTablet, onChosen = PreshowSettings::setLocalFolder)
                 listOf(
                     "cinema_intro" to "Cinema intro clips",
                     "bumper" to "Bumper clips",

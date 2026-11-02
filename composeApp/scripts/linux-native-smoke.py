@@ -40,6 +40,7 @@ FAILURE_PATTERNS = [
 PASS_THROUGH = ('NUVIO_NATIVE_SELFTEST_', 'WEBKIT_', 'LIBGL_', 'MESA_', 'VK_')
 SELFTEST_DONE = re.compile(r'\(NativeSelfTest\) done passed=(\d+) failed=(\d+)')
 SELFTEST_LINE = re.compile(r'\(NativeSelfTest\) (.*)')
+SELFTEST_FAILED = re.compile(r'\(NativeSelfTest\) (.+?) FAILED')
 
 
 def in_container():
@@ -136,8 +137,9 @@ def image_root_for(command):
 
 
 class Launch:
-    def __init__(self, index, out, command, selftest, image_root, display_number, extra_env=()):
+    def __init__(self, index, out, command, selftest, image_root, display_number, extra_env=(), allow_failed=()):
         self.extra_env = dict(item.split('=', 1) for item in extra_env)
+        self.allow_failed = set(allow_failed)
         self.dir = os.path.join(out, 'run-%d' % index)
         self.command = command
         self.selftest = selftest
@@ -165,10 +167,11 @@ class Launch:
             env['LD_LIBRARY_PATH'] = ':'.join(
                 os.path.join(lib, sub) for sub in ('native', 'runtime/lib', 'runtime/lib/server'))
         env.update({key: value for key, value in os.environ.items() if key.startswith(PASS_THROUGH)})
-        env.update(self.extra_env)
         if self.selftest:
             env['NUVIO_NATIVE_SELFTEST'] = '1'
             env['NUVIO_NATIVE_SELFTEST_DATA_DIR'] = os.path.join(profile['data'], 'nuvio-selftest')
+        # Last, so a format can replace them (a sealed Flatpak cannot see a data directory under --out).
+        env.update(self.extra_env)
         return env
 
     def start_services(self, env):
@@ -263,8 +266,11 @@ class Launch:
         if self.selftest:
             if self.done is None:
                 problems.append('self-test did not finish' + (' (process exited %s)' % self.exit_code if self.exited_early else ''))
-            elif self.done[1]:
-                problems.append('%d self-test probe(s) failed' % self.done[1])
+            else:
+                failed = [m.group(1) for m in map(SELFTEST_FAILED.search, self.lines) if m]
+                unexpected = [name for name in failed if name not in self.allow_failed]
+                if unexpected or self.done[1] != len(failed):
+                    problems.append('%d self-test probe(s) failed: %s' % (self.done[1], ', '.join(unexpected)))
         elif self.exited_early:
             problems.append('process exited early (%s)' % self.exit_code)
         for line in self.lines:
@@ -282,6 +288,8 @@ def main():
     parser.add_argument('--out', required=True)
     parser.add_argument('--env', action='append', default=[], metavar='KEY=VALUE',
                         help='extra environment for the app (repeatable)')
+    parser.add_argument('--allow-failed-probe', action='append', default=[], metavar='NAME',
+                        help='a probe this environment cannot pass, such as playback with no Vulkan device (repeatable)')
     argv = sys.argv[1:]
     split = argv.index('--') if '--' in argv else len(argv)
     args = parser.parse_args(argv[:split])
@@ -303,7 +311,8 @@ def main():
         runs, selftest, linger = args.runs, True, 5 if args.linger is None else args.linger
     failed = False
     for index in range(1, runs + 1):
-        launch = Launch(index, args.out, command, selftest, image_root, 70 + index, args.env).run(args.timeout, linger)
+        launch = Launch(index, args.out, command, selftest, image_root, 70 + index, args.env,
+                        args.allow_failed_probe).run(args.timeout, linger)
         for line in launch.lines:
             match = SELFTEST_LINE.search(line)
             if match:

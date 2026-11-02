@@ -2,6 +2,7 @@ package com.nuvio.app.features.settings
 
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.width
+import com.nuvio.app.core.i18n.platformString
 import com.nuvio.app.core.ui.ditheredBackground
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -448,7 +449,7 @@ private fun AccountSettingsBody(
             }
         }
 
-        if (AppUpdaterPlatform.isSupported) {
+        if (AppUpdaterPlatform.isSupported && AppUpdaterPlatform.offersInPlaceUpdateOption) {
             SettingsSection(
                 title = stringResource(Res.string.settings_updates_section),
                 isTablet = isTablet,
@@ -492,7 +493,8 @@ private fun AccountSettingsBody(
                     }
                     SettingsSwitchRow(
                         title = stringResource(Res.string.settings_updates_auto_install),
-                        description = stringResource(Res.string.settings_updates_auto_install_description),
+                        description = AppUpdaterPlatform.inPlaceUpdateOptionDescription()
+                            ?: stringResource(platformString(Res.string.settings_updates_auto_install_description)),
                         checked = autoInstall,
                         isTablet = isTablet,
                         modifier = Modifier.settingsScrollAnchor(
@@ -522,6 +524,8 @@ private fun AccountSettingsBody(
                 }
             }
         }
+
+        NuvioLinkRegistrationSection(isTablet = isTablet)
     }
 
     pendingPortableMode?.let { enable ->

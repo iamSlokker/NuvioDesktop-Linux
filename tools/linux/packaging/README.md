@@ -172,6 +172,12 @@ loopback port before anything else is built. `stage.py` installs it as
 `share/licenses/TorrServer/`. `verify.py` requires it executable and static in every format;
 the tag archive, the vendored modules and the build steps go out as
 `Nuvio-TorrServer-source-<commit12>.tar.gz`, listed for every package in SOURCE-MAP.json.
+
+**InnerTubeX (music).** The second stream resolver is compiled in with `-Pnuvio.innertubex=true`,
+as upstream's CI does, so the build phase needs JitPack. It is GPL-3.0: `innertubex_source.py`
+keeps the pinned tag archive as `Nuvio-InnerTubeX-source-<commit12>.tar.gz` and fails if
+`build.gradle.kts` compiles another version. The "linux innertubex" probe fails a smoke run of an
+image without it, so local preflights need the same flag.
 None of these files are builder-seed inputs.
 
 Canonical layout:
@@ -295,13 +301,13 @@ claim. Default Flatpak XDG config/data/cache directories persist normally.
 | Integration | Sandbox boundary |
 | --- | --- |
 | Discord IPC | Only the host `discord-ipc-0` socket and Flatpak Discord's runtime directory are exposed; absence is nonfatal. A host Discord started after Nuvio is only seen after Nuvio restarts (the single socket is bind-mounted at launch); Flatpak Discord is seen at any time. Other clients are covered only if they publish `discord-ipc-0`. |
-| Game import/launch | Host game folders and launchers are not exposed; no Steam/Proton/host-spawn implementation. Sandbox-visible executables only. |
+| Game import/launch | Host game folders and programs are not exposed and there is no host-spawn, so the UI offers launcher links only (`steam://`, `heroic://` and the like, opened through xdg-open and the OpenURI portal) and says so. |
 | External players | Host PATH/programs and `flatpak run` delegation are unavailable; portal/system opening is conditional and needs acceptance. |
-| Local media, downloads, backup, shaders | Swing pickers are not portal pickers. Only sandbox-visible paths work by default; no broad host access added. A separately designed portal integration/user-granted path is needed for arbitrary files. |
+| Local media, downloads, backup, shaders, pre-show, subtitles, Discover files | Every picker goes through the FileChooser portal (`LinuxFileChooserPortal.kt`), which grants what the user chose as a persistent `/run/user/<uid>/doc` path; no filesystem permission is added. File drops redeem the FileTransfer portal's key, and a source that offers none gets an explanation. Typed paths outside the sandbox still cannot work. |
 | MPRIS | Explicit `org.mpris.MediaPlayer2.Nuvio` ownership; desktop/player acceptance still required. |
 | Notifications | Desktop OS notifications remain unimplemented; standard portal availability does not add them. |
 | Inhibition/screensaver | Existing portal is preferred. ScreenSaver allowed; logind fallback is not granted and GNOME/Mutter-specific probes are not exposed. App-idle fallback and generic Wayland limitations remain. |
-| Controllers | `dri` does not expose evdev input; no physical controller acceptance or permission bypass is claimed. |
+| Controllers | `flatpak.grant_input_device` adds `input` to the devices in the metadata, because the runner's Flatpak 1.12 refuses `--device=input` at build-finish. Needs Flatpak 1.15.6+ on the user's side; older clients ignore it and see no controllers. It exposes evdev nodes, and only those the user may read (controllers, through udev's uaccess). No physical controller acceptance is claimed. |
 
 For local Flatpak export, the pinned GNOME Platform must already be installed.
 The build does not register remotes, install runtimes into user/system state, or

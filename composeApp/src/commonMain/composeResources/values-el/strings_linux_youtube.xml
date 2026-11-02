@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="linux_youtube_no_browser">Δεν βρέθηκε υποστηριζόμενο πρόγραμμα περιήγησης. Εγκαταστήστε Chrome, Edge, Brave, Chromium, Vivaldi, Opera ή Firefox για να συνδεθείτε στο YouTube Music.</string>
+    <string name="linux_youtube_flatpak_unavailable">Η σύνδεση στο YouTube ανοίγει ένα πρόγραμμα περιήγησης εγκατεστημένο στο σύστημά σας, στο οποίο η έκδοση Flatpak του Nuvio δεν έχει πρόσβαση από το περιβάλλον της, οπότε δεν είναι διαθέσιμη εδώ. Οι εκδόσεις .deb και AppImage την υποστηρίζουν.</string>
+</resources>

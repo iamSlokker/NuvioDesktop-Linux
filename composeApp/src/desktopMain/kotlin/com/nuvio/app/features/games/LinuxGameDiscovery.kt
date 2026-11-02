@@ -14,8 +14,12 @@ internal object LinuxGameDiscovery {
 
     fun allowedRoot(root: File): Boolean = runCatching {
         val path = root.canonicalPath
-        path != "/" && systemRoots.none { path == it || path.startsWith("$it/") } && root.isDirectory && root.canRead()
+        !isSystemPath(path) && root.isDirectory && root.canRead()
     }.getOrDefault(false)
+
+    // udisks mounts a second drive under /run/media/<user>, the one part of /run that holds a user's files.
+    internal fun isSystemPath(path: String): Boolean = path == "/" || (!path.startsWith("/run/media/") &&
+        systemRoots.any { path == it || path.startsWith("$it/") })
 
     fun children(root: File): List<File> = runCatching {
         Files.newDirectoryStream(root.toPath()).use { stream ->

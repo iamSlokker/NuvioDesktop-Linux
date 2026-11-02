@@ -41,6 +41,62 @@ class LinuxScreensaverTest {
             controller.tick(config, player, showing)
     }
 
+    private class ShutdownFixture(accepted: Boolean = true, available: Boolean = true) {
+        var now = 0L
+        val log = mutableListOf<String>()
+        var countdown: Int? = null
+        var opacity = 0f
+        var pending: ((Boolean) -> Unit)? = null
+        val answer = accepted
+        val settings = ScreensaverSettings(enabled = false, dimPercent = 65, shutdownEnabled = true, shutdownDelayMinutes = 1,
+            playbackShutdownDelayMinutes = 2, activeDuringPlayback = true)
+        val controller = LinuxScreensaverController(LinuxIdleSource { null }, { log += "dim" }, { countdown = null; log += "hide" },
+            {}, { now }, { null },
+            showCountdown = { value, seconds -> opacity = value; countdown = seconds },
+            shutdownAvailable = { available },
+            powerOff = { done -> log += "poweroff"; pending = done },
+            exitApplication = { log += "exit" })
+        fun tick(player: Boolean = false, showing: Boolean = true) = controller.tick(settings, player, showing)
+    }
+    @Test fun shutdownCountsDownThenPowersOffOnceAndExits() = with(ShutdownFixture()) {
+        now = 59_999; tick(); assertNull(countdown)
+        now = 60_000; tick(); assertEquals(SCREENSAVER_SHUTDOWN_COUNTDOWN_SECONDS, countdown); assertEquals(0.9f, opacity)
+        now = 70_000; tick(); assertEquals(SCREENSAVER_SHUTDOWN_COUNTDOWN_SECONDS - 10, countdown)
+        assertFalse("poweroff" in log)
+        now = 60_000 + SCREENSAVER_SHUTDOWN_COUNTDOWN_SECONDS * 1_000L; tick()
+        assertEquals(1, log.count { it == "poweroff" })
+        now += 1_000; tick(); assertEquals(1, log.count { it == "poweroff" })
+        assertFalse("exit" in log)
+        pending!!(true)
+        assertTrue("exit" in log)
+    }
+    @Test fun anyInputCancelsTheCountdown() = with(ShutdownFixture()) {
+        now = 60_000; tick(); assertEquals(SCREENSAVER_SHUTDOWN_COUNTDOWN_SECONDS, countdown)
+        now = 65_000; controller.activity(); assertNull(countdown)
+        now = 66_000; tick(); assertNull(countdown)
+        now = 65_000 + 60_000; tick(); assertEquals(SCREENSAVER_SHUTDOWN_COUNTDOWN_SECONDS, countdown)
+    }
+    @Test fun aRefusedPowerOffDoesNotExitOrAskAgain() = with(ShutdownFixture()) {
+        now = 60_000; tick()
+        now += SCREENSAVER_SHUTDOWN_COUNTDOWN_SECONDS * 1_000L; tick()
+        pending!!(false)
+        assertFalse("exit" in log)
+        now += 600_000; tick(); assertNull(countdown)
+        assertEquals(1, log.count { it == "poweroff" })
+    }
+    @Test fun noShutdownWithAnotherProgramInFrontOrWithoutLogind() {
+        with(ShutdownFixture()) {
+            now = 60_000; tick(); assertEquals(SCREENSAVER_SHUTDOWN_COUNTDOWN_SECONDS, countdown)
+            now = 61_000; tick(showing = false); assertNull(countdown)
+        }
+        with(ShutdownFixture(available = false)) {
+            now = 600_000; tick(); assertNull(countdown); assertFalse("poweroff" in log)
+        }
+    }
+    @Test fun thePlayerHasItsOwnLongerShutdownDelay() = with(ShutdownFixture()) {
+        now = 60_000; tick(player = true); assertNull(countdown)
+        now = 120_000; tick(player = true); assertEquals(SCREENSAVER_SHUTDOWN_COUNTDOWN_SECONDS, countdown)
+    }
     @Test fun browsingBoundaryAndOpacity() = with(Fixture()) {
         now = 59_999; tick(); assertFalse(visible)
         now = 60_000; tick(); assertTrue(visible); assertEquals(0.65f, opacity)

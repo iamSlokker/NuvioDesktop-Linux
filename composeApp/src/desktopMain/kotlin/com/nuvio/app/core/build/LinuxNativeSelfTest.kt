@@ -28,6 +28,7 @@ import javax.swing.SwingUtilities
 internal object LinuxNativeSelfTest {
 
     fun run(probe: (String, () -> String) -> Unit) {
+        LinuxRuntimeProbes.run(probe)
         // native-image emits libawt & co. beside the exe and the layout adds libjawt.so under
         // runtime/lib; a second copy of either mapped from another path would split AWT's state.
         probe("linux jdk libraries") {
@@ -48,13 +49,40 @@ internal object LinuxNativeSelfTest {
             withVideoFrame { _, host -> onEdt { "drawable=0x" + LinuxAwtViewResolver.resolveNativeViewPointer(host).toString(16) } }
         }
         probe("linux playback") { playback() }
+        // The packages point libraries and data directories at their own files; a program of the
+        // host that inherits them fails with symbol errors (LinuxHostProcess).
+        probe("linux child environment") { childEnvironment() }
         probe("linux mpris") { mpris() }
+        // The P2P engine went missing from the packages once with nothing to catch it. Stage 1's
+        // linuxNativeSmoke layout has no TorrServer yet; stage.py adds it with release-info.json.
+        probe("linux p2p engine") {
+            val staged = File(System.getProperty("jpackage.app-path").orEmpty()).parentFile
+                ?.resolveSibling("release-info.json")?.isFile == true
+            val bundled = PackagedResources.open("torrserver/linux-amd64/TorrServer")?.also { it.close() } != null
+            if (staged || bundled) com.nuvio.app.features.p2p.TorrServerP2pBackend.selfTestEngine() else "no TorrServer in this layout"
+        }
         // No inhibition backend is expected on the smoke's private bus (acquire returns 0); a
         // desktop session takes and releases a real lease. Either way the JNI round trip runs.
         probe("linux inhibitor") {
             val handle = LinuxInhibitionNative.acquire(Runnable { })
             LinuxInhibitionNative.release(handle)
             if (handle == 0L) "no backend (expected on a private bus)" else "acquired and released"
+        }
+
+        // SubtitleCharsetDetector falls back to UTF-8 without a word when one of these is missing.
+        probe("linux charsets") {
+            listOf(
+                "windows-1250", "windows-1251", "windows-1252", "windows-1253", "windows-1254", "windows-1255",
+                "windows-1256", "windows-1258", "windows-874", "TIS-620", "KOI8-R", "GB18030", "Big5", "Shift_JIS",
+                "EUC-KR",
+            ).onEach { name -> java.nio.charset.Charset.forName(name) }.size.toString()
+        }
+
+        // Found by name, so a build without it, or without its metadata, would only show as tracks
+        // that do not play. Local preflights need -Pnuvio.innertubex=true too.
+        probe("linux innertubex") {
+            com.nuvio.app.features.music.MusicStreamFallbacks.active?.name
+                ?: error("not in this image: built without -Pnuvio.innertubex=true, or its metadata is missing")
         }
         // kotlinx.serialization reaches an object's, a sealed base's or an enum's serializer by
         // reflection. Navigation builds every route's serializer right after sign-in, a screen the
@@ -110,9 +138,31 @@ internal object LinuxNativeSelfTest {
         }
     }
 
+    private fun childEnvironment(): String {
+        val process = hostProcessBuilder(listOf("env")).redirectErrorStream(true).start()
+        val output = process.inputStream.bufferedReader().readLines()
+        check(process.waitFor(5, TimeUnit.SECONDS)) { "env timed out" }
+        val child = output.filter { '=' in it }.associate { it.substringBefore('=') to it.substringAfter('=') }
+        val image = System.getProperty("jpackage.app-path")?.let { File(it).parentFile?.parent }
+        val leaks = leakedEnvironment(child, image, sandboxed = System.getenv("FLATPAK_ID") != null)
+        check(leaks.isEmpty()) { "child inherits $leaks" }
+        return "${child.size} variables, none private"
+    }
+
+    /**
+     * Names a host program must not see. In a Flatpak the child stays in the sandbox, whose paths
+     * are the only ones it has, so only the loader's variables count there. `_` is the shell's.
+     */
+    internal fun leakedEnvironment(child: Map<String, String>, image: String?, sandboxed: Boolean): List<String> =
+        child.filter { (name, value) ->
+            name == "LD_LIBRARY_PATH" || name == "LD_PRELOAD" ||
+                (!sandboxed && image != null && name != "_" && image in value)
+        }.keys.sorted()
+
     /** Production MPRIS service on a private bus; a D-Bus call comes back on a GLib thread. */
     private fun mpris(): String {
-        val daemon = ProcessBuilder("dbus-daemon", "--session", "--nofork", "--print-address=1").start()
+        // Host programs: under the AppImage's library path dbus-daemon cannot start on a newer host.
+        val daemon = hostProcessBuilder(listOf("dbus-daemon", "--session", "--nofork", "--print-address=1")).start()
         try {
             val address = checkNotNull(daemon.inputStream.bufferedReader().readLine()) { "dbus-daemon gave no address" }
             val name = "org.mpris.MediaPlayer2.NuvioSelfTest"
@@ -144,7 +194,7 @@ internal object LinuxNativeSelfTest {
     }
 
     private fun gdbus(address: String, destination: String, method: String, vararg args: String): String {
-        val process = ProcessBuilder(
+        val process = hostProcessBuilder(
             listOf("gdbus", "call", "--address", address, "--dest", destination,
                 "--object-path", "/org/mpris/MediaPlayer2", "--method", method) + args,
         ).redirectErrorStream(true).start()

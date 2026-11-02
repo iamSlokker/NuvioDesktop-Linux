@@ -166,6 +166,15 @@ class TorrServerRecipeTest(unittest.TestCase):
         self.assertLess(build_phase.index('torrserver/build.py /output'), build_phase.index('./gradlew'))
         self.assertNotIn('torrserver', script[:script.index('[[ $phase == build ]]')])
 
+    def test_innertubex_source_pin_matches_what_gradle_compiles(self):
+        import innertubex_source
+        self.assertEqual(innertubex_source.VERSION, innertubex_source.gradle_version(REPO / 'composeApp/build.gradle.kts'))
+        self.assertRegex(innertubex_source.SOURCE['sha256'], '^[0-9a-f]{64}$')
+        self.assertTrue(innertubex_source.SOURCE['url'].endswith('/refs/tags/' + innertubex_source.VERSION))
+        script = (PACKAGING / 'native-build.sh').read_text()
+        self.assertIn('-Pnuvio.innertubex=true', script)
+        self.assertLess(script.index('innertubex_source.py /output'), script.index('./gradlew'))
+
     def test_recipe_files_are_not_builder_seed_inputs(self):
         from webkit import builder_seed
         with patch.object(builder_seed, 'digest', side_effect=lambda path: hashlib.sha256(b'').hexdigest()):

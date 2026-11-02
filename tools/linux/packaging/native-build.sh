@@ -26,7 +26,9 @@ offline=()
 # TorrServer, the Linux P2P engine (torrserver/build.py): pinned source and Go, vendored
 # modules, a static binary that must answer /echo before anything else is built.
 python3 tools/linux/packaging/torrserver/build.py /output
-gradle_flags=(-Pnuvio.desktop.channel="$NUVIO_BUILD_CHANNEL"
+# The second stream resolver for music, as upstream's CI builds it; its GPL source goes with the release.
+python3 tools/linux/packaging/innertubex_source.py /output
+gradle_flags=(-Pnuvio.desktop.channel="$NUVIO_BUILD_CHANNEL" -Pnuvio.innertubex=true
   --no-daemon --no-configuration-cache --no-build-cache --max-workers=2
   -Pkotlin.compiler.execution.strategy=in-process
   '-Dorg.gradle.jvmargs=-Xmx4g -XX:MaxMetaspaceSize=1g -Dfile.encoding=UTF-8' "${offline[@]}")
@@ -35,7 +37,7 @@ gradle_flags=(-Pnuvio.desktop.channel="$NUVIO_BUILD_CHANNEL"
   :composeApp:compileTestKotlinDesktop :composeApp:desktopTest \
   --tests '*LinuxPackagedNativeRuntimeTest' --tests '*NativeRuntimeLayoutTest' \
   --tests '*DesktopMpvRuntimeOverrideTest' --tests '*LinuxPlayerOwnershipTest' \
-  --tests '*LinuxHeroHostGeometryTest' --tests '*LinuxNativeImageMetadataTest' \
+  --tests '*LinuxHeroHostGeometryTest' --tests '*LinuxNativeImageMetadataTest' --tests '*LinuxResourceContractTest' \
   --tests '*NativeImageMetadataTest' --tests '*LinuxDesktopRelaunchTest' "${gradle_flags[@]}"
 # The shipped executable: GraalVM native-image over those jars (a separate Gradle
 # run, so the compiler daemon's heap is gone before native-image's ~10 GB peak).
@@ -59,13 +61,29 @@ cmake --build /output/native --parallel "$NUVIO_BUILD_JOBS" \
   linux_audio_recovery_test linux_hdr_session_test linux_auto_crop_test linux_speech_spot_test \
   linux_live_cache_seek_test linux_hud_labels_carry_test linux_subtitle_add_test
 /output/native/linux_separate_audio_test
+cmake --build /output/native --target linux_video_source_size_test
+/output/native/linux_video_source_size_test
 /output/native/linux_auto_crop_test
+cmake --build /output/native --target linux_tone_mapping_test
+/output/native/linux_tone_mapping_test
 /output/native/linux_speech_spot_test
+cmake --build /output/native --target linux_low_vram_test
+/output/native/linux_low_vram_test
 /output/native/linux_live_cache_seek_test
+cmake --build /output/native --target linux_seek_coalesce_test
+/output/native/linux_seek_coalesce_test
 /output/native/linux_hud_labels_carry_test
+cmake --build /output/native --target linux_video_output_failure_test
+/output/native/linux_video_output_failure_test
 /output/native/linux_subtitle_add_test
+cmake --build /output/native --target linux_subtitle_style_test
+/output/native/linux_subtitle_style_test
 /output/native/linux_http_recovery_test
+cmake --build /output/native --target linux_startup_defaults_test
+/output/native/linux_startup_defaults_test
 /output/native/linux_audio_recovery_test
+cmake --build /output/native --target linux_session_log_test
+/output/native/linux_session_log_test
 # Display variables are unset above; the canonical runtime must report waylandvk.
 /output/native/linux_hdr_session_test --expect-wayland=yes
 python3 tools/linux/packaging/stage.py /output

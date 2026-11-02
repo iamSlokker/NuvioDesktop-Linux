@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="linux_audio_channels_desc">Stereo, surround kanallı kayıtları oynatıcıda iki kanala indirger. TV'de veya ses çubuğunda diyaloglar sürekli yükselip alçalıyorsa dene. Otomatik, sistem ses çıkışının ayarlı olduğu düzeni kullanır.</string>
+    <string name="linux_custom_shader_paths_hint">örn.\n/home/user/Shaders/Anime4K-Ultra.glsl\n/home/user/Shaders/MyPack</string>
+    <string name="linux_cast_no_devices">Cihaz bulunamadı. TV veya oynatıcı açık olmalı, aynı ağda bulunmalı ve DLNA (medya paylaşımı / UPnP) etkin olmalı. Sisteminde güvenlik duvarı varsa Nuvio'nun yerel ağa erişmesine de izin vermelidir.</string>
+    <string name="linux_games_editor_path_example">/home/user/Games/Example/start.sh,  bir oyun .desktop dosyası  veya  steam://rungameid/620</string>
+    <string name="linux_cast_dolby_vision_needs_ffmpeg">Bu bilgisayarda ffmpeg gerekir. Dağıtımının paket yöneticisiyle kur.</string>
+    <string name="linux_cast_dolby_vision_flatpak">Flatpak sürümünde kullanılamaz; korumalı alanı sistemdeki ffmpeg'i çalıştıramaz.</string>
+    <string name="linux_games_launcher_filter_apps">Linux yürütülebilir dosyaları, betikler, AppImage ve oyun .desktop dosyaları</string>
+    <string name="linux_games_desktop_entry_unavailable">Nuvio bu .desktop dosyasını başlatamıyor: dosya yok, bir oyun girdisi değil veya bir kabuk ya da başka bir başlatıcı üzerinden çalışıyor.</string>
+    <string name="linux_updates_auto_install_description">Her güncellemeyi yine sen onaylarsın. Açıkken Nuvio AppImage dosyasını değiştirir veya .deb paketini kendisi kurar; kapalıyken dosyayı İndirilenler klasörüne kaydeder.</string>
+    <string name="linux_settings_youtube_explainer">Google'ın gerçek oturum açma sayfasını bu bilgisayarda kurulu bir tarayıcının geçici penceresinde açar: Chrome, Edge, Brave, Chromium, Vivaldi, Opera veya Firefox. Orada oturum aç, YouTube Music'in yüklenmesini bekle ve pencereyi kapat; Nuvio ardından oturum çerezlerini okur ve geçici profili siler. Çerezler yalnızca YouTube'un hesapsız engellediği videolar için gönderilir ve Nuvio parolanı asla görmez. En güvenlisi ikincil bir Google hesabıdır.</string>
+    <string name="updates_linux_open_release_page">Sürüm sayfasını aç</string>
+    <string name="updates_linux_flatpak_nothing_newer">Nuvio Flatpak deposunda bu kurulum için henüz daha yeni bir sürüm yok. Nuvio, 1.15.1 sürümünden önce indirilen bir .flatpak dosyasından kurulduysa şu komutlarla depoya bir kez bağla:</string>
+    <string name="updates_linux_flatpak_failed">Flatpak güncellemesi başarısız oldu (%1$s). Nuvio, 1.15.1 sürümünden önce indirilen bir .flatpak dosyasından kurulduysa şu komutlarla Nuvio Flatpak deposuna bir kez bağla:</string>
+    <string name="updates_linux_flatpak_denied">Nuvio'nun kendini güncellemesine izin verilmiyor. Sistemin gizlilik ayarlarından izin ver veya terminalden güncelle:</string>
+    <string name="updates_linux_flatpak_new_permissions">Bu sürüm, Flatpak'in yalnızca yazılım merkezinden veya terminalden güncellediğinde verdiği yeni izinlere ihtiyaç duyuyor:</string>
+    <string name="updates_linux_external_message">Nuvio'nun bu kopyası bir sürüm paketinden kurulmadığı için kendini güncelleyemez. Yeni sürümü indirmek için sürüm sayfasını aç.</string>
+    <string name="updates_linux_installing">Güncelleme kuruluyor…</string>
+    <string name="updates_linux_installed">Güncelleme kuruldu. Kullanmaya başlamak için Nuvio'yu yeniden başlat.</string>
+    <string name="updates_linux_restart_now">Şimdi yeniden başlat</string>
+    <string name="updates_linux_restart_manually">Güncelleme kuruldu. Tamamlamak için Nuvio'yu kapatıp yeniden aç.</string>
+    <string name="updates_linux_appimage_saved">Doğrulanan AppImage %1$s konumuna kaydedildi. Mevcut AppImage dosyanı bununla değiştir.</string>
+    <string name="updates_linux_deb_saved">Doğrulanan paket %1$s konumuna kaydedildi. Yazılım merkezinden kur veya o klasörde şu komutu çalıştır:</string>
+    <string name="updates_linux_deb_install_failed">Paket otomatik olarak kurulamadı (%1$s). Doğrulanan paket %2$s konumuna kaydedildi. Yazılım merkezinden kur veya o klasörde şu komutu çalıştır:</string>
+    <string name="updates_linux_reason_missing_tool">%1$s kullanılamıyor</string>
+    <string name="updates_linux_reason_cancelled">yetkilendirme iptal edildi veya reddedildi</string>
+    <string name="updates_linux_reason_failed">yükleyici %1$d koduyla çıktı</string>
+    <string name="updates_linux_asset_missing">Bu sürümde Linux x86_64 için %1$s bulunamadı.</string>
+</resources>

@@ -1,5 +1,6 @@
 package com.nuvio.app.features.youtubemusic
 
+import com.nuvio.app.core.build.LinuxFlatpakSandbox
 import com.nuvio.app.core.storage.DesktopStorage
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -7,6 +8,8 @@ import java.security.MessageDigest
 import java.util.Locale
 
 internal actual object YouTubeMusicAuthPlatform {
+    actual val browserSignInAvailable: Boolean get() = !LinuxFlatpakSandbox.isActive
+
     // Per-account store (not in MACHINE_STORE_NAMES), and listed in the settings backup's credential
     // stores so a backup leaves it out unless the user asks for credentials.
     private val store = DesktopStorage.store("nuvio_youtube_music_auth")

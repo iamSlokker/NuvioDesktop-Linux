@@ -1,0 +1,24 @@
+{
+  "reflection": [
+    {"type": "io.github.jan.supabase.auth.GoTrueErrorResponse", "allDeclaredConstructors": true, "allDeclaredMethods": true, "allDeclaredFields": true, "allPublicMethods": true},
+    {"type": "io.github.jan.supabase.auth.GoTrueErrorResponse$Companion", "allDeclaredConstructors": true, "allDeclaredMethods": true, "allDeclaredFields": true, "allPublicMethods": true},
+    {"type": "io.github.jan.supabase.auth.admin.AdminUserBuilder", "allDeclaredConstructors": true, "allDeclaredMethods": true, "allDeclaredFields": true, "allPublicMethods": true},
+    {"type": "io.github.jan.supabase.auth.admin.AdminUserBuilder$Companion", "allDeclaredConstructors": true, "allDeclaredMethods": true, "allDeclaredFields": true, "allPublicMethods": true},
+    {"type": "io.github.jan.supabase.auth.jwt.AMRMethod", "allDeclaredConstructors": true, "allDeclaredMethods": true, "allDeclaredFields": true, "allPublicMethods": true},
+    {"type": "io.github.jan.supabase.auth.jwt.AMRMethod$Companion", "allDeclaredConstructors": true, "allDeclaredMethods": true, "allDeclaredFields": true, "allPublicMethods": true},
+    {"type": "io.github.jan.supabase.auth.jwt.JWK$KeyType", "allDeclaredConstructors": true, "allDeclaredMethods": true, "allDeclaredFields": true, "allPublicMethods": true},
+    {"type": "io.github.jan.supabase.auth.jwt.JWK$KeyType$Companion", "allDeclaredConstructors": true, "allDeclaredMethods": true, "allDeclaredFields": true, "allPublicMethods": true},
+    {"type": "io.github.jan.supabase.auth.mfa.AuthenticatorAssuranceLevel", "allDeclaredConstructors": true, "allDeclaredMethods": true, "allDeclaredFields": true, "allPublicMethods": true},
+    {"type": "io.github.jan.supabase.auth.mfa.AuthenticatorAssuranceLevel$Companion", "allDeclaredConstructors": true, "allDeclaredMethods": true, "allDeclaredFields": true, "allPublicMethods": true},
+    {"type": "io.github.jan.supabase.auth.providers.IDTokenProvider", "allDeclaredConstructors": true, "allDeclaredMethods": true, "allDeclaredFields": true, "allPublicMethods": true},
+    {"type": "io.github.jan.supabase.auth.providers.IDTokenProvider$Companion", "allDeclaredConstructors": true, "allDeclaredMethods": true, "allDeclaredFields": true, "allPublicMethods": true},
+    {"type": "io.github.jan.supabase.auth.providers.builtin.DefaultAuthProvider$Config", "allDeclaredConstructors": true, "allDeclaredMethods": true, "allDeclaredFields": true, "allPublicMethods": true},
+    {"type": "io.github.jan.supabase.auth.providers.builtin.DefaultAuthProvider$Config$Companion", "allDeclaredConstructors": true, "allDeclaredMethods": true, "allDeclaredFields": true, "allPublicMethods": true},
+    {"type": "io.github.jan.supabase.auth.providers.builtin.Phone$Channel", "allDeclaredConstructors": true, "allDeclaredMethods": true, "allDeclaredFields": true, "allPublicMethods": true},
+    {"type": "io.github.jan.supabase.auth.providers.builtin.Phone$Channel$Companion", "allDeclaredConstructors": true, "allDeclaredMethods": true, "allDeclaredFields": true, "allPublicMethods": true},
+    {"type": "io.github.jan.supabase.realtime.Presence", "allDeclaredConstructors": true, "allDeclaredMethods": true, "allDeclaredFields": true, "allPublicMethods": true},
+    {"type": "io.github.jan.supabase.realtime.Presence$Companion", "allDeclaredConstructors": true, "allDeclaredMethods": true, "allDeclaredFields": true, "allPublicMethods": true},
+    {"type": "com.metrolist.innertubex.models.Context", "allDeclaredConstructors": true, "allDeclaredMethods": true, "allDeclaredFields": true, "allPublicMethods": true},
+    {"type": "com.metrolist.innertubex.models.Context$Companion", "allDeclaredConstructors": true, "allDeclaredMethods": true, "allDeclaredFields": true, "allPublicMethods": true}
+  ]
+}

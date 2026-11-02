@@ -24,7 +24,7 @@ import javax.swing.SwingUtilities
 import javax.swing.Timer
 import kotlin.math.abs
 
-/** Dimming only. Deliberately has no exit/power callback or shutdown policy. Called on the EDT. */
+/** Dimming, then the shutdown countdown when that is switched on. Called on the EDT. */
 internal class LinuxScreensaverController(
     private val idle: LinuxIdleSource,
     private val show: (Float) -> Unit,
@@ -32,18 +32,27 @@ internal class LinuxScreensaverController(
     private val disposeShade: () -> Unit,
     private val clock: () -> Long = { System.nanoTime() / 1_000_000 },
     private val gamepadIdle: () -> Long? = { null },
+    private val showCountdown: (Float, Int) -> Unit = { opacity, _ -> show(opacity) },
+    private val shutdownAvailable: () -> Boolean = { false },
+    /** Asks for the power-off and reports on the EDT whether it was accepted. */
+    private val powerOff: ((Boolean) -> Unit) -> Unit = { it(false) },
+    private val exitApplication: () -> Unit = {},
 ) : AutoCloseable {
     private var lastActivity = clock()
     private var closed = false
+    private var countdownStartedAt: Long? = null
+    private var shutdownIssued = false
+    private var shutdownFailed = false
 
     fun activity() {
         if (closed) return
         lastActivity = clock()
+        countdownStartedAt = null
         hide()
     }
 
     fun tick(settings: ScreensaverSettings, playerActive: Boolean, windowShowing: Boolean) {
-        if (closed) return
+        if (closed || shutdownIssued) return
         val now = clock()
         val sessionIdle = runCatching { idle.idleMs() }.getOrNull()?.takeIf { it >= 0 }
         val padIdle = gamepadIdle()?.takeIf { it >= 0 }
@@ -53,9 +62,38 @@ internal class LinuxScreensaverController(
             lastActivity = maxOf(lastActivity, now - observedIdle)
         }
         val idleMs = (now - lastActivity).coerceAtLeast(0)
-        if (settings.enabled && windowShowing && (!playerActive || settings.activeDuringPlayback) &&
-            idleMs >= settings.dimDelayMinutes(playerActive) * 60_000L
-        ) show(settings.dimPercent / 100f) else hide()
+        val allowed = windowShowing && (!playerActive || settings.activeDuringPlayback)
+        // windowShowing already means focused: idle with another program in front is someone
+        // using this PC, not an empty room.
+        val wantShutdown = allowed && settings.shutdownEnabled && !shutdownFailed && shutdownAvailable() &&
+            idleMs >= settings.shutdownDelayMinutes(playerActive) * 60_000L
+        if (!wantShutdown) countdownStartedAt = null
+        else if (countdownStartedAt == null) countdownStartedAt = now
+        val remaining = countdownStartedAt?.let { SCREENSAVER_SHUTDOWN_COUNTDOWN_SECONDS - ((now - it) / 1_000L).toInt() }
+        when {
+            remaining != null && remaining <= 0 -> performShutdown()
+            remaining != null -> showCountdown(maxOf(settings.dimPercent / 100f, CountdownMinOpacity), remaining)
+            allowed && settings.enabled && idleMs >= settings.dimDelayMinutes(playerActive) * 60_000L ->
+                show(settings.dimPercent / 100f)
+            else -> hide()
+        }
+    }
+
+    private fun performShutdown() {
+        shutdownIssued = true
+        countdownStartedAt = null
+        powerOff { accepted ->
+            if (accepted) {
+                // Leave through the normal exit so pending writes and watch progress are flushed
+                // before the session goes down, as on Windows.
+                exitApplication()
+            } else {
+                // Nothing is going to turn the PC off, and asking again will not change that.
+                shutdownIssued = false
+                shutdownFailed = true
+                hide()
+            }
+        }
     }
 
     override fun close() {
@@ -65,28 +103,42 @@ internal class LinuxScreensaverController(
     }
 }
 
+private const val CountdownMinOpacity = 0.9f
+
 internal object LinuxScreensaver {
-    fun install(window: Window): () -> Unit {
+    fun install(window: Window, exitApplication: () -> Unit = {}): () -> Unit {
         ScreensaverSettingsRepository.ensureLoaded()
+        // The settings page asks too, on the EDT: have the answer before it gets there.
+        kotlin.concurrent.thread(isDaemon = true, name = "Nuvio-LogindProbe") { LinuxPower.available }
         var shade: DesktopScreensaver.Shade? = null
         var restingPointer: Point? = null
         var closed = false
+        fun showShade(opacity: Float, seconds: Int?) {
+            val overlay = shade ?: createShade(window).also { created ->
+                shade = created
+                created.addComponentListener(object : ComponentAdapter() {
+                    override fun componentHidden(e: ComponentEvent) {
+                        if (!created.isVisible) LinuxPlayerWindowFocus.setDimmed(window, false)
+                    }
+                })
+            }
+            if (!overlay.isVisible) restingPointer = MouseInfo.getPointerInfo()?.location
+            LinuxPlayerWindowFocus.setDimmed(window, true)
+            overlay.show(opacity, seconds)
+        }
         val controller = LinuxScreensaverController(
             idle = LinuxSessionIdleSource(),
             gamepadIdle = GamepadInput::idleMs,
-            show = { opacity ->
-                val overlay = shade ?: createShade(window).also { created ->
-                    shade = created
-                    created.addComponentListener(object : ComponentAdapter() {
-                        override fun componentHidden(e: ComponentEvent) {
-                            if (!created.isVisible) LinuxPlayerWindowFocus.setDimmed(window, false)
-                        }
-                    })
+            show = { opacity -> showShade(opacity, null) },
+            showCountdown = { opacity, seconds -> showShade(opacity, seconds) },
+            shutdownAvailable = { LinuxPower.available },
+            powerOff = { done ->
+                kotlin.concurrent.thread(isDaemon = true, name = "Nuvio-LogindPowerOff") {
+                    val accepted = LinuxPower.powerOff()
+                    SwingUtilities.invokeLater { done(accepted) }
                 }
-                if (!overlay.isVisible) restingPointer = MouseInfo.getPointerInfo()?.location
-                LinuxPlayerWindowFocus.setDimmed(window, true)
-                overlay.show(opacity, null)
             },
+            exitApplication = exitApplication,
             hide = {
                 // Keep the resting point throughout fade-out; map/enter events aren't activity.
                 shade?.fadeOut()

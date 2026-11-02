@@ -1,5 +1,6 @@
 package com.nuvio.app
 
+import com.nuvio.app.core.build.LinuxHostProcess
 import com.nuvio.app.core.storage.DesktopStorage
 import java.io.File
 import java.nio.file.Files
@@ -112,7 +113,7 @@ internal object LinuxDesktopRelaunch {
             remove("LD_PRELOAD")
             if (!environment["APPIMAGE"].isNullOrBlank()) {
                 // A new AppImage mount and wrapper recreate these absolute paths and caches.
-                AppImageRuntimeVariables.forEach(::remove)
+                LinuxHostProcess.AppImageRuntimeVariables.forEach(::remove)
             }
             if (options.isNotEmpty()) {
                 put("JAVA_TOOL_OPTIONS", (get("JAVA_TOOL_OPTIONS").orEmpty() + " " + options.joinToString(" ")).trim())
@@ -128,13 +129,6 @@ internal object LinuxDesktopRelaunch {
     }
 
     private val PreservedProperties = listOf("user.home", "java.io.tmpdir", "nuvio.desktop.dataDir")
-    private val AppImageRuntimeVariables = listOf(
-        "APPIMAGE", "APPDIR", "ARGV0", "GSETTINGS_SCHEMA_DIR", "GIO_MODULE_DIR", "GIO_EXTRA_MODULES",
-        "GDK_PIXBUF_MODULEDIR", "GDK_PIXBUF_MODULE_FILE", "GTK_PATH", "GTK_IM_MODULE_FILE",
-        "GST_PLUGIN_SYSTEM_PATH_1_0", "GST_PLUGIN_PATH_1_0", "GST_PLUGIN_SCANNER", "GST_PLUGIN_SCANNER_1_0",
-        "GST_REGISTRY", "GST_REGISTRY_1_0", "WEBKIT_EXEC_PATH", "WEBKIT_INJECTED_BUNDLE_PATH",
-        "XDG_DATA_DIRS",
-    )
 
     // All variable input is positional/environment data. No launcher path is interpolated as shell code.
     // The helper bounds its wait, removes itself on every outcome, and holds the Flatpak sandbox

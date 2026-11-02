@@ -67,6 +67,11 @@ class DesktopEntryTest(unittest.TestCase):
         self.assertIn('exec /opt/nuvio-desktop/bin/nuvio-desktop "$@"', source)
         self.assertIn('exec "$root/usr/lib/nuvio-desktop/bin/nuvio-desktop" "$@"', source)
 
+    def test_deb_asks_for_a_vulkan_driver_and_suggests_the_cast_remuxer(self):
+        source = (HERE / 'formats.py').read_text()
+        self.assertIn("'mesa-vulkan-drivers | vulkan-icd'", source)
+        self.assertIn('Recommends: ffmpeg\n', source)
+
 
 if __name__ == '__main__':
     unittest.main()

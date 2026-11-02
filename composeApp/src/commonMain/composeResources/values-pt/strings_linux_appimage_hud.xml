@@ -1,0 +1,4 @@
+<resources>
+    <string name="linux_appimage_hud_blocked_title">Os controlos no ecrã do leitor não conseguem arrancar</string>
+    <string name="linux_appimage_hud_blocked">Este sistema bloqueia os user namespaces de que o sandbox web do AppImage precisa, por isso os controlos ficariam vazios. Instala a versão .deb ou Flatpak, ou autoriza os user namespaces para este AppImage (no Ubuntu, com um perfil AppArmor). Detalhes: %1$s</string>
+</resources>

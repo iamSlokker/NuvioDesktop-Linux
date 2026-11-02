@@ -12,11 +12,17 @@ internal expect val platformOffersInterfaceRenderer: Boolean
 /** "HDR display correction": the correction only ever runs on Windows (DWM's HDR composition). */
 internal expect val platformOffersHdrUiCompensation: Boolean
 
+/** "Close to notification area": on Linux, only where the desktop has a tray to close to. */
+internal expect val platformOffersCloseToTray: Boolean
+
 /** "Low VRAM Mode": only the Windows player bridge reads it. */
 internal expect val platformOffersLowVramMode: Boolean
 
-/** The screensaver's "Shut down the PC" section: the Linux screensaver only dims. */
+/** The screensaver's "Shut down the PC" section: on Linux, only where logind will do it unasked. */
 internal expect val platformOffersScreensaverShutdown: Boolean
+
+/** SVP's shortcut and HUD button: Linux has no SVP (LinuxPlayerMenu.kt), so they would do nothing. */
+internal expect val platformOffersSvp: Boolean
 
 /**
  * Whether settings search lists the Windows-only Playback rows (NVIDIA RTX Video, SVP). The Playback
@@ -24,3 +30,6 @@ internal expect val platformOffersScreensaverShutdown: Boolean
  * entries that lead nowhere.
  */
 internal expect val platformListsWindowsOnlyPlaybackRowsInSearch: Boolean
+
+/** "Keep audio output awake": on Linux the sound server decides (see PreshowAudioKeepAlive.desktop.kt). */
+internal expect val platformOffersAudioKeepAlive: Boolean

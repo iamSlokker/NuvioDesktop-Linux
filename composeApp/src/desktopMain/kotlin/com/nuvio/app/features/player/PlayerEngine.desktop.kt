@@ -53,7 +53,10 @@ import com.nuvio.app.features.player.desktop.DesktopWindowGeometryDiagnostics
 import com.nuvio.app.features.player.desktop.DesktopHostOs
 import com.nuvio.app.features.player.desktop.DesktopPlayerLaunchShield
 import com.nuvio.app.features.player.desktop.NativePlayerController
+import com.nuvio.app.features.player.desktop.applyLinuxAnimeScaling
 import com.nuvio.app.features.player.desktop.applyLinuxBaseVideoProfile
+import com.nuvio.app.features.player.desktop.linuxColorGradeApplies
+import com.nuvio.app.features.player.desktop.linuxEmbeddedHdrInfoLabel
 import com.nuvio.app.features.player.desktop.applyLinuxShaderProfile
 import com.nuvio.app.features.preroll.PostShowController
 import com.nuvio.app.features.preroll.PostShowKey
@@ -332,7 +335,7 @@ private fun NativePlayerSurface(
                     nativeSvpActive.value = value != 0.0
                     true
                 } else if (DesktopHostOs.current == DesktopHostOs.LINUX && type.startsWith(LinuxShaderMedia.EVENT_PREFIX)) {
-                    linuxShaderMedia.value = LinuxShaderMedia.fromEvent(type, value)
+                    linuxShaderMedia.value = LinuxShaderMedia.fromEvent(value)
                     true
                 } else if (type == "videoParams") {
                     videoIsHdr.value = value != 0.0
@@ -1082,15 +1085,15 @@ private fun NativePlayerSurface(
             .collect { (videoState, settings, driver) ->
                 if (DesktopHostOs.current == DesktopHostOs.LINUX) {
                     if (videoState.refreshToken > 0) {
+                        val media = videoState.linuxShaderMedia
+                        val shader = linuxShaderProfile(settings, isAnimeContent, media?.size)
                         controller.applyLinuxBaseVideoProfile(settings, videoState.isHdr)
+                        controller.applyLinuxAnimeScaling(settings, shader?.animeTuned == true)
                         if (lastLinuxShaderRefresh != videoState.refreshToken) lastLinuxShaderChain = null
                         lastLinuxShaderRefresh = videoState.refreshToken
-                        val media = videoState.linuxShaderMedia
                         // Reset deduplication across native replacements, including same-URL retries.
                         if (media == null && lastLinuxShaderMedia != null) lastLinuxShaderChain = null
                         lastLinuxShaderMedia = media
-                        val shader = linuxShaderProfile(settings, isAnimeContent, media?.size,
-                            media?.confirmedSdr == true)
                         if (shader == null) lastLinuxShaderChain = null
                         else if ("${shader.shaderOpts}|${shader.chain}" != lastLinuxShaderChain) {
                             controller.setMpvProperty("glsl-shader-opts", shader.shaderOpts)
@@ -1100,14 +1103,16 @@ private fun NativePlayerSurface(
                         val shaderLabel = shader?.label
                         controller.setPlaybackInfo(
                             session = "$playbackAttemptId:${sourceUrl.hashCode()}",
-                            hdrLabel = null,
+                            hdrLabel = if (settings.desktopMpvConfigMode == DesktopMpvConfigMode.Full) null
+                                else linuxEmbeddedHdrInfoLabel(videoState.isHdr),
                             svpActive = false,
                             videoLabel = when {
                                 settings.desktopMpvConfigMode == DesktopMpvConfigMode.Full -> ""
-                                videoState.isHdr == false -> localizedString(settings.desktopColorProfile.labelRes)
+                                linuxColorGradeApplies(settings.desktopHdrMode, videoState.isHdr) -> localizedString(settings.desktopColorProfile.labelRes)
                                 else -> localizedString(DesktopColorProfile.Neutral.labelRes)
                             },
                             shaderLabel = shaderLabel,
+                            qualityLabel = desktopVideoQualityLabel(videoState.sourceSize, videoState.isHdr),
                         )
                     }
                     return@collect

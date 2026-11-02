@@ -1,5 +1,6 @@
 package com.nuvio.app.features.settings
 
+import com.nuvio.app.core.i18n.platformString
 import com.nuvio.app.core.i18n.localizedString
 import com.nuvio.app.core.ui.ditheredBackground
 import com.nuvio.app.core.build.AppFeaturePolicy
@@ -1002,6 +1003,7 @@ private fun PlaybackSettingsSection(
                         isTablet = isTablet,
                         onCheckedChange = PlayerSettingsRepository::setShowLoadingOverlay,
                     )
+                    if (ExternalPlayerPlatform.supported) {
                     SettingsGroupDivider(isTablet = isTablet)
                     // Player preference picker: Internal / External
                     SettingsChoiceRow(
@@ -1015,6 +1017,7 @@ private fun PlaybackSettingsSection(
                         isTablet = isTablet,
                         onSelected = PlayerSettingsRepository::setExternalPlayerEnabled,
                     )
+                    }
                     if ((isIos || isDesktop) && autoPlayPlayerSettings.externalPlayerEnabled) {
                         SettingsGroupDivider(isTablet = isTablet)
                         SettingsNavigationRow(
@@ -1443,7 +1446,7 @@ private fun PlaybackSettingsSection(
                         SettingsGroupDivider(isTablet = isTablet)
                         SettingsChoiceRow(
                             title = stringResource(Res.string.settings_playback_desktop_audio_channels),
-                            description = stringResource(Res.string.settings_playback_desktop_audio_channels_desc),
+                            description = stringResource(platformString(Res.string.settings_playback_desktop_audio_channels_desc)),
                             options = desktopAudioChannelChoices.map { SettingsChoiceOption(it, it.label) },
                             selectedValue = desktopAudioChannelChoices.selectedFor(mpvOverrides, DESKTOP_AUDIO_CHANNELS_OVERRIDE_KEY),
                             isTablet = isTablet,
@@ -4575,7 +4578,7 @@ private fun CustomShaderPathsDialog(
                             decorationBox = { inner ->
                                 if (value.isEmpty()) {
                                     Text(
-                                        text = stringResource(Res.string.settings_playback_desktop_custom_shader_paths_hint),
+                                        text = stringResource(platformString(Res.string.settings_playback_desktop_custom_shader_paths_hint)),
                                         style = MaterialTheme.typography.bodyLarge.copy(
                                             fontFamily = FontFamily.Monospace,
                                         ),
@@ -4592,6 +4595,7 @@ private fun CustomShaderPathsDialog(
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
+                SandboxShaderPathButtons { path -> value = appendPathLine(value, path) }
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.End,

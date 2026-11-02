@@ -59,9 +59,9 @@ and its thumbnail probe checks the helper's effective software-only options.
   Values come from mpv properties/events; unknown duration/position/cache is represented
   as zero/current position until mpv makes it available.
 - `setVolume`, `volume`, `setMute`, `isMuted`, `setMpvProperty`, `setResizeMode`.
-- `setSubtitleDelayMs`, `setSubtitleAssStyleMode`, `applySubtitleStyle`: basic mpv
-  property mapping required by the shared controller's startup configuration. This
-  is not the full upstream ASS track-sensitive styling system.
+- `setSubtitleDelayMs`, `setSubtitleAssStyleMode`, `applySubtitleStyle`: the Windows
+  rules in `subtitle_style.h`. The override level and size follow the selected track's
+  codec, so the ASS size control never resizes an SRT; `linux_subtitle_style_test`.
 - Audio/subtitle track enumeration and selection, and external subtitle management,
   through the existing shared track menus.
 - `chaptersJson`, `toggleStatsOverlay`: chapter metadata and mpv diagnostics, as
@@ -323,22 +323,35 @@ opt-in real-session test in `LinuxPlaybackInhibitorTest` uses GNOME's inhibitor
 observer; the remaining lifecycle tests use a fake backend. No hardware suspend
 is performed. Nuvio's idle dimming shade and optional shutdown remain separate.
 
+## Tray icon
+
+AWT's `TrayIcon` only speaks XEmbed, which GNOME does not have. Where a StatusNotifierWatcher with a
+registered host is on the session bus (GNOME with the AppIndicator extension, Plasma and others),
+`status_notifier.cpp` publishes a StatusNotifierItem and a flat DBusMenu on its own connection and
+thread; otherwise the XEmbed path runs, and with neither "close to notification area" is hidden.
+The Flatpak's bus filter hides the watcher, and talking to it would be a new permission, so there
+only XEmbed can answer. Test on a private bus, no display:
+
+```
+cmake --build composeApp/build/native/linux --target linux_status_notifier_probe
+python3 composeApp/src/desktopMain/native/linux/tests/status_notifier_test.py \
+  composeApp/build/native/linux/linux_status_notifier_probe
+```
+
 ## Deliberately absent
 
-`setMediaSessionMetadata` remains an explicit void no-op: Linux media sessions
-are deferred. `forceVideoRedraw` is also a no-op: mpv's X11 VO
-owns exposes and resize redraws. These calls do not claim playback success or
-supply invented playback state.
+`setMediaSessionMetadata` remains an explicit void no-op: the Windows media session
+it feeds has a Linux counterpart in MPRIS instead (`mpris_session.cpp`). `forceVideoRedraw`
+is also a no-op: mpv's X11 VO owns exposes and resize redraws. These calls do not claim
+playback success or supply invented playback state.
 
-Every other unexported `NativePlayerBridge` method remains unsupported and raises
-`UnsatisfiedLinkError` if called: video/SVP profiling,
-native window chrome/fullscreen/PiP, gamepads, media identity and system
-idle/foreground queries. Optional shortcuts for these deferred
-features should not be used during acceptance testing.
+Any other `NativePlayerBridge` method this library does not export raises
+`UnsatisfiedLinkError` if called. Their callers are Windows-only, because Linux reaches
+the same features through its own native entry points: window chrome and fullscreen
+(`window_chrome_jni.cpp`), Picture-in-Picture (`pip_geometry_jni.cpp`), gamepads
+(`linux_gamepad.cpp`), media keys (`mpris_session.cpp`), system idle (`screensaver_idle.cpp`)
+and the HDR session (`hdr_wayland_session.cpp`). Packaging lives in `tools/linux/packaging`.
 
-No PiP, gamepads, media keys, Linux native fullscreen,
-native Wayland rendering or packaging is added. Advanced HUD actions may still
-reach deferred bridge methods; this is a controls transport/embedding spike.
 Physical keyboard focus and transparent compositing over real video need manual
 testing under the Bazzite/XWayland compositor, including after resize/DPI changes.
 
@@ -488,4 +501,14 @@ portal or bus) on a bus with no service directories, so no real portal is activa
 cmake --build composeApp/build/native/linux --target linux_flatpak_update_probe
 python3 composeApp/src/desktopMain/native/linux/tests/flatpak_update_test.py \
   composeApp/build/native/linux/linux_flatpak_update_probe
+```
+
+The Flatpak's pickers (and the FileTransfer call a file drop needs) go through `file_chooser_portal.cpp`
+(`org.freedesktop.portal.FileChooser` and `FileTransfer`; JNI in
+`file_chooser_portal_jni.cpp`). The same kind of private-bus suite replays their outcomes:
+
+```sh
+cmake --build composeApp/build/native/linux --target linux_file_chooser_portal_probe
+python3 composeApp/src/desktopMain/native/linux/tests/file_chooser_portal_test.py \
+  composeApp/build/native/linux/linux_file_chooser_portal_probe
 ```

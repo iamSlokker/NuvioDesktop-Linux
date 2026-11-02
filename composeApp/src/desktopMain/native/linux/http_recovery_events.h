@@ -77,6 +77,14 @@ public:
         return result;
     }
 
+    // A failure the player found itself, through the same one-per-load path as the rest: the error
+    // that mpv reports for the same load afterwards is not delivered a second time.
+    Result outputFailure(const std::string &message) {
+        Result result;
+        if (active_ && !failed_) result.failure = fail(message, true);
+        return result;
+    }
+
     void seekRejected() { http_.reset(); seek_.reset(); }
     bool failed() const { return failed_; }
     bool ended(bool mpvEof) const { return !failed_ && mpvEof; }
@@ -138,8 +146,10 @@ public:
         } else if (event.event_id == MPV_EVENT_END_FILE && event.data) {
             const auto &end = *static_cast<const mpv_event_end_file *>(event.data);
             if (end.reason == MPV_END_FILE_REASON_ERROR && active_ && !failed_) {
-                std::string message = mpv_error_string(end.error);
-                if (http_) message = statusText() + "; " + message;
+                // Windows' wording, which TorBoxNodeHop.looksLikeNodeStall and the error toast rely on:
+                // with no HTTP status, a bare "loading failed" says nothing to anyone.
+                std::string message = (http_ ? statusText() + "; " : std::string("Playback loading failed: ")) +
+                    mpv_error_string(end.error);
                 result.failure = fail(message, false);
             } else if (end.reason == MPV_END_FILE_REASON_EOF && active_ && !failed_) {
                 // A status alone is not a terminal failure; do not reinterpret normal EOF.

@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="linux_youtube_no_browser">No supported browser was found. Install Chrome, Edge, Brave, Chromium, Vivaldi, Opera or Firefox to sign in to YouTube Music.</string>
+    <string name="linux_youtube_flatpak_unavailable">YouTube sign-in opens a browser installed on your system, which the Flatpak version of Nuvio cannot reach from its sandbox, so it is not available here. The .deb and AppImage versions support it.</string>
+</resources>

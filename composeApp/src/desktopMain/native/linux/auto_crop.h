@@ -1,6 +1,6 @@
 #pragma once
 
-// Auto crop (PlayerResizeMode.AutoCrop, resize mode 3) for the Linux bridge: the black bars baked
+// Auto crop (PlayerResizeMode.AutoCrop, resize modes 3 and 4) for the Linux bridge: the black bars baked
 // into a frame are measured from screenshot-raw grabs, trimmed with video-crop, and panscan=1
 // fills the window with what is left, as Zoom does for a frame without bars. Ported from the
 // Windows bridge (native/windows/player_bridge.cpp, "Auto crop"): detectAutoCropBars is copied as
@@ -166,16 +166,19 @@ public:
     bool locked() const { return isLocked; }
     const std::string &appliedCrop() const { return applied; }
 
-    // Resize mode 3 selected (true) or any other mode (false).
-    void setEnabled(bool enable, Clock::time_point now) {
+    // Resize mode 3 or 4 selected (true) or any other mode (false). `quick` is mode 4, the hero
+    // trailer's: same crop, decided in about two seconds.
+    void setEnabled(bool enable, Clock::time_point now, bool quickDecision = false) {
         if (enable) {
+            quick = quickDecision;
             if (isEnabled) return;
             isEnabled = true;
             reset();
-            nextCheckAt = now + std::chrono::milliseconds(500);
-            host.log("auto crop enabled");
+            nextCheckAt = now + (quick ? std::chrono::milliseconds(0) : std::chrono::milliseconds(500));
+            host.log(quick ? "auto crop enabled (quick)" : "auto crop enabled");
             return;
         }
+        quick = false;
         if (!isEnabled) return;
         isEnabled = false;
         reset();
@@ -186,13 +189,15 @@ public:
     // for the previous file would otherwise carry over).
     void fileLoaded(Clock::time_point now) {
         reset();
-        nextCheckAt = now + std::chrono::seconds(2);
+        // Quick: start as soon as there is a frame (a check without one just waits for the next).
+        nextCheckAt = now + (quick ? kQuickInterval : std::chrono::milliseconds(2000));
     }
 
-    // After a seek the scene (and, while still learning, the bars) may differ.
+    // After a seek the scene (and, while still learning, the bars) may differ. Also the first frame
+    // of a file, which is when a quick crop starts looking.
     void playbackRestart(Clock::time_point now) {
         if (!isEnabled) return;
-        const auto soon = now + std::chrono::milliseconds(700);
+        const auto soon = now + (quick ? std::chrono::milliseconds(0) : std::chrono::milliseconds(700));
         if (soon < nextCheckAt) nextCheckAt = soon;
     }
 
@@ -208,8 +213,13 @@ private:
         AutoCropBars bars;
     };
 
+    static constexpr std::chrono::milliseconds kQuickInterval{400};
+    static constexpr size_t kQuickSamples = 4;
+    static constexpr double kQuickTolerance = 0.015;
+
     Host &host;
     bool isEnabled = false;
+    bool quick = false;
     Clock::time_point nextCheckAt{};
     std::deque<Sample> history;
     AutoCropBars appliedBars;
@@ -246,9 +256,10 @@ private:
         // taller picture after the learning minute (IMAX sequences) gets those scenes back uncut,
         // while a dark or black frame can't tighten anything.
         const bool loosenOnly = isLocked && !variableAspect;
-        nextCheckAt = now + (loosenOnly ? std::chrono::seconds(30) : std::chrono::seconds(3));
+        nextCheckAt = now + (loosenOnly ? std::chrono::milliseconds(30000)
+            : quick ? kQuickInterval : std::chrono::milliseconds(3000));
         if (host.pausedOrSeeking()) {
-            nextCheckAt = now + std::chrono::seconds(1);
+            nextCheckAt = now + (quick ? kQuickInterval : std::chrono::milliseconds(1000));
             return;
         }
         const double frameWidth = host.displayWidth();
@@ -317,7 +328,28 @@ private:
             smallest.left = std::min(smallest.left, sample.bars.left);
             smallest.right = std::min(smallest.right, sample.bars.right);
         }
-        const bool ready = history.size() >= 3 && now - history.front().at >= std::chrono::seconds(5);
+        bool ready = history.size() >= 3 && now - history.front().at >= std::chrono::seconds(5);
+        if (quick && !variableAspect) {
+            // The trailer rule: the last four samples agree to within 1.5% of the frame, and the
+            // crop is the smallest of those four. A trailer is two minutes long; five seconds of
+            // learning was most of what someone watched of it zoomed out.
+            ready = false;
+            smallest = AutoCropBars{1.0, 1.0, 1.0, 1.0};
+            if (history.size() >= kQuickSamples) {
+                AutoCropBars largest{};
+                for (auto it = history.end() - (std::ptrdiff_t)kQuickSamples; it != history.end(); ++it) {
+                    smallest.top = std::min(smallest.top, it->bars.top);
+                    smallest.left = std::min(smallest.left, it->bars.left);
+                    largest.top = std::max(largest.top, it->bars.top);
+                    largest.left = std::max(largest.left, it->bars.left);
+                }
+                smallest.bottom = smallest.top;
+                smallest.right = smallest.left;
+                ready = largest.top - smallest.top <= kQuickTolerance && largest.left - smallest.left <= kQuickTolerance;
+            }
+            // Not settled: the newest sample may still zoom out (the block below never zooms in).
+            if (!ready) smallest = history.back().bars;
+        }
         AutoCropBars target = smallest;
         if (!ready) {
             // Too little history to zoom in yet, but zooming out is always allowed.
@@ -326,7 +358,9 @@ private:
             target.left = std::min(target.left, appliedBars.left);
             target.right = std::min(target.right, appliedBars.right);
         }
-        if (!variableAspect && ++learnChecks >= 20 && ready) {
+        // Quick decides once; the 30 s loosen-only checks still give a trailer that opens up to a
+        // taller picture its scenes back.
+        if (!variableAspect && (++learnChecks >= 20 || quick) && ready) {
             isLocked = true;
             host.log("auto crop: bars locked top/bottom " + std::to_string(smallest.top * 100.0) + "% sides " +
                 std::to_string(smallest.left * 100.0) + "%, frame checks stopped");

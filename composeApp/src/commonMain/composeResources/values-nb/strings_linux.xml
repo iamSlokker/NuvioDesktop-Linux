@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="linux_audio_channels_desc">Stereo mikser surround-spor ned til to kanaler i avspilleren. Prøv det hvis dialogen stadig blir høyere og lavere på en TV eller lydplanke. Auto bruker oppsettet systemets lydutgang er satt til.</string>
+    <string name="linux_custom_shader_paths_hint">f.eks.\n/home/user/Shaders/Anime4K-Ultra.glsl\n/home/user/Shaders/MyPack</string>
+    <string name="linux_cast_no_devices">Ingen enheter funnet. TV-en eller avspilleren må være på, på samme nettverk og ha DLNA (mediedeling / UPnP) aktivert. Hvis systemet bruker en brannmur, må den også la Nuvio nå det lokale nettverket.</string>
+    <string name="linux_games_editor_path_example">/home/user/Games/Example/start.sh,  en .desktop-fil for spillet,  eller  steam://rungameid/620</string>
+    <string name="linux_cast_dolby_vision_needs_ffmpeg">Krever ffmpeg på denne PC-en. Installer det med pakkebehandleren i distribusjonen din.</string>
+    <string name="linux_cast_dolby_vision_flatpak">Ikke tilgjengelig i Flatpak-versjonen, siden sandkassen ikke kan kjøre systemets ffmpeg.</string>
+    <string name="linux_games_launcher_filter_apps">Linux-programmer, skript, AppImage og .desktop-filer for spill</string>
+    <string name="linux_games_desktop_entry_unavailable">Nuvio kan ikke starte denne .desktop-filen: den mangler, gjelder ikke et spill, eller kjører via et skall eller en annen starter.</string>
+    <string name="linux_updates_auto_install_description">Du bekrefter fortsatt hver oppdatering. Når dette er på, erstatter Nuvio AppImage-filen eller installerer .deb-filen selv; når det er av, lagres filen i Nedlastinger.</string>
+    <string name="linux_settings_youtube_explainer">Åpner Googles ekte påloggingsside i et midlertidig vindu i en nettleser som er installert på denne PC-en: Chrome, Edge, Brave, Chromium, Vivaldi, Opera eller Firefox. Logg på der, vent til YouTube Music er lastet, og lukk vinduet; Nuvio leser deretter øktkapslene og sletter den midlertidige profilen. De sendes bare for videoer YouTube blokkerer uten konto, og Nuvio ser aldri passordet ditt. Sikrest er en sekundær Google-konto.</string>
+    <string name="updates_linux_open_release_page">Åpne utgivelsessiden</string>
+    <string name="updates_linux_flatpak_nothing_newer">Nuvios Flatpak-repositorium har ingen nyere versjon for denne installasjonen ennå. Hvis Nuvio ble installert fra en .flatpak-fil lastet ned før versjon 1.15.1, kobler du den til repositoriet én gang med disse kommandoene:</string>
+    <string name="updates_linux_flatpak_failed">Flatpak-oppdateringen mislyktes (%1$s). Hvis Nuvio ble installert fra en .flatpak-fil lastet ned før versjon 1.15.1, kobler du den til Nuvios Flatpak-repositorium én gang med disse kommandoene:</string>
+    <string name="updates_linux_flatpak_denied">Nuvio har ikke lov til å oppdatere seg selv. Tillat det i systemets personverninnstillinger, eller oppdater fra en terminal:</string>
+    <string name="updates_linux_flatpak_new_permissions">Denne versjonen trenger nye tillatelser, som Flatpak bare gir når du oppdaterer fra programvaresenteret eller en terminal:</string>
+    <string name="updates_linux_external_message">Denne kopien av Nuvio ble ikke installert fra en utgivelsespakke, så den kan ikke oppdatere seg selv. Åpne utgivelsessiden for å laste ned den nye versjonen.</string>
+    <string name="updates_linux_installing">Installerer oppdateringen…</string>
+    <string name="updates_linux_installed">Oppdateringen er installert. Start Nuvio på nytt for å ta den i bruk.</string>
+    <string name="updates_linux_restart_now">Start på nytt nå</string>
+    <string name="updates_linux_restart_manually">Oppdateringen er installert. Lukk Nuvio og åpne det igjen for å fullføre.</string>
+    <string name="updates_linux_appimage_saved">Den verifiserte AppImage-filen ble lagret i %1$s. Erstatt den nåværende AppImage-filen med den.</string>
+    <string name="updates_linux_deb_saved">Den verifiserte pakken ble lagret i %1$s. Installer den fra programvaresenteret, eller kjør denne kommandoen i den mappen:</string>
+    <string name="updates_linux_deb_install_failed">Pakken kunne ikke installeres automatisk (%1$s). Den verifiserte pakken ble lagret i %2$s. Installer den fra programvaresenteret, eller kjør denne kommandoen i den mappen:</string>
+    <string name="updates_linux_reason_missing_tool">%1$s er ikke tilgjengelig</string>
+    <string name="updates_linux_reason_cancelled">godkjenningen ble avbrutt eller avslått</string>
+    <string name="updates_linux_reason_failed">installasjonsprogrammet avsluttet med kode %1$d</string>
+    <string name="updates_linux_asset_missing">Fant ingen %1$s for Linux x86_64 i denne utgivelsen.</string>
+</resources>
