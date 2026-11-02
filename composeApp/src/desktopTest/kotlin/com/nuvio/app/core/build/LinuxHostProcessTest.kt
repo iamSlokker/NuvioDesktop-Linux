@@ -10,6 +10,25 @@ import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 class LinuxHostProcessTest {
+    @Test
+    fun `the self-test names what a host program must not inherit`() {
+        val leaked = { child: Map<String, String>, sandboxed: Boolean ->
+            LinuxNativeSelfTest.leakedEnvironment(child, "/tmp/.mount_x/usr/lib/nuvio-desktop", sandboxed)
+        }
+        val inImage = "/tmp/.mount_x/usr/lib/nuvio-desktop/share"
+        assertEquals(emptyList(), leaked(mapOf("PATH" to "/usr/bin", "XDG_DATA_DIRS" to "/usr/share", "_" to inImage), false))
+        assertEquals(listOf("LD_LIBRARY_PATH", "XDG_DATA_DIRS"), leaked(mapOf("LD_LIBRARY_PATH" to "/x", "XDG_DATA_DIRS" to inImage), false))
+        assertEquals(listOf("LD_PRELOAD"), leaked(mapOf("LD_PRELOAD" to "/x", "XDG_DATA_DIRS" to inImage), true))
+    }
+
+    @Test
+    fun `a real child loses the private library path`() {
+        val builder = ProcessBuilder("env").apply { environment()["LD_LIBRARY_PATH"] = "/x" }
+        LinuxHostProcess.scrub(builder.environment())
+        val output = builder.start().inputStream.bufferedReader().readLines()
+        assertFalse(output.any { it.startsWith("LD_LIBRARY_PATH=") }, output.toString())
+    }
+
     private fun scrubbed(vararg variables: Pair<String, String>): Map<String, String> =
         mutableMapOf(*variables).also(LinuxHostProcess::scrub)
 
