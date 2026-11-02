@@ -41,9 +41,12 @@ inline LinuxSpeechSpotInput linuxSpeechSpotInput(const std::string &source, cons
 }
 
 // Returns 0 on success, -1 when it cannot start, -2 when the decode did not reach the spot's end.
-inline int linuxDecodeSpeechSpot(const std::string &source, const std::vector<std::string> &headers,
-                                 const std::string &aid, double startSeconds, double durationSeconds,
-                                 const std::string &outputPath, const std::function<bool()> &cancelled) {
+// A chosen output format, raw float32 PCM with 1 or 2 interleaved channels: the music loudness
+// measurement uses 24 kHz stereo, since a mono mix cannot tell a wide mix from a narrow one.
+inline int linuxDecodeAudioSpot(const std::string &source, const std::vector<std::string> &headers,
+                                const std::string &aid, double startSeconds, double durationSeconds,
+                                int sampleRate, int channelCount,
+                                const std::string &outputPath, const std::function<bool()> &cancelled) {
     if (source.empty() || outputPath.empty()) return -1;
     mpv_handle *probe = mpv_create();
     if (!probe) return -1;
@@ -55,7 +58,8 @@ inline int linuxDecodeSpeechSpot(const std::string &source, const std::vector<st
              {"config", "no"}, {"terminal", "no"}, {"load-scripts", "no"}, {"ytdl", "no"},
              {"input-default-bindings", "no"}, {"vid", "no"}, {"sid", "no"}, {"audio-display", "no"},
              {"audio-spdif", ""}, {"af", ""}, {"ao", "pcm"}, {"ao-pcm-waveheader", "no"},
-             {"audio-samplerate", "16000"}, {"audio-channels", "mono"}, {"audio-format", "float"},
+             {"audio-samplerate", std::to_string(sampleRate > 0 ? sampleRate : 16000)},
+             {"audio-channels", channelCount >= 2 ? "stereo" : "mono"}, {"audio-format", "float"},
              // The spot only; nothing read ahead past its end.
              {"cache", "no"}, {"demuxer-readahead-secs", "1"}, {"demuxer-max-bytes", "8MiB"},
              {"hr-seek", "yes"}, {"keep-open", "no"}, {"ao-pcm-file", outputPath},
@@ -96,4 +100,10 @@ inline int linuxDecodeSpeechSpot(const std::string &source, const std::vector<st
     }
     mpv_terminate_destroy(probe);
     return result;
+}
+
+inline int linuxDecodeSpeechSpot(const std::string &source, const std::vector<std::string> &headers,
+                                 const std::string &aid, double startSeconds, double durationSeconds,
+                                 const std::string &outputPath, const std::function<bool()> &cancelled) {
+    return linuxDecodeAudioSpot(source, headers, aid, startSeconds, durationSeconds, 16000, 1, outputPath, cancelled);
 }

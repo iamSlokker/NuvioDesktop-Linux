@@ -36,3 +36,5 @@ private:
 // Reuse the overlay's process-lifetime GTK thread and its existing X11 error-handler discipline.
 // Never initializes GTK or waits for an AWT callback.
 void postOnLinuxGtkThread(std::function<void()> action);
+// The same, starting that thread if it is not running yet; throws when GTK cannot start.
+void postOnLinuxGtkThreadStarting(std::function<void()> action);

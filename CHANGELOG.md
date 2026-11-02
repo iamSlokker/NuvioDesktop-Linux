@@ -135,6 +135,7 @@
 - **Trailer Quality** - Trailers now prefer 1440p, then 4K, then 1080p.
 - **No Vulkan Message** - With no working Vulkan driver the player stops and says why, and custom mpv options it cannot honour are named on screen.
 - **No Crash After A Failed Video Output** - when the video output could not start, a harmless X error could close the whole app; it now stays open.
+- **Now Playing Glass And Constant Volume On Linux** - the Now Playing video has the same rounded corners and glass bezel on Linux, cut with the X shape extension and drawn in a click-through window that only shows while Nuvio is in front, and music tracks are measured for the constant volume there too.
 - **Nuvio Engine On Linux** - the in-process P2P engine the Windows app uses now runs on Linux too, with its 2, 5 or 10 GB disk cache, torrent profile and download window. TorrServer stays as the other choice under Settings.
 - **Playback Failure Message** - A failed open now reads as on Windows, which also lets the TorBox node hop work, and a dead torrent says no peers answered.
 - **Go Live Without A Seekable Cache** - Clicking Go live reopens the channel when mpv has nothing seekable, instead of doing nothing.

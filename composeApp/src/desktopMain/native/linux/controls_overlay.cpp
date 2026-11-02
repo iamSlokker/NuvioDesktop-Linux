@@ -118,6 +118,10 @@ void postOnLinuxGtkThread(std::function<void()> action) {
     GtkThread::postIfStarted(std::move(action));
 }
 
+void postOnLinuxGtkThreadStarting(std::function<void()> action) {
+    GtkThread::get().post(std::move(action));
+}
+
 struct LinuxControlsOverlay::State : std::enable_shared_from_this<State> {
     // Inbox only is shared with JNI callers; all other fields belong to GTK.
     std::mutex inbox;

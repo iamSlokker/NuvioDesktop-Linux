@@ -17,6 +17,7 @@
 #include "auto_crop.h"
 #include "video_source_size.h"
 #include "speech_spot.h"
+#include "now_playing_glass.h"
 #include "subtitle_add.h"
 #include "subtitle_style.h"
 
@@ -254,6 +255,7 @@ struct Player {
     std::string speechSource;
     std::vector<std::string> speechHeaders;
     std::string speechSeparateAudio; // The separate audio stream, if any (linuxSpeechSpotInput).
+    uint64_t canvasXid = 0; // The Canvas mpv embeds in, for the Now Playing corners. Set once in create.
 
     // Auto crop (resize mode 3, auto_crop.h): checked from the event loop and switched by
     // setResizeMode, both under operations like every other mpv call here.
@@ -1102,6 +1104,7 @@ JNI_METHOD(jlong, create)(
         if (source.empty()) throw std::runtime_error("Linux playback source URL is empty.");
         if (!eventSink) throw std::runtime_error("Native player event sink is required.");
         auto player = std::make_shared<Player>();
+        player->canvasXid = (uint64_t)hostViewPtr;
         player->reserveX11Lifetime();
         const std::string controlsUrl = text(env, controlsPageUrl);
         player->log.begin(controlsUrl.find("heroTrailer=1") != std::string::npos);
@@ -1349,8 +1352,8 @@ JNI_METHOD(jdouble, speechSourceBytesPerSecond)(JNIEnv *env, jobject, jlong hand
     });
 }
 
-JNI_METHOD(jint, decodeSpeechSpot)(JNIEnv *env, jobject, jlong handle, jdouble startSeconds,
-                                   jdouble durationSeconds, jstring outputPath) {
+static jint decodeAudioSpot(JNIEnv *env, jlong handle, jdouble startSeconds, jdouble durationSeconds,
+                            jint sampleRate, jint channelCount, jstring outputPath) {
     return guarded(env, [&]() -> jint {
         auto player = playerFromHandle(handle);
         if (!player) return -1;
@@ -1364,9 +1367,47 @@ JNI_METHOD(jint, decodeSpeechSpot)(JNIEnv *env, jobject, jlong handle, jdouble s
                 player->stringProperty("aid"));
             headers = player->speechHeaders;
         }
-        return linuxDecodeSpeechSpot(input.url, headers, input.aid, startSeconds, durationSeconds,
+        return linuxDecodeAudioSpot(input.url, headers, input.aid, startSeconds, durationSeconds, sampleRate, channelCount,
             text(env, outputPath), [player] { return player->stopping.load(); });
     });
+}
+
+JNI_METHOD(jint, decodeSpeechSpot)(JNIEnv *env, jobject, jlong handle, jdouble startSeconds,
+                                   jdouble durationSeconds, jstring outputPath) {
+    return decodeAudioSpot(env, handle, startSeconds, durationSeconds, 16000, 1, outputPath);
+}
+
+JNI_METHOD(jint, decodeAudioSpot)(JNIEnv *env, jobject, jlong handle, jdouble startSeconds, jdouble durationSeconds,
+                                  jint sampleRate, jint channelCount, jstring outputPath) {
+    return decodeAudioSpot(env, handle, startSeconds, durationSeconds, sampleRate, channelCount, outputPath);
+}
+
+JNI_METHOD(void, setCornerRadius)(JNIEnv *env, jobject, jlong handle, jint radiusPx) {
+    guarded(env, [&] {
+        auto player = playerFromHandle(handle);
+        if (player && player->canvasXid) linuxSetVideoCornerRadius(player->canvasXid, radiusPx);
+    });
+}
+
+JNI_METHOD(void, bezelShow)(JNIEnv *env, jobject, jlong hostViewPtr, jintArray argb, jint width, jint height, jint marginPx) {
+    guarded(env, [&] {
+        if (!argb || width <= 0 || height <= 0 || hostViewPtr <= 0 || hostViewPtr > 0xffffffffLL) return;
+        const jlong count = (jlong)width * height;
+        if (env->GetArrayLength(argb) < count) return;
+        std::vector<int32_t> pixels((size_t)count);
+        env->GetIntArrayRegion(argb, 0, (jsize)count, reinterpret_cast<jint *>(pixels.data()));
+        linuxBezelShow((uint64_t)hostViewPtr, std::move(pixels), width, height, marginPx);
+    });
+}
+
+JNI_METHOD(void, bezelMove)(JNIEnv *env, jobject, jlong hostViewPtr) {
+    guarded(env, [&] {
+        if (hostViewPtr > 0 && hostViewPtr <= 0xffffffffLL) linuxBezelMove((uint64_t)hostViewPtr);
+    });
+}
+
+JNI_METHOD(void, bezelHide)(JNIEnv *env, jobject) {
+    guarded(env, [&] { linuxBezelHide(); });
 }
 
 JNI_METHOD(jstring, audioTracksJson)(JNIEnv *env, jobject, jlong handle) {
@@ -1507,6 +1548,7 @@ JNI_METHOD(void, setCursorHidden)(JNIEnv *env, jobject, jlong handle, jboolean h
 extern "C" JNIEXPORT void JNICALL
 Java_com_nuvio_app_features_player_desktop_LinuxPlayerControlsBridge_setWindowFocused(
     JNIEnv *env, jobject, jlong handle, jboolean focused) {
+    linuxBezelSetWindowFocused(focused == JNI_TRUE);
     withPlayer(env, handle, [&](Player &p) {
         if (p.controls) p.controls->setWindowFocused(focused == JNI_TRUE);
     });

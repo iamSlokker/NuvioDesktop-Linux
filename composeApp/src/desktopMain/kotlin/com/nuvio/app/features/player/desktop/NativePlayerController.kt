@@ -170,6 +170,8 @@ internal class NativePlayerController(
     private var lastQuickAutoCrop = false
     private val handleLock = Any()
     private var linuxHandleSourceUrl: String? = null // Guarded by handleLock.
+    // Linux opens a new player when the video moves to another Canvas, so a radius set in between would be lost.
+    @Volatile private var linuxCornerRadiusPx = 0
     private val linuxPendingDisposalHandles = mutableListOf<Long>() // Guarded by handleLock.
     private val attachGeneration = AtomicLong(0L)
     @Volatile
@@ -612,6 +614,7 @@ internal class NativePlayerController(
                         } else {
                             handle = newHandle
                             if (linux) linuxHandleSourceUrl = pending.sourceUrl
+                            if (linux && linuxCornerRadiusPx != 0) runCatching { NativePlayerBridge.setCornerRadius(newHandle, linuxCornerRadiusPx) }
                             if (linux && !linuxHeroSurface && !linuxMusicSurface) NativePlayerBridge.runJavaScript(newHandle, LINUX_PLAYER_MENU_SCRIPT)
                             diagnosticsOverlayEnabled = false
                             true
@@ -853,6 +856,7 @@ internal class NativePlayerController(
 
     /** fork:music-stage - rounded corners for the video window (see NativePlayerBridge.setCornerRadius); a library without it stays square. */
     fun setCornerRadius(radiusPx: Int) {
+        linuxCornerRadiusPx = radiusPx
         val current = handle.takeIf { it != 0L } ?: return
         runCatching { NativePlayerBridge.setCornerRadius(current, radiusPx) }
     }
