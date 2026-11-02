@@ -77,6 +77,7 @@ object GameLauncher {
     fun launch(game: GameEntry, onExit: (Int) -> Unit = {}): Result<Long?> = runCatching {
         val configuredPath = game.executablePath?.takeIf(String::isNotBlank)
             ?: error("${game.title} is tracked but not installed yet.")
+        require(!gameTargetOutOfReach(configuredPath)) { localizedString(Res.string.linux_flatpak_games_url_only) }
         val target = when (val resolved = resolveGameLaunchTarget(configuredPath)) {
             is GameLaunchTarget.Protocol -> {
                 launchProtocol(resolved.url, game.arguments)

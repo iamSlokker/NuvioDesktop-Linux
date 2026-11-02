@@ -1,0 +1,7 @@
+<resources>
+    <!-- fork:linux  What the sealed Flatpak can do with games (kept out of strings.xml so upstream merges never touch them). -->
+    <string name="linux_flatpak_games_notice">The Flatpak version runs sealed off from your system, so it starts games only through a launcher's link, such as steam://rungameid/620. It cannot pick or run programs and game folders on this computer; the .deb and AppImage versions can.</string>
+    <string name="linux_flatpak_games_url_only">The Flatpak version can only start this game through a launcher's link, such as steam://rungameid/620. Edit the game and enter one.</string>
+    <string name="linux_flatpak_games_url_label">Launch link (optional)</string>
+    <string name="linux_flatpak_games_url_example">steam://rungameid/620</string>
+</resources>

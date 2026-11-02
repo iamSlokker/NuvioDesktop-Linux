@@ -231,7 +231,7 @@ actual fun GameModeScreen(
     // Picks a folder, then scans it off the UI thread while the dialog shows its spinner. The scan
     // walks every sub-folder three levels deep, which on a spinning disk is not instant.
     fun importFolder() {
-        if (dialogOpen) return
+        if (dialogOpen || gamesLimitedToLaunchLinks) return
         scope.launch {
             val chosen = GameLauncher.chooseGamesFolder(lastExecutableDirectory) ?: return@launch
             val folder = File(chosen)
@@ -928,7 +928,7 @@ private fun GameTopBar(onAdd: () -> Unit, onImportFolder: () -> Unit, onSettings
         verticalAlignment = Alignment.CenterVertically,
     ) {
         IconButton(onClick = onAdd) { Icon(Icons.Rounded.Add, stringResource(Res.string.games_mode_add_game), tint = silver) }
-        IconButton(onClick = onImportFolder) {
+        if (!gamesLimitedToLaunchLinks) IconButton(onClick = onImportFolder) {
             Icon(Icons.Rounded.CreateNewFolder, stringResource(Res.string.games_mode_import_games_from_folder), tint = silver)
         }
         IconButton(onClick = onSettings) { Icon(Icons.Rounded.Settings, stringResource(Res.string.games_mode_game_settings), tint = silver) }
@@ -960,6 +960,7 @@ private fun EmptyGameLibrary(onAdd: () -> Unit, onImportFolder: () -> Unit, onSe
                 fontSize = 17.sp,
                 lineHeight = 25.sp,
             )
+            LinuxFlatpakGamesNotice(Modifier.padding(top = 12.dp))
             Spacer(Modifier.height(28.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 Button(onClick = onAdd) {
@@ -967,7 +968,7 @@ private fun EmptyGameLibrary(onAdd: () -> Unit, onImportFolder: () -> Unit, onSe
                     Spacer(Modifier.width(8.dp))
                     Text(stringResource(Res.string.games_mode_add_your_first_game))
                 }
-                OutlinedButton(onClick = onImportFolder) {
+                if (!gamesLimitedToLaunchLinks) OutlinedButton(onClick = onImportFolder) {
                     Icon(Icons.Rounded.CreateNewFolder, null)
                     Spacer(Modifier.width(8.dp))
                     Text(stringResource(Res.string.games_mode_import_a_folder))
