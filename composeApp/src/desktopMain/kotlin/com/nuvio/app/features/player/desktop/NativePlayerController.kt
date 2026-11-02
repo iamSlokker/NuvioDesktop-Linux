@@ -43,6 +43,7 @@ import com.nuvio.app.features.player.DeviceLanguagePreferences
 import com.nuvio.app.features.player.ParentalWarning
 import com.nuvio.app.features.player.PlaybackStartTrace
 import com.nuvio.app.features.player.PlayerAudioLevel
+import com.nuvio.app.features.player.IPTV_REOPEN_FOR_LIVE_EVENT
 import com.nuvio.app.features.player.PlayerControlsAction
 import com.nuvio.app.features.player.PlayerControlsState
 import com.nuvio.app.features.player.PlayerEngineController
@@ -1576,6 +1577,14 @@ internal class NativePlayerController(
                 releaseMeteredPrefetchFreeze()
                 handle.takeIf { it != 0L }?.let { NativePlayerBridge.seekToCachedLiveEdge(it, value.toLong()) }
             }
+            "goLiveUser" -> {
+                releaseMeteredPrefetchFreeze()
+                handle.takeIf { it != 0L }?.let { current ->
+                    if (LinuxGoLiveNative.goLive(current, value.toLong()) == LINUX_GO_LIVE_NO_SEEKABLE_RANGE) {
+                        onEvent(IPTV_REOPEN_FOR_LIVE_EVENT, 0.0)
+                    }
+                }
+            }
             "scrubFinish" -> {
                 val scrubHandled = onScrubFinished(value.toLong())
                 if (!scrubHandled) {
@@ -2676,6 +2685,14 @@ private fun String.jsEscape(): String =
         .replace("'", "\\'")
         .replace("\n", "\\n")
         .replace("\r", "")
+
+/** The Linux bridge's LinuxGoLiveStep::NoSeekableRange (live_cache_seek.h). */
+private const val LINUX_GO_LIVE_NO_SEEKABLE_RANGE = 2
+
+/** Go live from a click, on the Linux bridge only. */
+internal object LinuxGoLiveNative {
+    external fun goLive(handle: Long, cushionMs: Long): Int
+}
 
 private data class PendingSource(
     val sourceUrl: String,
