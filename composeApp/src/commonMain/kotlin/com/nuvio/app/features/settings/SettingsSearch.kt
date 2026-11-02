@@ -1,6 +1,7 @@
 package com.nuvio.app.features.settings
 
 import androidx.compose.material.icons.rounded.MusicNote
+import com.nuvio.app.core.i18n.platformString
 import com.nuvio.app.core.ui.ditheredBackground
 import com.nuvio.app.core.storage.PortableMode
 import androidx.compose.animation.AnimatedVisibility
@@ -1244,7 +1245,7 @@ private fun settingsSearchEntries(
             page = SettingsPage.Account,
             key = "auto-install-updates",
             title = resolve(Res.string.settings_updates_auto_install),
-            description = resolve(Res.string.settings_updates_auto_install_description),
+            description = resolve(platformString(Res.string.settings_updates_auto_install_description)),
             pageLabel = accountPage,
             section = resolve(Res.string.settings_updates_section),
             category = accountCategory,
@@ -1608,7 +1609,7 @@ private fun settingsSearchEntries(
             if (isDesktop) PlaybackSearchRow(
                 "desktop-audio-channels",
                 resolve(Res.string.settings_playback_desktop_audio_channels),
-                resolve(Res.string.settings_playback_desktop_audio_channels_desc),
+                resolve(platformString(Res.string.settings_playback_desktop_audio_channels_desc)),
             ) else null,
             if (isDesktop) PlaybackSearchRow(
                 "desktop-audio-dialogue-boost",
@@ -2433,7 +2434,7 @@ private fun settingsSearchEntries(
             page = SettingsPage.YouTubeAccount,
             key = "youtube-sign-in",
             title = resolve(Res.string.settings_youtube_sign_in),
-            description = resolve(Res.string.settings_youtube_explainer),
+            description = resolve(platformString(Res.string.settings_youtube_explainer)),
             pageLabel = youTubePage,
             section = youTubePage,
             category = generalCategory,

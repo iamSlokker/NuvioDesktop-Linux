@@ -29,7 +29,7 @@ object GameLauncher {
                 fileFilter = if (linuxGamesHost()) object : javax.swing.filechooser.FileFilter() {
                     override fun accept(file: File): Boolean = file.isDirectory || LinuxGameDiscovery.runnable(file) ||
                         (file.extension.equals("desktop", true) && LinuxGameDiscovery.desktopTarget(file) != null)
-                    override fun getDescription(): String = "Linux executables, scripts, AppImages and game desktop entries"
+                    override fun getDescription(): String = localizedString(Res.string.linux_games_launcher_filter_apps)
                 } else FileNameExtensionFilter(localizedString(Res.string.games_launcher_filter_apps), "exe", "lnk", "url")
                 if (initialFile?.isFile == true) selectedFile = initialFile
             }

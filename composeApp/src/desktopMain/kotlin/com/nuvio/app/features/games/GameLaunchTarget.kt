@@ -1,9 +1,12 @@
 package com.nuvio.app.features.games
 
+import com.nuvio.app.core.i18n.localizedString
 import java.io.File
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
 import java.nio.charset.Charset
+import nuvio.composeapp.generated.resources.Res
+import nuvio.composeapp.generated.resources.linux_games_desktop_entry_unavailable
 
 /**
  * What a library entry's launch target actually runs, once a shortcut has been followed.
@@ -43,7 +46,7 @@ fun resolveGameLaunchTarget(path: String): GameLaunchTarget {
     if (isProtocolLaunchTarget(trimmed)) return GameLaunchTarget.Protocol(trimmed)
     if (linuxGamesHost() && trimmed.endsWith(".desktop", ignoreCase = true)) {
         return LinuxGameDiscovery.desktopTarget(File(trimmed))
-            ?: error("Unsupported or unavailable Linux game desktop entry")
+            ?: error(localizedString(Res.string.linux_games_desktop_entry_unavailable))
     }
     if (!isShortcutFile(trimmed)) return GameLaunchTarget.Executable(trimmed)
     val shortcut = readShortcut(File(trimmed)) ?: return GameLaunchTarget.ShellShortcut(trimmed)

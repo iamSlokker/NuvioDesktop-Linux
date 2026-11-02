@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="linux_audio_channels_desc">Το Στερεοφωνικό συμπτύσσει τα κανάλια surround σε δύο κανάλια μέσα στο πρόγραμμα αναπαραγωγής. Δοκιμάστε το αν οι διάλογοι δυναμώνουν και χαμηλώνουν συνεχώς σε τηλεόραση ή soundbar. Το Αυτόματο χρησιμοποιεί τη διάταξη στην οποία έχει ρυθμιστεί η έξοδος ήχου του συστήματος.</string>
+    <string name="linux_custom_shader_paths_hint">π.χ.\n/home/user/Shaders/Anime4K-Ultra.glsl\n/home/user/Shaders/MyPack</string>
+    <string name="linux_cast_no_devices">Δεν βρέθηκαν συσκευές. Η τηλεόραση ή η συσκευή αναπαραγωγής πρέπει να είναι ενεργή, στο ίδιο δίκτυο και με ενεργοποιημένο DLNA (κοινή χρήση πολυμέσων / UPnP). Αν το σύστημά σας χρησιμοποιεί τείχος προστασίας, πρέπει επίσης να επιτρέπει στο Nuvio την πρόσβαση στο τοπικό δίκτυο.</string>
+    <string name="linux_games_editor_path_example">/home/user/Games/Example/start.sh,  αρχείο .desktop παιχνιδιού  ή  steam://rungameid/620</string>
+    <string name="linux_cast_dolby_vision_needs_ffmpeg">Απαιτείται το ffmpeg σε αυτόν τον υπολογιστή. Εγκαταστήστε το με τον διαχειριστή πακέτων της διανομής σας.</string>
+    <string name="linux_cast_dolby_vision_flatpak">Δεν είναι διαθέσιμο στην έκδοση Flatpak, γιατί το περιβάλλον της δεν μπορεί να εκτελέσει το ffmpeg του συστήματος.</string>
+    <string name="linux_games_launcher_filter_apps">Εκτελέσιμα Linux, σενάρια, AppImage και αρχεία .desktop παιχνιδιών</string>
+    <string name="linux_games_desktop_entry_unavailable">Το Nuvio δεν μπορεί να εκκινήσει αυτό το αρχείο .desktop: λείπει, δεν αφορά παιχνίδι ή εκτελείται μέσω κελύφους ή άλλου προγράμματος εκκίνησης.</string>
+    <string name="linux_updates_auto_install_description">Εξακολουθείτε να επιβεβαιώνετε κάθε ενημέρωση. Όταν είναι ενεργό, το Nuvio αντικαθιστά το AppImage ή εγκαθιστά το .deb μόνο του· όταν είναι ανενεργό, αποθηκεύει το αρχείο στις Λήψεις.</string>
+    <string name="linux_settings_youtube_explainer">Ανοίγει την πραγματική σελίδα σύνδεσης της Google σε προσωρινό παράθυρο ενός προγράμματος περιήγησης εγκατεστημένου σε αυτόν τον υπολογιστή: Chrome, Edge, Brave, Chromium, Vivaldi, Opera ή Firefox. Συνδεθείτε εκεί, περιμένετε να φορτώσει το YouTube Music και κλείστε το παράθυρο· το Nuvio διαβάζει τότε τα cookies της συνεδρίας και διαγράφει το προσωρινό προφίλ. Στέλνονται μόνο για βίντεο που το YouTube αποκλείει χωρίς λογαριασμό, και το Nuvio δεν βλέπει ποτέ τον κωδικό σας. Το ασφαλέστερο είναι ένας δευτερεύων λογαριασμός Google.</string>
+    <string name="updates_linux_open_release_page">Άνοιγμα σελίδας έκδοσης</string>
+    <string name="updates_linux_flatpak_nothing_newer">Το αποθετήριο Flatpak του Nuvio δεν έχει ακόμη νεότερη έκδοση για αυτήν την εγκατάσταση. Αν το Nuvio εγκαταστάθηκε από αρχείο .flatpak που λήφθηκε πριν από την έκδοση 1.15.1, συνδέστε το μία φορά με το αποθετήριο με αυτές τις εντολές:</string>
+    <string name="updates_linux_flatpak_failed">Η ενημέρωση Flatpak απέτυχε (%1$s). Αν το Nuvio εγκαταστάθηκε από αρχείο .flatpak που λήφθηκε πριν από την έκδοση 1.15.1, συνδέστε το μία φορά με το αποθετήριο Flatpak του Nuvio με αυτές τις εντολές:</string>
+    <string name="updates_linux_flatpak_denied">Το Nuvio δεν επιτρέπεται να ενημερώνεται μόνο του. Επιτρέψτε το στις ρυθμίσεις απορρήτου του συστήματος ή ενημερώστε από τερματικό:</string>
+    <string name="updates_linux_flatpak_new_permissions">Αυτή η έκδοση χρειάζεται νέα δικαιώματα, τα οποία το Flatpak παραχωρεί μόνο όταν ενημερώνετε από το κέντρο λογισμικού ή από τερματικό:</string>
+    <string name="updates_linux_external_message">Αυτό το αντίγραφο του Nuvio δεν εγκαταστάθηκε από πακέτο έκδοσης, οπότε δεν μπορεί να ενημερωθεί μόνο του. Ανοίξτε τη σελίδα έκδοσης για να κατεβάσετε τη νέα έκδοση.</string>
+    <string name="updates_linux_installing">Εγκατάσταση ενημέρωσης…</string>
+    <string name="updates_linux_installed">Η ενημέρωση εγκαταστάθηκε. Επανεκκινήστε το Nuvio για να τη χρησιμοποιήσετε.</string>
+    <string name="updates_linux_restart_now">Επανεκκίνηση τώρα</string>
+    <string name="updates_linux_restart_manually">Η ενημέρωση εγκαταστάθηκε. Κλείστε το Nuvio και ανοίξτε το ξανά για να ολοκληρωθεί.</string>
+    <string name="updates_linux_appimage_saved">Το επαληθευμένο AppImage αποθηκεύτηκε στο %1$s. Αντικαταστήστε με αυτό το τρέχον AppImage σας.</string>
+    <string name="updates_linux_deb_saved">Το επαληθευμένο πακέτο αποθηκεύτηκε στο %1$s. Εγκαταστήστε το από το κέντρο λογισμικού ή εκτελέστε αυτήν την εντολή σε εκείνον τον φάκελο:</string>
+    <string name="updates_linux_deb_install_failed">Το πακέτο δεν ήταν δυνατό να εγκατασταθεί αυτόματα (%1$s). Το επαληθευμένο πακέτο αποθηκεύτηκε στο %2$s. Εγκαταστήστε το από το κέντρο λογισμικού ή εκτελέστε αυτήν την εντολή σε εκείνον τον φάκελο:</string>
+    <string name="updates_linux_reason_missing_tool">Το %1$s δεν είναι διαθέσιμο</string>
+    <string name="updates_linux_reason_cancelled">η εξουσιοδότηση ακυρώθηκε ή απορρίφθηκε</string>
+    <string name="updates_linux_reason_failed">το πρόγραμμα εγκατάστασης τερμάτισε με κωδικό %1$d</string>
+    <string name="updates_linux_asset_missing">Δεν βρέθηκε %1$s για Linux x86_64 σε αυτήν την έκδοση.</string>
+</resources>

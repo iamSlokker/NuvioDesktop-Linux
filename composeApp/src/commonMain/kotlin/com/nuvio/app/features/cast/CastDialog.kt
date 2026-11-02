@@ -34,6 +34,7 @@ import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.nuvio.app.core.i18n.platformString
 import com.nuvio.app.core.ui.NuvioModalDialog
 import com.nuvio.app.core.ui.NuvioToastController
 import com.nuvio.app.core.ui.nuvio
@@ -118,7 +119,7 @@ private fun CastDialog(
                     Text(stringResource(Res.string.cast_searching), color = tokens.colors.textMuted)
                 }
                 devices.isEmpty() -> Text(
-                    stringResource(Res.string.cast_no_devices),
+                    stringResource(platformString(Res.string.cast_no_devices)),
                     style = MaterialTheme.typography.bodySmall,
                     color = tokens.colors.textMuted,
                 )
@@ -136,7 +137,7 @@ private fun CastDialog(
                     text = if (dolbyVisionAvailable) {
                         stringResource(Res.string.cast_dolby_vision_description)
                     } else {
-                        stringResource(Res.string.cast_dolby_vision_needs_ffmpeg)
+                        stringResource(platformString(Res.string.cast_dolby_vision_needs_ffmpeg))
                     },
                     style = MaterialTheme.typography.bodySmall,
                     color = tokens.colors.textMuted,
