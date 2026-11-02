@@ -75,7 +75,7 @@ internal val HudActionRowButtons: List<Pair<String, StringResource>> = listOf(
     "submitIntro" to Res.string.settings_playback_hud_button_submit_intro,
     "party" to Res.string.settings_playback_hud_button_party,
     "pictureInPicture" to Res.string.settings_playback_hud_button_picture_in_picture,
-)
+).filter { (command, _) -> command != "keyboardCycleAnimeSvp" || platformOffersSvp } // fork:linux
 
 /** [saved] first (known commands only), then any action-row button it does not name, in authored order. */
 internal fun effectiveHudButtonOrder(saved: List<String>): List<String> {
