@@ -39,6 +39,24 @@ class LinuxPiPHudRestoreTest {
         repeat(5) { f.tick() }; assertTrue(f.window.suppressed)
         f.window.adoptCanvas = true; f.drain(); assertEquals(1, f.finished)
     }
+    @Test fun contentLeftAtTheOldFrameSizeIsLaidOutAgain() {
+        val f = Fixture(); f.window.adoptCanvas = false
+        f.window.onRelayout = { f.window.adoptCanvas = true }
+        f.drain(); assertEquals(1, f.finished); assertEquals(0, f.failed)
+        assertEquals(1, f.window.events.count { it == "relayout" }); assertFalse(f.window.suppressed)
+    }
+    @Test fun contentThatNeverAdoptsStillBringsTheControlsBack() {
+        val f = Fixture(); f.window.adoptCanvas = false; f.drain()
+        assertEquals(1, f.failed); assertEquals(0, f.finished); assertFalse(f.window.suppressed)
+    }
+    @Test fun composeStateLaggingBehindTheWindowStillGetsTheControlsBack() {
+        val f = Fixture(); f.window.restoreReady = false; f.drain()
+        assertEquals(1, f.failed); assertFalse(f.window.suppressed); assertTrue(f.window.events.contains("relayout"))
+    }
+    @Test fun windowOnAnotherPlacementAtTheDeadlineStaysHidden() {
+        val f = Fixture(); f.window.restoreReady = false; f.window.livePlacement = WindowPlacement.Floating; f.drain()
+        assertEquals(1, f.failed); assertTrue(f.window.suppressed); assertFalse(f.window.events.contains("relayout"))
+    }
     @Test fun alignmentRequiresTwoLaterObservations() {
         val f = Fixture(); f.tick(); f.tick()
         assertTrue(f.window.events.contains("hudSync")); assertTrue(f.window.suppressed)
