@@ -173,6 +173,12 @@ loopback port before anything else is built. `stage.py` installs it as
 the tag archive, the vendored modules and the build steps go out as
 `Nuvio-TorrServer-source-<commit12>.tar.gz`, listed for every package in SOURCE-MAP.json.
 
+**Nuvio Engine (P2P).** The in-process engine the Windows app uses, and the default choice in
+Settings; TorrServer stays as the other one. `nuvio_engine/build.py` runs in the build phase: it
+verifies the pinned tag and Boost (`nuvio_engine/manifest.json`), applies the desktop patches and
+builds `lib/native/libnuvio_engine.so` with the JNI bridge. It links the system's `libssl.so.3`, like
+FFmpeg. The source is `Nuvio-Engine-source-<commit12>.tar.gz`, listed for every package.
+
 **InnerTubeX (music).** The second stream resolver is compiled in with `-Pnuvio.innertubex=true`,
 as upstream's CI does, so the build phase needs JitPack. It is GPL-3.0: `innertubex_source.py`
 keeps the pinned tag archive as `Nuvio-InnerTubeX-source-<commit12>.tar.gz` and fails if

@@ -44,7 +44,8 @@ class NativeArtworkGateTest(unittest.TestCase):
                      'share/icons/hicolor/512x512/apps/com.nuvio.media.desktop.png',
                      'share/licenses/Nuvio/COPYING', 'share/licenses/quickjs-kt/LICENSE',
                      'share/licenses/mpv/LICENSE.GPL', verify.TORRSERVER, 'share/licenses/TorrServer/LICENSE',
-                     'share/licenses/TorrServer/NOTICE.txt']:
+                     'share/licenses/TorrServer/NOTICE.txt', 'lib/native/libnuvio_engine.so',
+                     'share/licenses/NuvioEngine/LICENSE', 'share/licenses/NuvioEngine/NOTICE.txt']:
             path = image / name
             path.parent.mkdir(parents=True, exist_ok=True)
             path.write_bytes(b'fixture, not a native binary')
@@ -63,6 +64,7 @@ class NativeArtworkGateTest(unittest.TestCase):
         native_evidence.archive(work, work / 'artifacts/Nuvio-native-image-inputs-aaaaaaaaaaaa.tar', 1)
         (work / 'artifacts/Nuvio-TorrServer-source-aaaaaaaaaaaa.tar.gz').write_bytes(b't' * 4096)
         (work / 'artifacts/Nuvio-InnerTubeX-source-aaaaaaaaaaaa.tar.gz').write_bytes(b'i' * 4096)
+        (work / 'artifacts/Nuvio-Engine-source-aaaaaaaaaaaa.tar.gz').write_bytes(b'e' * 4096)
         return work, image
 
     def audit(self, kind, embed_all=True, mutate=None):

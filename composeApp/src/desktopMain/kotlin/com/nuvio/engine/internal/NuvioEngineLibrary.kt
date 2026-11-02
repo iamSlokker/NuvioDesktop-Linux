@@ -11,7 +11,9 @@ import java.io.File
  * TorrServer without triggering a load; [load] is what [NativeBridge]'s initializer calls.
  */
 internal object NuvioEngineLibrary {
-    const val LIBRARY_FILE_NAME = "nuvio_engine.dll"
+    private val isLinux = System.getProperty("os.name").orEmpty().lowercase().contains("linux")
+
+    val LIBRARY_FILE_NAME: String = if (isLinux) "libnuvio_engine.so" else "nuvio_engine.dll"
 
     @Volatile
     private var loadedFrom: File? = null
@@ -24,7 +26,7 @@ internal object NuvioEngineLibrary {
     }
 
     val isAvailable: Boolean
-        get() = System.getProperty("os.name").orEmpty().lowercase().contains("win") && resolve() != null
+        get() = (isLinux || System.getProperty("os.name").orEmpty().lowercase().contains("win")) && resolve() != null
 
     @Synchronized
     fun load() {
@@ -44,6 +46,7 @@ internal object NuvioEngineLibrary {
             ?.let(::File)
 
     private fun candidates(): List<File> {
+        if (isLinux) return linuxCandidates()
         val packaged = System.getProperty("java.home")
             ?.takeIf { it.isNotBlank() }
             ?.let(::File)
@@ -54,6 +57,19 @@ internal object NuvioEngineLibrary {
             packaged,
             File("composeApp/build/native/windows/$LIBRARY_FILE_NAME"),
             File("build/native/windows/$LIBRARY_FILE_NAME"),
+        )
+    }
+
+    /** The packages keep it in lib/native, beside lib/nuvio; a source run in the Gradle build output. */
+    private fun linuxCandidates(): List<File> {
+        val packaged = System.getProperty("jpackage.app-path")
+            ?.takeIf { it.isNotBlank() }
+            ?.let { File(it).parentFile?.resolve("native/$LIBRARY_FILE_NAME") }
+        if (!com.nuvio.app.core.build.DesktopDevRun.allowsLocalNativeBuilds) return listOfNotNull(packaged)
+        return listOfNotNull(
+            packaged,
+            File("composeApp/build/native/linux/$LIBRARY_FILE_NAME"),
+            File("build/native/linux/$LIBRARY_FILE_NAME"),
         )
     }
 }

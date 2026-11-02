@@ -26,6 +26,8 @@ offline=()
 # TorrServer, the Linux P2P engine (torrserver/build.py): pinned source and Go, vendored
 # modules, a static binary that must answer /echo before anything else is built.
 python3 tools/linux/packaging/torrserver/build.py /output
+# Nuvio Engine, the P2P engine the Windows app uses (nuvio_engine/build.py): lib/native/libnuvio_engine.so.
+python3 tools/linux/packaging/nuvio_engine/build.py /output
 # The second stream resolver for music, as upstream's CI builds it; its GPL source goes with the release.
 python3 tools/linux/packaging/innertubex_source.py /output
 gradle_flags=(-Pnuvio.desktop.channel="$NUVIO_BUILD_CHANNEL" -Pnuvio.innertubex=true
