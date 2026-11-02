@@ -69,6 +69,8 @@ cmake --build /output/native --target linux_tone_mapping_test
 cmake --build /output/native --target linux_seek_coalesce_test
 /output/native/linux_seek_coalesce_test
 /output/native/linux_hud_labels_carry_test
+cmake --build /output/native --target linux_video_output_failure_test
+/output/native/linux_video_output_failure_test
 /output/native/linux_subtitle_add_test
 cmake --build /output/native --target linux_subtitle_style_test
 /output/native/linux_subtitle_style_test

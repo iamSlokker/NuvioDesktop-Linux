@@ -929,6 +929,10 @@ internal fun PlayerScreenRuntime.RenderPlayerRuntimeUi() {
                     // its synthetic last-frame position to the EOF/autoplay effects.
                     playbackSourceFailureActive = true
                     PlaybackErrorLog.error(playbackAttemptId, activeSourceUrl, message)
+                    if (playbackErrorIsVideoOutput(message)) {
+                        exitAfterPlaybackFailure(message, playbackFailedToast)
+                        return@PlatformPlayerSurface
+                    }
                     if (isIptvPlayback) {
                         handleIptvPlaybackError(message, playbackFailedToast)
                         return@PlatformPlayerSurface

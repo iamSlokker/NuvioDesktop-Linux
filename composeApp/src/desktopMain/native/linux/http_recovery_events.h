@@ -77,6 +77,14 @@ public:
         return result;
     }
 
+    // A failure the player found itself, through the same one-per-load path as the rest: the error
+    // that mpv reports for the same load afterwards is not delivered a second time.
+    Result outputFailure(const std::string &message) {
+        Result result;
+        if (active_ && !failed_) result.failure = fail(message, true);
+        return result;
+    }
+
     void seekRejected() { http_.reset(); seek_.reset(); }
     bool failed() const { return failed_; }
     bool ended(bool mpvEof) const { return !failed_ && mpvEof; }

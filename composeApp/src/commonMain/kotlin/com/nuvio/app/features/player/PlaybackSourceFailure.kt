@@ -48,6 +48,15 @@ internal fun playbackProviderDomain(url: String?): String? {
     return if (labels.size >= 2) labels.takeLast(2).joinToString(".") else host
 }
 
+/**
+ * The Linux bridge's report that the machine has no working video output (video_output_failure.h).
+ * It is about the computer rather than the source, so walking the source list would only repeat it.
+ */
+internal const val PLAYBACK_VIDEO_OUTPUT_FAILURE = "Video output could not start"
+
+internal fun playbackErrorIsVideoOutput(message: String): Boolean =
+    message.startsWith(PLAYBACK_VIDEO_OUTPUT_FAILURE)
+
 /** Detects video placeholders returned as successful URLs by stream providers. */
 internal fun playbackSourceFailure(sourceUrl: String): PlaybackSourceFailure? {
     val normalized = sourceUrl.trim().lowercase()
