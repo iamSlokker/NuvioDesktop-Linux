@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="linux_audio_channels_desc">Stereo sloučí prostorové stopy do dvou kanálů přímo v přehrávači. Zkuste to, pokud se na televizi nebo soundbaru dialogy neustále zesilují a zeslabují. Automaticky použije rozložení nastavené pro zvukový výstup v systému.</string>
+    <string name="linux_custom_shader_paths_hint">např.\n/home/user/Shaders/Anime4K-Ultra.glsl\n/home/user/Shaders/MyPack</string>
+    <string name="linux_cast_no_devices">Nebyla nalezena žádná zařízení. Televizor nebo přehrávač musí být zapnutý, ve stejné síti a mít zapnuté DLNA (sdílení médií / UPnP). Pokud systém používá firewall, musí také povolit Nuviu přístup do místní sítě.</string>
+    <string name="linux_games_editor_path_example">/home/user/Games/Example/start.sh,  soubor hry .desktop,  nebo  steam://rungameid/620</string>
+    <string name="linux_cast_dolby_vision_needs_ffmpeg">Vyžaduje ffmpeg na tomto PC. Nainstalujte ho správcem balíčků své distribuce.</string>
+    <string name="linux_cast_dolby_vision_flatpak">Není k dispozici ve verzi Flatpak, jejíž sandbox nemůže spustit systémový ffmpeg.</string>
+    <string name="linux_games_launcher_filter_apps">Spustitelné soubory Linuxu, skripty, AppImage a soubory .desktop her</string>
+    <string name="linux_games_desktop_entry_unavailable">Nuvio tento soubor .desktop nemůže spustit: chybí, není to položka hry nebo se spouští přes shell či jiný spouštěč.</string>
+    <string name="linux_updates_auto_install_description">Každou aktualizaci stále potvrzujete. Když je zapnuto, Nuvio samo nahradí AppImage nebo nainstaluje .deb; když je vypnuto, uloží soubor do složky Stažené.</string>
+    <string name="linux_settings_youtube_explainer">Otevře skutečnou přihlašovací stránku Googlu v dočasném okně prohlížeče nainstalovaného na tomto PC: Chrome, Edge, Brave, Chromium, Vivaldi, Opera nebo Firefox. Přihlaste se tam, počkejte na načtení YouTube Music a okno zavřete; Nuvio poté přečte soubory cookie relace a dočasný profil smaže. Odesílají se jen u videí, která YouTube bez účtu blokuje, a Nuvio nikdy neuvidí vaše heslo. Nejbezpečnější je vedlejší účet Google.</string>
+    <string name="updates_linux_open_release_page">Otevřít stránku vydání</string>
+    <string name="updates_linux_flatpak_nothing_newer">Repozitář Flatpak Nuvia zatím pro tuto instalaci nemá novější verzi. Pokud bylo Nuvio nainstalováno ze souboru .flatpak staženého před verzí 1.15.1, jednou ho s repozitářem propojte těmito příkazy:</string>
+    <string name="updates_linux_flatpak_failed">Aktualizace Flatpak se nezdařila (%1$s). Pokud bylo Nuvio nainstalováno ze souboru .flatpak staženého před verzí 1.15.1, jednou ho s repozitářem Flatpak Nuvia propojte těmito příkazy:</string>
+    <string name="updates_linux_flatpak_denied">Nuvio se nesmí samo aktualizovat. Povolte to v nastavení soukromí systému, nebo aktualizujte z terminálu:</string>
+    <string name="updates_linux_flatpak_new_permissions">Tato verze potřebuje nová oprávnění, která Flatpak udělí jen při aktualizaci z centra softwaru nebo terminálu:</string>
+    <string name="updates_linux_external_message">Tato kopie Nuvia nebyla nainstalována z balíčku vydání, takže se nemůže sama aktualizovat. Novou verzi stáhnete ze stránky vydání.</string>
+    <string name="updates_linux_installing">Instalace aktualizace…</string>
+    <string name="updates_linux_installed">Aktualizace je nainstalována. Restartujte Nuvio, abyste ji začali používat.</string>
+    <string name="updates_linux_restart_now">Restartovat</string>
+    <string name="updates_linux_restart_manually">Aktualizace je nainstalována. Dokončete ji zavřením a novým otevřením Nuvia.</string>
+    <string name="updates_linux_appimage_saved">Ověřený AppImage byl uložen do %1$s. Nahraďte jím svůj současný AppImage.</string>
+    <string name="updates_linux_deb_saved">Ověřený balíček byl uložen do %1$s. Nainstalujte ho z centra softwaru, nebo v této složce spusťte tento příkaz:</string>
+    <string name="updates_linux_deb_install_failed">Balíček se nepodařilo nainstalovat automaticky (%1$s). Ověřený balíček byl uložen do %2$s. Nainstalujte ho z centra softwaru, nebo v této složce spusťte tento příkaz:</string>
+    <string name="updates_linux_reason_missing_tool">%1$s není k dispozici</string>
+    <string name="updates_linux_reason_cancelled">ověření bylo zrušeno nebo zamítnuto</string>
+    <string name="updates_linux_reason_failed">instalátor skončil s kódem %1$d</string>
+    <string name="updates_linux_asset_missing">V tomto vydání nebyl nalezen %1$s pro Linux x86_64.</string>
+</resources>

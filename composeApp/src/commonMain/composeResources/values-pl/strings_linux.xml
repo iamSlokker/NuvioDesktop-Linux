@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="linux_audio_channels_desc">Stereo miksuje ścieżki przestrzenne do dwóch kanałów w odtwarzaczu. Wypróbuj, jeśli dialogi stają się na zmianę głośniejsze i cichsze na telewizorze lub soundbarze. Auto używa układu ustawionego dla wyjścia audio w systemie.</string>
+    <string name="linux_custom_shader_paths_hint">np.\n/home/user/Shaders/Anime4K-Ultra.glsl\n/home/user/Shaders/MyPack</string>
+    <string name="linux_cast_no_devices">Nie znaleziono urządzeń. Telewizor lub odtwarzacz musi być włączony, w tej samej sieci i mieć włączone DLNA (udostępnianie multimediów / UPnP). Jeśli system używa zapory, musi też zezwalać Nuvio na dostęp do sieci lokalnej.</string>
+    <string name="linux_games_editor_path_example">/home/user/Games/Example/start.sh,  plik .desktop gry  lub  steam://rungameid/620</string>
+    <string name="linux_cast_dolby_vision_needs_ffmpeg">Wymaga ffmpeg na tym komputerze. Zainstaluj go menedżerem pakietów swojej dystrybucji.</string>
+    <string name="linux_cast_dolby_vision_flatpak">Niedostępne w wersji Flatpak, której piaskownica nie może uruchomić systemowego ffmpeg.</string>
+    <string name="linux_games_launcher_filter_apps">Programy Linuksa, skrypty, AppImage i pliki .desktop gier</string>
+    <string name="linux_games_desktop_entry_unavailable">Nuvio nie może uruchomić tego pliku .desktop: nie istnieje, nie dotyczy gry albo działa przez powłokę lub inny program uruchamiający.</string>
+    <string name="linux_updates_auto_install_description">Każdą aktualizację nadal potwierdzasz. Po włączeniu Nuvio samo zastępuje AppImage lub instaluje plik .deb; po wyłączeniu zapisuje plik w folderze Pobrane.</string>
+    <string name="linux_settings_youtube_explainer">Otwiera prawdziwą stronę logowania Google w tymczasowym oknie przeglądarki zainstalowanej na tym komputerze: Chrome, Edge, Brave, Chromium, Vivaldi, Opera lub Firefox. Zaloguj się tam, poczekaj na załadowanie YouTube Music i zamknij okno; Nuvio odczyta wtedy pliki cookie sesji i usunie tymczasowy profil. Są wysyłane tylko dla filmów, które YouTube blokuje bez konta, a Nuvio nigdy nie widzi Twojego hasła. Najbezpieczniejsze jest dodatkowe konto Google.</string>
+    <string name="updates_linux_open_release_page">Otwórz stronę wydania</string>
+    <string name="updates_linux_flatpak_nothing_newer">Repozytorium Flatpak Nuvio nie ma jeszcze nowszej wersji dla tej instalacji. Jeśli Nuvio zainstalowano z pliku .flatpak pobranego przed wersją 1.15.1, połącz je raz z repozytorium tymi poleceniami:</string>
+    <string name="updates_linux_flatpak_failed">Aktualizacja Flatpak nie powiodła się (%1$s). Jeśli Nuvio zainstalowano z pliku .flatpak pobranego przed wersją 1.15.1, połącz je raz z repozytorium Flatpak Nuvio tymi poleceniami:</string>
+    <string name="updates_linux_flatpak_denied">Nuvio nie może samo się aktualizować. Zezwól na to w ustawieniach prywatności systemu albo zaktualizuj z terminala:</string>
+    <string name="updates_linux_flatpak_new_permissions">Ta wersja wymaga nowych uprawnień, które Flatpak przyznaje tylko przy aktualizacji z centrum oprogramowania lub terminala:</string>
+    <string name="updates_linux_external_message">Ta kopia Nuvio nie została zainstalowana z pakietu wydania, więc nie może sama się zaktualizować. Otwórz stronę wydania, aby pobrać nową wersję.</string>
+    <string name="updates_linux_installing">Instalowanie aktualizacji…</string>
+    <string name="updates_linux_installed">Aktualizacja jest zainstalowana. Uruchom ponownie Nuvio, aby zacząć z niej korzystać.</string>
+    <string name="updates_linux_restart_now">Uruchom ponownie</string>
+    <string name="updates_linux_restart_manually">Aktualizacja jest zainstalowana. Zamknij Nuvio i otwórz je ponownie, aby zakończyć.</string>
+    <string name="updates_linux_appimage_saved">Zweryfikowany AppImage zapisano w %1$s. Zastąp nim swój obecny AppImage.</string>
+    <string name="updates_linux_deb_saved">Zweryfikowany pakiet zapisano w %1$s. Zainstaluj go z centrum oprogramowania albo uruchom to polecenie w tym folderze:</string>
+    <string name="updates_linux_deb_install_failed">Nie udało się automatycznie zainstalować pakietu (%1$s). Zweryfikowany pakiet zapisano w %2$s. Zainstaluj go z centrum oprogramowania albo uruchom to polecenie w tym folderze:</string>
+    <string name="updates_linux_reason_missing_tool">%1$s nie jest dostępny</string>
+    <string name="updates_linux_reason_cancelled">autoryzacja została anulowana lub odrzucona</string>
+    <string name="updates_linux_reason_failed">instalator zakończył działanie z kodem %1$d</string>
+    <string name="updates_linux_asset_missing">W tym wydaniu nie znaleziono %1$s dla Linux x86_64.</string>
+</resources>

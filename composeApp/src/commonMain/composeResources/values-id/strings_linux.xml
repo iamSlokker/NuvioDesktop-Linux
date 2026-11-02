@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="linux_audio_channels_desc">Stereo menggabungkan trek surround menjadi dua kanal di pemutar. Coba jika dialog terus berubah antara keras dan pelan di TV atau soundbar. Otomatis memakai tata letak yang ditetapkan pada keluaran audio sistem.</string>
+    <string name="linux_custom_shader_paths_hint">mis.\n/home/user/Shaders/Anime4K-Ultra.glsl\n/home/user/Shaders/MyPack</string>
+    <string name="linux_cast_no_devices">Tidak ada perangkat ditemukan. TV atau pemutar harus menyala, berada di jaringan yang sama, dan mengaktifkan DLNA (berbagi media / UPnP). Jika sistem Anda memakai firewall, firewall itu juga harus mengizinkan Nuvio mengakses jaringan lokal.</string>
+    <string name="linux_games_editor_path_example">/home/user/Games/Example/start.sh,  file .desktop game,  atau  steam://rungameid/620</string>
+    <string name="linux_cast_dolby_vision_needs_ffmpeg">Memerlukan ffmpeg di PC ini. Pasang dengan pengelola paket distribusi Anda.</string>
+    <string name="linux_cast_dolby_vision_flatpak">Tidak tersedia di versi Flatpak karena sandbox-nya tidak dapat menjalankan ffmpeg dari sistem.</string>
+    <string name="linux_games_launcher_filter_apps">Program Linux, skrip, AppImage, dan file .desktop game</string>
+    <string name="linux_games_desktop_entry_unavailable">Nuvio tidak dapat memulai file .desktop ini: file tidak ada, bukan entri game, atau berjalan melalui shell atau peluncur lain.</string>
+    <string name="linux_updates_auto_install_description">Anda tetap mengonfirmasi setiap pembaruan. Jika aktif, Nuvio mengganti AppImage atau memasang .deb sendiri; jika nonaktif, file disimpan di folder Unduhan.</string>
+    <string name="linux_settings_youtube_explainer">Membuka halaman masuk Google yang asli di jendela sementara peramban yang terpasang di PC ini: Chrome, Edge, Brave, Chromium, Vivaldi, Opera, atau Firefox. Masuk di sana, tunggu YouTube Music dimuat, lalu tutup jendela; Nuvio kemudian membaca cookie sesi dan menghapus profil sementara. Cookie hanya dikirim untuk video yang diblokir YouTube tanpa akun, dan Nuvio tidak pernah melihat kata sandi Anda. Paling aman memakai akun Google cadangan.</string>
+    <string name="updates_linux_open_release_page">Buka halaman rilis</string>
+    <string name="updates_linux_flatpak_nothing_newer">Repositori Flatpak Nuvio belum memiliki versi yang lebih baru untuk instalasi ini. Jika Nuvio dipasang dari file .flatpak yang diunduh sebelum versi 1.15.1, hubungkan sekali ke repositori dengan perintah berikut:</string>
+    <string name="updates_linux_flatpak_failed">Pembaruan Flatpak gagal (%1$s). Jika Nuvio dipasang dari file .flatpak yang diunduh sebelum versi 1.15.1, hubungkan sekali ke repositori Flatpak Nuvio dengan perintah berikut:</string>
+    <string name="updates_linux_flatpak_denied">Nuvio tidak diizinkan memperbarui dirinya sendiri. Izinkan di pengaturan privasi sistem, atau perbarui dari terminal:</string>
+    <string name="updates_linux_flatpak_new_permissions">Versi ini memerlukan izin baru, yang hanya diberikan Flatpak saat Anda memperbarui dari pusat perangkat lunak atau terminal:</string>
+    <string name="updates_linux_external_message">Salinan Nuvio ini tidak dipasang dari paket rilis, jadi tidak dapat memperbarui dirinya sendiri. Buka halaman rilis untuk mengunduh versi baru.</string>
+    <string name="updates_linux_installing">Memasang pembaruan…</string>
+    <string name="updates_linux_installed">Pembaruan telah dipasang. Mulai ulang Nuvio untuk mulai menggunakannya.</string>
+    <string name="updates_linux_restart_now">Mulai ulang sekarang</string>
+    <string name="updates_linux_restart_manually">Pembaruan telah dipasang. Tutup Nuvio dan buka lagi untuk menyelesaikan.</string>
+    <string name="updates_linux_appimage_saved">AppImage yang terverifikasi disimpan ke %1$s. Ganti AppImage Anda saat ini dengan file tersebut.</string>
+    <string name="updates_linux_deb_saved">Paket yang terverifikasi disimpan ke %1$s. Pasang dari pusat perangkat lunak, atau jalankan perintah ini di folder tersebut:</string>
+    <string name="updates_linux_deb_install_failed">Paket tidak dapat dipasang secara otomatis (%1$s). Paket yang terverifikasi disimpan ke %2$s. Pasang dari pusat perangkat lunak, atau jalankan perintah ini di folder tersebut:</string>
+    <string name="updates_linux_reason_missing_tool">%1$s tidak tersedia</string>
+    <string name="updates_linux_reason_cancelled">otorisasi dibatalkan atau ditolak</string>
+    <string name="updates_linux_reason_failed">penginstal keluar dengan kode %1$d</string>
+    <string name="updates_linux_asset_missing">Tidak ditemukan %1$s untuk Linux x86_64 dalam rilis ini.</string>
+</resources>

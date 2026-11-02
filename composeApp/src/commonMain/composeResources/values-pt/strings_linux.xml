@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="linux_audio_channels_desc">Estéreo reduz as faixas surround para dois canais no leitor. Experimenta se o diálogo ficar constantemente mais alto e mais baixo numa TV ou barra de som. Automático usa a disposição definida na saída de áudio do sistema.</string>
+    <string name="linux_custom_shader_paths_hint">p. ex.\n/home/user/Shaders/Anime4K-Ultra.glsl\n/home/user/Shaders/MyPack</string>
+    <string name="linux_cast_no_devices">Nenhum dispositivo encontrado. A TV ou o leitor tem de estar ligado, na mesma rede, e ter o DLNA (partilha de média / UPnP) ativado. Se o sistema usar uma firewall, esta também tem de deixar o Nuvio aceder à rede local.</string>
+    <string name="linux_games_editor_path_example">/home/user/Games/Example/start.sh,  um ficheiro .desktop do jogo,  ou  steam://rungameid/620</string>
+    <string name="linux_cast_dolby_vision_needs_ffmpeg">Requer o ffmpeg neste PC. Instala-o com o gestor de pacotes da tua distribuição.</string>
+    <string name="linux_cast_dolby_vision_flatpak">Indisponível na versão Flatpak, cuja sandbox não consegue executar o ffmpeg do sistema.</string>
+    <string name="linux_games_launcher_filter_apps">Executáveis Linux, scripts, AppImage e ficheiros .desktop de jogos</string>
+    <string name="linux_games_desktop_entry_unavailable">O Nuvio não consegue iniciar este ficheiro .desktop: não existe, não é de um jogo ou é executado através de uma shell ou de outro lançador.</string>
+    <string name="linux_updates_auto_install_description">Continuas a confirmar cada atualização. Ligado, o Nuvio substitui o AppImage ou instala o .deb sozinho; desligado, guarda o ficheiro na pasta Transferências.</string>
+    <string name="linux_settings_youtube_explainer">Abre a verdadeira página de início de sessão da Google numa janela temporária de um navegador instalado neste PC: Chrome, Edge, Brave, Chromium, Vivaldi, Opera ou Firefox. Inicia sessão aí, espera que o YouTube Music carregue e fecha a janela; o Nuvio lê então os cookies da sessão e apaga o perfil temporário. Só são enviados para vídeos que o YouTube bloqueia sem conta, e o Nuvio nunca vê a tua palavra-passe. O mais seguro é uma conta Google secundária.</string>
+    <string name="updates_linux_open_release_page">Abrir a página da versão</string>
+    <string name="updates_linux_flatpak_nothing_newer">O repositório Flatpak do Nuvio ainda não tem uma versão mais recente para esta instalação. Se o Nuvio foi instalado a partir de um ficheiro .flatpak transferido antes da versão 1.15.1, liga-o uma vez ao repositório com estes comandos:</string>
+    <string name="updates_linux_flatpak_failed">A atualização Flatpak falhou (%1$s). Se o Nuvio foi instalado a partir de um ficheiro .flatpak transferido antes da versão 1.15.1, liga-o uma vez ao repositório Flatpak do Nuvio com estes comandos:</string>
+    <string name="updates_linux_flatpak_denied">O Nuvio não tem permissão para se atualizar. Permite-o nas definições de privacidade do sistema ou atualiza a partir de um terminal:</string>
+    <string name="updates_linux_flatpak_new_permissions">Esta versão precisa de novas permissões, que o Flatpak só concede quando atualizas a partir do centro de software ou de um terminal:</string>
+    <string name="updates_linux_external_message">Esta cópia do Nuvio não foi instalada a partir de um pacote de lançamento, por isso não se consegue atualizar sozinha. Abre a página da versão para transferir a nova.</string>
+    <string name="updates_linux_installing">A instalar a atualização…</string>
+    <string name="updates_linux_installed">A atualização está instalada. Reinicia o Nuvio para começares a usá-la.</string>
+    <string name="updates_linux_restart_now">Reiniciar agora</string>
+    <string name="updates_linux_restart_manually">A atualização está instalada. Fecha o Nuvio e abre-o de novo para concluir.</string>
+    <string name="updates_linux_appimage_saved">O AppImage verificado foi guardado em %1$s. Substitui o teu AppImage atual por este.</string>
+    <string name="updates_linux_deb_saved">O pacote verificado foi guardado em %1$s. Instala-o a partir do centro de software ou executa este comando nessa pasta:</string>
+    <string name="updates_linux_deb_install_failed">Não foi possível instalar o pacote automaticamente (%1$s). O pacote verificado foi guardado em %2$s. Instala-o a partir do centro de software ou executa este comando nessa pasta:</string>
+    <string name="updates_linux_reason_missing_tool">%1$s não está disponível</string>
+    <string name="updates_linux_reason_cancelled">a autorização foi cancelada ou recusada</string>
+    <string name="updates_linux_reason_failed">o instalador terminou com o código %1$d</string>
+    <string name="updates_linux_asset_missing">Não foi encontrado nenhum %1$s para Linux x86_64 nesta versão.</string>
+</resources>

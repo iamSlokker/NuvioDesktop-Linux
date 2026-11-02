@@ -16,6 +16,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import com.nuvio.app.core.i18n.platformString
 import com.nuvio.app.features.youtubemusic.YouTubeMusicAuth
 import com.nuvio.app.features.youtubemusic.YouTubeMusicAuthState
 import nuvio.composeapp.generated.resources.Res
@@ -76,7 +77,7 @@ private fun YouTubeAccountRows(isTablet: Boolean) {
             color = MaterialTheme.colorScheme.onSurface,
         )
         Text(
-            text = stringResource(Res.string.settings_youtube_explainer),
+            text = stringResource(platformString(Res.string.settings_youtube_explainer)),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )

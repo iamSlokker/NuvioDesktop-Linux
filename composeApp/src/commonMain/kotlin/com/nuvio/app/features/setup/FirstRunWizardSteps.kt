@@ -11,6 +11,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.nuvio.app.features.settings.platformOffersInterfaceRenderer
 import com.nuvio.app.core.ui.AppTheme
 import com.nuvio.app.core.ui.BalancedPosterCardWidthDp
 import com.nuvio.app.core.ui.ComfortPosterCardWidthDp
@@ -533,7 +534,7 @@ private fun MetadataStep(draft: FirstRunWizardDraft, onDraftChange: DraftChange)
             style = ApiKeySetupStyle.Staged,
         )
         WizardNote(text = stringResource(Res.string.setup_wizard_shortcuts_after_finish))
-        WizardNote(text = stringResource(Res.string.setup_wizard_renderer_note))
+        if (platformOffersInterfaceRenderer) WizardNote(text = stringResource(Res.string.setup_wizard_renderer_note))
     }
 }
 
