@@ -29,7 +29,9 @@ internal actual object PreshowAudioKeepAlive {
 
     actual fun start(owner: String) {
         // fork:linux - Java Sound opens ALSA devices directly, which can take a hardware device away
-        // from mpv; PipeWire and PulseAudio keep the output open between clips on their own.
+        // from mpv. PipeWire and PulseAudio already hold an idle output for a few seconds (WirePlumber's
+        // session.suspend-timeout-seconds, module-suspend-on-idle), which covers the gap between clips,
+        // and a longer hold is the sound server's setting to change. The settings rows are hidden.
         if (com.nuvio.app.features.player.desktop.DesktopHostOs.current ==
             com.nuvio.app.features.player.desktop.DesktopHostOs.LINUX) return
         synchronized(lock) {

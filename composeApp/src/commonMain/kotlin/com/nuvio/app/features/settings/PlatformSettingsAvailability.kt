@@ -24,3 +24,6 @@ internal expect val platformOffersScreensaverShutdown: Boolean
  * entries that lead nowhere.
  */
 internal expect val platformListsWindowsOnlyPlaybackRowsInSearch: Boolean
+
+/** "Keep audio output awake": on Linux the sound server decides (see PreshowAudioKeepAlive.desktop.kt). */
+internal expect val platformOffersAudioKeepAlive: Boolean
