@@ -119,6 +119,12 @@ actual object AppUpdaterPlatform {
         store.putString(snoozedUntilKey, epochMs?.toString())
     }
 
+    actual val offersInPlaceUpdateOption: Boolean
+        get() = !LinuxUpdater.isActive || linuxOffersInPlaceUpdateOption(LinuxUpdater.current.format)
+
+    actual fun inPlaceUpdateOptionDescription(): String? =
+        if (LinuxUpdater.isActive) linuxInPlaceUpdateOptionDescription(LinuxUpdater.current.format) else null
+
     // Default ON: only an explicit "off" opts back into manual extraction.
     actual fun isInPlaceUpdateEnabled(): Boolean =
         !"off".equals(store.getString(inPlaceApplyKey), ignoreCase = true)

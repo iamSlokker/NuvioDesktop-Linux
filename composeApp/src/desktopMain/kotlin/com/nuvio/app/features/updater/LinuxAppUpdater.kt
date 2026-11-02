@@ -8,7 +8,10 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
+import com.nuvio.app.core.i18n.localizedString
 import nuvio.composeapp.generated.resources.Res
+import nuvio.composeapp.generated.resources.linux_updates_auto_install_description_appimage
+import nuvio.composeapp.generated.resources.linux_updates_auto_install_description_deb
 import nuvio.composeapp.generated.resources.updates_linux_asset_missing
 import org.jetbrains.compose.resources.getString
 import java.io.File
@@ -71,6 +74,20 @@ internal enum class LinuxInstallFormat(val assetExtension: String?) {
             return Unknown
         }
     }
+}
+
+/**
+ * The portal alone installs a Flatpak update, whatever the setting says, and there is nothing to
+ * apply in an install the updater does not recognise. An AppImage and a DEB do read it.
+ */
+internal fun linuxOffersInPlaceUpdateOption(format: LinuxInstallFormat): Boolean =
+    format == LinuxInstallFormat.AppImage || format == LinuxInstallFormat.Deb
+
+/** The setting's upstream text is about extracting the Windows ZIP, which no Linux package does. */
+internal fun linuxInPlaceUpdateOptionDescription(format: LinuxInstallFormat): String? = when (format) {
+    LinuxInstallFormat.AppImage -> localizedString(Res.string.linux_updates_auto_install_description_appimage)
+    LinuxInstallFormat.Deb -> localizedString(Res.string.linux_updates_auto_install_description_deb)
+    else -> null
 }
 
 /** Which releases and assets of the Linux fork's repository this install accepts. */
