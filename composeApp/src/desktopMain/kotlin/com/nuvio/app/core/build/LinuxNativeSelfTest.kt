@@ -48,6 +48,9 @@ internal object LinuxNativeSelfTest {
             withVideoFrame { _, host -> onEdt { "drawable=0x" + LinuxAwtViewResolver.resolveNativeViewPointer(host).toString(16) } }
         }
         probe("linux playback") { playback() }
+        // The packages point libraries and data directories at their own files; a program of the
+        // host that inherits them fails with symbol errors (LinuxHostProcess).
+        probe("linux child environment") { childEnvironment() }
         probe("linux mpris") { mpris() }
         // No inhibition backend is expected on the smoke's private bus (acquire returns 0); a
         // desktop session takes and releases a real lease. Either way the JNI round trip runs.
@@ -110,9 +113,31 @@ internal object LinuxNativeSelfTest {
         }
     }
 
+    private fun childEnvironment(): String {
+        val process = hostProcessBuilder(listOf("env")).redirectErrorStream(true).start()
+        val output = process.inputStream.bufferedReader().readLines()
+        check(process.waitFor(5, TimeUnit.SECONDS)) { "env timed out" }
+        val child = output.filter { '=' in it }.associate { it.substringBefore('=') to it.substringAfter('=') }
+        val image = System.getProperty("jpackage.app-path")?.let { File(it).parentFile?.parent }
+        val leaks = leakedEnvironment(child, image, sandboxed = System.getenv("FLATPAK_ID") != null)
+        check(leaks.isEmpty()) { "child inherits $leaks" }
+        return "${child.size} variables, none private"
+    }
+
+    /**
+     * Names a host program must not see. In a Flatpak the child stays in the sandbox, whose paths
+     * are the only ones it has, so only the loader's variables count there. `_` is the shell's.
+     */
+    internal fun leakedEnvironment(child: Map<String, String>, image: String?, sandboxed: Boolean): List<String> =
+        child.filter { (name, value) ->
+            name == "LD_LIBRARY_PATH" || name == "LD_PRELOAD" ||
+                (!sandboxed && image != null && name != "_" && image in value)
+        }.keys.sorted()
+
     /** Production MPRIS service on a private bus; a D-Bus call comes back on a GLib thread. */
     private fun mpris(): String {
-        val daemon = ProcessBuilder("dbus-daemon", "--session", "--nofork", "--print-address=1").start()
+        // Host programs: under the AppImage's library path dbus-daemon cannot start on a newer host.
+        val daemon = hostProcessBuilder(listOf("dbus-daemon", "--session", "--nofork", "--print-address=1")).start()
         try {
             val address = checkNotNull(daemon.inputStream.bufferedReader().readLine()) { "dbus-daemon gave no address" }
             val name = "org.mpris.MediaPlayer2.NuvioSelfTest"
@@ -144,7 +169,7 @@ internal object LinuxNativeSelfTest {
     }
 
     private fun gdbus(address: String, destination: String, method: String, vararg args: String): String {
-        val process = ProcessBuilder(
+        val process = hostProcessBuilder(
             listOf("gdbus", "call", "--address", address, "--dest", destination,
                 "--object-path", "/org/mpris/MediaPlayer2", "--method", method) + args,
         ).redirectErrorStream(true).start()
