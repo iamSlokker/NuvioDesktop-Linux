@@ -1003,6 +1003,7 @@ private fun PlaybackSettingsSection(
                         isTablet = isTablet,
                         onCheckedChange = PlayerSettingsRepository::setShowLoadingOverlay,
                     )
+                    if (ExternalPlayerPlatform.supported) {
                     SettingsGroupDivider(isTablet = isTablet)
                     // Player preference picker: Internal / External
                     SettingsChoiceRow(
@@ -1016,6 +1017,7 @@ private fun PlaybackSettingsSection(
                         isTablet = isTablet,
                         onSelected = PlayerSettingsRepository::setExternalPlayerEnabled,
                     )
+                    }
                     if ((isIos || isDesktop) && autoPlayPlayerSettings.externalPlayerEnabled) {
                         SettingsGroupDivider(isTablet = isTablet)
                         SettingsNavigationRow(

@@ -59,6 +59,8 @@ sealed interface ExternalPlayerIntentResult {
 }
 
 internal expect object ExternalPlayerPlatform {
+    /** False where no player outside the app can ever be reached (the sealed Linux Flatpak). */
+    val supported: Boolean
     fun defaultPlayerId(): String?
     fun availablePlayers(): List<ExternalPlayerApp>
     fun configurePlayer(playerId: String): Boolean

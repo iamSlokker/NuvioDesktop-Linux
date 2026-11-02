@@ -1478,11 +1478,11 @@ private fun settingsSearchEntries(
                 resolve(Res.string.settings_playback_show_loading_overlay),
                 resolve(Res.string.settings_playback_show_loading_overlay_description),
             ),
-            PlaybackSearchRow(
+            if (com.nuvio.app.features.player.ExternalPlayerPlatform.supported) PlaybackSearchRow(
                 "external-player",
                 resolve(Res.string.settings_playback_external_player),
                 resolve(Res.string.settings_playback_external_player_description_android),
-            ),
+            ) else null,
             if (isIos) PlaybackSearchRow(
                 "external-player-app",
                 resolve(Res.string.settings_playback_external_player_app),

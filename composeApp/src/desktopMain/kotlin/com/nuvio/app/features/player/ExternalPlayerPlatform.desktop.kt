@@ -50,6 +50,9 @@ private class DesktopPlayerDefinition(
 )
 
 internal actual object ExternalPlayerPlatform {
+    // fork:linux - the owner's decision: the Flatpak stays sealed, so no host player can be started.
+    actual val supported: Boolean get() = !com.nuvio.app.core.build.LinuxFlatpakSandbox.isActive
+
     private const val systemPlayerId = "system"
     private val isWindows = System.getProperty("os.name").orEmpty().lowercase(Locale.ROOT).contains("win")
     private val isLinux = System.getProperty("os.name").orEmpty().lowercase(Locale.ROOT).contains("linux")
