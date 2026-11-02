@@ -35,7 +35,7 @@ gradle_flags=(-Pnuvio.desktop.channel="$NUVIO_BUILD_CHANNEL"
   :composeApp:compileTestKotlinDesktop :composeApp:desktopTest \
   --tests '*LinuxPackagedNativeRuntimeTest' --tests '*NativeRuntimeLayoutTest' \
   --tests '*DesktopMpvRuntimeOverrideTest' --tests '*LinuxPlayerOwnershipTest' \
-  --tests '*LinuxHeroHostGeometryTest' --tests '*LinuxNativeImageMetadataTest' \
+  --tests '*LinuxHeroHostGeometryTest' --tests '*LinuxNativeImageMetadataTest' --tests '*LinuxResourceContractTest' \
   --tests '*NativeImageMetadataTest' --tests '*LinuxDesktopRelaunchTest' "${gradle_flags[@]}"
 # The shipped executable: GraalVM native-image over those jars (a separate Gradle
 # run, so the compiler daemon's heap is gone before native-image's ~10 GB peak).
