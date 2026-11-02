@@ -179,6 +179,14 @@ target_include_directories(linux_http_recovery_test PRIVATE "${MPV_INCLUDE_DIR}"
 target_link_libraries(linux_http_recovery_test PRIVATE "${MPV_LIBRARY}")
 set_target_properties(linux_http_recovery_test PROPERTIES BUILD_RPATH "${MPV_LIBRARY_DIR}")
 
+# The videoSourceSize event's value and timing (video_source_size.h): real libmpv, null outputs.
+add_executable(linux_video_source_size_test EXCLUDE_FROM_ALL tests/video_source_size_test.cpp)
+target_compile_features(linux_video_source_size_test PRIVATE cxx_std_17)
+target_compile_options(linux_video_source_size_test PRIVATE -Wall -Wextra -Werror)
+target_include_directories(linux_video_source_size_test PRIVATE "${MPV_INCLUDE_DIR}" "${CMAKE_CURRENT_SOURCE_DIR}")
+target_link_libraries(linux_video_source_size_test PRIVATE "${MPV_LIBRARY}")
+set_target_properties(linux_video_source_size_test PROPERTIES BUILD_RPATH "${MPV_LIBRARY_DIR}")
+
 # SPDIF recovery policy and a test-only real-libmpv shim; no display/GTK/JNI.
 add_executable(linux_audio_recovery_test EXCLUDE_FROM_ALL tests/audio_recovery_test.cpp)
 target_compile_features(linux_audio_recovery_test PRIVATE cxx_std_17)
