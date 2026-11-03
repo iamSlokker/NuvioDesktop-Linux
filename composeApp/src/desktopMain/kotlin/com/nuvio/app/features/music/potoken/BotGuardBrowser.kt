@@ -1,6 +1,10 @@
 package com.nuvio.app.features.music.potoken
 
 import co.touchlab.kermit.Logger
+import com.nuvio.app.core.build.LinuxFlatpakSandbox
+import com.nuvio.app.core.build.hostProcessBuilder
+import com.nuvio.app.features.youtubemusic.LinuxLoginBrowsers
+import com.nuvio.app.features.youtubemusic.linuxLoginHost
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.delay
@@ -72,11 +76,23 @@ internal class BotGuardBrowser private constructor(
     fun close() {
         runCatching { cdp.close() }
         // Off the caller's thread: a browser can take a moment to let go of its files.
-        Thread({ stop(process, profileDir) }, "potoken-browser-cleanup").apply { isDaemon = true }.start()
+        Thread({
+            stop(process, profileDir)
+            openBrowsers -= this
+        }, "potoken-browser-cleanup").apply { isDaemon = true }.start()
     }
 
     companion object {
         private val log = Logger.withTag("PoTokenBrowser")
+
+        // fork:linux - closing the DevTools socket does not end a headless browser, so one still open when the
+        // app exits would run on for good, along with its profile.
+        private val openBrowsers = java.util.concurrent.ConcurrentHashMap.newKeySet<BotGuardBrowser>()
+        private val exitHook by lazy {
+            Runtime.getRuntime().addShutdownHook(
+                Thread({ openBrowsers.forEach { stop(it.process, it.profileDir) } }, "potoken-browser-exit"),
+            )
+        }
 
         const val PAGE_URL = "https://www.youtube.com/__nuvio_potoken"
         private const val DEVTOOLS_PORT_TIMEOUT_MS = 20_000L
@@ -103,11 +119,13 @@ internal class BotGuardBrowser private constructor(
         ) + extraArguments() + "about:blank"
 
         suspend fun launch(browserPath: String): BotGuardBrowser {
-            val profileDir = Files.createTempDirectory("nuvio-potoken")
+            // fork:linux - a Snap or Flatpak browser has its own /tmp, so its profile goes in its own folder.
+            val profileDir = (if (linuxLoginHost()) LinuxLoginBrowsers.throwawayProfile(browserPath, "nuvio-potoken") else null)
+                ?: Files.createTempDirectory("nuvio-potoken")
             var process: Process? = null
             var cdp: CdpClient? = null
             try {
-                process = ProcessBuilder(command(browserPath, profileDir))
+                process = hostProcessBuilder(command(browserPath, profileDir))
                     .redirectErrorStream(true)
                     .redirectOutput(ProcessBuilder.Redirect.DISCARD)
                     .start()
@@ -163,7 +181,12 @@ internal class BotGuardBrowser private constructor(
                 client.call("Page.navigate", buildJsonObject { put("url", PAGE_URL) }, session)
                 withTimeout(PAGE_LOAD_TIMEOUT_MS) { loaded.await() }
 
-                return BotGuardBrowser(process, profileDir, client, session, pageFailed)
+                return BotGuardBrowser(process, profileDir, client, session, pageFailed).also {
+                    if (linuxLoginHost()) {
+                        exitHook
+                        openBrowsers += it
+                    }
+                }
             } catch (error: Throwable) {
                 runCatching { cdp?.close() }
                 process?.let { stop(it, profileDir) } ?: deleteQuietly(profileDir)
@@ -247,6 +270,8 @@ internal object BrowserLocator {
         for (property in listOf("nuvio.potoken.browser", "nuvio.youtubeMusic.browser")) {
             System.getProperty(property)?.takeIf { Files.isExecutable(Path.of(it)) }?.let { return it }
         }
+        // fork:linux - the sign-in's wider search, Snap and Flatpak browsers too; the Flatpak's sandbox has none to start.
+        if (linuxLoginHost()) return if (LinuxFlatpakSandbox.isActive) null else LinuxLoginBrowsers.findChromium()?.executable
         return candidates().firstOrNull { Files.isExecutable(Path.of(it)) }
     }
 
