@@ -57,8 +57,9 @@ class LinuxMprisPlayerTest {
                 onError = { error.set(it ?: "Attach failed") }, restoreVolume = main)
         }
         fun controls(title: String = "First", next: Boolean = false, previous: Boolean = false) = ui {
-            controller.updateControls(PlayerControlsState(title = title,
-                mediaSession = com.nuvio.app.features.player.PlayerMediaSessionState(canGoNext = next, canGoPrevious = previous)))
+            com.nuvio.app.features.player.PlayerMediaSession.current =
+                com.nuvio.app.features.player.PlayerMediaSessionState(canGoNext = next, canGoPrevious = previous)
+            controller.updateControls(PlayerControlsState(title = title))
         }
         fun snapshot(): com.nuvio.app.features.player.PlayerPlaybackSnapshot {
             val result = AtomicReference<com.nuvio.app.features.player.PlayerPlaybackSnapshot>()

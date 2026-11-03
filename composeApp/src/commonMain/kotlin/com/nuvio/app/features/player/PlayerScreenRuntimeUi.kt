@@ -412,6 +412,18 @@ internal fun PlayerScreenRuntime.RenderPlayerRuntimeUi() {
     }
 
     val iptvControlState = rememberIptvControlState()
+    PlayerMediaSession.current = PlayerMediaSessionState(
+        canGoNext = (isPlaylistPlayback && playlistUpNext != null) || nextEpisodeInfo?.hasAired == true,
+        canGoPrevious = PlayerNextEpisodeRules.resolvePreviousEpisode(
+            videos = playerMetaVideos,
+            currentSeason = activeSeasonNumber,
+            currentEpisode = activeEpisodeNumber,
+            currentVideoId = activeVideoId,
+            parentMetaId = parentMetaId,
+        ) != null,
+        season = activeSeasonNumber ?: 0,
+        episode = activeEpisodeNumber ?: 0,
+    )
     val playerControlsState = PlayerControlsState(
         // Live TV: the playing channel, which channel up/down changes after launch.
         title = iptvControlState?.channelLabel ?: title,
@@ -703,18 +715,6 @@ internal fun PlayerScreenRuntime.RenderPlayerRuntimeUi() {
         // Poster first here, unlike openingArtwork: the flyout thumbnail is a small near-square
         // tile, which a portrait poster survives better than a cropped 16:9 backdrop.
         mediaSessionArtwork = poster ?: background ?: "",
-        mediaSession = PlayerMediaSessionState(
-            canGoNext = (isPlaylistPlayback && playlistUpNext != null) || nextEpisodeInfo?.hasAired == true,
-            canGoPrevious = PlayerNextEpisodeRules.resolvePreviousEpisode(
-                videos = playerMetaVideos,
-                currentSeason = activeSeasonNumber,
-                currentEpisode = activeEpisodeNumber,
-                currentVideoId = activeVideoId,
-                parentMetaId = parentMetaId,
-            ) != null,
-            season = activeSeasonNumber ?: 0,
-            episode = activeEpisodeNumber ?: 0,
-        ),
         openingLogo = logo,
         openingTitle = title,
         openingMessage = p2pInitialLoadingMessage,

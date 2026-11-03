@@ -169,15 +169,21 @@ data class PlayerMediaSessionState(
     val episode: Int = 0,
 )
 
+/**
+ * The main player's [PlayerMediaSessionState]; trailers never publish a media session. Not a field of
+ * [PlayerControlsState]: upstream keeps that constructor at the JVM's 255-slot limit on its own.
+ */
+object PlayerMediaSession {
+    @kotlin.concurrent.Volatile
+    var current = PlayerMediaSessionState()
+}
+
 data class PlayerControlsState(
     val title: String = "",
     val episodeText: String = "",
     // Poster/backdrop URL for the Windows media-session thumbnail. Desktop-only; other platforms
     // and the hero-trailer surfaces leave it blank, which clears the thumbnail.
     val mediaSessionArtwork: String = "",
-    // Linux MPRIS details, grouped: this constructor is at the JVM's 255-slot limit for a method
-    // signature (its defaults overload adds 8 masks, a marker and `this`).
-    val mediaSession: PlayerMediaSessionState = PlayerMediaSessionState(),
     val streamTitle: String = "",
     // The addon's real media file name; mpv's diagnostics show it ahead of the source label.
     val streamFilename: String = "",
