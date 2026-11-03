@@ -683,6 +683,14 @@ void LinuxControlsOverlay::setWindowFocused(bool focused) {
     });
 }
 
+void LinuxControlsOverlay::layoutNow() {
+    GtkThread::get().post([self = state_] {
+        if (self->closing || !self->window) return;
+        if (!self->layout()) self->destroy();
+        gdk_display_flush(self->display);
+    });
+}
+
 void LinuxControlsOverlay::finishPlayerShutdown(std::function<void()> action) {
     GtkThread::syncIfStarted(std::move(action));
 }
