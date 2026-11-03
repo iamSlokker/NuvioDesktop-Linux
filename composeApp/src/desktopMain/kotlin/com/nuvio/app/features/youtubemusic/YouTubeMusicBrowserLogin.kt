@@ -118,14 +118,11 @@ internal object YouTubeMusicBrowserLogin {
             // A kept profile still holds the last run's port file; read before the new one is written it
             // would point at a port nothing listens on.
             Files.deleteIfExists(profileDir.resolve("DevToolsActivePort"))
-            // fork:linux - nothing of ours holds the profile here (profileLock), and a browser that was
-            // killed leaves a lock naming a process id that, inside a Flatpak browser's sandbox, can be
-            // alive again.
-            if (linuxLoginHost()) Files.deleteIfExists(profileDir.resolve("SingletonLock"))
+            if (linuxLoginHost()) LinuxLoginBrowsers.clearLeftovers(profileDir) // fork:linux
             reader = hostProcessBuilder(cookieReadCommand(browser, profileDir, startUrl = RENEW_URL))
                 .redirectErrorStream(true)
                 .redirectOutput(ProcessBuilder.Redirect.DISCARD)
-                .start()
+                .start().also(::stopAtExitOnLinux)
             val endpoint = awaitDevToolsEndpoint(profileDir, reader) ?: run {
                 log.w { "Renewal browser gave no DevTools port (alive=${reader.isAlive})" }
                 return@withLock null
@@ -173,6 +170,7 @@ internal object YouTubeMusicBrowserLogin {
         val firefox = linuxBrowser?.firefox == true
         // A fresh profile each sign-in, so the window starts signed out and the user picks the account.
         val profileDir = keptProfileDir()
+        if (linuxLoginHost()) LinuxLoginBrowsers.clearLeftovers(profileDir) // fork:linux
         deleteRecursivelyQuietly(profileDir)
         Files.createDirectories(profileDir)
         var window: Process? = null
@@ -186,7 +184,7 @@ internal object YouTubeMusicBrowserLogin {
             )
                 .redirectErrorStream(true)
                 .redirectOutput(ProcessBuilder.Redirect.DISCARD)
-                .start()
+                .start().also(::stopAtExitOnLinux)
             val deadline = System.currentTimeMillis() + LOGIN_TIMEOUT_MS
             if (!awaitExit(window, LOGIN_TIMEOUT_MS)) {
                 return YouTubeMusicLoginOutcome.Failed("Sign-in timed out.")
@@ -234,7 +232,7 @@ internal object YouTubeMusicBrowserLogin {
             reader = hostProcessBuilder(cookieReadCommand(browser, profileDir))
                 .redirectErrorStream(true)
                 .redirectOutput(ProcessBuilder.Redirect.DISCARD)
-                .start()
+                .start().also(::stopAtExitOnLinux)
             val endpoint = awaitDevToolsEndpoint(profileDir, reader)
             if (endpoint == null) {
                 log.w {
@@ -267,7 +265,7 @@ internal object YouTubeMusicBrowserLogin {
         try {
             reader = hostProcessBuilder(LinuxLoginBrowsers.firefoxCookieReadCommand(browser, profileDir))
                 .redirectErrorStream(true)
-                .start()
+                .start().also(::stopAtExitOnLinux)
             val endpoint = LinuxLoginBrowsers.awaitBidiEndpoint(reader, DEVTOOLS_PORT_TIMEOUT_MS)
                 ?: return YouTubeMusicLoginOutcome.Failed("The browser could not be reopened to read the session.")
             cdp = CdpConnection.open("$endpoint/session")
@@ -291,9 +289,10 @@ internal object YouTubeMusicBrowserLogin {
         var reader: Process? = null
         var cdp: CdpConnection? = null
         try {
+            if (linuxLoginHost()) LinuxLoginBrowsers.clearLeftovers(profileDir) // fork:linux
             reader = hostProcessBuilder(LinuxLoginBrowsers.firefoxCookieReadCommand(browser, profileDir, RENEW_URL))
                 .redirectErrorStream(true)
-                .start()
+                .start().also(::stopAtExitOnLinux)
             val endpoint = LinuxLoginBrowsers.awaitBidiEndpoint(reader, DEVTOOLS_PORT_TIMEOUT_MS) ?: return null
             cdp = CdpConnection.open("$endpoint/session")
             cdp.call("session.new", buildJsonObject { put("capabilities", JsonObject(emptyMap())) })
@@ -358,6 +357,11 @@ internal object YouTubeMusicBrowserLogin {
             process.descendants().forEach { it.destroyForcibly() }
             process.destroyForcibly()
         }
+        if (linuxLoginHost()) LinuxLoginBrowsers.stopped(process)
+    }
+
+    private fun stopAtExitOnLinux(process: Process) {
+        if (linuxLoginHost()) LinuxLoginBrowsers.stopAtExit(process)
     }
 
     private fun awaitDevToolsEndpoint(profileDir: Path, process: Process): String? {

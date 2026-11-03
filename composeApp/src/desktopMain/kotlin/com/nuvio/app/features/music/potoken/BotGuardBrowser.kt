@@ -119,6 +119,8 @@ internal class BotGuardBrowser private constructor(
         ) + extraArguments() + "about:blank"
 
         suspend fun launch(browserPath: String): BotGuardBrowser {
+            // fork:linux - what a crash left behind, which the exit hook could not stop.
+            if (linuxLoginHost() && openBrowsers.isEmpty()) LinuxLoginBrowsers.clearThrowaways(browserPath, "nuvio-potoken")
             // fork:linux - a Snap or Flatpak browser has its own /tmp, so its profile goes in its own folder.
             val profileDir = (if (linuxLoginHost()) LinuxLoginBrowsers.throwawayProfile(browserPath, "nuvio-potoken") else null)
                 ?: Files.createTempDirectory("nuvio-potoken")

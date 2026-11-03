@@ -98,6 +98,61 @@ internal object LinuxLoginBrowsers {
             onPath(firefoxNames, true) + flatpaks(firefoxFlatpaks, true)
     }
 
+    private val startedBrowsers = java.util.concurrent.ConcurrentHashMap.newKeySet<Process>()
+    private val exitHook by lazy {
+        Runtime.getRuntime().addShutdownHook(Thread({ startedBrowsers.forEach(::destroyTree) }, "linux-login-browser-exit"))
+    }
+
+    /** Stops [process] when the app exits: a headless browser does not end by itself, and would hold the kept profile. */
+    fun stopAtExit(process: Process) {
+        exitHook
+        startedBrowsers += process
+    }
+
+    fun stopped(process: Process) {
+        startedBrowsers -= process
+    }
+
+    private fun destroyTree(process: Process) {
+        runCatching { process.descendants().forEach { it.destroyForcibly() } }
+        process.destroyForcibly()
+    }
+
+    /**
+     * Clears [profile] of a browser this app left running or a lock it left behind, after a crash. Only one
+     * Nuvio runs at a time, and a second browser on the same profile would fight the first over its cookies.
+     * The lock goes too: it names a process id, which inside a Flatpak browser's sandbox can be alive again.
+     */
+    fun clearLeftovers(profile: Path) {
+        val path = profile.toString()
+        val leftovers = ProcessHandle.allProcesses()
+            .filter { handle -> handle.info().commandLine().orElse("").contains(path) }
+            .toList()
+        leftovers.forEach { it.destroyForcibly() }
+        leftovers.forEach { runCatching { it.onExit().get(2, java.util.concurrent.TimeUnit.SECONDS) } }
+        Files.deleteIfExists(profile.resolve("SingletonLock"))
+    }
+
+    /** The same for throwaway profiles named [prefix], when none of this run is open: stops their browsers and removes them. */
+    fun clearThrowaways(executable: String, prefix: String) {
+        val leftovers = ProcessHandle.allProcesses().filter { handle ->
+            val line = handle.info().commandLine().orElse("")
+            "--user-data-dir=" in line && prefix in line
+        }.toList()
+        leftovers.forEach { it.destroyForcibly() }
+        leftovers.forEach { runCatching { it.onExit().get(2, java.util.concurrent.TimeUnit.SECONDS) } }
+        val parent = hostCandidates().firstOrNull { it.executable == executable }?.profileParent
+            ?: Path.of(System.getProperty("java.io.tmpdir"))
+        val stale = runCatching {
+            Files.list(parent).use { list -> list.filter { it.fileName.toString().startsWith(prefix) }.toList() }
+        }.getOrDefault(emptyList())
+        stale.forEach { profile ->
+            runCatching {
+                Files.walk(profile).use { walk -> walk.sorted(Comparator.reverseOrder()).forEach(Files::deleteIfExists) }
+            }
+        }
+    }
+
     /** A first run with no welcome tab or default-browser question over the sign-in page. */
     fun prepareFirefoxProfile(profile: Path) {
         Files.writeString(profile.resolve("user.js"), listOf(
