@@ -1116,6 +1116,7 @@ fun main(args: Array<String>) {
                                 AppShortcutAction.OpenCalendar,
                                 AppShortcutAction.OpenLiveTv,
                                 AppShortcutAction.OpenMusic,
+                                AppShortcutAction.OpenYouTube,
                                 // Routed through App so it inherits the same guard the other
                                 // navigation shortcuts get: nothing fires while the player is up.
                                 AppShortcutAction.ToggleGameMode -> {
