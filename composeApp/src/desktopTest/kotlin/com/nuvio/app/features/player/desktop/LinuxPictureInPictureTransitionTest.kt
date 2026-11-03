@@ -678,6 +678,7 @@ class LinuxPictureInPictureTransitionTest {
         override var contentInsets = Insets(0, 0, 0, 0)
         var adoptCanvas = true
         var staleCanvas: LinuxPiPCanvasGeometry? = null
+        override var hostInsideWindow = false
         var applyHud = true
         var onHudSync: () -> Unit = {}
         var hudRoot = Rectangle()

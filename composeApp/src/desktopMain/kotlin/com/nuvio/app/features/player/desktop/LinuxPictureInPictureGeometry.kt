@@ -53,12 +53,12 @@ internal class LinuxPictureInPictureGeometry(private val window: ComposeWindow) 
 
     fun suppressHud(value: Boolean): Boolean = session != 0L && LinuxPiPGeometryNative.setHudSuppressed(session, value)
 
-    fun sample(): LinuxPiPCanvasGeometry? = runCatching {
+    fun sample(hostInsideWindow: Boolean = false): LinuxPiPCanvasGeometry? = runCatching {
         val canvas = host()?.takeIf { it.isShowing && it.width > 0 && it.height > 0 } ?: return null
         val insets = insets
         // Reject old Compose/SwingPanel layout after an outer resize or inset change.
-        if (canvas.width != window.width - insets.left - insets.right ||
-            canvas.height != window.height - insets.top - insets.bottom) return null
+        if (!hostInsideWindow && (canvas.width != window.width - insets.left - insets.right ||
+            canvas.height != window.height - insets.top - insets.bottom)) return null
         val drawable = LinuxAwtViewResolver.resolveNativeViewPointer(canvas)
         val native = LinuxPiPGeometryNative.sample(session, drawable) ?: return null
         val scale = canvas.graphicsConfiguration.defaultTransform
