@@ -1675,7 +1675,9 @@ private fun MainAppContent(
         // active tab and leave no way back.
         if (tab == AppScreenTab.Discover && !discoverTabVisible) return
         if (tab == AppScreenTab.LiveTv && !liveTvTabVisible) return
-        if (tab == AppScreenTab.YouTube && !youTubeTabVisible) return // fork:youtube-mode
+        // fork:youtube-mode - the setting itself: the composed value was still false here after switching the
+        // tab on in the same session, so its icon and shortcut did nothing until another tab was opened.
+        if (tab == AppScreenTab.YouTube && com.nuvio.app.features.youtube.YouTubeFeedRepository.tabEnabled.value != true) return
         if (tab != AppScreenTab.Search) {
             searchOverlayActive = false
         }
