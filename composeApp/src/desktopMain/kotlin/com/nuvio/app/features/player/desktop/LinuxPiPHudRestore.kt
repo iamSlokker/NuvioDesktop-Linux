@@ -40,10 +40,10 @@ internal class LinuxPiPHudRestore(
                 return
             }
             if (!window.displayable) { fail("player window disposed"); return }
-            val canvas = if (placed) window.canvasGeometry()?.takeIf {
-                it.outer == window.bounds &&
+            val canvas = if (placed) window.restoredCanvasGeometry()?.takeIf {
+                it.outer == window.bounds && (window.hostInsideWindow ||
                     it.component.width == it.outer.width - it.loss.left - it.loss.right &&
-                    it.component.height == it.outer.height - it.loss.top - it.loss.bottom
+                    it.component.height == it.outer.height - it.loss.top - it.loss.bottom)
             } else null
             if (canvas == null || canvas != previous) {
                 if (onPlacement && canvas == null && checks % RelayoutEveryChecks == 0) window.relayoutContent()
@@ -64,7 +64,7 @@ internal class LinuxPiPHudRestore(
                 queue(); return
             }
             // Native Canvas and HUD equality must survive two later observations.
-            if (!window.restoredPlacementReady(placement) || window.canvasGeometry() != canvas) {
+            if (!window.restoredPlacementReady(placement) || window.restoredCanvasGeometry() != canvas) {
                 previous = null; observations = 0; queue(); return
             }
             if (++observations < 2) { queue(); return }

@@ -43,6 +43,9 @@ internal interface LinuxPictureInPictureWindow {
     fun toFront()
     val contentInsets: Insets
     fun canvasGeometry(): LinuxPiPCanvasGeometry?
+    /** The video is only part of the restored window: YouTube's watch page shows around it. */
+    val hostInsideWindow: Boolean get() = false
+    fun restoredCanvasGeometry(): LinuxPiPCanvasGeometry? = canvasGeometry()
     fun workArea(target: Rectangle): Rectangle
     fun beginGeometry()
     fun cancelGeometry()
@@ -80,6 +83,8 @@ internal class LinuxPictureInPictureAwtWindow(
     }
     override val contentInsets get() = geometry.insets
     override fun canvasGeometry() = geometry.sample()
+    override val hostInsideWindow get() = com.nuvio.app.features.youtube.YouTubeWatchLayout.pageShown
+    override fun restoredCanvasGeometry() = geometry.sample(hostInsideWindow)
     override fun workArea(target: Rectangle) = geometry.workArea(target)
     override fun beginGeometry() = geometry.begin()
     override fun cancelGeometry() = geometry.cancel()

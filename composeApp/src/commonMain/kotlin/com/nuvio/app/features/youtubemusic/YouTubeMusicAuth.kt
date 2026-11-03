@@ -5,6 +5,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -40,6 +41,8 @@ internal data class YouTubeMusicAuthState(
     /** The last request made with the saved session was refused; signing in again is the fix. */
     val sessionRejected: Boolean = false,
     val error: String? = null,
+    /** Goes up with each completed sign-in, including one over a lapsed session that stays "signed in". */
+    val sessionEpoch: Int = 0,
 )
 
 internal expect object YouTubeMusicAuthPlatform {
@@ -57,6 +60,18 @@ internal expect object YouTubeMusicAuthPlatform {
      * itself, including when the calling coroutine is cancelled.
      */
     suspend fun interactiveLogin(): YouTubeMusicLoginOutcome
+
+    /** Whether the sign-in's browser profile is kept, so [renewSession] can work (a sign-in from before it was kept has none). */
+    fun canRenew(): Boolean
+
+    /**
+     * Renews the session through the sign-in's own browser profile, which holds the key Google binds the
+     * session to; the fresh cookie header, or null when it could not be renewed.
+     */
+    suspend fun renewSession(cookieHeader: String?): String?
+
+    /** Drops the kept browser profile (signing out). */
+    fun forgetSession()
 }
 
 internal object YouTubeMusicAuth {
@@ -81,6 +96,76 @@ internal object YouTubeMusicAuth {
             _state.update { it.copy(signedIn = cookie != null) }
             loaded = true
         }
+        if (cookie != null) startKeepAlive()
+    }
+
+    private var keepAliveJob: Job? = null
+
+    /**
+     * Keeps the saved session alive. Chrome and Edge on Windows bind the session to a key in the
+     * sign-in's browser profile (the `*PSIDRTS` cookies): the short-lived cookie lasts about two hours
+     * and only that profile can renew it, so a plain request cannot (RotateCookies answered 200 and
+     * changed nothing; signed out 2h17m after signing in, Nov 2). The profile is kept, and reopened
+     * headless to renew: now (the app starting, which also covers a long time closed) and every
+     * [RENEW_INTERVAL_MS] while it runs.
+     */
+    private fun startKeepAlive() {
+        synchronized(this) {
+            if (keepAliveJob?.isActive == true) return
+            keepAliveJob = scope.launch {
+                if (!YouTubeMusicAuthPlatform.canRenew()) {
+                    log.w { "This sign-in predates kept browser profiles and cannot be renewed; sign in again to keep it" }
+                    return@launch
+                }
+                while (cookie != null) {
+                    renewThroughBrowser(reason = "scheduled")
+                    delay(RENEW_INTERVAL_MS)
+                }
+            }
+        }
+    }
+
+    private const val RENEW_INTERVAL_MS = 60 * 60_000L
+
+    /** Renews and saves the session; true when a signed-in session came back. */
+    private suspend fun renewThroughBrowser(reason: String): Boolean {
+        val before = cookie ?: return false
+        val renewed = YouTubeMusicAuthPlatform.renewSession(before)
+        if (renewed == null || sapisidFrom(renewed) == null) {
+            log.w { "Session renewal ($reason) brought back no signed-in session" }
+            return false
+        }
+        // The browser's jar is the whole truth now, not a patch over the old one.
+        // Signed out (or in again) while the browser ran: that answer is not ours to keep.
+        // (Set-Cookie updates may have touched the jar meanwhile; the same SAPISID is the same sign-in.)
+        val kept = synchronized(this) {
+            val now = cookie
+            (now != null && sapisidFrom(now) == sapisidFrom(before)).also { if (it) cookie = renewed }
+        }
+        if (!kept) return false
+        YouTubeMusicAuthPlatform.saveCookie(renewed)
+        val changed = renewed != before
+        log.i { "Session renewed through the browser ($reason)${if (changed) "" else ", nothing needed changing"}" }
+        if (changed) onSessionAccepted()
+        return true
+    }
+
+    @Volatile
+    private var lastRescueAtMs = 0L
+
+    /**
+     * One renewal now, for a request YouTube answered as signed out (a session that went stale while
+     * the app was closed and the renewal at start had not finished yet), so the request can be asked
+     * again. At most once in two minutes, so a session that is truly gone costs one browser start
+     * rather than one per feed. True when a signed-in session came back.
+     */
+    suspend fun renewNow(): Boolean {
+        ensureLoaded()
+        if (cookie == null || !YouTubeMusicAuthPlatform.canRenew()) return false
+        val now = YouTubeMusicAuthPlatform.nowEpochSeconds() * 1000
+        if (now - lastRescueAtMs < 120_000L) return false
+        lastRescueAtMs = now
+        return renewThroughBrowser(reason = "after a signed-out answer")
     }
 
     val isSignedIn: Boolean
@@ -125,8 +210,9 @@ internal object YouTubeMusicAuth {
                     cookie = outcome.cookieHeader
                     loaded = true
                     YouTubeMusicAuthPlatform.saveCookie(outcome.cookieHeader)
-                    _state.value = YouTubeMusicAuthState(signedIn = true)
+                    _state.value = YouTubeMusicAuthState(signedIn = true, sessionEpoch = _state.value.sessionEpoch + 1)
                     log.i { "Signed in to YouTube Music" }
+                    startKeepAlive()
                 }
                 YouTubeMusicLoginOutcome.Cancelled ->
                     _state.update { it.copy(signingIn = false) }
@@ -155,9 +241,12 @@ internal object YouTubeMusicAuth {
 
     fun signOut() {
         loginJob?.cancel()
+        keepAliveJob?.cancel()
+        keepAliveJob = null
         cookie = null
         loaded = true
         YouTubeMusicAuthPlatform.saveCookie(null)
+        YouTubeMusicAuthPlatform.forgetSession()
         _state.value = YouTubeMusicAuthState()
         log.i { "Signed out of YouTube Music" }
     }
@@ -170,6 +259,40 @@ internal object YouTubeMusicAuth {
     fun onSessionAccepted() {
         _state.update { if (it.sessionRejected) it.copy(sessionRejected = false) else it }
     }
+
+    @Volatile
+    private var lastPersistMs = 0L
+
+    /**
+     * `Set-Cookie` values from a youtube.com response to a signed request. Google rotates parts of
+     * the session (`__Secure-1PSIDTS`, the `*SIDCC` checks) and expects the client to send the new
+     * values; a jar frozen at sign-in stops counting as signed in within hours or days, and YouTube
+     * then answers as a signed-out visitor rather than refusing. Only cookies already in the jar are
+     * updated, and deletions are ignored, so a stray response cannot sign the user out.
+     *
+     * The `*SIDCC` checks change on almost every response, so they reach storage at most every few
+     * minutes; anything else is saved at once.
+     */
+    fun absorbSetCookies(setCookies: List<String>) {
+        if (setCookies.isEmpty()) return
+        ensureLoaded()
+        val (merged, changed) = synchronized(this) {
+            val jar = cookie ?: return
+            val result = mergeSetCookies(jar, setCookies)
+            if (result.second.isNotEmpty() && sapisidFrom(result.first) != null) cookie = result.first
+            result
+        }
+        if (changed.isEmpty()) return
+        val significant = changed.filterNot { it.endsWith("SIDCC") }
+        val now = YouTubeMusicAuthPlatform.nowEpochSeconds() * 1000
+        if (significant.isNotEmpty() || now - lastPersistMs >= CHECK_COOKIE_PERSIST_MS) {
+            lastPersistMs = now
+            YouTubeMusicAuthPlatform.saveCookie(merged)
+        }
+        if (significant.isNotEmpty()) log.i { "YouTube refreshed the session cookies: ${significant.sorted()}" }
+    }
+
+    private const val CHECK_COOKIE_PERSIST_MS = 5 * 60_000L
 
     private fun sapisidHash(sapisid: String, origin: String): String {
         val timestamp = YouTubeMusicAuthPlatform.nowEpochSeconds()
@@ -187,6 +310,39 @@ internal fun normalizedCookieHeader(pasted: String): String? {
     val line = pasted.lines().joinToString(" ") { it.trim() }.trim()
     val header = (if (line.startsWith("cookie:", ignoreCase = true)) line.drop("cookie:".length) else line).trim()
     return header.takeIf { text -> text.none { it.isISOControl() } && sapisidFrom(text) != null }
+}
+
+/**
+ * [jar] (a `Cookie` header value) with the values from [setCookies] (`Set-Cookie` header values)
+ * for names it already holds, in the jar's order; plus the names whose value changed. A cookie being
+ * cleared (empty value, `Max-Age=0`, a 1970 expiry) and one for a domain other than youtube.com
+ * leave the jar alone.
+ */
+internal fun mergeSetCookies(jar: String, setCookies: List<String>): Pair<String, List<String>> {
+    val entries = jar.split(';').mapNotNull { entry ->
+        val name = entry.substringBefore('=').trim()
+        if (name.isEmpty()) null else name to entry.substringAfter('=', "").trim()
+    }
+    val values = LinkedHashMap<String, String>().apply { entries.forEach { (name, value) -> put(name, value) } }
+    val changed = LinkedHashSet<String>()
+    for (header in setCookies) {
+        val parts = header.split(';')
+        val name = parts.first().substringBefore('=').trim()
+        val value = parts.first().substringAfter('=', "").trim()
+        if (name.isEmpty() || value.isEmpty() || name !in values) continue
+        val attributes = parts.drop(1).associate { attribute ->
+            attribute.substringBefore('=').trim().lowercase() to attribute.substringAfter('=', "").trim()
+        }
+        val domain = attributes["domain"]?.trimStart('.')?.lowercase()
+        if (domain != null && domain != "youtube.com" && !domain.endsWith(".youtube.com")) continue
+        if (attributes["max-age"]?.toLongOrNull()?.let { it <= 0 } == true) continue
+        if (attributes["expires"]?.contains("1970") == true) continue
+        if (values[name] != value) {
+            values[name] = value
+            changed += name
+        }
+    }
+    return values.entries.joinToString("; ") { (name, value) -> "$name=$value" } to changed.toList()
 }
 
 /** The value Google signs requests with, found in a `name=value; name=value` cookie header. */

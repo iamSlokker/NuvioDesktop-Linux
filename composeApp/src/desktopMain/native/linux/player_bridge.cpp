@@ -1564,6 +1564,13 @@ Java_com_nuvio_app_features_player_desktop_LinuxMprisNative_seekable(JNIEnv *env
 // X11's mpv VO owns expose/resize/redraw, unlike the Windows D3D redraw workaround.
 JNI_METHOD(void, forceVideoRedraw)(JNIEnv *, jobject, jlong) {}
 
+// The host Canvas was resized (Kotlin's componentResized): fit the HUD to it now rather than on its next
+// 250 ms tick, which left the controls at the old size for that long (the YouTube watch page's corner
+// player going back to its place, a window resize). mpv's X11 VO follows the Canvas by itself.
+JNI_METHOD(void, layoutToHost)(JNIEnv *env, jobject, jlong handle) {
+    withPlayer(env, handle, [&](Player &p) { if (p.controls) p.controls->layoutNow(); });
+}
+
 // Experimental native-Wayland HDR session (Linux only). The session is an ordinary
 // Player in the shared handle table, so every existing NativePlayerBridge per-handle
 // method (position, seek, tracks, subtitles, volume, dispose) applies to it unchanged.

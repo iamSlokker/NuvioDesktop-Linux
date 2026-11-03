@@ -30,6 +30,7 @@ public:
         std::shared_ptr<std::atomic<uint64_t>> generation, uint64_t request);
     void setCursorHidden(bool hidden);
     void setWindowFocused(bool focused);
+    void layoutNow();
     void close();
     // Serialize mpv's process-global X error-handler teardown with GTK's traps.
     static void finishPlayerShutdown(std::function<void()> action);

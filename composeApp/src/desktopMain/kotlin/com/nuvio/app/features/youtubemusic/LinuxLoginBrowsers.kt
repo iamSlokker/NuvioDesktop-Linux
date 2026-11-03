@@ -27,6 +27,9 @@ internal data class LinuxLoginBrowser(
         Files.createDirectories(parent)
         return Files.createTempDirectory(parent, "nuvio-ytmusic-login")
     }
+
+    /** The sign-in profile kept for renewals, when this browser needs it in its own folder. */
+    fun keptProfile(slot: String): Path? = profileParent?.resolve("nuvio-youtube-browser-profile-$slot")
 }
 
 /*
@@ -52,11 +55,24 @@ internal object LinuxLoginBrowsers {
     private val firefoxFlatpaks = listOf("org.mozilla.firefox", "io.gitlab.librewolf-community")
     private val bidiEndpoint = Regex("WebDriver BiDi listening on (ws://\\S+)")
 
-    fun find(): LinuxLoginBrowser? = candidates(
+    fun find(): LinuxLoginBrowser? = hostCandidates().firstOrNull { Files.isExecutable(Path.of(it.executable)) }
+
+    /** The first Chromium-family browser, for what needs the DevTools protocol (BotGuard). */
+    fun findChromium(): LinuxLoginBrowser? =
+        hostCandidates().firstOrNull { !it.firefox && Files.isExecutable(Path.of(it.executable)) }
+
+    /** A throwaway profile [executable] can write to, or null when the system's temporary directory will do. */
+    fun throwawayProfile(executable: String, prefix: String): Path? {
+        val parent = hostCandidates().firstOrNull { it.executable == executable }?.profileParent ?: return null
+        Files.createDirectories(parent)
+        return Files.createTempDirectory(parent, prefix)
+    }
+
+    private fun hostCandidates(): List<LinuxLoginBrowser> = candidates(
         path = System.getenv("PATH").orEmpty().split(java.io.File.pathSeparatorChar).filter(String::isNotBlank),
         home = Path.of(System.getProperty("user.home")),
         dataHome = System.getenv("XDG_DATA_HOME")?.takeIf(String::isNotBlank)?.let { Path.of(it) },
-    ).firstOrNull { Files.isExecutable(Path.of(it.executable)) }
+    )
 
     /** Every place a browser could be, best first; which of them exist is the caller's question. */
     fun candidates(path: List<String>, home: Path, dataHome: Path? = null): List<LinuxLoginBrowser> {
@@ -82,6 +98,61 @@ internal object LinuxLoginBrowsers {
             onPath(firefoxNames, true) + flatpaks(firefoxFlatpaks, true)
     }
 
+    private val startedBrowsers = java.util.concurrent.ConcurrentHashMap.newKeySet<Process>()
+    private val exitHook by lazy {
+        Runtime.getRuntime().addShutdownHook(Thread({ startedBrowsers.forEach(::destroyTree) }, "linux-login-browser-exit"))
+    }
+
+    /** Stops [process] when the app exits: a headless browser does not end by itself, and would hold the kept profile. */
+    fun stopAtExit(process: Process) {
+        exitHook
+        startedBrowsers += process
+    }
+
+    fun stopped(process: Process) {
+        startedBrowsers -= process
+    }
+
+    private fun destroyTree(process: Process) {
+        runCatching { process.descendants().forEach { it.destroyForcibly() } }
+        process.destroyForcibly()
+    }
+
+    /**
+     * Clears [profile] of a browser this app left running or a lock it left behind, after a crash. Only one
+     * Nuvio runs at a time, and a second browser on the same profile would fight the first over its cookies.
+     * The lock goes too: it names a process id, which inside a Flatpak browser's sandbox can be alive again.
+     */
+    fun clearLeftovers(profile: Path) {
+        val path = profile.toString()
+        val leftovers = ProcessHandle.allProcesses()
+            .filter { handle -> handle.info().commandLine().orElse("").contains(path) }
+            .toList()
+        leftovers.forEach { it.destroyForcibly() }
+        leftovers.forEach { runCatching { it.onExit().get(2, java.util.concurrent.TimeUnit.SECONDS) } }
+        Files.deleteIfExists(profile.resolve("SingletonLock"))
+    }
+
+    /** The same for throwaway profiles named [prefix], when none of this run is open: stops their browsers and removes them. */
+    fun clearThrowaways(executable: String, prefix: String) {
+        val leftovers = ProcessHandle.allProcesses().filter { handle ->
+            val line = handle.info().commandLine().orElse("")
+            "--user-data-dir=" in line && prefix in line
+        }.toList()
+        leftovers.forEach { it.destroyForcibly() }
+        leftovers.forEach { runCatching { it.onExit().get(2, java.util.concurrent.TimeUnit.SECONDS) } }
+        val parent = hostCandidates().firstOrNull { it.executable == executable }?.profileParent
+            ?: Path.of(System.getProperty("java.io.tmpdir"))
+        val stale = runCatching {
+            Files.list(parent).use { list -> list.filter { it.fileName.toString().startsWith(prefix) }.toList() }
+        }.getOrDefault(emptyList())
+        stale.forEach { profile ->
+            runCatching {
+                Files.walk(profile).use { walk -> walk.sorted(Comparator.reverseOrder()).forEach(Files::deleteIfExists) }
+            }
+        }
+    }
+
     /** A first run with no welcome tab or default-browser question over the sign-in page. */
     fun prepareFirefoxProfile(profile: Path) {
         Files.writeString(profile.resolve("user.js"), listOf(
@@ -98,9 +169,9 @@ internal object LinuxLoginBrowsers {
         listOf(browser, "--no-remote", "--new-instance", "--profile", profile.toString(), url)
 
     /** The same profile, headless, with BiDi on a port of its choosing, used only to read cookies. */
-    fun firefoxCookieReadCommand(browser: String, profile: Path): List<String> = listOf(
+    fun firefoxCookieReadCommand(browser: String, profile: Path, startUrl: String = "about:blank"): List<String> = listOf(
         browser, "--headless", "--no-remote", "--new-instance", "--profile", profile.toString(),
-        "--remote-debugging-port", "0", "about:blank",
+        "--remote-debugging-port", "0", startUrl,
     )
 
     fun bidiEndpointIn(line: String): String? = bidiEndpoint.find(line)?.groupValues?.get(1)

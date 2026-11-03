@@ -1,11 +1,13 @@
 package com.nuvio.app.features.player.desktop
 
 import com.nuvio.app.features.player.PlayerControlsState
+import com.nuvio.app.features.player.PlayerMediaSession
+import com.nuvio.app.features.player.PlayerMediaSessionState
 
-internal fun linuxMprisTitle(controls: PlayerControlsState): String {
-    val episode = if (controls.mediaSession.episode > 0) {
-        val code = "S${controls.mediaSession.season.toString().padStart(2, '0')}" +
-            "E${controls.mediaSession.episode.toString().padStart(2, '0')}"
+internal fun linuxMprisTitle(controls: PlayerControlsState, session: PlayerMediaSessionState): String {
+    val episode = if (session.episode > 0) {
+        val code = "S${session.season.toString().padStart(2, '0')}" +
+            "E${session.episode.toString().padStart(2, '0')}"
         listOf(code, controls.pauseOverlayEpisodeTitle).filter { it.isNotBlank() }.joinToString(" — ")
     } else controls.episodeText // Already contains the episode title when available.
     return listOf(controls.title, episode).filter { it.isNotBlank() }.joinToString(" — ")
@@ -35,21 +37,22 @@ internal class LinuxMprisPlayer(
         val position = NativePlayerBridge.positionMs(handle).coerceIn(0, Long.MAX_VALUE / 1000) * 1000
         val ended = NativePlayerBridge.isEnded(handle)
         val paused = NativePlayerBridge.isPaused(handle)
+        val session = PlayerMediaSession.current
         state = LinuxMprisState(
             token = token,
             trackId = "/org/mpris/MediaPlayer2/track/t$token",
-            title = linuxMprisTitle(controls),
-            album = controls.title.takeIf { controls.mediaSession.episode > 0 || controls.episodeText.isNotBlank() }.orEmpty(),
+            title = linuxMprisTitle(controls, session),
+            album = controls.title.takeIf { session.episode > 0 || controls.episodeText.isNotBlank() }.orEmpty(),
             artwork = controls.mediaSessionArtwork,
-            season = controls.mediaSession.season,
-            episode = controls.mediaSession.episode,
+            season = session.season,
+            episode = session.episode,
             // Buffering is still intended Playing, like Windows SMTC; mpv pause remains authoritative.
             status = if (ended) "Stopped" else if (paused) "Paused" else "Playing",
             durationUs = duration,
             positionUs = position,
             canSeek = duration > 0 && LinuxMprisNative.seekable(handle),
-            canNext = controls.mediaSession.canGoNext,
-            canPrevious = controls.mediaSession.canGoPrevious,
+            canNext = session.canGoNext,
+            canPrevious = session.canGoPrevious,
             rate = NativePlayerBridge.speed(handle).toDouble(),
             volume = controller.getVolume()?.let { if (it.isMuted) 0.0 else it.fraction.toDouble() } ?: 1.0,
             seekSerial = seekSerial,

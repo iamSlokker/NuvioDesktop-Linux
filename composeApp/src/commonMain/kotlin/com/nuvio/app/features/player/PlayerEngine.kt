@@ -169,19 +169,27 @@ data class PlayerMediaSessionState(
     val episode: Int = 0,
 )
 
+/**
+ * The main player's [PlayerMediaSessionState]; trailers never publish a media session. Not a field of
+ * [PlayerControlsState]: upstream keeps that constructor at the JVM's 255-slot limit on its own.
+ */
+object PlayerMediaSession {
+    @kotlin.concurrent.Volatile
+    var current = PlayerMediaSessionState()
+}
+
 data class PlayerControlsState(
     val title: String = "",
     val episodeText: String = "",
     // Poster/backdrop URL for the Windows media-session thumbnail. Desktop-only; other platforms
     // and the hero-trailer surfaces leave it blank, which clears the thumbnail.
     val mediaSessionArtwork: String = "",
-    // Linux MPRIS details, grouped: this constructor is at the JVM's 255-slot limit for a method
-    // signature (its defaults overload adds 8 masks, a marker and `this`).
-    val mediaSession: PlayerMediaSessionState = PlayerMediaSessionState(),
     val streamTitle: String = "",
     // The addon's real media file name; mpv's diagnostics show it ahead of the source label.
     val streamFilename: String = "",
     val providerName: String = "",
+    // A video from the YouTube tab: the HUD calls it a video rather than a movie ("Video ends at").
+    val isYouTubeVideo: Boolean = false,
     val pauseOverlayWatchingLabel: String = "You're watching",
     val pauseOverlayLogo: String? = null,
     val pauseOverlayEpisodeInfo: String = "",
@@ -232,6 +240,18 @@ data class PlayerControlsState(
     /** Signed Seekr WebVTT for this playback, or blank; when set the HUD draws sprites instead. */
     val seekrVttUrl: String = "",
     val seekrScale: Double = 1.0,
+    /**
+     * A YouTube video's storyboard (see YouTubeStoryboard): sheet URL with `$M` for the sheet's number,
+     * tile size, grid, frame count and spacing. Blank URL for anything else. The HUD works out a frame's
+     * tile itself, so the push stays small however long the video is.
+     */
+    val storyboardUrl: String = "",
+    val storyboardWidth: Int = 0,
+    val storyboardHeight: Int = 0,
+    val storyboardColumns: Int = 0,
+    val storyboardRows: Int = 0,
+    val storyboardCount: Int = 0,
+    val storyboardIntervalMs: Long = 0L,
     /** Drives the HUD's seek button/command-palette labels so they name the real jump distance. */
     val seekStepSeconds: Int = 10,
     /** Live TV: the HUD's live mode (LIVE badge, now/next, channel buttons); null for anything else. */

@@ -39,6 +39,15 @@ class LinuxPiPHudRestoreTest {
         repeat(5) { f.tick() }; assertTrue(f.window.suppressed)
         f.window.adoptCanvas = true; f.drain(); assertEquals(1, f.finished)
     }
+    @Test fun aVideoInsideTheWatchPageIsItsFinalSize() {
+        val f = Fixture()
+        val full = f.window.canvasGeometry()!!
+        f.window.staleCanvas = full.copy(component = Rectangle(0, 0, 1448, 815), root = Rectangle(24, 20, 1448, 815))
+        f.window.adoptCanvas = false
+        repeat(5) { f.tick() }; assertTrue(f.window.suppressed)
+        f.window.hostInsideWindow = true
+        f.drain(); assertEquals(1, f.finished); assertEquals(0, f.failed); assertFalse(f.window.suppressed)
+    }
     @Test fun contentLeftAtTheOldFrameSizeIsLaidOutAgain() {
         val f = Fixture(); f.window.adoptCanvas = false
         f.window.onRelayout = { f.window.adoptCanvas = true }

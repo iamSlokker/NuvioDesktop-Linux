@@ -39,6 +39,7 @@ import java.awt.dnd.DropTargetDragEvent
 import java.awt.dnd.DropTargetDropEvent
 import com.nuvio.app.core.sync.AppForegroundMonitor
 import com.nuvio.app.core.build.AppVersionPolicy
+import com.nuvio.app.core.ui.linuxShortcutFocus
 import com.nuvio.app.core.ui.DesktopNavigationGestureBridge
 import com.nuvio.app.core.ui.HoldToSelect
 import com.nuvio.app.core.ui.SwallowedClickRescue
@@ -1116,6 +1117,7 @@ fun main(args: Array<String>) {
                                 AppShortcutAction.OpenCalendar,
                                 AppShortcutAction.OpenLiveTv,
                                 AppShortcutAction.OpenMusic,
+                                AppShortcutAction.OpenYouTube,
                                 // Routed through App so it inherits the same guard the other
                                 // navigation shortcuts get: nothing fires while the player is up.
                                 AppShortcutAction.ToggleGameMode -> {
@@ -1140,6 +1142,7 @@ fun main(args: Array<String>) {
                                 else -> false
                             }
                         }
+                        .linuxShortcutFocus()
                         .dragAndDropTarget(
                             shouldStartDragAndDrop = { event ->
                                 // Accept the drag hover if it carries a file list.
