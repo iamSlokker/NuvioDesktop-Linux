@@ -6,6 +6,10 @@ import java.awt.event.KeyEvent
 
 private val log = Logger.withTag("VoiceTyping")
 
+// fork:linux - Super+H is not voice typing there (GNOME hides the window).
+internal actual val voiceTypingSupported: Boolean =
+    com.nuvio.app.features.player.desktop.DesktopHostOs.current != com.nuvio.app.features.player.desktop.DesktopHostOs.LINUX
+
 /**
  * Presses Win+H, Windows 11's voice typing shortcut. Off the UI thread, and after a moment, so the
  * click that asked for it has let go and the search box has taken focus before voice typing opens.

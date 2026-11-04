@@ -25,6 +25,13 @@ internal actual val platformOffersLowVramMode: Boolean
 internal actual val platformOffersScreensaverShutdown: Boolean
     get() = !isLinuxHost || com.nuvio.app.features.screensaver.LinuxPower.available
 
+internal actual val platformDefaultMicrophoneLabel: String
+    get() = if (isLinuxHost) "System default" else "Windows default"
+
+// Linux's hid-playstation driver keeps the DualSense mic button to itself (it mutes the pad's mic).
+internal actual val platformVoiceControllerHint: String
+    get() = if (isLinuxHost) "or hold View on a controller" else "mic button on a DualSense, or hold View on an Xbox controller"
+
 internal actual val platformOffersSvp: Boolean
     get() = !isLinuxHost
 

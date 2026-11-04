@@ -71,7 +71,7 @@ internal fun LazyListScope.voiceControlSettingsContent(isTablet: Boolean) {
                 SettingsActionRow(
                     title = "Push to talk",
                     description = "Press $voiceKey (change it under Keyboard shortcuts), the mic in the sidebar, the " +
-                        "mic button on a DualSense, or hold View on an Xbox controller, then speak. It stops when " +
+                        "$platformVoiceControllerHint, then speak. It stops when " +
                         "you pause; press again to finish sooner, or Escape to cancel. The mic in the search and " +
                         "YouTube boxes searches there: just say what to look for.",
                     isTablet = isTablet,
@@ -169,7 +169,7 @@ internal fun LazyListScope.voiceControlSettingsContent(isTablet: Boolean) {
                 SettingsDropdownChoiceRow(
                     title = "Microphone",
                     description = "Which recording device voice commands listen on.",
-                    options = listOf(SettingsChoiceOption<String?>(null, "Windows default")) +
+                    options = listOf(SettingsChoiceOption<String?>(null, platformDefaultMicrophoneLabel)) +
                         names.map { SettingsChoiceOption<String?>(it, it) },
                     selectedValue = selected,
                     isTablet = isTablet,

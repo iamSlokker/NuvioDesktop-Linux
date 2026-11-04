@@ -37,3 +37,8 @@ set_target_properties(nuvio_whisper PROPERTIES PREFIX "" OUTPUT_NAME "nuvio_whis
 target_compile_features(nuvio_whisper PRIVATE cxx_std_17)
 target_include_directories(nuvio_whisper PRIVATE "${NUVIO_JNI_INCLUDE_DIR}" "${NUVIO_JNI_INCLUDE_DIR}/win32")
 target_link_libraries(nuvio_whisper PRIVATE whisper)
+if(CMAKE_SYSTEM_NAME STREQUAL "Linux") # fork:linux - libnuvio_whisper.so, only the JNI bridge visible
+    set_target_properties(nuvio_whisper PROPERTIES PREFIX "lib")
+    target_include_directories(nuvio_whisper PRIVATE "${NUVIO_JNI_INCLUDE_DIR}/linux")
+    target_link_options(nuvio_whisper PRIVATE "LINKER:--version-script=${CMAKE_CURRENT_LIST_DIR}/linux-exports.map")
+endif()

@@ -41,6 +41,9 @@ import kotlinx.coroutines.flow.asStateFlow
 /** Opens Windows voice typing over the focused text box. False when it could not be asked for. */
 internal expect fun startVoiceTyping(): Boolean
 
+/** fork:linux - false where the system has no voice typing to open: only a voice control box's mic shows. */
+internal expect val voiceTypingSupported: Boolean
+
 /** Which search box (by a name of its own) voice typing was opened for; null when none is listening. */
 object VoiceSearch {
     private val _owner = MutableStateFlow<String?>(null)
@@ -159,6 +162,7 @@ fun VoiceSearchButton(
         }
         return
     }
+    if (!voiceTypingSupported) return
     val listening by VoiceSearch.owner.collectAsState()
     Box(
         modifier = modifier

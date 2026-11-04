@@ -221,7 +221,13 @@ actual object VoiceControlRepository {
 
     actual fun openModelsFolder() {
         val dir = modelsDir.apply { mkdirs() }
-        runCatching { ProcessBuilder("explorer.exe", dir.absolutePath).start() }
+        runCatching {
+            if (com.nuvio.app.features.player.desktop.DesktopHostOs.current == com.nuvio.app.features.player.desktop.DesktopHostOs.LINUX) {
+                com.nuvio.app.core.build.hostProcessBuilder(listOf("xdg-open", dir.absolutePath)).start()
+            } else {
+                ProcessBuilder("explorer.exe", dir.absolutePath).start()
+            }
+        }
             .onFailure { log.w(it) { "Could not open $dir" } }
     }
 
@@ -505,8 +511,8 @@ actual object VoiceControlRepository {
         transcriber = null
     }
 
-    private const val ENGINE_MISSING =
-        "The speech engine (nuvio_whisper.dll) is not installed with this build of Nuvio."
+    private val ENGINE_MISSING =
+        "The speech engine (${WhisperLibrary.LIBRARY_FILE_NAME}) is not installed with this build of Nuvio."
 
     private fun engineProblemText(error: UnsatisfiedLinkError): String =
         if (WhisperLibrary.resolve() == null) ENGINE_MISSING

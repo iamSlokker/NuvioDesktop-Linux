@@ -13,6 +13,12 @@ internal expect val platformOffersInterfaceRenderer: Boolean
 internal expect val platformOffersHdrUiCompensation: Boolean
 
 /** "Close to notification area": on Linux, only where the desktop has a tray to close to. */
+/** fork:linux - the Voice control microphone row's "the system's default device" choice. */
+internal expect val platformDefaultMicrophoneLabel: String
+
+/** fork:linux - which controller button is push to talk, in the Voice control page's sentence. */
+internal expect val platformVoiceControllerHint: String
+
 internal expect val platformOffersCloseToTray: Boolean
 
 /** "Low VRAM Mode": only the Windows player bridge reads it. */

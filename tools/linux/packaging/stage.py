@@ -59,6 +59,8 @@ def stage(work, source=pathlib.Path('/source'), media=pathlib.Path('/media'),
     shutil.copy2(work / 'native/libquickjs.so', native / 'libquickjs.so')
     # Nuvio Engine (nuvio_engine/build.py): loaded by path, from beside the other native libraries.
     shutil.copy2(work / 'nuvio-engine/libnuvio_engine.so', native / 'libnuvio_engine.so')
+    # whisper.cpp (whisper/build.py): the same; the models are downloaded from Settings > Voice control.
+    shutil.copy2(work / 'whisper/libnuvio_whisper.so', native / 'libnuvio_whisper.so')
     # TorrServer (torrserver/build.py): PackagedResources reads lib/resources/ beside lib/nuvio,
     # and the P2P backend starts it from there when it is the chosen engine.
     torrserver = destination / TORRSERVER
@@ -81,6 +83,7 @@ def stage(work, source=pathlib.Path('/source'), media=pathlib.Path('/media'),
         shutil.copy2(quickjs / src, quickjs_licenses / name)
     shutil.copytree(work / 'torrserver/licenses', share / 'licenses/TorrServer')
     shutil.copytree(work / 'nuvio-engine/licenses', share / 'licenses/NuvioEngine')
+    shutil.copytree(work / 'whisper/licenses', share / 'licenses/whisper.cpp')
     shutil.copytree(source / 'composeApp/src/desktopMain/resources/player-shaders',
                     licenses / 'player-shaders', ignore=shutil.ignore_patterns('*.glsl'))
     # GraalVM CE notices, the manifest of the exact native-image inputs, the input

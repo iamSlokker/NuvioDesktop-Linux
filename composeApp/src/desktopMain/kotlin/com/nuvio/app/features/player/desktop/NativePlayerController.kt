@@ -734,6 +734,7 @@ internal class NativePlayerController(
 
     private fun unpublishLinuxPlayerHandle() = synchronized(handleLock) {
         if (handle != 0L) linuxPendingDisposalHandles.add(handle)
+        NativeAudioDuck.unregister(handle) // fork:voice-control
         handle = 0L
         linuxHandleSourceUrl = null
     }

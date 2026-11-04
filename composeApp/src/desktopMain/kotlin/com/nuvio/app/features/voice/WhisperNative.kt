@@ -25,7 +25,9 @@ internal object WhisperNative {
  * `NUVIO_WHISPER_LIBRARY` wins over both.
  */
 internal object WhisperLibrary {
-    const val LIBRARY_FILE_NAME = "nuvio_whisper.dll"
+    private val isLinux = com.nuvio.app.features.player.desktop.DesktopHostOs.current == com.nuvio.app.features.player.desktop.DesktopHostOs.LINUX
+
+    val LIBRARY_FILE_NAME: String = if (isLinux) "libnuvio_whisper.so" else "nuvio_whisper.dll"
 
     @Volatile
     private var loaded: Result<File>? = null
@@ -41,7 +43,7 @@ internal object WhisperLibrary {
         loaded?.let { return it }
         val result = runCatching {
             val library = resolve() ?: throw UnsatisfiedLinkError(
-                "$LIBRARY_FILE_NAME was not found beside the app; run :composeApp:buildWindowsWhisper",
+                "$LIBRARY_FILE_NAME was not found beside the app" + if (isLinux) "" else "; run :composeApp:buildWindowsWhisper",
             )
             System.load(library.absolutePath)
             library
@@ -56,6 +58,7 @@ internal object WhisperLibrary {
             ?.let(::File)
 
     private fun candidates(): List<File> {
+        if (isLinux) return linuxCandidates()
         val packaged = System.getProperty("java.home")
             ?.takeIf { it.isNotBlank() }
             ?.let(::File)
@@ -66,6 +69,19 @@ internal object WhisperLibrary {
             packaged,
             File("composeApp/build/native/windows/$LIBRARY_FILE_NAME"),
             File("build/native/windows/$LIBRARY_FILE_NAME"),
+        )
+    }
+
+    /** The packages keep it in lib/native, beside lib/nuvio; a source run in the Gradle build output. */
+    private fun linuxCandidates(): List<File> {
+        val packaged = System.getProperty("jpackage.app-path")
+            ?.takeIf { it.isNotBlank() }
+            ?.let { File(it).parentFile?.resolve("native/$LIBRARY_FILE_NAME") }
+        if (!com.nuvio.app.core.build.DesktopDevRun.allowsLocalNativeBuilds) return listOfNotNull(packaged)
+        return listOfNotNull(
+            packaged,
+            File("composeApp/build/native/linux/$LIBRARY_FILE_NAME"),
+            File("build/native/linux/$LIBRARY_FILE_NAME"),
         )
     }
 }
