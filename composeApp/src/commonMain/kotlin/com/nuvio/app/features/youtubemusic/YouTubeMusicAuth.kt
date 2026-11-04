@@ -2,9 +2,11 @@ package com.nuvio.app.features.youtubemusic
 
 import co.touchlab.kermit.Logger
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.async
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -118,7 +120,7 @@ internal object YouTubeMusicAuth {
                     return@launch
                 }
                 while (cookie != null) {
-                    renewThroughBrowser(reason = "scheduled")
+                    renewShared(reason = "scheduled")
                     delay(RENEW_INTERVAL_MS)
                 }
             }
@@ -126,6 +128,31 @@ internal object YouTubeMusicAuth {
     }
 
     private const val RENEW_INTERVAL_MS = 60 * 60_000L
+
+    private var renewal: Deferred<Boolean>? = null
+
+    @Volatile
+    private var lastRenewalAtMs = 0L
+
+    @Volatile
+    private var lastRenewalOk = false
+
+    /**
+     * One browser renewal at a time: a caller that comes while one runs (the scheduled one at start,
+     * or another feed's rescue) waits for it and shares its answer instead of starting a second
+     * browser on the same profile, or giving up.
+     */
+    private suspend fun renewShared(reason: String): Boolean {
+        val job = synchronized(this) {
+            renewal?.takeIf { it.isActive } ?: scope.async {
+                renewThroughBrowser(reason).also { ok ->
+                    lastRenewalOk = ok
+                    lastRenewalAtMs = YouTubeMusicAuthPlatform.nowEpochSeconds() * 1000
+                }
+            }.also { renewal = it }
+        }
+        return job.await()
+    }
 
     /** Renews and saves the session; true when a signed-in session came back. */
     private suspend fun renewThroughBrowser(reason: String): Boolean {
@@ -150,22 +177,21 @@ internal object YouTubeMusicAuth {
         return true
     }
 
-    @Volatile
-    private var lastRescueAtMs = 0L
-
     /**
      * One renewal now, for a request YouTube answered as signed out (a session that went stale while
      * the app was closed and the renewal at start had not finished yet), so the request can be asked
-     * again. At most once in two minutes, so a session that is truly gone costs one browser start
-     * rather than one per feed. True when a signed-in session came back.
+     * again. Every request that comes back signed out at start waits on the same renewal; one that
+     * ended in the last two minutes is not repeated but its answer reused, so a session that is truly
+     * gone costs one browser start rather than one per feed. True when a signed-in session came back.
      */
     suspend fun renewNow(): Boolean {
         ensureLoaded()
         if (cookie == null || !YouTubeMusicAuthPlatform.canRenew()) return false
+        val running = synchronized(this) { renewal?.takeIf { it.isActive } }
+        if (running != null) return running.await()
         val now = YouTubeMusicAuthPlatform.nowEpochSeconds() * 1000
-        if (now - lastRescueAtMs < 120_000L) return false
-        lastRescueAtMs = now
-        return renewThroughBrowser(reason = "after a signed-out answer")
+        if (now - lastRenewalAtMs < 120_000L) return lastRenewalOk
+        return renewShared(reason = "after a signed-out answer")
     }
 
     val isSignedIn: Boolean
@@ -318,6 +344,16 @@ internal fun normalizedCookieHeader(pasted: String): String? {
  * cleared (empty value, `Max-Age=0`, a 1970 expiry) and one for a domain other than youtube.com
  * leave the jar alone.
  */
+/** The four-digit year in an `Expires=` value. */
+private val EXPIRY_YEAR = Regex("""\b(\d{4})\b""")
+
+/** An `Expires=` year before the current one: the cookie is being deleted (Google uses 1990 and the like). */
+private fun expiredInThePast(expires: String): Boolean {
+    val year = EXPIRY_YEAR.find(expires)?.groupValues?.get(1)?.toIntOrNull() ?: return false
+    val currentYear = 1970 + (YouTubeMusicAuthPlatform.nowEpochSeconds() / 31_556_952L).toInt()
+    return year < currentYear
+}
+
 internal fun mergeSetCookies(jar: String, setCookies: List<String>): Pair<String, List<String>> {
     val entries = jar.split(';').mapNotNull { entry ->
         val name = entry.substringBefore('=').trim()
@@ -336,7 +372,7 @@ internal fun mergeSetCookies(jar: String, setCookies: List<String>): Pair<String
         val domain = attributes["domain"]?.trimStart('.')?.lowercase()
         if (domain != null && domain != "youtube.com" && !domain.endsWith(".youtube.com")) continue
         if (attributes["max-age"]?.toLongOrNull()?.let { it <= 0 } == true) continue
-        if (attributes["expires"]?.contains("1970") == true) continue
+        if (attributes["expires"]?.let(::expiredInThePast) == true) continue
         if (values[name] != value) {
             values[name] = value
             changed += name

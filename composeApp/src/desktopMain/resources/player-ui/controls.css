@@ -7758,3 +7758,8 @@ svg {
   pointer-events: none !important;
 }
 .player.mini-player { cursor: pointer; }
+
+/* fork:youtube-mode - menu rows that do nothing for a YouTube tab video (see buildContextMenu). */
+.youtube-video .context-menu-group[data-youtube-hidden] {
+  display: none;
+}
