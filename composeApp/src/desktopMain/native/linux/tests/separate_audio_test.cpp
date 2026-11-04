@@ -1,6 +1,7 @@
 // Exercises the production helper with real libmpv. Never creates a window,
 // initializes GTK/JNI, accesses the network, or opens an audio device.
 #include "separate_audio.h"
+#include <algorithm>
 #include <chrono>
 #include <cstdlib>
 #include <filesystem>
@@ -122,6 +123,38 @@ int main() {
         }
         std::cout << "PASS URL delimiters and UTF-8 survive as one entry\n";
         Media media;
+        {
+            auto mpv = player();
+            const auto audio = (media.directory / "audio,part:one.wav").string();
+            check(setLinuxSeparateAudio(mpv.get(), audio + "\nde\tDeutsch, dubbed;\t" + audio + "\nfr\t\t" + audio), "more languages");
+            check(mpv_initialize(mpv.get()), "initialize");
+            require(audioFiles(mpv.get()).size() == 3, "each language must be its own entry");
+            require(audioFiles(mpv.get())[0] == audio, "the first line must stay as it came");
+            load(mpv.get(), (media.directory / "video.y4m").string());
+            std::vector<std::string> langs;
+            bool title = false;
+            const int tracks = std::stoi(property(mpv.get(), "track-list/count"));
+            for (int i = 0; i < tracks; ++i) {
+                const auto prefix = "track-list/" + std::to_string(i) + "/";
+                if (property(mpv.get(), prefix + "type") != "audio") continue;
+                char *lang = mpv_get_property_string(mpv.get(), (prefix + "lang").c_str());
+                langs.emplace_back(lang ? lang : "");
+                mpv_free(lang);
+                char *name = mpv_get_property_string(mpv.get(), (prefix + "title").c_str());
+                title = title || (name && std::string(name) == "Deutsch, dubbed;");
+                mpv_free(name);
+            }
+            require(langs.size() == 3, "all three audio tracks must open");
+            require(std::count(langs.begin(), langs.end(), "de") == 1 && std::count(langs.begin(), langs.end(), "fr") == 1,
+                    "further tracks must carry their language");
+            require(title, "a further track's title must survive whole");
+            require(linuxPrimaryAudioUrl(audio + "\nde\t\tx") == audio, "the primary is the first line");
+            require(linuxTrackTitleOf("videoplayback?a=b,c", "https://x/videoplayback?a=b%2Cc").empty(), "a URL's tail is no title");
+            require(linuxTrackTitleOf("dub.flac", "/home/me/dub.flac") == "dub.flac", "a local file's name stays");
+            require(linuxTrackTitleOf("Arabic", "edl://!track_meta,title=%6%Arabic;%5%https").size() == 6, "a real title stays");
+            require(linuxTrackTitleOf("Commentary", "").size() == 10, "an embedded track's title stays");
+        }
+        std::cout << "PASS more languages open as named tracks\n";
         for (bool separate : {true, false}) {
             auto mpv = player();
             const auto audio = (media.directory / "audio,part:one.wav").string();

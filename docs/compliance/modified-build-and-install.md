@@ -108,6 +108,11 @@ For a modified Nuvio Engine (GPL-3.0, the default P2P engine):
 the patched libtorrent and Boost. `lib/native/libnuvio_engine.so` can be replaced in an installed DEB, as
 above; Flatpak and AppImage need a rebuilt package, by changing `tools/linux/packaging/nuvio_engine/`.
 
+For a modified whisper.cpp (MIT, the speech engine of voice control):
+`NuvioDesktop-Linux-<version>-source-whisper.tar.gz` carries the tag archive and the JNI bridge.
+`lib/native/libnuvio_whisper.so` can be replaced in an installed DEB, as above; Flatpak and AppImage need
+a rebuilt package, by changing `tools/linux/packaging/whisper/`.
+
 For a modified InnerTubeX (GPL-3.0, the second stream resolver for music):
 `NuvioDesktop-Linux-<version>-source-innertubex.tar.gz` is the tag archive of the JAR compiled
 into the executable. Point the dependency in `composeApp/build.gradle.kts` at your build, update

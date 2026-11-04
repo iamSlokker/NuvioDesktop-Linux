@@ -8,7 +8,7 @@ internal fun linuxMprisTitle(controls: PlayerControlsState, session: PlayerMedia
     val episode = if (session.episode > 0) {
         val code = "S${session.season.toString().padStart(2, '0')}" +
             "E${session.episode.toString().padStart(2, '0')}"
-        listOf(code, controls.pauseOverlayEpisodeTitle).filter { it.isNotBlank() }.joinToString(" — ")
+        listOf(code, controls.pauseOverlay.pauseOverlayEpisodeTitle).filter { it.isNotBlank() }.joinToString(" — ")
     } else controls.episodeText // Already contains the episode title when available.
     return listOf(controls.title, episode).filter { it.isNotBlank() }.joinToString(" — ")
 }

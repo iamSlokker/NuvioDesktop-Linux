@@ -418,7 +418,7 @@ class LinuxNativePlayerBridgeTest {
                 if (iteration < 2) {
                     SwingUtilities.invokeAndWait {
                         controller.updateControls(com.nuvio.app.features.player.PlayerControlsState(
-                            chapters = chapters, durationMs = 3602000L,
+                            seekBar = com.nuvio.app.features.player.PlayerSeekBarState(chapters = chapters), durationMs = 3602000L,
                         ))
                     }
                     val expectedMarkers = if (hasChapters) LinuxChapterFixture.chapters.count {

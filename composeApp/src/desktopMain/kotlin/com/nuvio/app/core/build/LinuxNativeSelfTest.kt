@@ -84,6 +84,17 @@ internal object LinuxNativeSelfTest {
                 }
             }
         }
+        // The speech engine, loaded by path; verify.py requires the file in every package. No model
+        // is bundled, so this stops at the CPU line. The microphone side is "linux voice capture".
+        probe("linux whisper engine") {
+            if (com.nuvio.app.features.voice.WhisperLibrary.resolve() == null) {
+                "not in this layout"
+            } else {
+                com.nuvio.app.features.voice.WhisperLibrary.load().getOrThrow()
+                com.nuvio.app.features.voice.WhisperNative.nativeSystemInfo().also { check(it.isNotBlank()) }
+            }
+        }
+        probe("linux voice capture") { com.nuvio.app.features.voice.VoiceAudio.microphones().size.let { "microphones=$it" } }
         probe("linux inhibitor") {
             val handle = LinuxInhibitionNative.acquire(Runnable { })
             LinuxInhibitionNative.release(handle)

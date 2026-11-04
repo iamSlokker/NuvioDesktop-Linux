@@ -84,6 +84,9 @@ Description: {CONFIG['display_name']}
     # Nuvio Engine's (GPL-3.0): the tag, the desktop patches, the patched libtorrent and Boost.
     shutil.copy2(work / 'nuvio-engine/Nuvio-Engine-source.tar.gz',
                  artifacts / f'Nuvio-Engine-source-{info["git_commit"][:12]}.tar.gz')
+    # whisper.cpp's (MIT): the tag and the JNI bridge.
+    shutil.copy2(work / 'whisper/Nuvio-Whisper-source.tar.gz',
+                 artifacts / f'Nuvio-Whisper-source-{info["git_commit"][:12]}.tar.gz')
     # InnerTubeX's (GPL-3.0): the pinned tag archive of the JAR compiled into the executable.
     shutil.copy2(work / 'innertubex/Nuvio-InnerTubeX-source.tar.gz',
                  artifacts / f'Nuvio-InnerTubeX-source-{info["git_commit"][:12]}.tar.gz')

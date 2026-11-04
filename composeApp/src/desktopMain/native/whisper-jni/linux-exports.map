@@ -1,0 +1,6 @@
+{
+    global:
+        Java_com_nuvio_app_features_voice_WhisperNative_*;
+    local:
+        *;
+};

@@ -244,7 +244,7 @@ class LinuxHudUiScaleTest {
                     false
                 }, { false }, { false })
                 // Queue the saved state before attach, just as the shared player does.
-                next.updateControls(PlayerControlsState(uiScalePercent = PlayerSettingsRepository.uiState.value.desktopUiScalePercent))
+                next.updateControls(PlayerControlsState(hud = com.nuvio.app.features.player.PlayerHudSettings(uiScalePercent = PlayerSettingsRepository.uiState.value.desktopUiScalePercent)))
                 next.attach(sourceUrl = directory.resolve("source${source % 3}.wav").toString(),
                     sourceAudioUrl = null, sourceHeaders = emptyMap(), playWhenReady = false,
                     initialPositionMs = 0L, nvidiaRtxSuperResolutionEnabled = false,
@@ -261,10 +261,11 @@ class LinuxHudUiScaleTest {
         }
 
         fun controls(ui: Int, icon: Int = 0, layout: String = "Standard") = SwingUtilities.invokeAndWait {
-            controller!!.updateControls(PlayerControlsState(title = "HUD scale regression", uiScalePercent = ui,
-                controlIconScalePercent = icon, controlsVisible = true, seekThumbnailsEnabled = false,
-                legacyHudEnabled = layout == "Legacy", minimalHudEnabled = layout == "Minimal",
-                ultraHudEnabled = layout == "Ultra", officialHudEnabled = layout == "Official"))
+            controller!!.updateControls(PlayerControlsState(title = "HUD scale regression", controlsVisible = true,
+                seekPreview = com.nuvio.app.features.player.PlayerSeekPreviewState(seekThumbnailsEnabled = false),
+                hud = com.nuvio.app.features.player.PlayerHudSettings(uiScalePercent = ui, controlIconScalePercent = icon,
+                    legacyHudEnabled = layout == "Legacy", minimalHudEnabled = layout == "Minimal",
+                    ultraHudEnabled = layout == "Ultra", officialHudEnabled = layout == "Official")))
         }
 
         fun script(js: String) = NativePlayerBridge.runJavaScript(handle, js)

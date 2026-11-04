@@ -214,6 +214,7 @@ REQUIRED = ['bin/nuvio', 'bin/nuvio-desktop', 'lib/nuvio', 'lib/runtime/lib/libj
             'share/licenses/Nuvio/COPYING', 'share/licenses/quickjs-kt/LICENSE', 'share/licenses/mpv/LICENSE.GPL',
             TORRSERVER, 'share/licenses/TorrServer/LICENSE', 'share/licenses/TorrServer/NOTICE.txt',
             'lib/native/libnuvio_engine.so', 'share/licenses/NuvioEngine/LICENSE', 'share/licenses/NuvioEngine/NOTICE.txt',
+            'lib/native/libnuvio_whisper.so', 'share/licenses/whisper.cpp/LICENSE', 'share/licenses/whisper.cpp/NOTICE.txt',
             str(native_evidence.GRAALVM_NOTICES / 'LICENSE.txt')]
 
 SCHEME_HANDLER = 'x-scheme-handler/nuvio'

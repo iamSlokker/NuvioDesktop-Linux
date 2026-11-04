@@ -179,6 +179,12 @@ verifies the pinned tag and Boost (`nuvio_engine/manifest.json`), applies the de
 builds `lib/native/libnuvio_engine.so` with the JNI bridge. It links the system's `libssl.so.3`, like
 FFmpeg. The source is `Nuvio-Engine-source-<commit12>.tar.gz`, listed for every package.
 
+**whisper.cpp (voice control).** `whisper/build.py` runs in the build phase: it verifies the pinned
+tag (`whisper/manifest.json`, the version Windows uses) and builds `lib/native/libnuvio_whisper.so`
+with the JNI bridge, CPU only, AVX2 as on Windows. The models are not bundled: the person downloads
+one from Settings > Voice control. The source is `Nuvio-Whisper-source-<commit12>.tar.gz`, listed for
+every package. The microphone is Java Sound's ALSA line, so nothing new is asked of Flatpak.
+
 **InnerTubeX (music).** The second stream resolver is compiled in with `-Pnuvio.innertubex=true`,
 as upstream's CI does, so the build phase needs JitPack. It is GPL-3.0: `innertubex_source.py`
 keeps the pinned tag archive as `Nuvio-InnerTubeX-source-<commit12>.tar.gz` and fails if
