@@ -1129,7 +1129,7 @@ JNI_METHOD(jlong, create)(
         checkMpv(setLinuxSeparateAudio(player->mpv, audio), "audio-files");
         player->speechSource = source;
         player->speechHeaders = headers;
-        player->speechSeparateAudio = audio;
+        player->speechSeparateAudio = linuxPrimaryAudioUrl(audio);
         initializeAndLoad(*player, source, [] {});
         std::weak_ptr<Player> weak = player;
         player->controls = LinuxControlsOverlay::create(hostViewPtr, controlsUrl,
@@ -1627,7 +1627,7 @@ LINUX_HDR_METHOD(jlong, create)(
         checkMpv(setLinuxSeparateAudio(player->mpv, audio), "audio-files");
         player->speechSource = source;
         player->speechHeaders = headers;
-        player->speechSeparateAudio = audio;
+        player->speechSeparateAudio = linuxPrimaryAudioUrl(audio);
         const auto bindings = strings(env, keyBindings);
         initializeAndLoad(*player, source, [&] {
             installLinuxHdrKeyBindings(player->mpv, bindings);
