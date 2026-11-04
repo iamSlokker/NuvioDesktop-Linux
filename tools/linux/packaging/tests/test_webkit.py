@@ -278,6 +278,11 @@ class WebKitBuildTest(unittest.TestCase):
             (root / 'lib/nuvio').chmod(0o755)
             launcher = root / 'bin/nuvio-desktop'
             shutil.copy2(RECIPE / 'nuvio-appimage', launcher)
+            # A host with no libasound of its own keeps the private one.
+            tools = pathlib.Path(tmp) / 'tools'
+            tools.mkdir()
+            (tools / 'ldconfig').write_text('#!/bin/sh\n')
+            (tools / 'ldconfig').chmod(0o755)
             alias = pathlib.Path(tmp) / 'symlinked image'
             alias.symlink_to(root, target_is_directory=True)
             for entry in [launcher, alias / 'bin/nuvio-desktop']:
@@ -285,12 +290,42 @@ class WebKitBuildTest(unittest.TestCase):
                     result = subprocess.check_output(['/bin/sh', str(entry), 'one two', '--fixture'], text=True,
                                                      input='fixture stdin\n',
                                                      env=dict(os.environ, TMPDIR=tmp, WEBKIT_FORCE_SANDBOX='0',
+                                                              PATH=f"{tools}:{os.environ['PATH']}",
                                                               XDG_DATA_DIRS='/host/share')).splitlines()
                     self.assertEqual(result, [str(root / 'lib/native/gdk-pixbuf-2.0/2.10.0/loaders/fixture.so'),
                                               str(root / 'lib/native/gtk-3.0/3.0.0/immodules/fixture.so'),
                                               '/host/share', str(root / 'lib/native/gio/modules'), str(root / 'bin/nuvio-gst-plugin-scanner'),
                                               f'{root}/lib/native:{root}/lib/runtime/lib',
                                               'x11', 'one two', '--fixture', 'fixture stdin'])
+            self.assertEqual(list(pathlib.Path(tmp).glob('nuvio-modules.*')), [])
+
+    def test_appimage_launcher_prefers_the_hosts_libasound(self):
+        with tempfile.TemporaryDirectory(prefix='nuvio mount with spaces ') as tmp:
+            root = pathlib.Path(tmp) / 'image'
+            (root / 'bin').mkdir(parents=True)
+            for rel in ['lib/native/gdk-pixbuf-2.0/2.10.0/loaders', 'lib/native/gtk-3.0/3.0.0/immodules']:
+                (root / rel).mkdir(parents=True)
+                (root / rel / 'fixture.so').touch()
+            for name in ['nuvio-pixbuf-query', 'nuvio-gtk-query']:
+                (root / 'bin' / name).write_text('#!/bin/sh\n')
+                (root / 'bin' / name).chmod(0o755)
+            (root / 'lib/nuvio').write_text('#!/bin/sh\nset -eu\nprintf "%s\\n" "$LD_LIBRARY_PATH"\n'
+                                            'readlink "${LD_LIBRARY_PATH%%:*}/libasound.so.2"\n')
+            (root / 'lib/nuvio').chmod(0o755)
+            launcher = root / 'bin/nuvio-desktop'
+            shutil.copy2(RECIPE / 'nuvio-appimage', launcher)
+            tools = pathlib.Path(tmp) / 'tools'
+            tools.mkdir()
+            (tools / 'ldconfig').write_text('#!/bin/sh\n'
+                'printf "\\tlibasound.so.2 (libc6) => /lib/libasound.so.2\\n"\n'
+                'printf "\\tlibasound.so.2 (libc6,x86-64) => /host/lib64/libasound.so.2\\n"\n')
+            (tools / 'ldconfig').chmod(0o755)
+            result = subprocess.check_output(['/bin/sh', str(launcher)], text=True, stdin=subprocess.DEVNULL,
+                                             env=dict(os.environ, TMPDIR=tmp, PATH=f"{tools}:{os.environ['PATH']}")).splitlines()
+            first, rest = result[0].split(':', 1)
+            self.assertRegex(first, r'/nuvio-modules\.[^/]+/alsa$')
+            self.assertEqual(rest, f'{root}/lib/native:{root}/lib/runtime/lib')
+            self.assertEqual(result[1], '/host/lib64/libasound.so.2')
             self.assertEqual(list(pathlib.Path(tmp).glob('nuvio-modules.*')), [])
 
     def test_cache_rejects_absolute_and_escaping_links(self):

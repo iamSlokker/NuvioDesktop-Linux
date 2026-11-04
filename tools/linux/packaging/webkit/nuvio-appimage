@@ -36,6 +36,15 @@ export GST_REGISTRY_1_0="$GST_REGISTRY"
 # closure (important on hosts newer than the Ubuntu build baseline).
 LD_LIBRARY_PATH="$library_path" "$image/bin/nuvio-pixbuf-query" "$GDK_PIXBUF_MODULEDIR"/*.so > "$GDK_PIXBUF_MODULE_FILE"
 LD_LIBRARY_PATH="$library_path" "$image/bin/nuvio-gtk-query" "$image/lib/native/gtk-3.0/3.0.0/immodules"/*.so > "$GTK_IM_MODULE_FILE"
+# Java Sound reaches the desktop's microphone through the host's ALSA plugins, which
+# refuse an older libasound than the one they were built for: use the host's if it has one.
+host_asound=$(PATH="$PATH:/sbin:/usr/sbin" ldconfig -p 2>/dev/null |
+    awk '/libasound\.so\.2 \(libc6,x86-64\)/ { print $NF; exit }') || host_asound=
+if [ -n "$host_asound" ]; then
+    mkdir "$cache/alsa"
+    ln -s "$host_asound" "$cache/alsa/libasound.so.2"
+    library_path="$cache/alsa:$library_path"
+fi
 # The GraalVM native executable; its emitted JDK libraries load from lib/ beside it.
 LD_LIBRARY_PATH="$library_path" "$image/lib/nuvio" "$@" <&0 &
 child=$!
