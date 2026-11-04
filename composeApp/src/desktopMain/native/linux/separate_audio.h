@@ -40,6 +40,13 @@ inline std::vector<std::string> linuxAudioFiles(const std::string &audio) {
     return files;
 }
 
+// mpv titles an external track after the end of its URL (decoded), which is no name for a person to
+// read. A further language's EDL names its own, and a local file's name stays useful.
+inline std::string linuxTrackTitleOf(const std::string &title, const std::string &externalFilename) {
+    const bool url = externalFilename.rfind("http://", 0) == 0 || externalFilename.rfind("https://", 0) == 0;
+    return url ? "" : title;
+}
+
 // Configure before mpv_initialize/loadfile. List-action suffixes such as
 // audio-files-append are CLI/config syntax, not libmpv option names.
 inline int setLinuxSeparateAudio(mpv_handle *mpv, const std::string &audioUrl) {

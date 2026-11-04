@@ -149,6 +149,10 @@ int main() {
                     "further tracks must carry their language");
             require(title, "a further track's title must survive whole");
             require(linuxPrimaryAudioUrl(audio + "\nde\t\tx") == audio, "the primary is the first line");
+            require(linuxTrackTitleOf("videoplayback?a=b,c", "https://x/videoplayback?a=b%2Cc").empty(), "a URL's tail is no title");
+            require(linuxTrackTitleOf("dub.flac", "/home/me/dub.flac") == "dub.flac", "a local file's name stays");
+            require(linuxTrackTitleOf("Arabic", "edl://!track_meta,title=%6%Arabic;%5%https").size() == 6, "a real title stays");
+            require(linuxTrackTitleOf("Commentary", "").size() == 10, "an embedded track's title stays");
         }
         std::cout << "PASS more languages open as named tracks\n";
         for (bool separate : {true, false}) {

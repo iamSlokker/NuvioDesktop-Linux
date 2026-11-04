@@ -884,7 +884,8 @@ void removeExternalSubtitleTracks(Player &player) {
 std::string audioChannelLayoutName(const std::string &channels, int64_t count) {
     std::string normalized = trimmed(channels);
     std::string lower = caseFolded(normalized);
-    if (!normalized.empty() && lower != "unknown") {
+    // mpv says "unknown2" for a stream whose count it knows and layout it does not (YouTube's Opus).
+    if (!normalized.empty() && lower.rfind("unknown", 0) != 0) {
         if (lower == "mono") return "Mono";
         if (lower == "stereo") return "Stereo";
         return normalized;
@@ -926,7 +927,8 @@ std::string audioTracksJson(Player &player) {
         std::string prefix = "track-list/" + std::to_string(index) + "/";
         if (player.stringProperty((prefix + "type").c_str()) != "audio") continue;
         int64_t trackId = player.integer((prefix + "id").c_str(), logicalIndex + 1);
-        std::string title = trimmed(player.stringProperty((prefix + "title").c_str()));
+        std::string title = linuxTrackTitleOf(trimmed(player.stringProperty((prefix + "title").c_str())),
+            player.stringProperty((prefix + "external-filename").c_str()));
         std::string language = trimmed(player.stringProperty((prefix + "lang").c_str()));
         // The existing codec display helper also covers audio codecs.
         std::string codec = subtitleCodecDisplayName(player.stringProperty((prefix + "codec").c_str()));
