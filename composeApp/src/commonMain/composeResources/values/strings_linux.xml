@@ -10,4 +10,8 @@
     <string name="linux_games_desktop_entry_unavailable">Nuvio cannot start this .desktop file: it is missing, is not a game entry, or runs through a shell or another launcher.</string>
     <string name="linux_updates_auto_install_description">You still confirm each update. When on, Nuvio replaces the AppImage or installs the .deb itself; when off, it saves the file to your Downloads folder.</string>
     <string name="linux_settings_youtube_explainer">Opens Google's real sign-in page in a temporary window of a browser installed on this PC: Chrome, Edge, Brave, Chromium, Vivaldi, Opera or Firefox. Sign in there, wait for YouTube Music to load, then close the window; Nuvio then reads the session cookies and keeps that browser profile only to renew the sign-in, until you sign out. They are sent only for videos YouTube blocks without an account, and Nuvio never sees your password. A secondary Google account is safest.</string>
+    <string name="linux_licenses_full_texts">Full licence texts are in share/licenses in the install folder.</string>
+    <string name="linux_licenses_whisper_body">Offline speech recognition for voice control (whisper.cpp v1.9.5 with ggml, in libnuvio_whisper.so).</string>
+    <string name="linux_licenses_libtorrent_body">The torrent engine inside Nuvio Engine (libnuvio_engine.so), built from NuvioMedia/nuvio-engine.</string>
+    <string name="linux_player_hud_back_to_video">Back to the video</string>
 </resources>

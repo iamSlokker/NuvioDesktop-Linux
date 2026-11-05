@@ -171,6 +171,10 @@ class TorrServerRecipeTest(unittest.TestCase):
         self.assertEqual(innertubex_source.VERSION, innertubex_source.gradle_version(REPO / 'composeApp/build.gradle.kts'))
         self.assertRegex(innertubex_source.SOURCE['sha256'], '^[0-9a-f]{64}$')
         self.assertTrue(innertubex_source.SOURCE['url'].endswith('/refs/tags/' + innertubex_source.VERSION))
+        self.assertEqual(innertubex_source.QUACKJS_VERSION,
+                         innertubex_source.gradle_quackjs_version(REPO / 'composeApp/build.gradle.kts'))
+        self.assertRegex(innertubex_source.QUACKJS_SOURCE['sha256'], '^[0-9a-f]{64}$')
+        self.assertTrue(innertubex_source.QUACKJS_SOURCE['url'].endswith('/refs/tags/' + innertubex_source.QUACKJS_VERSION))
         script = (PACKAGING / 'native-build.sh').read_text()
         self.assertIn('-Pnuvio.innertubex=true', script)
         self.assertLess(script.index('innertubex_source.py /output'), script.index('./gradlew'))

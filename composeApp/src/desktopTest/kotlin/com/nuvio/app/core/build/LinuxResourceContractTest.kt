@@ -27,6 +27,7 @@ class LinuxResourceContractTest {
     /** Resources a packaging script copies somewhere else, and the text that shows it still does. */
     private val copiedByPackaging = mapOf(
         "anime-mapping/**" to ("native_evidence.py" to "desktopMain/resources/anime-mapping"),
+        "licenses/**" to ("stage.py" to "desktopMain/resources/licenses"),
     )
 
     /** Left out of the Linux packages on purpose. Say why when adding one. */

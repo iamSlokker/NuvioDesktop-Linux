@@ -87,7 +87,7 @@ Description: {CONFIG['display_name']}
     # whisper.cpp's (MIT): the tag and the JNI bridge.
     shutil.copy2(work / 'whisper/Nuvio-Whisper-source.tar.gz',
                  artifacts / f'Nuvio-Whisper-source-{info["git_commit"][:12]}.tar.gz')
-    # InnerTubeX's (GPL-3.0): the pinned tag archive of the JAR compiled into the executable.
+    # InnerTubeX's and QuackJS's (GPL-3.0): the pinned tag archives of the JARs compiled into the executable.
     shutil.copy2(work / 'innertubex/Nuvio-InnerTubeX-source.tar.gz',
                  artifacts / f'Nuvio-InnerTubeX-source-{info["git_commit"][:12]}.tar.gz')
     # Exact native-image input JARs, manifest, native-image reports and the smoke

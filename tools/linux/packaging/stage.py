@@ -86,6 +86,8 @@ def stage(work, source=pathlib.Path('/source'), media=pathlib.Path('/media'),
     shutil.copytree(work / 'whisper/licenses', share / 'licenses/whisper.cpp')
     shutil.copytree(source / 'composeApp/src/desktopMain/resources/player-shaders',
                     licenses / 'player-shaders', ignore=shutil.ignore_patterns('*.glsl'))
+    # The texts Settings > Licenses & Attributions points at; on Windows they sit loose in resources/licenses.
+    shutil.copytree(source / 'composeApp/src/desktopMain/resources/licenses', share / 'licenses/bundled')
     # GraalVM CE notices, the manifest of the exact native-image inputs, the input
     # JARs' notice files (the JARs themselves no longer ship) and the anime notices.
     native_evidence.stage(destination, work, source, graalvm, CONFIG)

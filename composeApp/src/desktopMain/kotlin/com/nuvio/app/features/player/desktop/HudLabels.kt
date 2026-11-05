@@ -114,6 +114,7 @@ private val hudLabelResources: Map<String, StringResource> = mapOf(
     "player_hud_episode" to Res.string.player_hud_episode,
     "player_hud_episodes" to Res.string.player_hud_episodes,
     "player_hud_exit_picture_in_picture" to Res.string.player_hud_exit_picture_in_picture,
+    "player_hud_back_to_video" to Res.string.linux_player_hud_back_to_video,
     "player_hud_fit" to Res.string.player_hud_fit,
     "player_hud_font" to Res.string.player_hud_font,
     "player_hud_font_size" to Res.string.player_hud_font_size,

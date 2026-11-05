@@ -27,4 +27,8 @@
     <string name="updates_linux_reason_cancelled">a autorização foi cancelada ou recusada</string>
     <string name="updates_linux_reason_failed">o instalador terminou com o código %1$d</string>
     <string name="updates_linux_asset_missing">Não foi encontrado nenhum %1$s para Linux x86_64 nesta versão.</string>
+    <string name="linux_licenses_full_texts">Os textos completos das licenças estão em share/licenses, na pasta de instalação.</string>
+    <string name="linux_licenses_whisper_body">Reconhecimento de voz offline para o controlo por voz (whisper.cpp v1.9.5 com ggml, em libnuvio_whisper.so).</string>
+    <string name="linux_licenses_libtorrent_body">O motor de torrents do Nuvio Engine (libnuvio_engine.so), compilado a partir de NuvioMedia/nuvio-engine.</string>
+    <string name="linux_player_hud_back_to_video">Voltar ao vídeo</string>
 </resources>

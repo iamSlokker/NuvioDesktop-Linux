@@ -27,4 +27,8 @@
     <string name="updates_linux_reason_cancelled">die Autorisierung wurde abgebrochen oder verweigert</string>
     <string name="updates_linux_reason_failed">das Installationsprogramm wurde mit Code %1$d beendet</string>
     <string name="updates_linux_asset_missing">In diesem Release wurde kein %1$s für Linux x86_64 gefunden.</string>
+    <string name="linux_licenses_full_texts">Die vollständigen Lizenztexte liegen unter share/licenses im Installationsordner.</string>
+    <string name="linux_licenses_whisper_body">Offline-Spracherkennung für die Sprachsteuerung (whisper.cpp v1.9.5 mit ggml, in libnuvio_whisper.so).</string>
+    <string name="linux_licenses_libtorrent_body">Die Torrent-Engine in Nuvio Engine (libnuvio_engine.so), gebaut aus NuvioMedia/nuvio-engine.</string>
+    <string name="linux_player_hud_back_to_video">Zurück zum Video</string>
 </resources>
