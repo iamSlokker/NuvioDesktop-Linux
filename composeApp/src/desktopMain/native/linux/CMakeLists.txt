@@ -35,6 +35,7 @@ endif()
 
 add_library(player_bridge SHARED player_bridge.cpp x11_error_handler_guard.cpp now_playing_glass.cpp awt_view_resolver.cpp controls_overlay.cpp seek_thumbnails.cpp playback_inhibitor.cpp screensaver_idle.cpp mpris_session.cpp linux_gamepad.cpp window_chrome.cpp window_chrome_jni.cpp pip_geometry_jni.cpp hdr_wayland_session.cpp flatpak_update.cpp flatpak_update_jni.cpp file_chooser_portal.cpp file_chooser_portal_jni.cpp)
 target_sources(player_bridge PRIVATE status_notifier.cpp status_notifier_jni.cpp)
+target_sources(player_bridge PRIVATE botguard_page_jni.cpp)
 # Optional X11 idle fallback. Wayland sessions never use an XWayland global idle estimate.
 find_path(XSS_INCLUDE_DIR NAMES X11/extensions/scrnsaver.h)
 if(XSS_INCLUDE_DIR)
