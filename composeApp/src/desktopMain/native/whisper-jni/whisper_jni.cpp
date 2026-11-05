@@ -9,6 +9,7 @@
 
 #include <algorithm>
 #include <atomic>
+#include <chrono>
 #include <cstdio>
 #include <mutex>
 #include <cstdlib>
@@ -81,6 +82,15 @@ int audioContextFor(whisper_context *ctx, size_t sampleCount) {
     return frames >= full ? 0 : frames;  // 0 = the model's own full window
 }
 
+// A held decode's cost grows with every reading its text could still be (a run of numbers doubles it
+// per word: "ten twenty thirty forty fifty" took over a minute, with voice control stuck meanwhile).
+// Past this it gives up; the caller then decodes freely.
+constexpr auto kHeldDecodeLimit = std::chrono::seconds(6);
+
+bool heldDecodeTooLong(void *deadline) {
+    return std::chrono::steady_clock::now() >= *static_cast<std::chrono::steady_clock::time_point *>(deadline);
+}
+
 struct GrammarArgs {
     const whisper_grammar_element **rules;
     size_t count;
@@ -99,6 +109,7 @@ struct Decoded {
 // confidence the caller reads, not a reason to decode again).
 bool decode(whisper_context *ctx, const std::vector<float> &pcm, const std::string &prompt, int threads,
             const GrammarArgs *grammar, Decoded &out) {
+    auto deadline = std::chrono::steady_clock::now() + kHeldDecodeLimit;
     whisper_full_params params = whisper_full_default_params(WHISPER_SAMPLING_GREEDY);
     params.n_threads = threads > 0 ? threads : 4;
     params.language = "en";
@@ -123,6 +134,8 @@ bool decode(whisper_context *ctx, const std::vector<float> &pcm, const std::stri
         params.i_start_rule = grammar->startRule;
         params.grammar_penalty = 100.0f;
         params.temperature_inc = 0.0f;
+        params.abort_callback = heldDecodeTooLong;
+        params.abort_callback_user_data = &deadline;
     }
 
     if (whisper_full(ctx, params, pcm.data(), static_cast<int>(pcm.size())) != 0) return false;
