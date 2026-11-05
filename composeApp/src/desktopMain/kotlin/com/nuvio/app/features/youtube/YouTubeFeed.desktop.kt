@@ -390,18 +390,23 @@ private suspend fun fetchCaptionVtt(url: String): String? =
 private object YouTubeCaptionTokens {
     private val browser: String? by lazy { com.nuvio.app.features.music.potoken.BrowserLocator.find() }
 
+    // fork:linux - with no Chromium to start (the Flatpak's sandbox, or none installed), the bundled WebKitGTK.
+    private val webKit: Boolean
+        get() = browser == null && com.nuvio.app.features.music.potoken.LinuxWebKitBotGuard.available
+
     private val generator by lazy {
         com.nuvio.app.features.music.potoken.PoTokenGenerator(
             createMinter = {
-                com.nuvio.app.features.music.potoken.BotGuardMinter.create(requireNotNull(browser) { "No Edge or Chrome was found" })
+                browser?.let { com.nuvio.app.features.music.potoken.BotGuardMinter.create(it) }
+                    ?: com.nuvio.app.features.music.potoken.LinuxWebKitBotGuardMinter.create()
             },
-            available = { browser != null },
+            available = { browser != null || webKit },
         )
     }
 
     /** A token bound to [videoId] (what the subtitle endpoint checks), or null when none can be made. */
     suspend fun videoToken(videoId: String, visitorData: String): String? {
-        if (browser == null) {
+        if (browser == null && !webKit) {
             log.i { "subtitles need a PO token, but no Edge or Chrome was found to make one" }
             return null
         }

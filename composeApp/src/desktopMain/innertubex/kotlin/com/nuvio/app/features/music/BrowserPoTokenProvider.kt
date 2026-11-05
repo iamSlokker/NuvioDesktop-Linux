@@ -7,6 +7,8 @@ import com.metrolist.innertubex.extraction.TokenProviderCapabilities
 import com.metrolist.innertubex.extraction.strategy.PoTokenProviderKind
 import com.nuvio.app.features.music.potoken.BotGuardMinter
 import com.nuvio.app.features.music.potoken.BrowserLocator
+import com.nuvio.app.features.music.potoken.LinuxWebKitBotGuard
+import com.nuvio.app.features.music.potoken.LinuxWebKitBotGuardMinter
 import com.nuvio.app.features.music.potoken.PoTokenGenerator
 
 /**
@@ -34,6 +36,8 @@ internal object BrowserPoTokens {
         log.i {
             when {
                 !enabled -> "PO tokens off (-Dnuvio.potoken=off); web clients left out"
+                // fork:linux
+                found == null && LinuxWebKitBotGuard.available -> "PO tokens on: no Chromium to start, BotGuard runs in WebKitGTK"
                 found == null -> "PO tokens unavailable: no Edge, Chrome or Brave found; web clients left out " +
                     "(set -Dnuvio.potoken.browser=<path to the browser>)"
                 else -> "PO tokens on: BotGuard runs in $found"
@@ -42,19 +46,26 @@ internal object BrowserPoTokens {
         found
     }
 
+    // fork:linux - with no Chromium to start (the Flatpak's sandbox, or none installed), the bundled WebKitGTK.
+    private val webKit: Boolean get() = enabled && browser == null && LinuxWebKitBotGuard.available
+    private val canMint: Boolean get() = browser != null || webKit
+
     private val generator by lazy {
         PoTokenGenerator(
-            createMinter = { BotGuardMinter.create(requireNotNull(browser) { "No Edge or Chrome was found" }) },
-            available = { browser != null },
+            createMinter = {
+                browser?.let { BotGuardMinter.create(it) }
+                    ?: if (webKit) LinuxWebKitBotGuardMinter.create() else error("No Edge or Chrome was found")
+            },
+            available = { canMint },
         )
     }
 
     /** True when a token can be minted now: a browser was found and tokens are not paused after failures. */
-    val ready: Boolean get() = browser != null && generator.ready
+    val ready: Boolean get() = canMint && generator.ready
 
     val provider: TokenProvider = object : TokenProvider {
         override val capabilities: TokenProviderCapabilities
-            get() = if (browser != null) {
+            get() = if (canMint) {
                 TokenProviderCapabilities(providers = setOf(PoTokenProviderKind.WEB_BOTGUARD), usesWebView = true)
             } else {
                 TokenProviderCapabilities(providers = emptySet(), usesWebView = false)
@@ -66,7 +77,7 @@ internal object BrowserPoTokens {
             val tokens = generator.tokens(videoId, visitorData)
             val elapsed = System.currentTimeMillis() - started
             if (tokens == null) {
-                log.i { "no PO token for $videoId after ${elapsed}ms${if (browser == null) " (no browser)" else ""}" }
+                log.i { "no PO token for $videoId after ${elapsed}ms${if (!canMint) " (no browser)" else ""}" }
                 return null
             }
             log.i { "PO tokens for $videoId in ${elapsed}ms" }

@@ -338,6 +338,16 @@ python3 composeApp/src/desktopMain/native/linux/tests/status_notifier_test.py \
   composeApp/build/native/linux/linux_status_notifier_probe
 ```
 
+## BotGuard page
+
+YouTube's PO tokens come from Google's BotGuard script, which upstream runs in a headless Edge or
+Chrome. The Flatpak's sandbox cannot start one and a DEB or AppImage user may have none, so there
+`botguard_page_jni.cpp` loads the same page in an offscreen WebKitGTK view on the controls' GTK
+thread (ephemeral context, no media, never mapped). The page comes as a string on the YouTube origin
+with a Content-Security-Policy that refuses every request; Kotlin makes the two service calls
+(`LinuxWebKitBotGuard.kt`). Each JNI call blocks its caller until the GTK side answers or its timeout
+passes, and handles are ids, so closing a page while another call is minting on it is safe.
+
 ## Deliberately absent
 
 `setMediaSessionMetadata` remains an explicit void no-op: the Windows media session
