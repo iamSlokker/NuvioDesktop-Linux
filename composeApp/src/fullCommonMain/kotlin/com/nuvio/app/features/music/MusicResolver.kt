@@ -171,7 +171,10 @@ object MusicResolver {
         // fork:youtube-age-gate - the in-app extractor cannot open an age-gated video even signed in (its
         // signed-in clients send ciphered URLs it cannot decode); the fallback resolver can.
         val refusal = com.nuvio.app.features.youtube.YouTubeUnplayable.refusal(videoId)
-        return if (refusal?.ageGated == true) openAgeGatedVideo(videoId) else null
+        // A TV client can answer for an age-gated video with URLs that then refuse every byte: no verdict
+        // is left to read (the answer cleared it), so a video someone clicked gets the same second chance.
+        val refusedEveryStream = refusal == null && youTubeCaller()?.urgent == true && !paused()
+        return if (refusal?.ageGated == true || refusedEveryStream) openAgeGatedVideo(videoId) else null
     }
 
     /** True when this build has a resolver that can open an age-gated video (the extractor cannot). */
