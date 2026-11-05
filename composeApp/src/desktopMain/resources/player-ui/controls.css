@@ -7815,6 +7815,9 @@ svg {
   transform: translateY(0);
 }
 
+/* Linux: the top 12px of the small HUD window do not paint (WebKitGTK's CPU painting), so the buttons sit below them. */
+.player.linux-host.pip-ui :is(.pip-exit-button, .pip-play-button, .pip-close-button) { top: 14px; }
+
 /* The seek bar itself is the glass: a frosted track with a bright edge, nothing drawn behind it. */
 .pip-seek {
   left: calc(var(--pip-ui-scale, 1) * 14px);

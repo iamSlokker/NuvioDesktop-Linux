@@ -8609,6 +8609,21 @@ focusShortcutRoot();
 render();
 send("controlsReady", 0);
 
+// fork:linux - the HUD window changing size (the YouTube corner player's drags) leaves WebKitGTK's CPU
+// painting with stale or empty regions: buttons cut off, a seek bar left at its old length while
+// paused. A change to the page's own background repaints all of it, once the size has settled.
+if (linuxHost) {
+  let repaintTimer = 0;
+  window.addEventListener("resize", () => {
+    window.clearTimeout(repaintTimer);
+    repaintTimer = window.setTimeout(() => {
+      const pageStyle = document.documentElement.style;
+      pageStyle.backgroundColor = "rgba(0, 0, 0, .004)";
+      requestAnimationFrame(() => requestAnimationFrame(() => { pageStyle.backgroundColor = ""; }));
+    }, 60);
+  });
+}
+
 // fork:linux - wheel scrolling in the HUD's panels. WebKitGTK's own wheel animation restarted its
 // ease-in on every wheel event, so a fast wheel barely moved a panel until the wheel stopped. The
 // Linux overlay turns that animation off (controls_overlay.cpp); notch-sized steps glide here
