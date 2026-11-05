@@ -198,7 +198,7 @@ def build(work, media_cache, ubuntu_cache, offline=False):
             maven='Maven JARs are compiled into the native executable, not shipped. Their notice files ship under '
                   'share/licenses/jar-notices; the exact input JARs, native-image arguments and metadata hashes are in '
                   'Nuvio-native-image-inputs-*.tar. The last reviewed set (125 JARs) was Apache-2.0 or MIT; '
-                  'the current set needs the same review. InnerTubeX is GPL-3.0, with its source in '
+                  'the current set needs the same review. InnerTubeX and QuackJS are GPL-3.0, with their source in '
                   'Nuvio-InnerTubeX-source-*.tar.gz',
             graalvm='GraalVM CE 25.0.2 sources are the pinned upstream commits; upstream publishes no source bundle and '
                     'its labsjdk-builder recipe is not public (see dependency-source-retention.md)',
