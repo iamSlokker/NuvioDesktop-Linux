@@ -27,4 +27,8 @@
     <string name="updates_linux_reason_cancelled">η εξουσιοδότηση ακυρώθηκε ή απορρίφθηκε</string>
     <string name="updates_linux_reason_failed">το πρόγραμμα εγκατάστασης τερμάτισε με κωδικό %1$d</string>
     <string name="updates_linux_asset_missing">Δεν βρέθηκε %1$s για Linux x86_64 σε αυτήν την έκδοση.</string>
+    <string name="linux_licenses_full_texts">Τα πλήρη κείμενα των αδειών βρίσκονται στο share/licenses μέσα στον φάκελο εγκατάστασης.</string>
+    <string name="linux_licenses_whisper_body">Αναγνώριση ομιλίας εκτός σύνδεσης για τον φωνητικό έλεγχο (whisper.cpp v1.9.5 με ggml, στο libnuvio_whisper.so).</string>
+    <string name="linux_licenses_libtorrent_body">Η μηχανή torrent μέσα στο Nuvio Engine (libnuvio_engine.so), από το NuvioMedia/nuvio-engine.</string>
+    <string name="linux_player_hud_back_to_video">Πίσω στο βίντεο</string>
 </resources>

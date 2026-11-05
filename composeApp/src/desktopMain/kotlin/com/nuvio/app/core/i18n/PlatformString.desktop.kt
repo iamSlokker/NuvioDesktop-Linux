@@ -21,5 +21,8 @@ internal fun linuxString(resource: StringResource, flatpak: Boolean): StringReso
     Res.string.games_editor_c_games_example_game_exe_a -> Res.string.linux_games_editor_path_example
     Res.string.settings_updates_auto_install_description -> Res.string.linux_updates_auto_install_description
     Res.string.settings_youtube_explainer -> Res.string.linux_settings_youtube_explainer
+    Res.string.settings_licenses_attributions_full_texts -> Res.string.linux_licenses_full_texts
+    Res.string.settings_licenses_attributions_whisper_body -> Res.string.linux_licenses_whisper_body
+    Res.string.settings_licenses_attributions_libtorrent_body -> Res.string.linux_licenses_libtorrent_body
     else -> resource
 }

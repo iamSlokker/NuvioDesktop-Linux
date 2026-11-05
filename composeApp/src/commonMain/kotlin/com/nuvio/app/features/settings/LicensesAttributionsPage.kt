@@ -44,6 +44,7 @@ import com.nuvio.app.features.cloud.cloudLibraryDisplayArtworkUrl
 import nuvio.composeapp.generated.resources.*
 import org.jetbrains.compose.resources.StringResource
 import org.jetbrains.compose.resources.stringResource
+import com.nuvio.app.core.i18n.platformString
 import com.nuvio.app.core.ui.accentBrush
 
 private const val TmdbUrl = "https://www.themoviedb.org"
@@ -302,9 +303,9 @@ private fun LicenseRow(
     footerRes: StringResource? = null,
 ) {
     val uriHandler = LocalUriHandler.current
-    val itemBody = stringResource(item.bodyRes)
+    val itemBody = stringResource(platformString(item.bodyRes))
     val itemLicense = stringResource(item.licenseRes)
-    val footer = footerRes?.let { stringResource(it) }
+    val footer = footerRes?.let { stringResource(platformString(it)) }
     val body = buildString {
         append(itemBody)
         append("\n")

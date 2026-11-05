@@ -27,4 +27,8 @@
     <string name="updates_linux_reason_cancelled">yetkilendirme iptal edildi veya reddedildi</string>
     <string name="updates_linux_reason_failed">yükleyici %1$d koduyla çıktı</string>
     <string name="updates_linux_asset_missing">Bu sürümde Linux x86_64 için %1$s bulunamadı.</string>
+    <string name="linux_licenses_full_texts">Lisans metinlerinin tamamı kurulum klasöründeki share/licenses içindedir.</string>
+    <string name="linux_licenses_whisper_body">Ses kontrolü için çevrimdışı konuşma tanıma (whisper.cpp v1.9.5 ve ggml, libnuvio_whisper.so içinde).</string>
+    <string name="linux_licenses_libtorrent_body">Nuvio Engine içindeki torrent motoru (libnuvio_engine.so), NuvioMedia/nuvio-engine kaynağından derlenmiştir.</string>
+    <string name="linux_player_hud_back_to_video">Videoya dön</string>
 </resources>

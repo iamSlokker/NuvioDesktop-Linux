@@ -27,4 +27,8 @@
     <string name="updates_linux_reason_cancelled">otorisasi dibatalkan atau ditolak</string>
     <string name="updates_linux_reason_failed">penginstal keluar dengan kode %1$d</string>
     <string name="updates_linux_asset_missing">Tidak ditemukan %1$s untuk Linux x86_64 dalam rilis ini.</string>
+    <string name="linux_licenses_full_texts">Teks lisensi lengkap ada di share/licenses dalam folder instalasi.</string>
+    <string name="linux_licenses_whisper_body">Pengenalan suara luring untuk kontrol suara (whisper.cpp v1.9.5 dengan ggml, di libnuvio_whisper.so).</string>
+    <string name="linux_licenses_libtorrent_body">Mesin torrent di dalam Nuvio Engine (libnuvio_engine.so), dibangun dari NuvioMedia/nuvio-engine.</string>
+    <string name="linux_player_hud_back_to_video">Kembali ke video</string>
 </resources>
