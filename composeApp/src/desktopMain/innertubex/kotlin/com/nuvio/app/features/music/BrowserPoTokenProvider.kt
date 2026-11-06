@@ -5,6 +5,7 @@ import com.metrolist.innertubex.extraction.PoTokenResult
 import com.metrolist.innertubex.extraction.TokenProvider
 import com.metrolist.innertubex.extraction.TokenProviderCapabilities
 import com.metrolist.innertubex.extraction.strategy.PoTokenProviderKind
+import com.nuvio.app.features.music.potoken.BotGuardChallenges
 import com.nuvio.app.features.music.potoken.BotGuardMinter
 import com.nuvio.app.features.music.potoken.BrowserLocator
 import com.nuvio.app.features.music.potoken.LinuxWebKitBotGuard
@@ -30,6 +31,11 @@ internal object BrowserPoTokens {
     private val log = Logger.withTag("PoToken")
 
     private val enabled: Boolean = System.getProperty("nuvio.potoken") != "off"
+
+    // fork:innertubex-sabr - pages take their challenge from a YouTube page, so their tokens are page-bound.
+    init {
+        BotGuardChallenges.fromYouTubePage = { YouTubePageBotGuardChallenge.fetch() }
+    }
 
     private val browser: String? by lazy {
         val found = if (enabled) BrowserLocator.find() else null
@@ -66,7 +72,11 @@ internal object BrowserPoTokens {
     val provider: TokenProvider = object : TokenProvider {
         override val capabilities: TokenProviderCapabilities
             get() = if (canMint) {
-                TokenProviderCapabilities(providers = setOf(PoTokenProviderKind.WEB_BOTGUARD), usesWebView = true)
+                TokenProviderCapabilities(
+                    // fork:innertubex-sabr - page-bound tokens also satisfy SABR's page attestation.
+                    providers = setOf(PoTokenProviderKind.WEB_BOTGUARD, PoTokenProviderKind.WEBPAGE_ATTESTATION),
+                    usesWebView = true,
+                )
             } else {
                 TokenProviderCapabilities(providers = emptySet(), usesWebView = false)
             }

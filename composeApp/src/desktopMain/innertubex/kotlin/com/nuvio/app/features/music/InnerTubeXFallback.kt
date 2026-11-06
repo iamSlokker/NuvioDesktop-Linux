@@ -186,11 +186,13 @@ internal object InnerTubeXFallback : MusicStreamFallback {
         val stream = try {
             extractor.extract(
                 videoId = videoId,
-                // Age-gated (the only kind sent here), video wanted. No SABR, which the player cannot open, and
-                // no client whose URLs only answer bounded ranges: mpv asks for open-ended ones. HLS is fine.
+                // Age-gated (the only kind sent here), video wanted. No client whose URLs only answer bounded
+                // ranges: mpv asks for open-ended ones. HLS is fine.
+                // fork:innertubex-sabr - SABR goes through SabrLoopback. WEB_CREATOR's direct URLs answer 403
+                // past the first ~45 s whatever token they carry, so the video stopped there with no sound.
                 hints = ContentHints(isAgeRestricted = true, wantVideo = true, maxVideoHeight = maxShortSide)
-                    .withStreamCapabilities(allowHls = true, allowSabr = false, allowBoundedRange = false),
-                excludedClients = emptySet(),
+                    .withStreamCapabilities(allowHls = true, allowSabr = true, allowBoundedRange = false),
+                excludedClients = setOf("WEB_CREATOR"),
                 audioQuality = AudioQuality.AUTO,
                 clientPlaybackNonce = generateClientPlaybackNonce(),
             )
@@ -200,6 +202,18 @@ internal object InnerTubeXFallback : MusicStreamFallback {
             log.i { "no video stream for $videoId: ${error.message}" }
             return null
         } ?: return null
+        stream.sabrBootstrap?.takeIf { it.selectedVideoFormat != null }?.let { bootstrap ->
+            val urls = SabrLoopback.open(http, bootstrap, withVideo = true)
+            log.i {
+                "$videoId: video through ${stream.clientName} (${stream.profileId}), " +
+                    "${bootstrap.selectedVideoWidth ?: 0}x${bootstrap.selectedVideoHeight ?: 0}, SABR on loopback"
+            }
+            return TrailerPlaybackSource(
+                videoUrl = urls.video!!,
+                audioUrl = urls.audio,
+                heightPx = listOfNotNull(bootstrap.selectedVideoWidth, bootstrap.selectedVideoHeight).filter { it > 0 }.minOrNull() ?: 0,
+            )
+        }
         val videoUrl = stream.videoUrl
         if (stream.sabrBootstrap != null || videoUrl == null || !videoUrl.startsWith("http")) {
             log.i { "$videoId: no video stream the player can open (SABR or audio only)" }
@@ -241,7 +255,31 @@ internal object InnerTubeXFallback : MusicStreamFallback {
             log.i { "$videoId only offers SABR, which the player cannot open" }
             return null
         }
+        // fork:innertubex-sabr - WEB_CREATOR is what an age gate leaves; its direct URL stops after ~45 s.
+        if (stream.clientName == "WEB_CREATOR") resolveAudioOverSabr(videoId)?.let { return it }
         log.i { "$videoId: ${stream.clientName} (${stream.profileId}), ${(stream.bitrate ?: 0) / 1000} kbps" }
         return TrailerPlaybackSource(videoUrl = stream.audioUrl, headers = stream.headers)
+    }
+
+    /** fork:innertubex-sabr - the audio of [videoId] through SABR on loopback, or null when none is offered. */
+    private suspend fun resolveAudioOverSabr(videoId: String): TrailerPlaybackSource? {
+        val bootstrap = try {
+            extractor.extract(
+                videoId = videoId,
+                hints = ContentHints(isUploaded = null)
+                    .withStreamCapabilities(allowHls = false, allowSabr = true, allowBoundedRange = true),
+                excludedClients = setOf("WEB_CREATOR"),
+                audioQuality = AudioQuality.AUTO,
+                clientPlaybackNonce = generateClientPlaybackNonce(),
+            )?.sabrBootstrap
+        } catch (error: CancellationException) {
+            throw error
+        } catch (error: Throwable) {
+            log.i { "no SABR stream for $videoId: ${error.message}" }
+            null
+        } ?: return null
+        val urls = SabrLoopback.open(http, bootstrap, withVideo = false)
+        log.i { "$videoId: audio through SABR on loopback, ${bootstrap.mimeType.substringBefore(';')}" }
+        return TrailerPlaybackSource(videoUrl = urls.audio)
     }
 }

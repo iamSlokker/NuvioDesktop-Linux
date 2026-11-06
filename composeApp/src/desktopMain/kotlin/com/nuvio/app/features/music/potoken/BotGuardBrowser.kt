@@ -320,6 +320,16 @@ internal object BotGuardPage {
         return "__pot.run($argument)"
     }
 
+    /**
+     * fork:innertubex-sabr — [runExpression] for a challenge from [BotGuardChallenges]. A page's challenge
+     * runs where YouTube's page config holds that page's event id, as it does in the page itself.
+     */
+    fun runExpression(challenge: BotGuardChallenge): String {
+        val run = runExpression(challenge.challenge)
+        val eventId = challenge.eventId ?: return run
+        return "(window.yt = {config_: {EVENT_ID: ${JsonPrimitive(eventId)}}}, $run)"
+    }
+
     /** Builds the minter from the integrity token (web-safe base64). Resolves to "ok". */
     fun initExpression(integrityTokenWebSafe: String): String = "__pot.init(${JsonPrimitive(integrityTokenWebSafe)})"
 
