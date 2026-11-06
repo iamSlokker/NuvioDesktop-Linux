@@ -96,7 +96,8 @@ internal class BotGuardMinter private constructor(
             val started = now()
             val browser = BotGuardBrowser.launch(browserPath)
             try {
-                val challenge = PoTokenProtocol.parseChallenge(http.post(PoTokenProtocol.CREATE_URL, PoTokenProtocol.createBody()))
+                // fork:innertubex-sabr
+                val challenge = BotGuardChallenges.next(http)
                 val response = browser.evaluate(BotGuardPage.runExpression(challenge), RUN_TIMEOUT_MS)
                 val integrity = PoTokenProtocol.parseIntegrityToken(
                     http.post(PoTokenProtocol.GENERATE_IT_URL, PoTokenProtocol.generateItBody(response)),
@@ -106,7 +107,7 @@ internal class BotGuardMinter private constructor(
                     RUN_TIMEOUT_MS,
                 )
                 val expiresAt = now() + (integrity.ttlSeconds * 1000L - EXPIRY_MARGIN_MS).coerceAtLeast(60_000L)
-                log.i { "BotGuard ready in ${now() - started}ms, valid for ${integrity.ttlSeconds / 60} min" }
+                log.i { "BotGuard ready in ${now() - started}ms, valid for ${integrity.ttlSeconds / 60} min${if (challenge.eventId != null) ", page challenge" else ""}" }
                 return BotGuardMinter(browser, expiresAt, now)
             } catch (error: Throwable) {
                 browser.close()

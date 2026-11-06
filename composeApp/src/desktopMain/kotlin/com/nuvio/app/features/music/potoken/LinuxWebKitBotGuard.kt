@@ -94,14 +94,14 @@ internal class LinuxWebKitBotGuardMinter private constructor(
                 }
             }
             try {
-                val challenge = PoTokenProtocol.parseChallenge(http.post(PoTokenProtocol.CREATE_URL, PoTokenProtocol.createBody()))
+                val challenge = BotGuardChallenges.next(http)
                 val response = evaluate(handle, BotGuardPage.runExpression(challenge), RUN_TIMEOUT_MS)
                 val integrity = PoTokenProtocol.parseIntegrityToken(
                     http.post(PoTokenProtocol.GENERATE_IT_URL, PoTokenProtocol.generateItBody(response)),
                 )
                 evaluate(handle, BotGuardPage.initExpression(PoTokenProtocol.encodeWebSafe(integrity.bytes)), RUN_TIMEOUT_MS)
                 val expiresAt = now() + (integrity.ttlSeconds * 1000L - EXPIRY_MARGIN_MS).coerceAtLeast(60_000L)
-                log.i { "BotGuard ready in WebKitGTK in ${now() - started}ms, valid for ${integrity.ttlSeconds / 60} min" }
+                log.i { "BotGuard ready in WebKitGTK in ${now() - started}ms, valid for ${integrity.ttlSeconds / 60} min${if (challenge.eventId != null) ", page challenge" else ""}" }
                 return LinuxWebKitBotGuardMinter(handle, expiresAt, now)
             } catch (error: Throwable) {
                 LinuxBotGuardPageNative.close(handle)
