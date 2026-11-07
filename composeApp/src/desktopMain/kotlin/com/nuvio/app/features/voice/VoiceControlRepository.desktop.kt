@@ -391,7 +391,13 @@ actual object VoiceControlRepository {
             runCatching {
                 file.parentFile?.mkdirs()
                 VoiceAudio.writeWav(clip, file)
-                ProcessBuilder("explorer.exe", "/select,${file.absolutePath}").start()
+                if (com.nuvio.app.features.player.desktop.DesktopHostOs.current == com.nuvio.app.features.player.desktop.DesktopHostOs.LINUX) {
+                    // No portable "select this file" on Linux: open its folder, through the portal in the Flatpak.
+                    val folder = file.parentFile
+                    com.nuvio.app.core.build.LinuxHostProcess.open(folder.absolutePath, fallback = { runCatching { java.awt.Desktop.getDesktop().open(folder) } })
+                } else {
+                    ProcessBuilder("explorer.exe", "/select,${file.absolutePath}").start()
+                }
             }.onFailure { log.w(it) { "Could not save the test recording" } }
         }
     }
