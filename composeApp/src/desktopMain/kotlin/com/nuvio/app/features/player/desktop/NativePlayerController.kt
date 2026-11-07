@@ -1489,7 +1489,9 @@ internal class NativePlayerController(
         )
     }
 
-    private fun showVolumePillFromNative() {
+    /** Shows the volume pill and moves the HUD's volume slider to mpv's current level. Any change
+     * made outside the HUD (voice, keys) must call this, or the slider keeps its old position. */
+    fun showVolumePillFromNative() {
         val current = handle.takeIf { it != 0L } ?: return
         val percentage = NativePlayerBridge.volume(current).toInt().coerceIn(0, 200)
         val muted = NativePlayerBridge.isMuted(current)
@@ -3431,6 +3433,8 @@ internal fun PlayerControlsState.toControlsJson(
         append(',')
         appendJsonField("minimalHudPillsEnabled", hud.minimalHudPillsEnabled)
         append(',')
+        appendJsonField("dockPanelFromBarEnabled", hud.dockPanelFromBarEnabled)
+        append(',')
         appendJsonField("ultraHudEnabled", hud.ultraHudEnabled)
         append(',')
         appendJsonField("officialHudEnabled", hud.officialHudEnabled)
@@ -3446,6 +3450,10 @@ internal fun PlayerControlsState.toControlsJson(
         appendJsonField("alwaysShowClock", hud.alwaysShowClock)
         append(',')
         appendJsonField("playbackSpeedFineIncrementsEnabled", hud.playbackSpeedFineIncrementsEnabled)
+        append(',')
+        appendJsonField("zoneInput", hud.zoneInput)
+        append(',')
+        appendJsonField("zoneActions", hud.zoneActions)
         append(',')
         appendJsonField("playbackSpeedToggleLow", hud.playbackSpeedToggleLow)
         append(',')
