@@ -148,6 +148,7 @@ struct LinuxControlsOverlay::State : std::enable_shared_from_this<State> {
     std::atomic<bool> pipHudSuppressed{false};
     double controlsUiScaleFactor = 1.0; // Transient; the shared snapshot owns the preference.
     bool hostWindowFocused = false; // GTK thread only; start hidden until AWT supplies focus.
+    guint sideButtonHeld = 0; // GTK thread only: X button 8 or 9 while it is down, else 0.
     int x = 0, y = 0, width = 0, height = 0, lastScale = 0;
     Message message;
     Snapshot snapshot;
@@ -182,6 +183,29 @@ struct LinuxControlsOverlay::State : std::enable_shared_from_this<State> {
                     g_error_free(error);
                 }
             }, nullptr); // Completion owns no Player/State pointer.
+    }
+
+    // WebKitGTK gives the page mouse buttons 8 and 9 (Back, Forward) as button 0, the left one, so a
+    // side button paused the video or started the 2x hold, and the HUD's mouse Back and its XB1 / XB2
+    // player zones never saw one. They reach the page here instead, as DOM buttons 3 and 4, with the
+    // pointer moves between press and release carrying that button, as a browser sends them.
+    void sideButtonEvent(const char *pointerType, const char *mouseType, guint xButton, bool held,
+        bool move, double viewX, double viewY) {
+        if (!view) return;
+        const double zoom = webkit_web_view_get_zoom_level(view);
+        const double scale = zoom > 0.0 ? zoom : 1.0;
+        const int button = move ? -1 : (xButton == 9 ? 4 : 3);
+        const int buttons = held ? (xButton == 9 ? 16 : 8) : 0;
+        char script[640];
+        std::snprintf(script, sizeof script,
+            "(() => { const x = %.2f, y = %.2f;"
+            " const target = document.elementFromPoint(x, y) || document.documentElement;"
+            " const init = { bubbles: true, cancelable: true, composed: true, view: window, clientX: x, clientY: y,"
+            " screenX: x, screenY: y, button: %d, buttons: %d, pointerId: 1, pointerType: 'mouse', isPrimary: true };"
+            " target.dispatchEvent(new PointerEvent('%s', init));"
+            " target.dispatchEvent(new MouseEvent('%s', init)); })()",
+            viewX / scale, viewY / scale, button, buttons, pointerType, mouseType);
+        evaluate(script);
     }
 
     void deliver() {
@@ -425,13 +449,38 @@ struct LinuxControlsOverlay::State : std::enable_shared_from_this<State> {
             WebKitWebProcessTerminationReason reason, gpointer) {
             std::fprintf(stderr, "Linux controls: WebProcess terminated (reason %d)\n", static_cast<int>(reason));
         }), nullptr);
-        g_signal_connect(view, "button-press-event", G_CALLBACK(+[](GtkWidget *widget, GdkEventButton *,
-            gpointer) -> gboolean {
+        g_signal_connect(view, "button-press-event", G_CALLBACK(+[](GtkWidget *widget, GdkEventButton *event,
+            gpointer data) -> gboolean {
             // Internal WebView focus is enough for mouse controls. Leave X11
             // keyboard focus in AWT so a HUD click cannot hide its own window.
             gtk_widget_grab_focus(widget);
-            return FALSE;
-        }), nullptr);
+            if (event->button != 8 && event->button != 9) return FALSE;
+            auto &self = *static_cast<State *>(data);
+            // A double press arrives as a press plus a 2BUTTON_PRESS; only the press is a DOM press.
+            if (event->type == GDK_BUTTON_PRESS && !self.sideButtonHeld) {
+                self.sideButtonHeld = event->button;
+                self.sideButtonEvent("pointerdown", "mousedown", event->button, true, false, event->x, event->y);
+            }
+            return TRUE;
+        }), this);
+        g_signal_connect(view, "button-release-event", G_CALLBACK(+[](GtkWidget *, GdkEventButton *event,
+            gpointer data) -> gboolean {
+            if (event->button != 8 && event->button != 9) return FALSE;
+            auto &self = *static_cast<State *>(data);
+            if (self.sideButtonHeld == event->button) {
+                self.sideButtonHeld = 0;
+                self.sideButtonEvent("pointerup", "mouseup", event->button, false, false, event->x, event->y);
+            }
+            return TRUE;
+        }), this);
+        g_signal_connect(view, "motion-notify-event", G_CALLBACK(+[](GtkWidget *, GdkEventMotion *event,
+            gpointer data) -> gboolean {
+            auto &self = *static_cast<State *>(data);
+            if (!self.sideButtonHeld) return FALSE;
+            // WebKit's own move would say no button is down and end the page's drag.
+            self.sideButtonEvent("pointermove", "mousemove", self.sideButtonHeld, true, true, event->x, event->y);
+            return TRUE;
+        }), this);
         gtk_widget_realize(window);
         GdkWindow *native = gtk_widget_get_window(window);
         gdk_x11_display_error_trap_push(display);

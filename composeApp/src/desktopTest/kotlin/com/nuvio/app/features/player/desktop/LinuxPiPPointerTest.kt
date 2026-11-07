@@ -34,6 +34,32 @@ class LinuxPiPPointerTest {
         assertEquals(Rectangle(100, 100, 240, 135), linuxPiPResizedBounds(start, 4, -900, -900))
         assertEquals(Rectangle(340, 235, 240, 135), linuxPiPResizedBounds(start, 8, 900, 900))
     }
+    @Test fun shiftKeepsTheShapeTheDragStartedWith() {
+        val start = Rectangle(100, 100, 480, 270)
+        // An edge grows the other axis about its middle.
+        assertEquals(Rectangle(100, 87, 528, 297), linuxPiPResizedBounds(start, 3, 48, 99, keepAspect = true))
+        // A corner follows whichever way the pointer moved further.
+        assertEquals(Rectangle(100, 100, 576, 324), linuxPiPResizedBounds(start, 4, 96, 10, keepAspect = true))
+        assertEquals(Rectangle(100, 100, 576, 324), linuxPiPResizedBounds(start, 4, 10, 54, keepAspect = true))
+        assertEquals(Rectangle(4, 46, 576, 324), linuxPiPResizedBounds(start, 8, -96, 0, keepAspect = true))
+    }
+    @Test fun shiftResizingStopsAtTheSmallestPictureInShape() {
+        val start = Rectangle(100, 100, 480, 270)
+        assertEquals(Rectangle(220, 100, 240, 135), linuxPiPResizedBounds(start, 5, 0, -900, keepAspect = true))
+        assertEquals(Rectangle(340, 235, 240, 135), linuxPiPResizedBounds(start, 8, 900, 900, keepAspect = true))
+    }
+    @Test fun shiftCanBePressedMidDrag() {
+        val sizes = mutableListOf<Rectangle>()
+        val pointer = LinuxPiPPointer(toggle = {}, fullscreen = {}, move = {}, resize = { sizes += it })
+        pointer.setActive(true)
+        pointer.pressResize(Point(580, 370), Rectangle(100, 100, 480, 270), 4)
+        pointer.motion(Point(676, 380))
+        pointer.motion(Point(676, 380), keepAspect = true)
+        pointer.release(Point(676, 380), keepAspect = true)
+        assertEquals(Rectangle(100, 100, 576, 280), sizes[0])
+        assertEquals(Rectangle(100, 100, 576, 324), sizes[1])
+        assertEquals(Rectangle(100, 100, 576, 324), sizes.last())
+    }
     @Test fun everyHandleHasItsCursor() {
         assertEquals(8, (1..8).map(::linuxPiPResizeCursor).distinct().size)
         assertEquals(java.awt.Cursor.DEFAULT_CURSOR, linuxPiPResizeCursor(0))
