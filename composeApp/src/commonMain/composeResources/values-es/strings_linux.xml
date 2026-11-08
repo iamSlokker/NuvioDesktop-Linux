@@ -30,5 +30,5 @@
     <string name="linux_licenses_full_texts">Los textos completos de las licencias están en share/licenses, en la carpeta de instalación.</string>
     <string name="linux_licenses_whisper_body">Reconocimiento de voz sin conexión para el control por voz (whisper.cpp v1.9.5 con ggml, en libnuvio_whisper.so).</string>
     <string name="linux_licenses_libtorrent_body">El motor de torrents de Nuvio Engine (libnuvio_engine.so), compilado desde NuvioMedia/nuvio-engine.</string>
-    <string name="linux_player_hud_back_to_video">Volver al vídeo</string>
+    <string name="linux_player_hud_pip_pop_out">Sacar sobre otras ventanas</string>
 </resources>

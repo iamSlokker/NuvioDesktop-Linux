@@ -13,9 +13,21 @@ class LinuxPiPHudTest {
     @Test fun targetsAreWhereTheyAreDrawn() {
         val layout = LinuxPiPHudLayout(400, 40)
         assertEquals(LinuxPiPHudTarget.Play, layout.target(5, 20))
-        assertEquals(LinuxPiPHudTarget.Exit, layout.target(395, 20))
+        assertEquals(LinuxPiPHudTarget.Close, layout.target(395, 20))
+        assertEquals(LinuxPiPHudTarget.Exit, layout.target(355, 20))
         assertEquals(LinuxPiPHudTarget.Seek, layout.target(200, 2))
         assertEquals(LinuxPiPHudTarget.None, layout.target(200, 40))
+        assertNull(layout.browse)
+    }
+
+    @Test fun browseSitsBeforeExitOnlyWhenOffered() {
+        val layout = LinuxPiPHudLayout(400, 40, withBrowse = true)
+        assertEquals(LinuxPiPHudTarget.Browse, layout.target(320, 20))
+        assertEquals(LinuxPiPHudTarget.Exit, layout.target(355, 20))
+        assertEquals(LinuxPiPHudTarget.Close, layout.target(395, 20))
+        assertTrue(layout.bar.x + layout.bar.width <= layout.browse!!.x)
+        val smallest = linuxPiPHudBounds(Rectangle(0, 0, 240, 135))
+        assertTrue(LinuxPiPHudLayout(smallest.width, smallest.height, withBrowse = true).bar.width > 60)
     }
 
     @Test fun theSeekBarSpansTheGapBetweenTheButtons() {

@@ -23,26 +23,35 @@ import javax.swing.SwingUtilities
 import javax.swing.Timer
 
 /**
- * The strip of controls Windows shows over PiP on hover: play/pause, seek, back to the player.
+ * The strip of controls Windows shows over PiP on hover: play/pause, seek, back to the player, close,
+ * and Browse (on to the corner box over the app) when that setting is on for a hosted player.
  *
  * Windows draws them in the WebView HUD. The Linux HUD is an override-redirect WebKit window that is
  * hidden for the whole of PiP (LinuxPictureInPictureTransition), because it maps only while the app
  * has focus and a floating window usually does not, so this is a small owned window of its own,
  * in the same way as the screensaver shade. It never takes focus.
  */
-internal enum class LinuxPiPHudTarget { None, Play, Seek, Exit }
+internal enum class LinuxPiPHudTarget { None, Play, Seek, Browse, Exit, Close }
 
 /** Where things are in a strip of [width] x [height]. No window or toolkit, so tests can ask. */
-internal class LinuxPiPHudLayout(val width: Int, val height: Int) {
+internal class LinuxPiPHudLayout(val width: Int, val height: Int, withBrowse: Boolean = false) {
     private val button = minOf(height, 40)
-    val play = Rectangle(0, (height - button) / 2, button, button)
-    val exit = Rectangle(width - button, (height - button) / 2, button, button)
-    val bar = Rectangle(button + Gap, height / 2 - BarHeight / 2, (width - 2 * button - 2 * Gap).coerceAtLeast(1), BarHeight)
+    // The right-hand buttons are narrower, so the smallest PiP keeps a usable seek bar.
+    private val side = minOf(height, 32)
+    private val top = (height - button) / 2
+    val play = Rectangle(0, top, button, button)
+    val close = Rectangle(width - side, top, side, button)
+    val exit = Rectangle(close.x - side, top, side, button)
+    val browse: Rectangle? = if (withBrowse) Rectangle(exit.x - side, top, side, button) else null
+    private val right = browse?.x ?: exit.x
+    val bar = Rectangle(button + Gap, height / 2 - BarHeight / 2, (right - button - 2 * Gap).coerceAtLeast(1), BarHeight)
 
     fun target(x: Int, y: Int): LinuxPiPHudTarget = when {
         play.contains(x, y) -> LinuxPiPHudTarget.Play
+        close.contains(x, y) -> LinuxPiPHudTarget.Close
         exit.contains(x, y) -> LinuxPiPHudTarget.Exit
-        y in 0 until height && x in play.x + play.width until exit.x -> LinuxPiPHudTarget.Seek
+        browse?.contains(x, y) == true -> LinuxPiPHudTarget.Browse
+        y in 0 until height && x in play.x + play.width until right -> LinuxPiPHudTarget.Seek
         else -> LinuxPiPHudTarget.None
     }
 
@@ -67,6 +76,7 @@ internal fun linuxPiPSeekTarget(fraction: Double, durationMs: Long): Long? =
 internal class LinuxPiPHudPanel(
     private val snapshot: () -> PlayerPlaybackSnapshot?,
     private val translucent: Boolean,
+    private val browseAvailable: () -> Boolean = { false },
 ) : JPanel() {
     /** Where the seek bar is being dragged to, drawn instead of the player's position. */
     var preview: Double? = null
@@ -78,12 +88,14 @@ internal class LinuxPiPHudPanel(
     override fun paintComponent(g: Graphics) {
         val g2 = g.create() as Graphics2D
         g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON)
-        val layout = LinuxPiPHudLayout(width, height)
+        val layout = stripLayout()
         g2.color = if (translucent) Color(0, 0, 0, 190) else Color(20, 20, 20)
         g2.fill(RoundRectangle2D.Float(0f, 0f, width.toFloat(), height.toFloat(), 12f, 12f))
         val state = snapshot()
         drawPlay(g2, layout.play, playing = state?.isPlaying == true)
+        layout.browse?.let { drawBrowse(g2, it) }
         drawExit(g2, layout.exit)
+        drawClose(g2, layout.close)
         val duration = state?.durationMs ?: 0L
         val bar = layout.bar
         g2.color = Color(255, 255, 255, 70)
@@ -127,6 +139,28 @@ internal class LinuxPiPHudPanel(
         g.drawRoundRect(x, y, 18, 14, 3, 3)
         g.fillRoundRect(x + 9, y + 7, 7, 5, 2, 2)
     }
+
+    /** The app's window, its title bar along the top, with the video in its corner (the HUD's icon-pip-browse). */
+    private fun drawBrowse(g: Graphics2D, r: Rectangle) {
+        val x = r.centerX.toInt() - 9
+        val y = r.centerY.toInt() - 7
+        g.color = Color.WHITE
+        g.stroke = BasicStroke(1.6f)
+        g.drawRoundRect(x, y, 18, 14, 3, 3)
+        g.drawLine(x, y + 4, x + 18, y + 4)
+        g.fillRoundRect(x + 10, y + 8, 6, 4, 2, 2)
+    }
+
+    private fun drawClose(g: Graphics2D, r: Rectangle) {
+        val cx = r.centerX.toInt()
+        val cy = r.centerY.toInt()
+        g.color = Color.WHITE
+        g.stroke = BasicStroke(2f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND)
+        g.drawLine(cx - 6, cy - 6, cx + 6, cy + 6)
+        g.drawLine(cx + 6, cy - 6, cx - 6, cy + 6)
+    }
+
+    fun stripLayout() = LinuxPiPHudLayout(width, height, browseAvailable())
 }
 
 internal class LinuxPiPHud(
@@ -135,6 +169,9 @@ internal class LinuxPiPHud(
     private val toggle: () -> Unit,
     private val exit: () -> Unit,
     private val seek: (Long) -> Unit,
+    private val closeVideo: () -> Unit = {},
+    private val browse: () -> Unit = {},
+    private val browseAvailable: () -> Boolean = { false },
 ) : AutoCloseable {
     private var strip: JWindow? = null
     private var panel: LinuxPiPHudPanel? = null
@@ -193,7 +230,7 @@ internal class LinuxPiPHud(
             GraphicsEnvironment.getLocalGraphicsEnvironment().defaultScreenDevice
                 .isWindowTranslucencySupported(GraphicsDevice.WindowTranslucency.PERPIXEL_TRANSLUCENT)
         }.getOrDefault(false)
-        val content = LinuxPiPHudPanel(snapshot, translucent)
+        val content = LinuxPiPHudPanel(snapshot, translucent, browseAvailable)
         val created = JWindow(window).apply {
             // As with the shade: POPUP keeps the exact owner-relative place on XWayland.
             type = Window.Type.POPUP
@@ -202,8 +239,8 @@ internal class LinuxPiPHud(
             contentPane = content
         }
         val input = object : MouseAdapter() {
-            private fun at(event: MouseEvent) = LinuxPiPHudLayout(content.width, content.height).target(event.x, event.y)
-            private fun fraction(event: MouseEvent) = LinuxPiPHudLayout(content.width, content.height).fractionAt(event.x)
+            private fun at(event: MouseEvent) = content.stripLayout().target(event.x, event.y)
+            private fun fraction(event: MouseEvent) = content.stripLayout().fractionAt(event.x)
             override fun mouseEntered(event: MouseEvent) { hovering = true; hideTimer.stop() }
             override fun mouseExited(event: MouseEvent) { hovering = false; hideTimer.restart() }
             override fun mouseMoved(event: MouseEvent) {
@@ -216,6 +253,8 @@ internal class LinuxPiPHud(
                 when (at(event)) {
                     LinuxPiPHudTarget.Play -> toggle()
                     LinuxPiPHudTarget.Exit -> exit()
+                    LinuxPiPHudTarget.Close -> { hide(); closeVideo() }
+                    LinuxPiPHudTarget.Browse -> { hide(); browse() }
                     LinuxPiPHudTarget.Seek -> if (linuxPiPSeekTarget(0.0, snapshot()?.durationMs ?: 0L) != null) {
                         dragging = true
                         content.preview = fraction(event)

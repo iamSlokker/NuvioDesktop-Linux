@@ -30,5 +30,5 @@
     <string name="linux_licenses_full_texts">Teks lisensi lengkap ada di share/licenses dalam folder instalasi.</string>
     <string name="linux_licenses_whisper_body">Pengenalan suara luring untuk kontrol suara (whisper.cpp v1.9.5 dengan ggml, di libnuvio_whisper.so).</string>
     <string name="linux_licenses_libtorrent_body">Mesin torrent di dalam Nuvio Engine (libnuvio_engine.so), dibangun dari NuvioMedia/nuvio-engine.</string>
-    <string name="linux_player_hud_back_to_video">Kembali ke video</string>
+    <string name="linux_player_hud_pip_pop_out">Lepaskan di atas jendela lain</string>
 </resources>

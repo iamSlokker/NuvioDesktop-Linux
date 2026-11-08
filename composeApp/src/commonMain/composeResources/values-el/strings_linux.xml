@@ -30,5 +30,5 @@
     <string name="linux_licenses_full_texts">Τα πλήρη κείμενα των αδειών βρίσκονται στο share/licenses μέσα στον φάκελο εγκατάστασης.</string>
     <string name="linux_licenses_whisper_body">Αναγνώριση ομιλίας εκτός σύνδεσης για τον φωνητικό έλεγχο (whisper.cpp v1.9.5 με ggml, στο libnuvio_whisper.so).</string>
     <string name="linux_licenses_libtorrent_body">Η μηχανή torrent μέσα στο Nuvio Engine (libnuvio_engine.so), από το NuvioMedia/nuvio-engine.</string>
-    <string name="linux_player_hud_back_to_video">Πίσω στο βίντεο</string>
+    <string name="linux_player_hud_pip_pop_out">Αποσύνδεση πάνω από άλλα παράθυρα</string>
 </resources>
