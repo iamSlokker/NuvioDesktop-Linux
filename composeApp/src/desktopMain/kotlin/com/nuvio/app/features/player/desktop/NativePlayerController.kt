@@ -207,7 +207,10 @@ internal class NativePlayerController(
         if (DesktopHostOs.current != DesktopHostOs.LINUX) null else LinuxPiPHud(host, { runCatching { snapshot() }.getOrNull() },
             toggle = { handlePlayerEvent("toggle", 0.0) },
             exit = { handlePlayerEvent("pictureInPicture", 0.0) },
-            seek = { handlePlayerEvent("scrubFinish", it.toDouble()) }),
+            seek = { handlePlayerEvent("scrubFinish", it.toDouble()) },
+            closeVideo = { handlePlayerEvent("pictureInPictureClose", 0.0) },
+            browse = { handlePlayerEvent("pictureInPictureBrowse", 0.0) },
+            browseAvailable = { pipBrowseAvailable }),
     ) { handlePlayerEvent("toggle", 0.0) }
 
     // Experimental native-Wayland HDR session (Linux main player only; default-off setting).

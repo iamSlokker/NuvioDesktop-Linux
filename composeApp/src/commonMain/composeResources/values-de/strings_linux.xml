@@ -30,4 +30,5 @@
     <string name="linux_licenses_full_texts">Die vollständigen Lizenztexte liegen unter share/licenses im Installationsordner.</string>
     <string name="linux_licenses_whisper_body">Offline-Spracherkennung für die Sprachsteuerung (whisper.cpp v1.9.5 mit ggml, in libnuvio_whisper.so).</string>
     <string name="linux_licenses_libtorrent_body">Die Torrent-Engine in Nuvio Engine (libnuvio_engine.so), gebaut aus NuvioMedia/nuvio-engine.</string>
+    <string name="linux_player_hud_pip_pop_out">Über anderen Fenstern lösen</string>
 </resources>

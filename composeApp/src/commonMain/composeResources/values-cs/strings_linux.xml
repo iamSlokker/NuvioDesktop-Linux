@@ -30,4 +30,5 @@
     <string name="linux_licenses_full_texts">Úplná znění licencí najdete ve složce share/licenses v instalační složce.</string>
     <string name="linux_licenses_whisper_body">Offline rozpoznávání řeči pro hlasové ovládání (whisper.cpp v1.9.5 s ggml, v libnuvio_whisper.so).</string>
     <string name="linux_licenses_libtorrent_body">Torrentový engine v Nuvio Engine (libnuvio_engine.so), sestavený z NuvioMedia/nuvio-engine.</string>
+    <string name="linux_player_hud_pip_pop_out">Vysunout nad ostatní okna</string>
 </resources>

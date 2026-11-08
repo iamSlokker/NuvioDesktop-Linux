@@ -83,7 +83,9 @@ internal class LinuxPictureInPictureAwtWindow(
     }
     override val contentInsets get() = geometry.insets
     override fun canvasGeometry() = geometry.sample()
-    override val hostInsideWindow get() = com.nuvio.app.features.youtube.YouTubeWatchLayout.pageShown
+    // PiP's Browse leaves PiP for the corner box over the app: the video no longer fills the window either.
+    override val hostInsideWindow get() = com.nuvio.app.features.youtube.YouTubeWatchLayout.pageShown ||
+        com.nuvio.app.features.player.PlayerBrowsePip.active.value
     override fun restoredCanvasGeometry() = geometry.sample(hostInsideWindow)
     override fun workArea(target: Rectangle) = geometry.workArea(target)
     override fun beginGeometry() = geometry.begin()
