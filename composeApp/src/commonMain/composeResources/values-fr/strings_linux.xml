@@ -30,5 +30,4 @@
     <string name="linux_licenses_full_texts">Les textes complets des licences se trouvent dans share/licenses, dans le dossier d'installation.</string>
     <string name="linux_licenses_whisper_body">Reconnaissance vocale hors ligne pour la commande vocale (whisper.cpp v1.9.5 avec ggml, dans libnuvio_whisper.so).</string>
     <string name="linux_licenses_libtorrent_body">Le moteur torrent de Nuvio Engine (libnuvio_engine.so), compilé depuis NuvioMedia/nuvio-engine.</string>
-    <string name="linux_player_hud_back_to_video">Retour à la vidéo</string>
 </resources>

@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.requiredSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -75,6 +76,11 @@ actual fun HomeHeroTrailerSurface(
     onAddToLibrary: () -> Unit,
     audioOnly: Boolean, // fork:linux
 ) {
+    // fork:pip-browse - no trailer over a film playing on in the corner box (a pre-show is for a new
+    // film, which closes the box first). Nothing is drawn, so the hero keeps its artwork; the trailer
+    // starts once the box is gone.
+    val browsePip by com.nuvio.app.features.player.PlayerBrowsePip.active.collectAsState()
+    if (browsePip && !preshow) return
     val supported = DesktopHostOs.current == DesktopHostOs.WINDOWS ||
         DesktopHostOs.current == DesktopHostOs.MACOS || DesktopHostOs.current == DesktopHostOs.LINUX
     // The home gate is for the home hero; the pre-show (in the player route) and theme songs (details
