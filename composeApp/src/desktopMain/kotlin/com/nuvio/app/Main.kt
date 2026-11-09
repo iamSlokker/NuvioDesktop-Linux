@@ -473,6 +473,11 @@ private inline fun desktopStartupStep(name: String, block: () -> Unit) {
 
 fun main(args: Array<String>) {
     com.nuvio.app.core.build.NativeImageSupport.configureRuntime()
+    // fork:linux - the bridge turns on Xlib's threads as it loads (xlib_threads.cpp), which has to
+    // happen before AWT or GTK first touch X.
+    if (DesktopHostOs.current == DesktopHostOs.LINUX) {
+        runCatching { com.nuvio.app.features.player.desktop.NativePlayerBridge.ensureNativeLibraryLoaded() }
+    }
     com.nuvio.app.core.build.NativeImageSupport.startSelfTestIfRequested()
     // Build-time archive training (createDistributable): before anything else, so it touches no
     // store, lock or log of the user's. Never returns.
