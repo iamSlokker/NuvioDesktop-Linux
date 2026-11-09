@@ -2,6 +2,7 @@
 
 #include <jni.h>
 #include <jawt.h>
+#include "jawt_lookup.h"
 #include <X11/Xlib.h>
 #include "x11_error_handler_guard.h"
 #include <mutex>
@@ -15,7 +16,7 @@ public:
     static void prepare(JNIEnv *env) {
         std::call_once(prepared_, [env] {
             awt_.version = JAWT_VERSION_1_4;
-            if (!JAWT_GetAWT(env, &awt_) || !awt_.Lock || !awt_.Unlock)
+            if (!linuxJawtGetAwt(env, &awt_) || !awt_.Lock || !awt_.Unlock)
                 throw std::runtime_error("Linux player shutdown requires the JAWT global lock.");
             jclass wrapper = env->FindClass("sun/awt/X11/XlibWrapper");
             if (!wrapper) throw std::runtime_error("Linux player requires OpenJDK's XToolkit.");

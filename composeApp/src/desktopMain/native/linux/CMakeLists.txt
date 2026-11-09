@@ -47,7 +47,7 @@ target_compile_features(player_bridge PRIVATE cxx_std_17)
 target_include_directories(player_bridge PRIVATE "${MPV_INCLUDE_DIR}")
 target_include_directories(player_bridge SYSTEM PRIVATE
     ${JNI_INCLUDE_DIRS} "${X11_INCLUDE_DIR}" "${X11_PROTOCOL_INCLUDE_DIR}")
-target_link_libraries(player_bridge PRIVATE JNI::JNI JNI::AWT Threads::Threads ${CMAKE_DL_LIBS} "${MPV_LIBRARY}"
+target_link_libraries(player_bridge PRIVATE JNI::JNI Threads::Threads ${CMAKE_DL_LIBS} "${MPV_LIBRARY}"
     PkgConfig::GTK3 PkgConfig::WEBKITGTK "${X11_LIBRARY}" "${XEXT_LIBRARY}")
 target_link_options(player_bridge PRIVATE "LINKER:-z,defs")
 

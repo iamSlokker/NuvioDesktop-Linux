@@ -1,6 +1,7 @@
 #include <jni.h>
 #include <jawt.h>
 #include <jawt_md.h>
+#include "jawt_lookup.h"
 
 extern "C" JNIEXPORT jlong JNICALL
 Java_com_nuvio_app_features_player_desktop_LinuxAwtViewResolver_resolveX11Drawable(
@@ -13,7 +14,7 @@ Java_com_nuvio_app_features_player_desktop_LinuxAwtViewResolver_resolveX11Drawab
     JAWT_DrawingSurfaceInfo *info = nullptr;
     bool locked = false;
     jlong drawable = 0;
-    if (JAWT_GetAWT(env, &awt)) {
+    if (linuxJawtGetAwt(env, &awt)) {
         surface = awt.GetDrawingSurface(env, component);
         if (surface) {
             locked = (surface->Lock(surface) & JAWT_LOCK_ERROR) == 0;
