@@ -110,7 +110,6 @@ internal object LinuxDownloadEngineProbe {
                         check(cancelReleased.await(10, TimeUnit.SECONDS)) { "Cancellation gate timed out" }
                     }
                 },
-                onMerging = { _, _ -> },
                 onSuccess = { path, total -> success.incrementAndGet(); completed.complete(Result(path = path, total = total)) },
                 onFailure = { error, transient -> failure.incrementAndGet(); completed.complete(Result(error = error, transient = transient)) },
             )
