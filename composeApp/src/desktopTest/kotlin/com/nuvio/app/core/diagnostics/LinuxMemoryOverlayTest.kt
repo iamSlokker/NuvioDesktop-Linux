@@ -9,13 +9,13 @@ class LinuxMemoryOverlayTest {
     fun linuxLibrariesNameTheSameEngines() {
         assertEquals(
             listOf("mpv", "Whisper", "QuickJS", "torrent engine"),
-            notableEngines("libc.so.6;libmpv.so.2;libnuvio_whisper.so;libquickjs.so;libnuvio_engine.so;libgtk-3.so.0"),
+            notableEngines("libc.so;libc.so.6;libmpv.so;libmpv.so.2.5.0;libnuvio_whisper.so;libquickjs.so;libnuvio_engine.so;libgtk-3.so"),
         )
     }
 
     @Test
     fun anEngineLoadedUnderBothNamesIsNamedOnce() {
-        assertEquals(listOf("mpv"), notableEngines("libmpv-2.dll;libmpv.so.2"))
+        assertEquals(listOf("mpv"), notableEngines("libmpv-2.dll;libmpv.so"))
     }
 
     @Test

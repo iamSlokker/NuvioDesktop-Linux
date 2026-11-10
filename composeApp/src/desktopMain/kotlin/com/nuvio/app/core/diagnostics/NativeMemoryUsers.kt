@@ -30,7 +30,7 @@ internal object NativeMemoryUsers {
 /** The native engines worth naming when they are loaded, by DLL or Linux library file name (lower case). */
 internal val NotableNativeEngines: List<Pair<String, String>> = listOf(
     "libmpv-2.dll" to "mpv",
-    "libmpv.so.2" to "mpv",
+    "libmpv.so" to "mpv",
     "nuvio_whisper.dll" to "Whisper",
     "libnuvio_whisper.so" to "Whisper",
     "libquickjs.dll" to "QuickJS",

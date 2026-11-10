@@ -144,7 +144,7 @@ Java_com_nuvio_app_features_player_desktop_NativePlayerBridge_processPrivateWork
     return linux_memory::privateResident(readFile("/proc/" + std::to_string(pid) + "/smaps_rollup"));
 }
 
-// File names of the shared libraries mapped in this process, ';'-separated.
+// File names of the shared libraries mapped in this process, each also without its version, ';'-separated.
 extern "C" JNIEXPORT jstring JNICALL
 Java_com_nuvio_app_features_player_desktop_NativePlayerBridge_loadedModuleNames(JNIEnv *env, jobject) {
     std::istringstream maps(readFile("/proc/self/maps"));
@@ -155,7 +155,11 @@ Java_com_nuvio_app_features_player_desktop_NativePlayerBridge_loadedModuleNames(
         if (slash == std::string::npos) continue;
         const std::string path = line.substr(slash);
         if (!linux_memory::isSharedObject(path)) continue;
-        names.insert(path.substr(path.rfind('/') + 1));
+        const std::string name = path.substr(path.rfind('/') + 1);
+        names.insert(name);
+        // Mapped under the real file name (libmpv.so.2.5.0); the unversioned one is what the
+        // engine list (NotableNativeEngines) names.
+        names.insert(name.substr(0, name.find(".so") + 3));
     }
     std::string joined;
     for (const auto &name : names) {
