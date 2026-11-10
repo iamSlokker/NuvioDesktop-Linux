@@ -14,7 +14,7 @@ internal const val LINUX_PLAYER_MENU_SCRIPT = """(() => {
   const video = typeof contextMenuItems === 'undefined' ? null : contextMenuItems.find(item => item.label === 'Video');
   const unusable = ['send:keyboardCycleAnimeSvp', 'send:toggleRtxVsr', 'send:toggleRtxTrueHdr'];
   if (video && video.children) video.children = video.children.filter(item => !unusable.includes(item.action));
-  document.querySelectorAll('[data-toggle-key="desktopAnimeSvpEnabled"], [data-toggle-key="rtxVsrEnabled"], [data-toggle-key="rtxTrueHdrEnabled"]').forEach(button => (button.closest('.context-menu-group') || button).remove());
+  document.querySelectorAll('[data-toggle-key="svpInChain"], [data-toggle-key="rtxVsrEnabled"], [data-toggle-key="rtxTrueHdrEnabled"]').forEach(button => (button.closest('.context-menu-group') || button).remove());
   document.querySelectorAll('[data-command="keyboardCycleAnimeSvp"]').forEach(button => {
     if (typeof overflowCapableActions !== 'undefined') {
       const index = overflowCapableActions.indexOf(button);

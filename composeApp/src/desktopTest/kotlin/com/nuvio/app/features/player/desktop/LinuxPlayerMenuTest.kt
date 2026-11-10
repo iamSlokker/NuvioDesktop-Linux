@@ -16,12 +16,12 @@ class LinuxPlayerMenuTest {
         val video = controlsJs.substringAfter("const contextMenuItems = [").substringAfter("label: \"Video\"")
             .substringBefore("label: \"Tools\"")
         assertTrue(
-            "action: \"send:keyboardCycleAnimeSvp\", toggleKey: \"desktopAnimeSvpEnabled\"" in video,
+            "action: \"send:keyboardCycleAnimeSvp\", toggleKey: \"svpInChain\"" in video,
             "the Video menu has no SVP toggle to remove",
         )
         // The menu is built once at load; the script must remove the built row, found by this attribute.
         assertTrue("button.dataset.toggleKey = item.toggleKey" in controlsJs)
-        assertTrue("[data-toggle-key=\"desktopAnimeSvpEnabled\"]" in LINUX_PLAYER_MENU_SCRIPT)
+        assertTrue("[data-toggle-key=\"svpInChain\"]" in LINUX_PLAYER_MENU_SCRIPT)
     }
 
     @Test fun theRtxRowsTheLinuxHostRemovesStillExist() {
