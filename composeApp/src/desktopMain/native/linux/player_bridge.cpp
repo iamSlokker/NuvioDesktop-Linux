@@ -1157,25 +1157,6 @@ JNI_METHOD(jlong, create)(
     });
 }
 
-// Where logs/ goes: DesktopStorage.rootDir, as on Windows.
-JNI_METHOD(void, setDataDirectory)(JNIEnv *env, jobject, jstring directory) {
-    guarded(env, [&] { LinuxPlayerLog::setDataDirectory(text(env, directory)); });
-}
-
-JNI_METHOD(void, dispose)(JNIEnv *env, jobject, jlong handle) {
-    guarded(env, [&]() {
-        std::shared_ptr<Player> player;
-        {
-            std::lock_guard<std::mutex> lock(playersLock);
-            auto found = players.find(handle);
-            if (found == players.end()) return; // Includes dispose(0) and repeated disposal.
-            player = found->second;
-            players.erase(found);
-        }
-        player->close();
-    });
-}
-
 // out[0] = bytes in [handle]'s demuxer cache, out[1] = the part ahead of the playhead; -1 when
 // unknown. For the memory overlay; false (no exception) for a player that is gone.
 JNI_METHOD(jboolean, demuxerCacheBytes)(JNIEnv *env, jobject, jlong handle, jlongArray out) {
@@ -1202,6 +1183,25 @@ JNI_METHOD(jboolean, demuxerCacheBytes)(JNIEnv *env, jobject, jlong handle, jlon
     }
     env->SetLongArrayRegion(out, 0, 2, values);
     return JNI_TRUE;
+}
+
+// Where logs/ goes: DesktopStorage.rootDir, as on Windows.
+JNI_METHOD(void, setDataDirectory)(JNIEnv *env, jobject, jstring directory) {
+    guarded(env, [&] { LinuxPlayerLog::setDataDirectory(text(env, directory)); });
+}
+
+JNI_METHOD(void, dispose)(JNIEnv *env, jobject, jlong handle) {
+    guarded(env, [&]() {
+        std::shared_ptr<Player> player;
+        {
+            std::lock_guard<std::mutex> lock(playersLock);
+            auto found = players.find(handle);
+            if (found == players.end()) return; // Includes dispose(0) and repeated disposal.
+            player = found->second;
+            players.erase(found);
+        }
+        player->close();
+    });
 }
 
 JNI_METHOD(void, setPaused)(JNIEnv *env, jobject, jlong handle, jboolean paused) {
