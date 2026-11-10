@@ -1268,7 +1268,7 @@ private fun settingsSearchEntries(
         category = advancedCategory,
         icon = Icons.Rounded.Tune,
     )
-    if (platformOffersMemoryOverlay) addRow(
+    addRow(
         page = SettingsPage.Advanced,
         key = "memory-overlay",
         title = resolve(Res.string.settings_advanced_memory_overlay),

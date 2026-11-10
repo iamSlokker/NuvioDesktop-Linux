@@ -33,7 +33,7 @@ if(NOT EXISTS "${MPV_INCLUDE_DIR}/mpv/client.h" OR
     message(FATAL_ERROR "libmpv headers/library not found; set MPV_ROOT to the mpv installation prefix")
 endif()
 
-add_library(player_bridge SHARED player_bridge.cpp xlib_threads.cpp x11_error_handler_guard.cpp now_playing_glass.cpp awt_view_resolver.cpp controls_overlay.cpp seek_thumbnails.cpp playback_inhibitor.cpp screensaver_idle.cpp mpris_session.cpp linux_gamepad.cpp window_chrome.cpp window_chrome_jni.cpp pip_geometry_jni.cpp hdr_wayland_session.cpp flatpak_update.cpp flatpak_update_jni.cpp file_chooser_portal.cpp file_chooser_portal_jni.cpp)
+add_library(player_bridge SHARED player_bridge.cpp memory_breakdown.cpp xlib_threads.cpp x11_error_handler_guard.cpp now_playing_glass.cpp awt_view_resolver.cpp controls_overlay.cpp seek_thumbnails.cpp playback_inhibitor.cpp screensaver_idle.cpp mpris_session.cpp linux_gamepad.cpp window_chrome.cpp window_chrome_jni.cpp pip_geometry_jni.cpp hdr_wayland_session.cpp flatpak_update.cpp flatpak_update_jni.cpp file_chooser_portal.cpp file_chooser_portal_jni.cpp)
 target_sources(player_bridge PRIVATE status_notifier.cpp status_notifier_jni.cpp)
 target_sources(player_bridge PRIVATE botguard_page_jni.cpp)
 # Optional X11 idle fallback. Wayland sessions never use an XWayland global idle estimate.
@@ -167,6 +167,12 @@ target_compile_options(linux_auto_crop_test PRIVATE -Wall -Wextra -Werror)
 target_include_directories(linux_auto_crop_test PRIVATE "${MPV_INCLUDE_DIR}" "${CMAKE_CURRENT_SOURCE_DIR}")
 target_link_libraries(linux_auto_crop_test PRIVATE "${MPV_LIBRARY}")
 set_target_properties(linux_auto_crop_test PROPERTIES BUILD_RPATH "${MPV_LIBRARY_DIR}")
+
+# Memory overlay figures (memory_breakdown.h): /proc smaps and DRM fdinfo parsing, pure strings.
+add_executable(linux_memory_breakdown_test EXCLUDE_FROM_ALL tests/memory_breakdown_test.cpp)
+target_compile_features(linux_memory_breakdown_test PRIVATE cxx_std_17)
+target_compile_options(linux_memory_breakdown_test PRIVATE -Wall -Wextra -Werror)
+target_include_directories(linux_memory_breakdown_test PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}")
 
 # Windows' HDR baseline and the runtime target modes against real libmpv with null outputs.
 add_executable(linux_tone_mapping_test EXCLUDE_FROM_ALL tests/tone_mapping_test.cpp)

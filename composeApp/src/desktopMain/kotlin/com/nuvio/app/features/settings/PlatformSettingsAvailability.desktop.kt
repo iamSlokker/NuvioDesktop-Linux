@@ -41,8 +41,3 @@ internal actual val platformListsWindowsOnlyPlaybackRowsInSearch: Boolean
 // PreshowAudioKeepAlive returns straight away on Linux.
 internal actual val platformOffersAudioKeepAlive: Boolean
     get() = !isLinuxHost
-
-// processMemoryBreakdown, demuxerCacheBytes, processPrivateWorkingSet and loadedModuleNames exist
-// only in player_bridge.dll, and the overlay's rows are named after Task Manager's figures.
-internal actual val platformOffersMemoryOverlay: Boolean
-    get() = !isLinuxHost

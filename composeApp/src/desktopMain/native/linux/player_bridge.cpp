@@ -1176,6 +1176,34 @@ JNI_METHOD(void, dispose)(JNIEnv *env, jobject, jlong handle) {
     });
 }
 
+// out[0] = bytes in [handle]'s demuxer cache, out[1] = the part ahead of the playhead; -1 when
+// unknown. For the memory overlay; false (no exception) for a player that is gone.
+JNI_METHOD(jboolean, demuxerCacheBytes)(JNIEnv *env, jobject, jlong handle, jlongArray out) {
+    if (!out || env->GetArrayLength(out) < 2) return JNI_FALSE;
+    auto player = playerFromHandle(handle);
+    if (!player) return JNI_FALSE;
+    jlong values[2] = {-1, -1};
+    {
+        std::lock_guard<std::mutex> lock(player->operations);
+        if (!player->mpv || player->stopping) return JNI_FALSE;
+        mpv_node state{};
+        if (mpv_get_property(player->mpv, "demuxer-cache-state", MPV_FORMAT_NODE, &state) >= 0) {
+            if (state.format == MPV_FORMAT_NODE_MAP && state.u.list) {
+                for (int i = 0; i < state.u.list->num; ++i) {
+                    const char *key = state.u.list->keys[i];
+                    const mpv_node &value = state.u.list->values[i];
+                    if (!key || value.format != MPV_FORMAT_INT64) continue;
+                    if (std::string_view(key) == "total-bytes") values[0] = value.u.int64;
+                    else if (std::string_view(key) == "fw-bytes") values[1] = value.u.int64;
+                }
+            }
+            mpv_free_node_contents(&state);
+        }
+    }
+    env->SetLongArrayRegion(out, 0, 2, values);
+    return JNI_TRUE;
+}
+
 JNI_METHOD(void, setPaused)(JNIEnv *env, jobject, jlong handle, jboolean paused) {
     withPlayer(env, handle, [&](Player &p) {
         int value = paused == JNI_TRUE;
