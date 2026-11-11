@@ -9,18 +9,30 @@ This is source evidence, not proof of complete build/relink or license closure.
 import argparse
 import concurrent.futures
 import hashlib
+import http.client
 import json
 import os
 from pathlib import Path, PurePosixPath
 import re
 import shutil
 import subprocess
+import time
+import urllib.error
 import urllib.request
 
 SNAPSHOT = 'https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/'
 SIGNER = 'F6ECB3762474EDA9D21B7022871920D1991BC93C'
 SUITES = ('jammy', 'jammy-updates', 'jammy-security')
 SECTIONS = ('main', 'universe')
+# The snapshot service answers the odd 5xx under load; one of hundreds of fetches
+# must not fail the release. Seconds slept before each further attempt.
+RETRY_DELAYS = (5, 15, 45, 90, 180)
+
+
+def transient(error):
+    if isinstance(error, urllib.error.HTTPError):
+        return error.code >= 500 or error.code == 429
+    return isinstance(error, (urllib.error.URLError, http.client.HTTPException, ConnectionError, TimeoutError))
 
 
 
@@ -248,6 +260,16 @@ def retain(lock, output, offline=False):
         if path.exists() or path.is_symlink() or offline:
             verify_file(path, spec)
             return
+        for delay in RETRY_DELAYS:
+            try:
+                return fetch(spec, path)
+            except Exception as error:
+                if not transient(error):
+                    raise
+                print(f"{spec['filename']}: {error}; retrying in {delay}s", flush=True)
+                time.sleep(delay)
+        fetch(spec, path)
+    def fetch(spec, path):
         partial = output / (spec['sha256'] + '.partial')
         created = False
         try:
