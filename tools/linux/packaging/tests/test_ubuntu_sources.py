@@ -128,6 +128,29 @@ class UbuntuSourceTest(unittest.TestCase):
             with self.assertRaises(FileExistsError): source.retain(lock, self.root)
         self.assertEqual(partial.read_bytes(), b'other attempt')
 
+    def test_server_errors_are_retried_and_client_errors_are_not(self):
+        lock = self.lock()
+        (self.root / digest(b'source')).write_bytes(b'source')
+        spec = lock['source_packages'][0]['inputs'][0]
+        def failure(code):
+            return source.urllib.error.HTTPError(spec['url'], code, 'fixture', {}, None)
+        stream = io.BytesIO(self.dsc); stream.url = spec['url']
+        with patch.object(source.urllib.request, 'urlopen', side_effect=[failure(503), TimeoutError(), stream]) as fetch, \
+                patch.object(source.time, 'sleep') as sleep:
+            self.assertEqual(source.retain(lock, self.root)['verified_inputs'], 2)
+        self.assertEqual(fetch.call_count, 3)
+        self.assertEqual([c.args[0] for c in sleep.call_args_list], list(source.RETRY_DELAYS[:2]))
+        (self.root / spec['sha256']).unlink()
+        with patch.object(source.urllib.request, 'urlopen', side_effect=failure(404)) as fetch, \
+                patch.object(source.time, 'sleep') as sleep:
+            with self.assertRaises(source.urllib.error.HTTPError): source.retain(lock, self.root)
+        self.assertEqual((fetch.call_count, sleep.call_count), (1, 0))
+        with patch.object(source.urllib.request, 'urlopen', side_effect=failure(500)) as fetch, \
+                patch.object(source.time, 'sleep'):
+            with self.assertRaises(source.urllib.error.HTTPError): source.retain(lock, self.root)
+        self.assertEqual(fetch.call_count, len(source.RETRY_DELAYS) + 1)
+        self.assertFalse((self.root / (spec['sha256'] + '.partial')).exists())
+
     def test_publish_does_not_overwrite_concurrently_created_final_input(self):
         lock = self.lock()
         (self.root / digest(b'source')).write_bytes(b'source')
