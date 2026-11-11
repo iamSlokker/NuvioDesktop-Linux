@@ -100,7 +100,6 @@ internal fun LazyListScope.advancedSettingsContent(
                         ),
                         onCheckedChange = PlayerSettingsRepository::setDesktopPerformanceLogging,
                     )
-                    if (platformOffersMemoryOverlay) {
                     SettingsGroupDivider(isTablet = isTablet)
                     val memoryOverlayEnabled by DiagnosticsSettings.memoryOverlayEnabled.collectAsStateWithLifecycle()
                     SettingsSwitchRow(
@@ -111,7 +110,6 @@ internal fun LazyListScope.advancedSettingsContent(
                         modifier = Modifier.settingsScrollAnchor(SettingsScrollAnchor.searchKey("memory-overlay")),
                         onCheckedChange = DiagnosticsSettings::setMemoryOverlayEnabled,
                     )
-                    }
                 }
             }
         }

@@ -4,6 +4,7 @@ import co.touchlab.kermit.Logger
 import com.nuvio.app.core.ui.DesktopArtworkCaches
 import com.nuvio.app.core.ui.ScaledBitmapCache
 import com.nuvio.app.core.ui.decodedAnimationCacheBytes
+import com.nuvio.app.features.player.desktop.DesktopHostOs
 import com.nuvio.app.features.player.desktop.NativeAudioDuck
 import com.nuvio.app.features.player.desktop.NativePlayerBridge
 import java.lang.management.BufferPoolMXBean
@@ -65,6 +66,10 @@ internal data class MemoryBreakdown(
     val withHelpers: Long
         get() = if (privateWorkingSet < 0) -1 else privateWorkingSet + childrenPrivateWorkingSet.coerceAtLeast(0)
 }
+
+/** The first overlay row: named after the system tool that shows the same figure. */
+internal val MemoryTotalLabel: String =
+    if (DesktopHostOs.current == DesktopHostOs.LINUX) "Memory (System Monitor)" else "Memory (Task Manager)"
 
 internal object MemoryBreakdownSampler {
     private val log = Logger.withTag("MemoryBreakdown")
@@ -158,7 +163,7 @@ internal object MemoryBreakdownSampler {
 
     /** The overlay's rows: label to value, in reading order. */
     internal fun overlayRows(b: MemoryBreakdown): List<Pair<String, String>> = buildList {
-        add("Memory (Task Manager)" to mb(b.privateWorkingSet, " MB"))
+        add(MemoryTotalLabel to mb(b.privateWorkingSet, " MB"))
         if (b.children.isNotEmpty()) add("With helper processes" to mb(b.withHelpers, " MB"))
         add("Committed" to mb(b.privateCommit, " MB"))
         add("Graphics driver" to mb(b.driverMapped, " MB"))

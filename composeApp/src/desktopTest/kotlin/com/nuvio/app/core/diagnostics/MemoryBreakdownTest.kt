@@ -24,7 +24,7 @@ class MemoryBreakdownTest {
     @Test
     fun unknownFiguresShowAsQuestionMarks() {
         val rows = MemoryBreakdownSampler.overlayRows(breakdown().copy(privateWorkingSet = -1)).toMap()
-        assertEquals("?", rows.getValue("Memory (Task Manager)"))
+        assertEquals("?", rows.getValue(MemoryTotalLabel))
     }
 
     @Test

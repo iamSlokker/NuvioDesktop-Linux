@@ -27,12 +27,16 @@ internal object NativeMemoryUsers {
     }
 }
 
-/** The native engines worth naming when they are loaded, by DLL file name (lower case). */
+/** The native engines worth naming when they are loaded, by DLL or Linux library file name (lower case). */
 internal val NotableNativeEngines: List<Pair<String, String>> = listOf(
     "libmpv-2.dll" to "mpv",
+    "libmpv.so" to "mpv",
     "nuvio_whisper.dll" to "Whisper",
+    "libnuvio_whisper.so" to "Whisper",
     "libquickjs.dll" to "QuickJS",
+    "libquickjs.so" to "QuickJS",
     "nuvio_engine.dll" to "torrent engine",
+    "libnuvio_engine.so" to "torrent engine",
     "libvapoursynth.dll" to "VapourSynth",
     "svpflow1_vs.dll" to "SVP",
 )
@@ -40,7 +44,7 @@ internal val NotableNativeEngines: List<Pair<String, String>> = listOf(
 /** The engines among [moduleNames] (a ';'-separated DLL list), in [NotableNativeEngines] order. */
 internal fun notableEngines(moduleNames: String): List<String> {
     val loaded = moduleNames.split(';').map { it.trim().lowercase() }.toSet()
-    val engines = NotableNativeEngines.filter { (dll, _) -> dll in loaded }.map { it.second }.toMutableList()
+    val engines = NotableNativeEngines.filter { (dll, _) -> dll in loaded }.map { it.second }.distinct().toMutableList()
     if (loaded.any { it.startsWith("libpython3") || it.matches(Regex("python3\\d*\\.dll")) }) engines += "Python"
     return engines
 }
