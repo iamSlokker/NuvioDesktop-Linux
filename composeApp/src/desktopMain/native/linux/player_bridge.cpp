@@ -661,7 +661,9 @@ struct Player {
 
 // Opaque IDs avoid use-after-free when a snapshot/command races asynchronous disposal.
 std::mutex playersLock;
-std::unordered_map<jlong, std::shared_ptr<Player>> players;
+// Never destroyed: at exit() its destructor would close live players while JNI and mpv threads
+// still run, and Player::close waits on the GTK thread, which waits on mpv: the process hung.
+std::unordered_map<jlong, std::shared_ptr<Player>> &players = *new std::unordered_map<jlong, std::shared_ptr<Player>>();
 std::atomic<jlong> nextHandle{1};
 
 std::shared_ptr<Player> playerFromHandle(jlong handle) {
@@ -1173,6 +1175,20 @@ JNI_METHOD(void, dispose)(JNIEnv *env, jobject, jlong handle) {
             players.erase(found);
         }
         player->close();
+    });
+}
+
+// Process exit (a shutdown hook): close every player the way a window close does, before exit()
+// runs static destructors while mpv, GTK and WebKit threads are still going.
+JNI_METHOD(void, disposeAll)(JNIEnv *env, jobject) {
+    guarded(env, [&]() {
+        std::vector<std::shared_ptr<Player>> outgoing;
+        {
+            std::lock_guard<std::mutex> lock(playersLock);
+            for (auto &entry : players) outgoing.push_back(entry.second);
+            players.clear();
+        }
+        for (auto &player : outgoing) player->close();
     });
 }
 

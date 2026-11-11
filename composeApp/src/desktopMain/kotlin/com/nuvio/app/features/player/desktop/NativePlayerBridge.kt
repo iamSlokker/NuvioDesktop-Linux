@@ -10,6 +10,9 @@ import java.util.UUID
 
 private val log = Logger.withTag("NativePlayerBridge")
 
+/** How long process exit waits for the players to close; a stuck mpv must not keep the app up. */
+private const val LINUX_EXIT_DISPOSE_TIMEOUT_MS = 5_000L
+
 internal fun findPackagedNativeRuntime(
     platform: DesktopHostOs,
     javaHome: File?,
@@ -43,6 +46,14 @@ internal object NativePlayerBridge {
             if (linuxLoadFailure == null) {
                 runCatching { setDataDirectory(DesktopStorage.rootDir.toAbsolutePath().toString()) }
                     .onFailure { log.w { "Native bridge data folder not set: ${it.message}" } }
+                // SIGTERM (logout, shutdown, kill) and exitProcess skip the window close that
+                // disposes the players; closed during exit() instead, mpv hung the process.
+                Runtime.getRuntime().addShutdownHook(Thread({
+                    val closing = Thread({ runCatching { disposeAll() } }, "nuvio-player-dispose-all")
+                    closing.isDaemon = true
+                    closing.start()
+                    closing.join(LINUX_EXIT_DISPOSE_TIMEOUT_MS)
+                }, "nuvio-player-shutdown"))
             }
         } else {
             loadNativeLibrary()
@@ -74,6 +85,9 @@ internal object NativePlayerBridge {
     ): Long
 
     external fun dispose(handle: Long)
+
+    /** Linux only: disposes every live player, from the shutdown hook above. */
+    private external fun disposeAll()
 
     /**
      * Loads [sourceUrl] into the live player [handle] instead of disposing it and creating a new
