@@ -11,11 +11,13 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.Check
 import androidx.compose.material.icons.rounded.MoreVert
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -24,6 +26,7 @@ import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -31,7 +34,9 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
@@ -42,8 +47,15 @@ import com.nuvio.app.core.ui.NuvioAlertDialog
 import com.nuvio.app.core.ui.NuvioModalDialog
 import com.nuvio.app.core.ui.NuvioTokens
 import com.nuvio.app.core.ui.nuvio
+import com.nuvio.app.features.input.mouseKeyboardState
+import com.nuvio.app.features.input.setMouseKeyboard
 import nuvio.composeapp.generated.resources.*
 import org.jetbrains.compose.resources.stringResource
+import androidx.compose.foundation.focusable
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import com.nuvio.app.core.ui.selectWithKeyboardOrPointer
 
 /*
  * Upstream presents this flow as a modal bottom sheet plus two BasicAlertDialogs. A bottom sheet is
@@ -58,10 +70,55 @@ internal fun ServerConnectionMenu(
     onUseOfficial: () -> Unit,
     onConnectCustom: () -> Unit,
     modifier: Modifier = Modifier,
+    onMenuFocused: () -> Unit = {},
 ) {
     var expanded by remember { mutableStateOf(false) }
+    // Escape, the pad's Back button and Start all raise this menu (see AuthMenuRequest): it holds
+    // the on-screen keyboard toggle, which a couch user needs before they can sign in.
+    LaunchedEffect(Unit) {
+        AuthMenuRequest.open.collect { expanded = true }
+    }
+    // Kept in step with the popup so the page's Escape handler knows whether to open or close it.
+    // Written during composition, not from an effect: the page's preview handler can run before a
+    // LaunchedEffect would have published the new value, and a stale `false` there re-opens the menu
+    // on the very Escape meant to dismiss it.
+    AuthMenuRequest.isOpen = expanded
+    // The menu is a popup window. Closing it can leave the page with no Compose focus owner, so
+    // ask the sign-in page to put the keys back on the control that had them before the menu.
+    var wasExpanded by remember { mutableStateOf(false) }
+    LaunchedEffect(expanded) {
+        if (wasExpanded && !expanded) AuthFocusRestore.request()
+        wasExpanded = expanded
+    }
+    DisposableEffect(Unit) {
+        onDispose { AuthMenuRequest.isOpen = false }
+    }
+    // The same setting Settings > Keyboard shortcuts exposes: raise the app's own keyboard whenever
+    // a text field is focused. On a couch PC this is the only way to type a password without a
+    // physical keyboard, and the sign-in page is where that need first appears.
+    val onScreenKeyboard by mouseKeyboardState().collectAsState()
+    val menuInteraction = remember { MutableInteractionSource() }
     Column(modifier = modifier) {
-        IconButton(onClick = { expanded = true }) {
+        IconButton(
+            onClick = { expanded = true },
+            interactionSource = menuInteraction,
+            // In the arrow-key focus order, so the D-pad and the arrows can reach it like any other
+            // control. Escape and Start also raise the menu (see AuthMenuRequest), but a focus stop
+            // is what makes it discoverable: without one the icon is invisible to the walk and a
+            // user has no way to know it is there.
+            //
+            // `selectWithKeyboardOrPointer` rather than a bare `focusable()`: that adds a focus
+            // target *beside* the button's own clickable, so the icon could be focused but Select
+            // did nothing. This wires focus and activation to the same node.
+            modifier = Modifier
+                .testTag(AuthServerMenuButtonTag)
+                .onFocusChanged { if (it.isFocused) onMenuFocused() }
+                .selectWithKeyboardOrPointer(
+                    enabled = true,
+                    interactionSource = menuInteraction,
+                    onClick = { expanded = true },
+                ),
+        ) {
             Icon(
                 imageVector = Icons.Rounded.MoreVert,
                 contentDescription = stringResource(Res.string.server_menu_content_description),
@@ -100,7 +157,52 @@ internal fun ServerConnectionMenu(
                     onConnectCustom()
                 },
             )
+            HorizontalDivider(color = MaterialTheme.nuvio.colors.borderSubtle)
+            DropdownMenuItem(
+                text = { Text(stringResource(Res.string.settings_shortcuts_on_screen_keyboard)) },
+                trailingIcon = {
+                    if (onScreenKeyboard) {
+                        Icon(
+                            imageVector = Icons.Rounded.Check,
+                            contentDescription = null,
+                            tint = MaterialTheme.nuvio.colors.accent,
+                        )
+                    }
+                },
+                modifier = Modifier.testTag(AuthOnScreenKeyboardMenuItemTag),
+                onClick = { setMouseKeyboard(!onScreenKeyboard) },
+            )
         }
+    }
+}
+
+/** Test handle for the three-dot menu's on-screen keyboard toggle. */
+internal const val AuthOnScreenKeyboardMenuItemTag = "auth-osk-toggle"
+internal const val AuthServerMenuButtonTag = "auth-server-menu"
+
+/**
+ * Asks the sign-in page's three-dot menu to open, and reports whether it is open.
+ *
+ * The menu holds the on-screen keyboard toggle, which is the only way to type a password on a
+ * couch PC — and it is the one control a pad user needs before they can sign in at all. Escape, the
+ * pad's Back button and Start all raise it through here, so the menu is reachable without a mouse
+ * and without a working focus ring on the icon itself.
+ *
+ * [isOpen] exists so the page can tell "Escape should open the menu" from "Escape should close it".
+ * Without it the page's preview handler re-opened the menu on every Escape, including the one meant
+ * to dismiss it: the popup then never closed, kept focus, and the page's arrows stayed dead for
+ * good — the reported "navigation works until I press Escape".
+ */
+internal object AuthMenuRequest {
+    private val _open = kotlinx.coroutines.flow.MutableSharedFlow<Unit>(extraBufferCapacity = 1)
+    val open: kotlinx.coroutines.flow.SharedFlow<Unit> = _open
+
+    /** True while the menu is showing; the menu keeps this in step with its own expanded state. */
+    @Volatile
+    var isOpen: Boolean = false
+
+    fun request() {
+        _open.tryEmit(Unit)
     }
 }
 

@@ -1,9 +1,12 @@
 package com.nuvio.app.features.auth
 
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.ui.Alignment
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.FilterQuality
@@ -40,4 +43,22 @@ internal fun DesktopAuthWordmark(os: DesktopHostOs, modifier: Modifier = Modifie
         contentScale = ContentScale.Fit,
         filterQuality = FilterQuality.Low,
     )
+}
+
+/**
+ * The horizontal lockup scaled into whatever box the caller provides, for the sign-in page's fixed
+ * height budget. The compact Linux asset is a stacked icon-and-wordmark and does not fit a short
+ * centred box, so this uses the horizontal bitmap on every platform.
+ */
+@Composable
+internal actual fun CompactAuthWordmark(modifier: Modifier, widthFraction: Float) {
+    Box(modifier = modifier, contentAlignment = Alignment.Center) {
+        Image(
+            bitmap = imageResource(Res.drawable.app_logo_wordmark_htpc),
+            contentDescription = null,
+            modifier = Modifier.fillMaxWidth(widthFraction).fillMaxHeight(),
+            contentScale = ContentScale.Fit,
+            filterQuality = FilterQuality.Low,
+        )
+    }
 }

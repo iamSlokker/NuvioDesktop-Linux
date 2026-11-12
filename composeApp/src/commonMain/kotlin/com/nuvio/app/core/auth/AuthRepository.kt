@@ -139,6 +139,26 @@ object AuthRepository {
      * Ends the session. Desktop keeps this account's settings in its own folder for next time,
      * unless [erase], which removes them — sign-ins and keys included — from the PC.
      */
+    /**
+     * Completes a QR/device pairing sign-in.
+     *
+     * The backend has already turned the approved device code into tokens, so there is nothing to
+     * sign in with here — importing the session is the whole step, and the session collector above
+     * publishes it through [publishAuthenticated] like any other sign-in (including the account
+     * folder restart that keeps one account's data out of another's).
+     */
+    suspend fun completeDeviceLogin(tokens: DeviceLoginTokens): Result<Unit> = runCatching {
+        _error.value = null
+        SupabaseProvider.client.auth.importAuthToken(
+            accessToken = tokens.accessToken,
+            refreshToken = tokens.refreshToken,
+        )
+    }.onFailure { e ->
+        log.e(e) { "Device (QR) sign-in failed" }
+        _error.value = e.safeAuthErrorDescription()
+            ?: getString(Res.string.auth_sign_in_failed)
+    }
+
     suspend fun signOut(erase: Boolean = false): Result<Unit> = runCatching {
         _error.value = null
         val wasAnonymous = AuthStorage.loadAnonymousUserId() != null
