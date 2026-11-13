@@ -60,9 +60,10 @@ internal object YouTubeWatchLayout {
     @kotlin.concurrent.Volatile
     var onLeftInFullscreen: (() -> Unit)? = null
 
-    /** The player went. */
-    fun end() {
+    /** The player went. [videoId] keeps an older player's dispose from clearing the id of a newer one. */
+    fun end(videoId: String? = null) {
         _available.value = false
+        if (videoId == null || _playingVideoId.value == videoId) _playingVideoId.value = null
         endedAtMs = com.nuvio.app.features.streams.epochMs()
         if (closing) {
             // Closed from the corner: the next video opened is no hand-over and opens as a fresh one does.
@@ -101,6 +102,19 @@ internal object YouTubeWatchLayout {
         return undo
     }
 
+    private val _playingVideoId = MutableStateFlow<String?>(null)
+
+    /**
+     * fork:youtube-mini-player - the YouTube video the player holds. The tab's cards compare against
+     * it so the playing video's own card can return to its watch page instead of opening it again.
+     */
+    val playingVideoId: StateFlow<String?> = _playingVideoId.asStateFlow()
+
+    /** Told by the player which video it is showing (also across a hand-over to the next one). */
+    fun setPlayingVideo(videoId: String) {
+        _playingVideoId.value = videoId
+    }
+
     private val _mini = MutableStateFlow(false)
 
     /** The page has been scrolled from the top: the video sits in its corner box, controls hidden. */
@@ -108,6 +122,11 @@ internal object YouTubeWatchLayout {
 
     fun setMini(mini: Boolean) {
         _mini.value = mini
+        if (mini) {
+            if (!com.nuvio.app.core.ui.RootNavFocus.enterSidebar()) {
+                com.nuvio.app.core.ui.RootNavFocus.enterTopBar()
+            }
+        }
     }
 
     private val _backToVideo = MutableStateFlow(0)
@@ -135,7 +154,14 @@ internal object YouTubeWatchLayout {
 
     /** Back from a YouTube tab video: to the tab, the video carrying on in the corner. */
     fun startBrowsing() {
-        if (_available.value) _browsing.value = true
+        if (_available.value) {
+            _browsing.value = true
+            // The tab, not the corner video, is the thing being used now: give it the keys so a
+            // pad can move through the app instead of staying captured by the player HUD.
+            if (!com.nuvio.app.core.ui.RootNavFocus.enterSidebar()) {
+                com.nuvio.app.core.ui.RootNavFocus.enterTopBar()
+            }
+        }
     }
 
     /** From the tab back to the video, laid out as it was (the page, or filling the window). */
@@ -235,6 +261,13 @@ internal object YouTubeWatchLayout {
 }
 
 internal data class YouTubeChannelRequest(val channelId: String, val name: String, val avatarUrl: String?)
+
+/**
+ * fork:youtube-mini-player - whether [videoId]'s card should bring its watch page back rather than
+ * opening the video again: it is the video in the corner player, with the tab drawn around it.
+ */
+internal fun isYouTubeMiniPlayerVideo(videoId: String, playingVideoId: String?, browsing: Boolean): Boolean =
+    browsing && playingVideoId != null && videoId == playingVideoId
 
 /** The page's fullscreen button: the video fills the screen until its button or Escape brings the page back. */
 internal expect fun requestYouTubeFullscreen()

@@ -8,7 +8,23 @@ import java.security.MessageDigest
 import java.util.Locale
 
 internal actual object YouTubeMusicAuthPlatform {
-    actual val browserSignInAvailable: Boolean get() = !LinuxFlatpakSandbox.isActive
+    actual val browserSignInAvailable: Boolean
+        get() = youtubeSignInOpensBrowserWindow(browserSignInSealed, browserWindowEnabled())
+
+    // A sealed Flatpak cannot reach a browser at all; everywhere else the window is a choice.
+    actual val browserSignInSealed: Boolean get() = LinuxFlatpakSandbox.isActive
+
+    // A UI preference, not a credential: kept apart from the session cookie store below, which the
+    // settings backup leaves out unless the user asks for credentials.
+    private val preferences = DesktopStorage.store("nuvio_youtube_sign_in")
+    private const val BROWSER_WINDOW_KEY = "browser_window"
+
+    /** Default true: the browser window is how sign-in has always worked. */
+    actual fun browserWindowEnabled(): Boolean = preferences.getBoolean(BROWSER_WINDOW_KEY) ?: true
+
+    actual fun setBrowserWindowEnabled(enabled: Boolean) {
+        preferences.putBoolean(BROWSER_WINDOW_KEY, enabled)
+    }
 
     // Per-account store (not in MACHINE_STORE_NAMES), and listed in the settings backup's credential
     // stores so a backup leaves it out unless the user asks for credentials.

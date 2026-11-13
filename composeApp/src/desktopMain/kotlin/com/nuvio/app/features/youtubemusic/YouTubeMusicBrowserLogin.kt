@@ -62,9 +62,17 @@ internal object YouTubeMusicBrowserLogin {
     private val log = Logger.withTag("YouTubeMusicLogin")
     private val json = Json { ignoreUnknownKeys = true }
 
+    /**
+     * Where the sign-in window starts, and where it lands once Google is done with it.
+     *
+     * The landing page is youtube.com, not music.youtube.com: the session this produces is the same
+     * one either way (Google sets its cookies for the whole .youtube.com domain), the renewal below
+     * already opens youtube.com, and a window that announced "YouTube Music" after the user asked to
+     * sign in to YouTube read as the wrong page entirely.
+     */
     private const val LOGIN_URL =
         "https://accounts.google.com/ServiceLogin?ltmpl=music&service=youtube&prompt=select_account" +
-            "&continue=https%3A%2F%2Fmusic.youtube.com%2F"
+            "&continue=https%3A%2F%2Fwww.youtube.com%2F"
     private const val LOGIN_TIMEOUT_MS = 10 * 60_000L
     private const val DEVTOOLS_PORT_TIMEOUT_MS = 20_000L
     private const val POLL_MS = 1_000L

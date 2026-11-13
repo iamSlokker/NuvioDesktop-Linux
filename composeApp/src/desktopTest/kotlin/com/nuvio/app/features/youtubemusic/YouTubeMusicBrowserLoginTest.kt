@@ -29,6 +29,17 @@ class YouTubeMusicBrowserLoginTest {
     }
 
     @Test
+    fun theSignInLandsOnYouTubeRatherThanYouTubeMusic() {
+        val command = YouTubeMusicBrowserLogin.signInCommand("browser", profile)
+        val url = command.single { it.startsWith("--app=") }
+
+        assertTrue(url.endsWith("continue=https%3A%2F%2Fwww.youtube.com%2F"), "lands on youtube.com: $url")
+        assertTrue("music.youtube.com" !in url, "a YouTube sign-in must not end on the Music page: $url")
+        // The same landing page the session is renewed from, so both paths agree.
+        assertTrue(command.none { "music.youtube.com" in it }, "$command")
+    }
+
+    @Test
     fun theCookieReaderIsHeadlessOnTheSameProfile() {
         val command = YouTubeMusicBrowserLogin.cookieReadCommand("browser", profile)
 

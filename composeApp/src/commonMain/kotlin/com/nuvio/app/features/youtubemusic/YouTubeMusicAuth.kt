@@ -47,9 +47,30 @@ internal data class YouTubeMusicAuthState(
     val sessionEpoch: Int = 0,
 )
 
+/**
+ * Whether a sign-in may open the browser window at all.
+ *
+ * Never in the sealed sandbox, which cannot reach a browser; everywhere else it is the person's
+ * choice, and turning it off is how someone stops the window from ever appearing. The window is the
+ * sign-in form itself, so there is nothing to "close early": either it opens and is used, or the
+ * paste path is used and it never opens.
+ */
+internal fun youtubeSignInOpensBrowserWindow(sealed: Boolean, windowEnabled: Boolean): Boolean =
+    !sealed && windowEnabled
+
 internal expect object YouTubeMusicAuthPlatform {
     /** False where [interactiveLogin] cannot reach a browser (the sealed Linux Flatpak). */
     val browserSignInAvailable: Boolean
+
+    /**
+     * Whether a sign-in may open the browser window. Off means the paste path is used instead, so no
+     * window ever appears; a person who does not want a browser window popping up sets this once.
+     */
+    fun browserWindowEnabled(): Boolean
+    fun setBrowserWindowEnabled(enabled: Boolean)
+
+    /** True where [interactiveLogin] is unavailable because of the sandbox rather than by choice. */
+    val browserSignInSealed: Boolean
 
     fun loadCookie(): String?
     fun saveCookie(cookieHeader: String?)

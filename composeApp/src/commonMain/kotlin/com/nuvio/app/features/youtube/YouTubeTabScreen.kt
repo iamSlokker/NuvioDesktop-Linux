@@ -67,6 +67,7 @@ import com.nuvio.app.core.ui.NuvioGlassMenuSurface
 import androidx.compose.material.icons.rounded.Sensors
 import androidx.compose.material.icons.rounded.VideoLibrary
 import androidx.compose.material.icons.rounded.VisibilityOff
+import androidx.compose.material.icons.rounded.Fullscreen
 import androidx.compose.foundation.layout.Spacer
 import com.nuvio.app.core.ui.nuvio
 import com.nuvio.app.features.music.library.musicKeyFocusRing
@@ -88,6 +89,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -116,6 +118,7 @@ import com.nuvio.app.core.ui.ContextMenuInvocation
 import com.nuvio.app.core.ui.KeyboardInputMode
 import com.nuvio.app.core.ui.NuvioContextMenu
 import com.nuvio.app.core.ui.NuvioTextField
+import com.nuvio.app.isDesktop
 import com.nuvio.app.core.ui.TabBackHandler
 import com.nuvio.app.core.ui.PosterZoomOverlayAction
 import com.nuvio.app.core.ui.collectIsKeyboardFocusedAsState
@@ -248,6 +251,10 @@ fun YouTubeTabScreen(
     val hideWatched by remember { YouTubeFeedRepository.hideWatched }.collectAsStateWithLifecycle()
     val hideStreams by remember { YouTubeFeedRepository.hideStreams }.collectAsStateWithLifecycle()
     val autoplay by remember { YouTubeFeedRepository.autoplay }.collectAsStateWithLifecycle()
+    // fork:youtube-mini-player - the tab is drawn around a video playing in the corner: the header's
+    // fullscreen control goes back to the watch page, as the sidebar's mini-player row does.
+    val browsing by YouTubeWatchLayout.browsing.collectAsStateWithLifecycle()
+    val playingVideoId by YouTubeWatchLayout.playingVideoId.collectAsStateWithLifecycle()
     // Not on History, which is all watched by definition (a stream watched is history like any other).
     val filtered = kind != YouTubeFeedKind.History
     // The queue is shown as it is: the person put each one there.
@@ -267,6 +274,10 @@ fun YouTubeTabScreen(
         if (allHidden && feed.continuation != null && !feed.loading && feed.error == null) YouTubeFeedRepository.loadMore(kind)
     }
     // The box's text lives with the top bar's box, which shows it while the bar hosts the search.
+    DisposableEffect(Unit) {
+        YouTubeTopBarSearch.active = true
+        onDispose { YouTubeTopBarSearch.active = false }
+    }
     val searchBox = YouTubeTopBarSearch
     var focusResultsPending by remember { mutableStateOf(false) }
     fun submitSearch() {
@@ -368,7 +379,16 @@ fun YouTubeTabScreen(
             }
         }
     }
+    fun focusWatchPageFor(video: YouTubeVideo): Boolean {
+        if (!isYouTubeMiniPlayerVideo(video.videoId, playingVideoId, browsing)) return false
+        YouTubeWatchLayout.stopBrowsing()
+        return true
+    }
     fun play(video: YouTubeVideo) {
+        // fork:youtube-mini-player - the playing video's own card anywhere in the tab (recommendations,
+        // playlists, history, the queue, a channel) brings its watch page back rather than resolving it
+        // and opening it again.
+        if (focusWatchPageFor(video)) return
         // Anything opened outside the playlist being played through ends it.
         YouTubePlayQueue.onOpened(video.videoId)
         openJob?.cancel()
@@ -400,12 +420,16 @@ fun YouTubeTabScreen(
     fun playFromPlaylist(index: Int) {
         val playlist = openPlaylist ?: return
         val video = videos.getOrNull(index) ?: return
+        // The playing video's card expands its watch page instead of restarting the playlist.
+        if (focusWatchPageFor(video)) return
         YouTubePlayQueue.start(playlist.title, videos, index)
         play(video)
     }
 
     fun playFromQueue(index: Int) {
         val video = watchQueue.getOrNull(index) ?: return
+        // The playing video's card expands its watch page instead of restarting the queue.
+        if (focusWatchPageFor(video)) return
         YouTubePlayQueue.start(WATCH_QUEUE_NAME, watchQueue, index, watchQueue = true)
         play(video)
     }
@@ -488,6 +512,43 @@ fun YouTubeTabScreen(
     // keyboard-only).
     val firstCardFocus = searchBox.resultsFocus
     val searchFocus = remember { FocusRequester() }
+    // The search is an icon among the section icons; it expands into the field only when selected,
+    // as Home's search icon does, instead of owning a permanently flattened oval in the header.
+    var searchExpanded by rememberSaveable { mutableStateOf(false) }
+    var handledSearchFocusRequests by remember { mutableStateOf(searchBox.focusRequests) }
+    LaunchedEffect(searchBox.focusRequests) {
+        if (searchBox.focusRequests != handledSearchFocusRequests) {
+            handledSearchFocusRequests = searchBox.focusRequests
+            searchExpanded = true
+        }
+    }
+    LaunchedEffect(searchExpanded) {
+        if (!searchExpanded) return@LaunchedEffect
+        // The field mounts with the expanded row; retry briefly until it is attached and takes the keys.
+        repeat(8) {
+            kotlinx.coroutines.delay(32)
+            if (runCatching { searchFocus.requestFocus() }.isSuccess) return@LaunchedEffect
+        }
+    }
+    // Only a field that had focus can fold on losing it; the first composition reports no focus
+    // and would otherwise close the search the moment it opened.
+    var searchFieldWasFocused by remember { mutableStateOf(false) }
+    // True while the field itself holds the keys, as opposed to the icon it expanded from.
+    var searchFieldFocused by remember { mutableStateOf(false) }
+    fun collapseSearch() {
+        searchFieldWasFocused = false
+        searchFieldFocused = false
+        searchExpanded = false
+        // The icon is the next focus stop; put the keys back on it once it has been composed.
+        scope.launch {
+            kotlinx.coroutines.delay(32)
+            runCatching { searchFocus.requestFocus() }
+        }
+    }
+    // fork:youtube-search-back - Back (the mouse's back button, a pad's B) with the field focused backs
+    // out of the field instead of leaving the tab: it folds to its icon as Escape does. Only while the
+    // field has the keys, so a Back on the page under it still walks the tab's history.
+    TabBackHandler(enabled = searchFieldFocused) { collapseSearch() }
     val playlistsFocus = remember { FocusRequester() }
     val focusManager = androidx.compose.ui.platform.LocalFocusManager.current
     var tabHasFocus by remember { mutableStateOf(false) }
@@ -554,12 +615,18 @@ fun YouTubeTabScreen(
             // (2026-11-13, 70 keys until a shortcut moved it).
             .keyLayer("YouTube")
             .onFocusChanged { tabHasFocus = it.hasFocus }
-            .arrowKeyFocusNavigation()
+            // Left at the left edge moves focus nowhere; releasing it lets the tab host's hand-off
+            // reach the navigation bar, as Left does on every other tab.
+            .arrowKeyFocusNavigation(releaseWhenStuck = true)
             // With the search on the top bar, the page starts right under the bar.
             .padding(
                 start = 32.dp,
                 end = 32.dp,
-                top = if (barHosted) ((topChromePadding ?: 24.dp) - BAR_HOSTED_TRIM).coerceAtLeast(8.dp) else topChromePadding ?: 24.dp,
+                top = if (barHosted) {
+                    ((topChromePadding ?: 24.dp) - BAR_HOSTED_TRIM).coerceAtLeast(8.dp)
+                } else {
+                    topChromePadding ?: 24.dp
+                },
             ),
     ) {
         // A window too narrow for every pill's name shows them as icons alone (named on hover) rather
@@ -569,25 +636,29 @@ fun YouTubeTabScreen(
             add("Channels")
             add("Playlists")
             if (watchQueue.isNotEmpty() || showingQueue) add("Queue · ${watchQueue.size}")
+            // fork:youtube-mini-player - only while there is a corner player to expand.
+            if (browsing) add("Watch page")
             if (auth.signedIn) addAll(listOf("Hide watched", "Hide streams", "Autoplay", "Refresh"))
         }
         val headerText = androidx.compose.ui.text.rememberTextMeasurer()
         val headerStyle = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.SemiBold)
         val density = androidx.compose.ui.platform.LocalDensity.current
-        val labelledWidth = remember(headerLabels, headerStyle, density) {
+        val labelledWidth = remember(headerLabels, headerStyle, density, searchExpanded) {
             with(density) {
                 headerLabels.sumOf { label ->
                     SECTION_TAB_CHROME.toPx().toDouble() + headerText.measure(label, headerStyle, maxLines = 1).size.width
                 }.toFloat().toDp()
             }
         } + 4.dp * (headerLabels.size - 1) +
-            (if (auth.signedIn && !barHosted) 352.dp else 0.dp) +
+            (if (auth.signedIn && !barHosted) if (searchExpanded) 352.dp else 48.dp else 0.dp) +
             (if (auth.signedIn && channel.resolved) 42.dp else 0.dp) +
             16.dp
         androidx.compose.foundation.layout.BoxWithConstraints(Modifier.fillMaxWidth()) {
-        androidx.compose.runtime.CompositionLocalProvider(LocalCompactSectionTabs provides (labelledWidth > maxWidth)) {
+        androidx.compose.runtime.CompositionLocalProvider(LocalCompactSectionTabs provides (isDesktop || labelledWidth > maxWidth)) {
+        // A fixed 46dp row: the icon pills and the expanded search box are the same height, so
+        // opening the search does not push the recommendations down.
         Row(
-            modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp),
+            modifier = Modifier.fillMaxWidth().height(46.dp).padding(bottom = 2.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(4.dp),
         ) {
@@ -618,9 +689,10 @@ fun YouTubeTabScreen(
                     if (!showingQueue) section(QUEUE_VIEW)
                 }
             }
-            // Without the top bar (the sidebar layout) the search box stays in the tab.
-            if (auth.signedIn && !barHosted) {
-                Spacer(Modifier.width(12.dp))
+            // Without the top bar (the sidebar layout) the search lives in the tab: an icon among
+            // the sections, which expands into the field only when selected.
+            if (auth.signedIn && !barHosted && searchExpanded) {
+                Spacer(Modifier.width(4.dp))
                 com.nuvio.app.core.ui.VoiceSearchCommands(
                     owner = "youtube-tab",
                     text = searchBox.text,
@@ -637,8 +709,20 @@ fun YouTubeTabScreen(
                     modifier = Modifier
                         .width(340.dp)
                         .focusProperties { left = playlistsFocus }
+                        // Left with nothing typed, the search folds back to its icon; a query
+                        // keeps it open so the results stay under it.
+                        .onFocusChanged { state ->
+                            searchFieldFocused = state.isFocused
+                            if (state.isFocused) {
+                                searchFieldWasFocused = true
+                            } else if (searchFieldWasFocused) {
+                                searchFieldWasFocused = false
+                                if (searchBox.text.isEmpty()) searchExpanded = false
+                            }
+                        }
                         // The field takes the arrows for its cursor, which left a keyboard or pad
-                        // stuck in it: Down drops to the videos, Up has nowhere to go.
+                        // stuck in it: Down drops to the videos, Up has nowhere to go, and Back
+                        // folds the search back to its icon.
                         .onPreviewKeyEvent { event ->
                             if (event.type != KeyEventType.KeyDown) return@onPreviewKeyEvent false
                             when (event.key) {
@@ -649,11 +733,22 @@ fun YouTubeTabScreen(
                                     true
                                 }
                                 Key.DirectionUp -> true
+                                Key.Escape -> {
+                                    collapseSearch()
+                                    true
+                                }
+                                Key.Backspace -> if (searchBox.text.isEmpty()) {
+                                    collapseSearch()
+                                    true
+                                } else {
+                                    false
+                                }
                                 else -> false
                             }
                         },
                     // A pill, like the top bar's search.
                     shape = CircleShape,
+                    minHeight = 44.dp,
                     placeholder = "Search YouTube",
                     imeAction = ImeAction.Search,
                     onImeAction = ::submitSearch,
@@ -690,8 +785,27 @@ fun YouTubeTabScreen(
                         )
                     },
                 )
+            } else if (auth.signedIn && !barHosted) {
+                Spacer(Modifier.width(4.dp))
+                com.nuvio.app.core.ui.NuvioPosterHoverTooltip(title = "Search YouTube") {
+                    YouTubeSectionTabPill(
+                        icon = Icons.Rounded.Search,
+                        label = "Search YouTube",
+                        on = kind == YouTubeFeedKind.Search,
+                        showLabel = false,
+                        modifier = Modifier.focusRequester(searchFocus),
+                        onClick = { searchExpanded = true },
+                    )
+                }
             }
             Box(Modifier.weight(1f))
+            // fork:youtube-mini-player - leaves the tab around the corner player for the watch page it
+            // came from. Drawn only while that player is up, immediately left of the filters.
+            if (browsing) {
+                YouTubeSectionTab(Icons.Rounded.Fullscreen, "Watch page", on = false) {
+                    YouTubeWatchLayout.stopBrowsing()
+                }
+            }
             if (auth.signedIn) {
                 // Named like the sections; lit while the filter is on.
                 YouTubeSectionTab(Icons.Rounded.VisibilityOff, "Hide watched", on = hideWatched) {
@@ -714,6 +828,7 @@ fun YouTubeTabScreen(
         }
         }
         }
+        Spacer(Modifier.height(24.dp))
 
         openError?.let { message ->
             Row(
@@ -2162,9 +2277,9 @@ private fun CardGlassButton(
 @Composable
 private fun YouTubeSectionTab(icon: androidx.compose.ui.graphics.vector.ImageVector, label: String, on: Boolean, onClick: () -> Unit) {
     if (LocalCompactSectionTabs.current) {
-        com.nuvio.app.core.ui.NuvioPosterHoverTooltip(title = label) { YouTubeSectionTabPill(icon, label, on, showLabel = false, onClick) }
+        com.nuvio.app.core.ui.NuvioPosterHoverTooltip(title = label) { YouTubeSectionTabPill(icon, label, on, showLabel = false, onClick = onClick) }
     } else {
-        YouTubeSectionTabPill(icon, label, on, showLabel = true, onClick)
+        YouTubeSectionTabPill(icon, label, on, showLabel = true, onClick = onClick)
     }
 }
 
@@ -2180,6 +2295,7 @@ private fun YouTubeSectionTabPill(
     label: String,
     on: Boolean,
     showLabel: Boolean,
+    modifier: Modifier = Modifier,
     onClick: () -> Unit,
 ) {
     val tokens = MaterialTheme.nuvio
@@ -2192,7 +2308,7 @@ private fun YouTubeSectionTabPill(
         else -> Color.White.copy(alpha = 0.7f)
     }
     Row(
-        modifier = Modifier
+        modifier = modifier
             .height(36.dp)
             .clip(shape)
             .background(

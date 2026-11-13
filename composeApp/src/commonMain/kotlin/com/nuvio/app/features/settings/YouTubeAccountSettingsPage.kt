@@ -14,6 +14,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
@@ -22,11 +23,15 @@ import com.nuvio.app.features.youtube.YouTubeFeedRepository
 import com.nuvio.app.features.youtubemusic.YouTubeMusicAuth
 import com.nuvio.app.features.youtubemusic.YouTubeMusicAuthPlatform
 import com.nuvio.app.features.youtubemusic.YouTubeMusicAuthState
+import com.nuvio.app.features.youtubemusic.youtubeSignInOpensBrowserWindow
 import nuvio.composeapp.generated.resources.Res
 import nuvio.composeapp.generated.resources.compose_settings_page_youtube
 import nuvio.composeapp.generated.resources.linux_flatpak_youtube_explainer
 import nuvio.composeapp.generated.resources.settings_youtube_cancel
 import nuvio.composeapp.generated.resources.settings_youtube_explainer
+import nuvio.composeapp.generated.resources.settings_youtube_explainer_paste
+import nuvio.composeapp.generated.resources.settings_youtube_browser_window
+import nuvio.composeapp.generated.resources.settings_youtube_browser_window_description
 import nuvio.composeapp.generated.resources.settings_youtube_section_account
 import nuvio.composeapp.generated.resources.settings_youtube_sign_in
 import nuvio.composeapp.generated.resources.settings_youtube_sign_in_again
@@ -68,7 +73,12 @@ private fun YouTubeAccountRows(isTablet: Boolean) {
         YouTubeMusicAuth.ensureLoaded()
         YouTubeMusicAuth.state
     }.collectAsState()
-    val browserSignIn = YouTubeMusicAuthPlatform.browserSignInAvailable
+    // A sealed Flatpak cannot reach a browser at all; anywhere else the window is a choice, so this
+    // page can be told to sign in without one ever opening. Local state, written through, so the
+    // page switches to the paste path the moment the switch moves.
+    val sealedSignIn = YouTubeMusicAuthPlatform.browserSignInSealed
+    var browserWindow by remember { mutableStateOf(YouTubeMusicAuthPlatform.browserWindowEnabled()) }
+    val browserSignIn = youtubeSignInOpensBrowserWindow(sealedSignIn, browserWindow)
     val horizontalPadding = if (isTablet) 20.dp else 16.dp
     val verticalPadding = if (isTablet) 16.dp else 14.dp
 
@@ -84,10 +94,28 @@ private fun YouTubeAccountRows(isTablet: Boolean) {
             color = MaterialTheme.colorScheme.onSurface,
         )
         Text(
-            text = stringResource(if (browserSignIn) platformString(Res.string.settings_youtube_explainer) else Res.string.linux_flatpak_youtube_explainer),
+            text = when {
+                browserSignIn -> stringResource(platformString(Res.string.settings_youtube_explainer))
+                sealedSignIn -> stringResource(Res.string.linux_flatpak_youtube_explainer)
+                else -> stringResource(Res.string.settings_youtube_explainer_paste)
+            },
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
+
+        if (!sealedSignIn) {
+            SettingsSwitchRow(
+                title = stringResource(Res.string.settings_youtube_browser_window),
+                description = stringResource(Res.string.settings_youtube_browser_window_description),
+                checked = browserWindow,
+                isTablet = isTablet,
+                modifier = Modifier.settingsScrollAnchor(SettingsScrollAnchor.searchKey("youtube-browser-window")),
+                onCheckedChange = { enabled ->
+                    browserWindow = enabled
+                    YouTubeMusicAuthPlatform.setBrowserWindowEnabled(enabled)
+                },
+            )
+        }
 
         val statusText = when {
             state.signingIn -> stringResource(Res.string.settings_youtube_state_signing_in)
