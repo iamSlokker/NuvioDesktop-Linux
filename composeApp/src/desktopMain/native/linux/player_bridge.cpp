@@ -1078,6 +1078,10 @@ void applyStartOptions(mpv_handle *mpv, bool playWhenReady, jlong initialPositio
 
 template<class AfterInitialize>
 void initializeAndLoad(Player &player, const std::string &source, AfterInitialize afterInitialize) {
+    // No clipboard: nothing here reads or sets it, and mpv 0.41 otherwise opens its own Wayland (then X11)
+    // connection for it in mpv_initialize. With the compositor gone that connect blocked the create for good,
+    // which held the process at exit (seen in cage, 2026-11-13). Last, so a saved option cannot turn it back on.
+    mpv_set_option_string(player.mpv, "clipboard-backends", "");
     checkMpv(mpv_initialize(player.mpv), "mpv_initialize");
     // SPDIF recovery needs mpv's exact verbose PCM-fallback marker. Verbose lines are
     // not kept, unless NUVIO_MPV_VERBOSE asks for them in the session log.

@@ -91,6 +91,8 @@ DISPLAY=:77 /output/native/linux_x11_error_guard_test
 cmake --build /output/native --target linux_video_corners_test
 DISPLAY=:77 /output/native/linux_video_corners_test
 kill "$guard_xvfb"
+cmake --build /output/native --target linux_x11_io_exit_test
+/output/native/linux_x11_io_exit_test
 /output/native/linux_subtitle_add_test
 cmake --build /output/native --target linux_subtitle_style_test
 /output/native/linux_subtitle_style_test

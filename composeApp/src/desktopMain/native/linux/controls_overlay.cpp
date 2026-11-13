@@ -4,6 +4,7 @@
 #include "pip_hud_geometry.h"
 #include "pip_geometry_dispatch.h"
 #include "window_chrome.h"
+#include "x11_io_exit.h"
 
 #include <gtk/gtk.h>
 #include <gdk/gdkx.h>
@@ -79,6 +80,8 @@ private:
                     !GDK_IS_X11_DISPLAY(gdk_display_get_default())) {
                     throw std::runtime_error("GTK controls require an X11/XWayland display.");
                 }
+                // A lost display asks the app to quit instead of exit() inside Xlib (x11_io_exit.h).
+                linuxInstallX11IoExitHandler(gdk_x11_display_get_xdisplay(gdk_display_get_default()));
                 started.set_value();
                 gtk_main();
             } catch (...) { started.set_exception(std::current_exception()); }

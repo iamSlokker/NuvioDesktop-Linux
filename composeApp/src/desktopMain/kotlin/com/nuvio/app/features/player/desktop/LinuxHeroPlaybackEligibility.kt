@@ -6,6 +6,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
+import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.nuvio.app.features.home.components.HomeHeroTrailerGate
@@ -21,11 +22,22 @@ internal fun linuxHeroPlaybackEligible(
     musicPlaying: Boolean = false,
 ): Boolean = playWhenReady && routeResumed && homeActive && !musicPlaying
 
+/**
+ * The route counts as resumed when it is, or when it is only STARTED because the window lost focus. A window that is
+ * not focused holds every route at STARTED, and on some compositors (cage, wlroots) the window loses X focus each time
+ * the player's controls window maps: the trailer was disposed, its controls unmapped, focus came back and the trailer
+ * was created again, about 16 times a second. Upstream's trailers do not stop for focus either. A route that is
+ * STARTED while the window is focused is on its way in or out (a transition), and still may not own the player.
+ */
+internal fun linuxHeroRouteResumed(state: Lifecycle.State, windowFocused: Boolean): Boolean =
+    state == Lifecycle.State.RESUMED || (!windowFocused && state == Lifecycle.State.STARTED)
+
 /** The shared surfaces/timers stay intact; only Linux native ownership is gated. */
 @Composable
 internal fun linuxHeroPlayWhenReady(playWhenReady: Boolean, home: Boolean = false): Boolean {
     if (DesktopHostOs.current != DesktopHostOs.LINUX) return playWhenReady
     val lifecycle by LocalLifecycleOwner.current.lifecycle.currentStateFlow.collectAsState()
+    val windowFocused = LocalWindowInfo.current.isWindowFocused
     val homeActive = if (home) {
         val active by HomeHeroTrailerGate.homeActive.collectAsState()
         active
@@ -39,7 +51,7 @@ internal fun linuxHeroPlayWhenReady(playWhenReady: Boolean, home: Boolean = fals
     )
     return linuxHeroPlaybackEligible(
         playWhenReady,
-        lifecycle == Lifecycle.State.RESUMED,
+        linuxHeroRouteResumed(lifecycle, windowFocused),
         homeActive,
         musicPlaying = musicPlaying,
     )
