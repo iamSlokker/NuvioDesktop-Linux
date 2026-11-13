@@ -328,6 +328,48 @@ class WebKitBuildTest(unittest.TestCase):
             self.assertEqual(result[1], '/host/lib64/libasound.so.2')
             self.assertEqual(list(pathlib.Path(tmp).glob('nuvio-modules.*')), [])
 
+    def run_launcher_with_host_fontconfig(self, tmp, gtk_query_works):
+        root = pathlib.Path(tmp) / 'image'
+        (root / 'bin').mkdir(parents=True)
+        for rel in ['lib/native/gdk-pixbuf-2.0/2.10.0/loaders', 'lib/native/gtk-3.0/3.0.0/immodules']:
+            (root / rel).mkdir(parents=True)
+            (root / rel / 'fixture.so').touch()
+        (root / 'bin/nuvio-pixbuf-query').write_text('#!/bin/sh\n')
+        # The probe run binds every symbol now; this fixture fails it unless the host library is usable.
+        (root / 'bin/nuvio-gtk-query').write_text('#!/bin/sh\n' + ('' if gtk_query_works else
+            'case "$LD_LIBRARY_PATH" in */fontconfig:*) [ "$LD_BIND_NOW" = 1 ] && exit 127;; esac\n'))
+        for name in ['nuvio-pixbuf-query', 'nuvio-gtk-query']:
+            (root / 'bin' / name).chmod(0o755)
+        (root / 'lib/nuvio').write_text('#!/bin/sh\nset -eu\nprintf "%s\\n" "$LD_LIBRARY_PATH"\n'
+                                        'readlink "${LD_LIBRARY_PATH%%:*}/libfontconfig.so.1" || echo private\n')
+        (root / 'lib/nuvio').chmod(0o755)
+        launcher = root / 'bin/nuvio-desktop'
+        shutil.copy2(RECIPE / 'nuvio-appimage', launcher)
+        tools = pathlib.Path(tmp) / 'tools'
+        tools.mkdir()
+        (tools / 'ldconfig').write_text('#!/bin/sh\n'
+            'printf "\\tlibfontconfig.so.1 (libc6) => /lib/libfontconfig.so.1\\n"\n'
+            'printf "\\tlibfontconfig.so.1 (libc6,x86-64) => /host/lib64/libfontconfig.so.1\\n"\n')
+        (tools / 'ldconfig').chmod(0o755)
+        result = subprocess.check_output(['/bin/sh', str(launcher)], text=True, stdin=subprocess.DEVNULL,
+                                         env=dict(os.environ, TMPDIR=tmp, PATH=f"{tools}:{os.environ['PATH']}")).splitlines()
+        self.assertEqual(list(pathlib.Path(tmp).glob('nuvio-modules.*')), [])
+        return root, result
+
+    def test_appimage_launcher_prefers_the_hosts_fontconfig(self):
+        with tempfile.TemporaryDirectory(prefix='nuvio mount with spaces ') as tmp:
+            root, result = self.run_launcher_with_host_fontconfig(tmp, gtk_query_works=True)
+            first, rest = result[0].split(':', 1)
+            self.assertRegex(first, r'/nuvio-modules\.[^/]+/fontconfig$')
+            self.assertEqual(rest, f'{root}/lib/native:{root}/lib/runtime/lib')
+            self.assertEqual(result[1], '/host/lib64/libfontconfig.so.1')
+
+    def test_appimage_launcher_keeps_its_fontconfig_when_the_hosts_does_not_link(self):
+        with tempfile.TemporaryDirectory(prefix='nuvio mount with spaces ') as tmp:
+            root, result = self.run_launcher_with_host_fontconfig(tmp, gtk_query_works=False)
+            self.assertEqual(result[0], f'{root}/lib/native:{root}/lib/runtime/lib')
+            self.assertEqual(result[1], 'private')
+
     def test_cache_rejects_absolute_and_escaping_links(self):
         with tempfile.TemporaryDirectory() as tmp:
             base = pathlib.Path(tmp)

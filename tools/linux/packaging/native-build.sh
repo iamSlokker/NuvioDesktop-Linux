@@ -73,6 +73,8 @@ cmake --build /output/native --target linux_memory_breakdown_test
 cmake --build /output/native --target linux_tone_mapping_test
 /output/native/linux_tone_mapping_test
 /output/native/linux_speech_spot_test
+cmake --build /output/native --target linux_gapless_queue_test
+/output/native/linux_gapless_queue_test
 cmake --build /output/native --target linux_low_vram_test
 /output/native/linux_low_vram_test
 /output/native/linux_live_cache_seek_test
@@ -89,6 +91,8 @@ DISPLAY=:77 /output/native/linux_x11_error_guard_test
 cmake --build /output/native --target linux_video_corners_test
 DISPLAY=:77 /output/native/linux_video_corners_test
 kill "$guard_xvfb"
+cmake --build /output/native --target linux_x11_io_exit_test
+/output/native/linux_x11_io_exit_test
 /output/native/linux_subtitle_add_test
 cmake --build /output/native --target linux_subtitle_style_test
 /output/native/linux_subtitle_style_test

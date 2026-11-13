@@ -12,6 +12,7 @@ private val log = Logger.withTag("NativePlayerBridge")
 
 /** How long process exit waits for the players to close; a stuck mpv must not keep the app up. */
 private const val LINUX_EXIT_DISPOSE_TIMEOUT_MS = 5_000L
+private const val LINUX_EXIT_WINDOWS_TIMEOUT_MS = 2_000L
 
 internal fun findPackagedNativeRuntime(
     platform: DesktopHostOs,
@@ -53,6 +54,17 @@ internal object NativePlayerBridge {
                     closing.isDaemon = true
                     closing.start()
                     closing.join(LINUX_EXIT_DISPOSE_TIMEOUT_MS)
+                    // Then the windows: exit() unloads the GL driver (libGLX's __glXFini) while Compose could still be
+                    // drawing on the EDT, and a SIGTERM during playback crashed in glClear (2 of 17 runs). Bounded, so a
+                    // busy EDT cannot hold the exit.
+                    val windows = Thread({
+                        runCatching {
+                            java.awt.EventQueue.invokeAndWait { java.awt.Window.getWindows().forEach { it.dispose() } }
+                        }
+                    }, "nuvio-window-dispose")
+                    windows.isDaemon = true
+                    windows.start()
+                    windows.join(LINUX_EXIT_WINDOWS_TIMEOUT_MS)
                 }, "nuvio-player-shutdown"))
             }
         } else {
@@ -199,7 +211,7 @@ internal object NativePlayerBridge {
 
     /**
      * fork:gapless - queues [url] to play straight after the current file in the same mpv (any earlier queued file is
-     * dropped; an empty url only drops it). [options] are "name=value" per-file options. Windows bridge only.
+     * dropped; an empty url only drops it). [options] are "name=value" per-file options. Windows and Linux bridges.
      */
     external fun queueNext(handle: Long, url: String, headerLines: Array<String>, options: Array<String>)
 
@@ -211,7 +223,7 @@ internal object NativePlayerBridge {
 
     /**
      * fork:loudness - [decodeAudioSpot] for a stream no player has open yet ([url], sent with [headerLines] as "Name: value"),
-     * so the next track can be measured before it starts. Needs no player handle. Windows bridge only: elsewhere it throws
+     * so the next track can be measured before it starts. Needs no player handle. Windows and Linux bridges: elsewhere it throws
      * UnsatisfiedLinkError.
      */
     external fun decodeAudioUrl(
@@ -224,7 +236,7 @@ internal object NativePlayerBridge {
         outputPath: String,
     ): Int
 
-    /** fork:visualiser - makes [decodeAudioSpot] read the local file at [path] instead of the stream; null goes back to the stream. Windows bridge only. */
+    /** fork:visualiser - makes [decodeAudioSpot] read the local file at [path] instead of the stream; null goes back to the stream. Windows and Linux bridges. */
     external fun setAudioSpotFile(handle: Long, path: String?)
 
     /** The playing source's size over its duration; negative when unknown. */

@@ -20,6 +20,13 @@ class LinuxHeroPlaybackEligibilityTest {
         assertTrue(linuxHeroPlaybackEligible(playWhenReady = true, routeResumed = true))
     }
 
+    @Test fun aWindowThatLostFocusKeepsTheRouteResumedButATransitionDoesNot() {
+        assertTrue(linuxHeroRouteResumed(androidx.lifecycle.Lifecycle.State.RESUMED, windowFocused = true))
+        assertTrue(linuxHeroRouteResumed(androidx.lifecycle.Lifecycle.State.STARTED, windowFocused = false))
+        assertFalse(linuxHeroRouteResumed(androidx.lifecycle.Lifecycle.State.STARTED, windowFocused = true))
+        assertFalse(linuxHeroRouteResumed(androidx.lifecycle.Lifecycle.State.CREATED, windowFocused = false))
+    }
+
     @Test fun mutedStartupIsSilentEvenWithRememberedPositiveVolume() {
         assertEquals(listOf("mute=yes", "volume=0"), linuxHeroStartupAudioOptions(
             PlayerControlsState(heroTrailer = PlayerHeroTrailerState(enabled = true, muted = true, volume = 60)),
