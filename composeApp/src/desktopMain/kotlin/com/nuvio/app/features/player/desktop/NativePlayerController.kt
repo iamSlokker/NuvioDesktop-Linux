@@ -2672,8 +2672,9 @@ internal class NativePlayerController(
         }
     }
 
-    /** True when this player can queue a track behind the current one (the Windows bridge). */
-    val supportsQueueing: Boolean get() = DesktopHostOs.current == DesktopHostOs.WINDOWS
+    /** True when this player can queue a track behind the current one (the Windows and Linux bridges). */
+    val supportsQueueing: Boolean
+        get() = DesktopHostOs.current == DesktopHostOs.WINDOWS || DesktopHostOs.current == DesktopHostOs.LINUX // fork:linux
 
     fun setAudioSpotFile(path: String?) {
         val current = handle.takeIf { it != 0L } ?: return

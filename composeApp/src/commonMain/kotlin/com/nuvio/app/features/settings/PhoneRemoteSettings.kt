@@ -42,8 +42,7 @@ internal fun PhoneRemoteSection(isTablet: Boolean) {
                         "Could not open a network port for the remote. Another program may be using ports 47321 to 47330."
                     state.connectedDevices.isNotEmpty() ->
                         "Connected: ${state.connectedDevices.joinToString(", ")}"
-                    else ->
-                        "Waiting for a phone. Windows may ask once whether to allow Nuvio on private networks: allow it."
+                    else -> platformPhoneRemoteFirewallNote // fork:linux
                 },
                 checked = state.enabled,
                 isTablet = isTablet,
@@ -60,8 +59,7 @@ internal fun PhoneRemoteSection(isTablet: Boolean) {
                             append(state.addresses.joinToString(" or ") { "$it:${state.port}" })
                             append(".")
                         }
-                        append(" To wake this PC from the phone while it sleeps, turn on Wake on Magic Packet for its network card ")
-                        append("(Device Manager › the network adapter › Power Management and Advanced) and Wake-on-LAN in the BIOS.")
+                        append(platformPhoneRemoteWakeNote) // fork:linux
                         if (state.pairedDevices.isNotEmpty()) {
                             append(" Paired: ${state.pairedDevices.joinToString(", ")}.")
                         }

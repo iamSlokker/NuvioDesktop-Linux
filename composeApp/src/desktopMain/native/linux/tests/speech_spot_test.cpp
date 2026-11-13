@@ -51,6 +51,11 @@ int main() {
                 "a separate audio stream is decoded on its own, without the player's track number");
         const auto local = linuxSpeechSpotInput("https://host/video", "https://host/audio", "2", "/tmp/track.m4a");
         require(local.url == "/tmp/track.m4a" && local.aid.empty(), "a local copy of the audio comes before the streams");
+        const auto movedOn = linuxSpeechSpotInput("https://host/first", "", "1", "", "https://host/second");
+        require(movedOn.url == "https://host/second" && movedOn.aid.empty(),
+                "a queued track the player moved on to is decoded instead of the first one");
+        const auto both = linuxSpeechSpotInput("https://host/first", "", "1", "/tmp/track.m4a", "https://host/second");
+        require(both.url == "/tmp/track.m4a", "the local copy still comes first");
 
         const auto dir = std::filesystem::temp_directory_path() / "nuvio-speech-spot-test";
         std::filesystem::remove_all(dir);

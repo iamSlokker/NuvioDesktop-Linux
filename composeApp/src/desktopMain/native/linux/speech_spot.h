@@ -29,15 +29,18 @@ inline double linuxSpeechSourceBytesPerSecond(const std::string &source, int64_t
 // stream is the audio being heard and a complete file on its own, so it is decoded instead of the
 // video URL (which has no sound), and the player's track number does not apply to it. A local copy
 // of the audio (setAudioSpotFile, the music visualiser's download) comes before both, with no track
-// number either. As in the Windows bridge.
+// number either; then a queued track the player has moved on to (setSpotSource, gapless). As in the
+// Windows bridge.
 struct LinuxSpeechSpotInput {
     std::string url;
     std::string aid;
 };
 
 inline LinuxSpeechSpotInput linuxSpeechSpotInput(const std::string &source, const std::string &separateAudio,
-                                                 const std::string &aid, const std::string &localCopy = {}) {
+                                                 const std::string &aid, const std::string &localCopy = {},
+                                                 const std::string &movedOn = {}) {
     if (!localCopy.empty()) return {localCopy, ""};
+    if (!movedOn.empty()) return {movedOn, ""};
     if (!separateAudio.empty()) return {separateAudio, ""};
     return {source, aid};
 }

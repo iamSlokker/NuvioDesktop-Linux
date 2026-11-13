@@ -17,6 +17,7 @@
 #include "auto_crop.h"
 #include "video_source_size.h"
 #include "speech_spot.h"
+#include "gapless_queue.h"
 #include "now_playing_glass.h"
 #include "subtitle_add.h"
 #include "subtitle_style.h"
@@ -256,6 +257,10 @@ struct Player {
     std::vector<std::string> speechHeaders;
     std::string speechSeparateAudio; // The separate audio stream, if any (linuxSpeechSpotInput).
     std::string speechLocalCopy; // setAudioSpotFile: a local copy the decodes read instead; under operations.
+    // setSpotSource: the queued track the player moved on to, which the decodes read (gapless); under operations.
+    std::string speechMovedOn;
+    std::vector<std::string> speechMovedOnHeaders;
+    LinuxGaplessQueue gapless; // queueNext; under operations.
     uint64_t canvasXid = 0; // The Canvas mpv embeds in, for the Now Playing corners. Set once in create.
 
     // Auto crop (resize mode 3, auto_crop.h): checked from the event loop and switched by
@@ -423,6 +428,7 @@ struct Player {
             if (stopping) break;
             LinuxHttpRecoveryEvents::Result translated;
             bool audioRecovered = false;
+            bool movedOn = false;
             {
                 std::lock_guard<std::mutex> lock(operations);
                 if (stopping) break;
@@ -472,6 +478,11 @@ struct Player {
                 if (translated.loaded) autoCrop.fileLoaded(now);
                 if (translated.restarted) autoCrop.playbackRestart(now);
                 autoCrop.tick(now);
+                // fork:gapless - the end of a track with one queued behind it is the move to that track.
+                if (translated.eof && gapless.takesEof()) {
+                    translated.eof = false;
+                    movedOn = true;
+                }
                 if (translated.eof) ended = true;
                 if (translated.failure) {
                     fileReady = ended = false;
@@ -484,6 +495,7 @@ struct Player {
                 }
             }
             writeSessionLog(*event, translated);
+            if (movedOn) log.bridge("gapless: moved on to the queued track");
             // No operation lock across JNI callbacks. The sink preserves this order on the EDT.
             translated.deliverFailure([&](const std::string &name, double value) { emit(env, name, value); });
             if (audioRecovered) emit(env, "audioPassthroughFallback", 1.0);
@@ -1411,8 +1423,10 @@ static jint decodeAudioSpot(JNIEnv *env, jlong handle, jdouble startSeconds, jdo
             std::lock_guard<std::mutex> lock(player->operations);
             if (!player->mpv || player->stopping) return -1;
             input = linuxSpeechSpotInput(player->speechSource, player->speechSeparateAudio,
-                player->stringProperty("aid"), player->speechLocalCopy);
-            if (player->speechLocalCopy.empty()) headers = player->speechHeaders;
+                player->stringProperty("aid"), player->speechLocalCopy, player->speechMovedOn);
+            if (!player->speechLocalCopy.empty()) headers.clear();
+            else if (!player->speechMovedOn.empty()) headers = player->speechMovedOnHeaders;
+            else headers = player->speechHeaders;
         }
         return linuxDecodeAudioSpot(input.url, headers, input.aid, startSeconds, durationSeconds, sampleRate, channelCount,
             text(env, outputPath), [player] { return player->stopping.load(); });
@@ -1435,6 +1449,53 @@ JNI_METHOD(jint, decodeAudioUrl)(JNIEnv *env, jobject, jstring url, jobjectArray
     return guarded(env, [&]() -> jint {
         return linuxDecodeAudioSpot(text(env, url), strings(env, headerLines), "", startSeconds, durationSeconds,
             sampleRate, channelCount, text(env, outputPath), {});
+    });
+}
+
+// fork:gapless - queues url behind what is playing, in this same mpv (gapless_queue.h); an empty url drops the queue.
+JNI_METHOD(void, queueNext)(JNIEnv *env, jobject, jlong handle, jstring url, jobjectArray headerLines,
+                            jobjectArray options) {
+    const std::string next = text(env, url);
+    const auto headers = strings(env, headerLines);
+    const auto perFile = strings(env, options);
+    guarded(env, [&] {
+        // A player already gone has nothing to queue behind, as on Windows: no error.
+        auto player = playerFromHandle(handle);
+        if (!player) return;
+        int result;
+        {
+            std::lock_guard<std::mutex> lock(player->operations);
+            if (!player->mpv || player->stopping) return;
+            result = player->gapless.queue(player->mpv, next, headers, perFile);
+        }
+        // The session log opens a file per line: never under the operation lock.
+        player->log.bridge(next.empty() ? std::string("gapless: queue cleared")
+                           : result >= 0 ? std::string("gapless: next track queued")
+                                         : std::string("gapless: queueing refused: ") + mpv_error_string(result));
+    });
+}
+
+// fork:gapless - the stream the decodes read once the player has moved on to a queued track; null goes back.
+JNI_METHOD(void, setSpotSource)(JNIEnv *env, jobject, jlong handle, jstring url, jobjectArray headerLines) {
+    guarded(env, [&] {
+        auto player = playerFromHandle(handle);
+        if (!player) return;
+        std::string source = url ? text(env, url) : std::string();
+        auto headers = strings(env, headerLines);
+        std::lock_guard<std::mutex> lock(player->operations);
+        player->speechMovedOn = std::move(source);
+        player->speechMovedOnHeaders = std::move(headers);
+    });
+}
+
+// fork:gapless - the playlist entry playing (0 the file opened, 1 a queued one once it starts), or -1.
+JNI_METHOD(jlong, playlistPos)(JNIEnv *env, jobject, jlong handle) {
+    return guarded(env, [&]() -> jlong {
+        auto player = playerFromHandle(handle);
+        if (!player) return -1;
+        std::lock_guard<std::mutex> lock(player->operations);
+        if (!player->mpv || player->stopping) return -1;
+        return player->integer("playlist-pos", -1);
     });
 }
 

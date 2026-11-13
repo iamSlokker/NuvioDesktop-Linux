@@ -39,3 +39,9 @@ internal expect val platformListsWindowsOnlyPlaybackRowsInSearch: Boolean
 
 /** "Keep audio output awake": on Linux the sound server decides (see PreshowAudioKeepAlive.desktop.kt). */
 internal expect val platformOffersAudioKeepAlive: Boolean
+
+/** The phone remote's "Waiting for a phone" line: which firewall may need to let it in. */
+internal expect val platformPhoneRemoteFirewallNote: String
+
+/** The phone remote's wake-from-sleep instructions for this system's network settings. */
+internal expect val platformPhoneRemoteWakeNote: String

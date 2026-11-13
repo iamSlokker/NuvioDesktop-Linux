@@ -41,3 +41,20 @@ internal actual val platformListsWindowsOnlyPlaybackRowsInSearch: Boolean
 // PreshowAudioKeepAlive returns straight away on Linux.
 internal actual val platformOffersAudioKeepAlive: Boolean
     get() = !isLinuxHost
+
+// fork:linux - no Windows network prompt; ufw and firewalld are what can block the remote there.
+internal actual val platformPhoneRemoteFirewallNote: String
+    get() = if (isLinuxHost) {
+        "Waiting for a phone. If a firewall is on (ufw, firewalld), allow TCP ports 47321 to 47330 and UDP 47320 on your home network."
+    } else {
+        "Waiting for a phone. Windows may ask once whether to allow Nuvio on private networks: allow it."
+    }
+
+internal actual val platformPhoneRemoteWakeNote: String
+    get() = if (isLinuxHost) {
+        " To wake this PC from the phone while it sleeps, turn on Wake-on-LAN for its network card (with NetworkManager: " +
+            "nmcli connection modify <connection> 802-3-ethernet.wake-on-lan magic) and in the BIOS."
+    } else {
+        " To wake this PC from the phone while it sleeps, turn on Wake on Magic Packet for its network card " +
+            "(Device Manager › the network adapter › Power Management and Advanced) and Wake-on-LAN in the BIOS."
+    }
