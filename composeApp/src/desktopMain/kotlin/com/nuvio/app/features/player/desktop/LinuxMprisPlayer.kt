@@ -33,10 +33,19 @@ internal class LinuxMprisPlayer(
 
     fun update(controls: PlayerControlsState, handle: Long) {
         if (handle == 0L || handle == retiringHandle || !usable()) return
-        val duration = NativePlayerBridge.durationMs(handle).coerceIn(0, Long.MAX_VALUE / 1000) * 1000
-        val position = NativePlayerBridge.positionMs(handle).coerceIn(0, Long.MAX_VALUE / 1000) * 1000
-        val ended = NativePlayerBridge.isEnded(handle)
-        val paused = NativePlayerBridge.isPaused(handle)
+        // At exit the players are closed under the UI (disposeAll); a read then finds no handle.
+        val duration: Long
+        val position: Long
+        val ended: Boolean
+        val paused: Boolean
+        try {
+            duration = NativePlayerBridge.durationMs(handle).coerceIn(0, Long.MAX_VALUE / 1000) * 1000
+            position = NativePlayerBridge.positionMs(handle).coerceIn(0, Long.MAX_VALUE / 1000) * 1000
+            ended = NativePlayerBridge.isEnded(handle)
+            paused = NativePlayerBridge.isPaused(handle)
+        } catch (_: IllegalStateException) {
+            return
+        }
         val session = PlayerMediaSession.current
         state = LinuxMprisState(
             token = token,

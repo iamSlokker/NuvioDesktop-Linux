@@ -12,6 +12,7 @@ private val log = Logger.withTag("NativePlayerBridge")
 
 /** How long process exit waits for the players to close; a stuck mpv must not keep the app up. */
 private const val LINUX_EXIT_DISPOSE_TIMEOUT_MS = 5_000L
+private const val LINUX_EXIT_WINDOWS_TIMEOUT_MS = 2_000L
 
 internal fun findPackagedNativeRuntime(
     platform: DesktopHostOs,
@@ -53,6 +54,17 @@ internal object NativePlayerBridge {
                     closing.isDaemon = true
                     closing.start()
                     closing.join(LINUX_EXIT_DISPOSE_TIMEOUT_MS)
+                    // Then the windows: exit() unloads the GL driver (libGLX's __glXFini) while Compose could still be
+                    // drawing on the EDT, and a SIGTERM during playback crashed in glClear (2 of 17 runs). Bounded, so a
+                    // busy EDT cannot hold the exit.
+                    val windows = Thread({
+                        runCatching {
+                            java.awt.EventQueue.invokeAndWait { java.awt.Window.getWindows().forEach { it.dispose() } }
+                        }
+                    }, "nuvio-window-dispose")
+                    windows.isDaemon = true
+                    windows.start()
+                    windows.join(LINUX_EXIT_WINDOWS_TIMEOUT_MS)
                 }, "nuvio-player-shutdown"))
             }
         } else {
