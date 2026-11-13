@@ -456,6 +456,16 @@ def build_inventory(repo, inputs, cache, package_rows, owner_rows, runtime=None,
             components['application'].setdefault('font_assets', []).extend(
                 {'path': n, 'sha256': hashlib.sha256(z.read(n)).hexdigest(), 'license': None}
                 for n in z.namelist() if n.endswith(('.ttf', '.otf')) and name == 'u2netp.onnx')
+    # The music visualiser's beat grid: Beat This! (CPJKU, MIT), ONNX export by beat-this-rs (MIT).
+    for name in ('beat_this_small.onnx', 'mel_spectrogram.onnx'):
+        path = 'beat-tracking/' + name
+        jar = next(p for p in application_jars.glob('composeApp-desktop-*.jar'))
+        with zipfile.ZipFile(jar) as z:
+            components['model:' + name] = {'id': 'model:' + name, 'version': 'exact model SHA256',
+                'sha256': hashlib.sha256(z.read(path)).hexdigest(), 'source': 'https://github.com/UmbraProjects/NuvioDesktop/blob/8e2adb00b51658031412d3c63ffc619076c71bdb/composeApp/src/desktopMain/resources/' + path,
+                'license_evidence': {'path': 'licenses/beat-this-MIT.txt', 'sha256': hashlib.sha256(z.read('licenses/beat-this-MIT.txt')).hexdigest()},
+                'notice': {'path': 'beat-tracking/NOTICE.txt', 'sha256': hashlib.sha256(z.read('beat-tracking/NOTICE.txt')).hexdigest()},
+                'modifications': 'none', 'gaps': ['MODEL_EXPORT_PREFERRED_FORM_REVIEW']}
     runtime_recipe = json.loads((repo / 'tools/linux/packaging/appimage-runtime/manifest.json').read_text())
     components['appimage-runtime'] = {'id': 'appimage-runtime', 'version': 'source build of type2-runtime ' + runtime_recipe['sources']['type2-runtime']['version'],
         'binary': {'sha256': runtime_recipe['runtime_sha256'], 'recipe': 'tools/linux/packaging/appimage-runtime/manifest.json'},

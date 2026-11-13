@@ -112,6 +112,15 @@ internal object NativeImageSupport {
                 }
                 "onnxruntime loaded"
             }
+            // The beat grid's models are read the same way; onnxruntime itself is the probe above.
+            probe("beat tracking models") {
+                listOf("mel_spectrogram.onnx", "beat_this_small.onnx").joinToString { name ->
+                    val bytes = checkNotNull(PackagedResources.open("beat-tracking/$name")) { "beat-tracking/$name is missing" }
+                        .use { it.readBytes().size }
+                    check(bytes > 0) { "beat-tracking/$name is empty" }
+                    "$name $bytes bytes"
+                }
+            }
             // Builds the chooser the way the app's pickers do (system look and feel first; see
             // LocalDirectoryPicker), classes and icons included, without showing it. The outcome
             // is carried out by hand: an Error thrown on the EDT does not reliably come back out
