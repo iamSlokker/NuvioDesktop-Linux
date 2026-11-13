@@ -18,6 +18,7 @@
 #include "video_source_size.h"
 #include "speech_spot.h"
 #include "gapless_queue.h"
+#include "x11_io_exit.h"
 #include "now_playing_glass.h"
 #include "subtitle_add.h"
 #include "subtitle_style.h"
@@ -1207,6 +1208,11 @@ JNI_METHOD(jboolean, demuxerCacheBytes)(JNIEnv *env, jobject, jlong handle, jlon
 // Where logs/ goes: DesktopStorage.rootDir, as on Windows.
 JNI_METHOD(void, setDataDirectory)(JNIEnv *env, jobject, jstring directory) {
     guarded(env, [&] { LinuxPlayerLog::setDataDirectory(text(env, directory)); });
+}
+
+// Whether an X connection was lost (x11_io_exit.h): the windows are then left as they are at exit.
+JNI_METHOD(jboolean, x11DisplayLost)(JNIEnv *, jobject) {
+    return linuxX11IoExits().load() > 0 ? JNI_TRUE : JNI_FALSE;
 }
 
 JNI_METHOD(void, dispose)(JNIEnv *env, jobject, jlong handle) {

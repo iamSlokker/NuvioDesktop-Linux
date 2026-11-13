@@ -1,9 +1,13 @@
-// x11_io_exit.h against a real X server: a private Xvfb is started, connected to, and killed. The lost
-// connection must reach the handler once, and Xlib must return instead of calling exit() (this test
-// would end there, without printing PASS). No GTK, JNI, network or audio; the display is our own.
+// x11_io_exit.h against a real X server: a private Xvfb is started, connected to, and killed. The
+// connection gets its handler as libX11 makes it (linuxHookX11DisplayOpen, as the bridge does when it
+// loads), with no install of its own. The lost connection must reach the handler once, Xlib must return
+// instead of calling exit() (this test would end there, without printing PASS), and the display's lock
+// must be free afterwards for another thread, as the GL drivers' exit handlers need it. No GTK, JNI,
+// network or audio; the display is our own.
 #include "x11_io_exit.h"
 #include <chrono>
 #include <cstdlib>
+#include <atomic>
 #include <iostream>
 #include <stdexcept>
 #include <string>
@@ -19,7 +23,12 @@ void require(bool condition, const std::string &message) {
 
 int main() {
     pid_t server = -1;
+    // As the app does (xlib_threads.cpp): the display gets a lock, which _XIOError takes and keeps, and
+    // every display made from here on gets the exit handler.
+    XInitThreads();
     try {
+        require(linuxHookX11DisplayOpen(), "libX11 exports _XInitDisplayLock_fn");
+        require(!linuxHookX11DisplayOpen(), "hooked once");
         const std::string name = ":" + std::to_string(90 + getpid() % 9);
         server = fork();
         if (server == 0) {
@@ -34,12 +43,12 @@ int main() {
         }
         require(display != nullptr, "connect to the private Xvfb " + name);
 
-        // In the app the process-wide I/O error handler is AWT's, which prints and returns, so Xlib goes on to the
-        // per-display exit handler (the cage stack: _XIOError -> _XDefaultIOErrorExit). Xlib's own default would exit(1).
-        XSetIOErrorHandler([](Display *) { return 0; });
+        // In the app the process-wide I/O error handler is set to one that returns, after GDK's (which would _exit)
+        // and AWT's, so Xlib goes on to the per-display exit handler. Xlib's own default would exit(1).
+        linuxInstallX11IoErrorHandler();
         int asked = 0;
         linuxX11IoExitAction() = [&asked] { ++asked; };
-        require(linuxInstallX11IoExitHandler(display), "XSetIOErrorExitHandler is available (libX11 1.7+)");
+        // No install here: the connection got its handler as it was made.
         require(!linuxInstallX11IoExitHandler(nullptr), "no display, no handler");
 
         kill(server, SIGKILL);
@@ -53,6 +62,16 @@ int main() {
         XSync(display, False);
         require(asked == 1, "the app is asked to quit once (" + std::to_string(asked) + ")");
         require(linuxX11IoExits().load() >= 1, "the handler ran");
+
+        // What NVIDIA's EGL exit handler does from the exiting thread (XESetCloseDisplay locks the display).
+        std::atomic<bool> locked{false};
+        std::thread other([display, &locked] { XLockDisplay(display); XUnlockDisplay(display); locked = true; });
+        for (int wait = 0; wait < 40 && !locked; ++wait) std::this_thread::sleep_for(std::chrono::milliseconds(50));
+        if (!locked) {
+            other.detach();
+            throw std::runtime_error("another thread could not lock the lost display: its user lock was kept");
+        }
+        other.join();
 
         std::cout << "X11_IO_EXIT_PASS\n";
         return 0;
