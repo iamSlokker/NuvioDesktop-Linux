@@ -1,5 +1,7 @@
 package com.nuvio.app.features.music
 
+import com.nuvio.app.core.ui.keyLayer
+import com.nuvio.app.core.ui.requestFocusLogged
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -62,6 +64,9 @@ internal object MusicKeyboard {
     }
 
     /** Whether a music page (the tab, an album, an artist, the full player) is showing. */
+    /** Whether focus is in the player (bar, dock or card) right now. */
+    fun playerHasFocus(): Boolean = roots.any { it.isPlayer && it.hasFocus }
+
     fun pageShowing(): Boolean = roots.any { it.takesFocus && !it.covered && !it.isPlayer }
 
     /**
@@ -90,7 +95,7 @@ internal object MusicKeyboard {
         from?.let { runCatching { it.requester.saveFocusedChild() } }
         returnTo = from
         returnControl = focusManager?.focusedControl()
-        return runCatching { player.requester.requestFocus() }.getOrDefault(false)
+        return player.requester.requestFocusLogged()
     }
 
     /**
@@ -101,7 +106,7 @@ internal object MusicKeyboard {
         if (roots.any { it.hasFocus }) return false
         val target = roots.lastOrNull { it.takesFocus && !it.covered } ?: return false
         return runCatching { (target.entry ?: target.requester).requestFocus() }.getOrDefault(false) ||
-            runCatching { target.requester.requestFocus() }.getOrDefault(false)
+            target.requester.requestFocusLogged()
     }
 }
 
@@ -135,13 +140,18 @@ internal fun Modifier.musicKeyboardRoot(
             repeat(FOCUS_TRIES) { attempt ->
                 delay(if (attempt == 0) 32 else 60)
                 if (root.hasFocus) return@LaunchedEffect
-                if (entry == null || !runCatching { entry.requestFocus() }.getOrDefault(false)) {
-                    runCatching { requester.requestFocus() }
+                if (entry == null || !entry.requestFocusLogged()) {
+                    requester.requestFocusLogged()
                 }
             }
         }
     }
     return this
+        // Focus router fallback (KeyLayers): an arrow or OK that went to no one puts focus back on the music page on
+        // top, and the key is sent on. Replaces the window's call to onUnhandledArrow, which swallowed that key.
+        .then(
+            if (takeFocus && !isPlayer) Modifier.keyLayer("Music") { MusicKeyboard.onUnhandledArrow() } else Modifier,
+        )
         .then(if (trapFocus) Modifier.focusProperties { onExit = { cancelFocusChange() } }.focusGroup() else Modifier)
         .onFocusChanged { root.hasFocus = it.hasFocus }
         // A focus group, so the requester belongs to a focus node that knows which control inside it was focused: the

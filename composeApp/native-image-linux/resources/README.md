@@ -16,6 +16,10 @@ Linux counterparts of upstream's Windows-only globs in `../../native-image/resou
   sync (`DesktopAudioSubtitleSync`) reads with `getResourceAsStream`. No upstream topic lists the
   folder, so without this the packaged app's Auto Sync had no voice detector (Umbra snapshot
   148524e33, 2026-10-22).
+- `beat-tracking/**`: the Beat This! models (`beat_this_small.onnx`, `mel_spectrogram.onnx`) that
+  the music visualiser's beat grid (`BeatTracker`) reads with `PackagedResources.open`, staged
+  loose on Windows like `backdrop-framing/**` (Umbra 8e2adb00b, 2026-11-13). Without them the grid
+  falls back to its signal-processing estimate. Probe: "beat tracking models".
 - `jdk/internal/icu/impl/data/icudt*/nfc.nrm` (module `java.base`): what `java.text.Normalizer`
   reads for NFD and NFC. The trace only reached NFKD, so the v1.29.0 image embedded `nfkc.nrm` and
   not this; the IPTV guide's channel name matching (`XmltvGuide.normalizeName`) uses NFD. Probe:

@@ -1,5 +1,6 @@
 package com.nuvio.app.features.catalog
 
+import com.nuvio.app.core.ui.keyLayer
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -25,6 +26,8 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.foundation.focusable
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.withFrameNanos
+import com.nuvio.app.core.ui.requestFocusLogged
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -143,7 +146,11 @@ fun CatalogScreen(
 
     LaunchedEffect(adaptiveHeroEnabled) {
         if (adaptiveHeroEnabled) {
-            tvFocusRequester.requestFocus()
+            // Asked again over a few frames: the first request can land before the page is attached.
+            repeat(6) {
+                if (tvFocusRequester.requestFocusLogged()) return@LaunchedEffect
+                withFrameNanos { }
+            }
         }
     }
 
@@ -233,6 +240,8 @@ fun CatalogScreen(
                 .then(
                     if (adaptiveHeroEnabled) {
                         Modifier
+                            // Focus router fallback (KeyLayers): an arrow or OK that went to no one puts focus back here.
+                            .keyLayer("Catalog") { tvFocusRequester.requestFocusLogged() }
                             .focusRequester(tvFocusRequester)
                             .focusable()
                             .onPointerEvent(PointerEventType.Move) { event ->
@@ -285,7 +294,8 @@ fun CatalogScreen(
                                 }
                             }
                     } else {
-                        Modifier
+                        // Posters take focus themselves here; the fallback returns it to the last one (KeyLayers).
+                        Modifier.keyLayer("Catalog")
                     },
                 ),
         ) {

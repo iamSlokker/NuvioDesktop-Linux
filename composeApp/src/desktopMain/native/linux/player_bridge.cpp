@@ -255,6 +255,7 @@ struct Player {
     std::string speechSource;
     std::vector<std::string> speechHeaders;
     std::string speechSeparateAudio; // The separate audio stream, if any (linuxSpeechSpotInput).
+    std::string speechLocalCopy; // setAudioSpotFile: a local copy the decodes read instead; under operations.
     uint64_t canvasXid = 0; // The Canvas mpv embeds in, for the Now Playing corners. Set once in create.
 
     // Auto crop (resize mode 3, auto_crop.h): checked from the event loop and switched by
@@ -1410,8 +1411,8 @@ static jint decodeAudioSpot(JNIEnv *env, jlong handle, jdouble startSeconds, jdo
             std::lock_guard<std::mutex> lock(player->operations);
             if (!player->mpv || player->stopping) return -1;
             input = linuxSpeechSpotInput(player->speechSource, player->speechSeparateAudio,
-                player->stringProperty("aid"));
-            headers = player->speechHeaders;
+                player->stringProperty("aid"), player->speechLocalCopy);
+            if (player->speechLocalCopy.empty()) headers = player->speechHeaders;
         }
         return linuxDecodeAudioSpot(input.url, headers, input.aid, startSeconds, durationSeconds, sampleRate, channelCount,
             text(env, outputPath), [player] { return player->stopping.load(); });
@@ -1426,6 +1427,25 @@ JNI_METHOD(jint, decodeSpeechSpot)(JNIEnv *env, jobject, jlong handle, jdouble s
 JNI_METHOD(jint, decodeAudioSpot)(JNIEnv *env, jobject, jlong handle, jdouble startSeconds, jdouble durationSeconds,
                                   jint sampleRate, jint channelCount, jstring outputPath) {
     return decodeAudioSpot(env, handle, startSeconds, durationSeconds, sampleRate, channelCount, outputPath);
+}
+
+// The same decode for a stream no player has open yet (the next track, measured before it starts). No player needed.
+JNI_METHOD(jint, decodeAudioUrl)(JNIEnv *env, jobject, jstring url, jobjectArray headerLines, jdouble startSeconds,
+                                 jdouble durationSeconds, jint sampleRate, jint channelCount, jstring outputPath) {
+    return guarded(env, [&]() -> jint {
+        return linuxDecodeAudioSpot(text(env, url), strings(env, headerLines), "", startSeconds, durationSeconds,
+            sampleRate, channelCount, text(env, outputPath), {});
+    });
+}
+
+JNI_METHOD(void, setAudioSpotFile)(JNIEnv *env, jobject, jlong handle, jstring path) {
+    guarded(env, [&] {
+        auto player = playerFromHandle(handle);
+        if (!player) return;
+        std::string local = path ? text(env, path) : std::string();
+        std::lock_guard<std::mutex> lock(player->operations);
+        player->speechLocalCopy = std::move(local);
+    });
 }
 
 JNI_METHOD(void, setCornerRadius)(JNIEnv *env, jobject, jlong handle, jint radiusPx) {

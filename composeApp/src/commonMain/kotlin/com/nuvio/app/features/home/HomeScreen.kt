@@ -1,5 +1,7 @@
 package com.nuvio.app.features.home
 
+import com.nuvio.app.core.ui.keyLayer
+import com.nuvio.app.core.ui.requestFocusLogged
 import com.nuvio.app.core.ui.PosterLandscapeAspectRatio
 import com.nuvio.app.core.ui.LocalScreenCovered
 import coil3.compose.LocalPlatformContext
@@ -2425,7 +2427,7 @@ fun HomeScreen(
     val homeFocusHeld by rememberUpdatedState(setupPanelOpen && contentMode is HomeContentMode.Normal)
     fun requestHomeFocus() {
         if (homeScreenCovered || homeFocusHeld) return
-        runCatching { tvFocusRequester.requestFocus() }
+        tvFocusRequester.requestFocusLogged()
     }
     var homeRootHasFocus by remember { mutableStateOf(false) }
     // A filter bar in a row's header (Discover's browser row, Library's first row) takes real focus, unlike the cards:
@@ -2435,50 +2437,9 @@ fun HomeScreen(
     var filterStripHasFocus by remember { mutableStateOf(false) }
     val filterStripFocus = remember { BrowseFilterStripFocus(filterStripFocusRequester) { filterStripHasFocus = it } }
     var lastStateDrivenSearchQuery by remember { mutableStateOf<String?>(null) }
-    // Uncovered without being rebuilt (back from the Settings tab, where Home now stays composed):
-    // a rebuilt Home took focus in its first-composition effect; a kept one has to ask here, or
-    // the keyboard has nothing focused. Search hands focus to its text field instead.
-    val homeCoveredNow = LocalScreenCovered.current
-    var homeWasCovered by remember { mutableStateOf(homeCoveredNow) }
-    LaunchedEffect(homeCoveredNow) {
-        val uncovered = homeWasCovered && !homeCoveredNow
-        homeWasCovered = homeCoveredNow
-        if (!uncovered || contentMode is HomeContentMode.Search) return@LaunchedEffect
-        repeat(12) { attempt ->
-            delay(if (attempt == 0) 50 else 48)
-            requestHomeFocus()
-            if (homeRootHasFocus) return@LaunchedEffect
-        }
-    }
-    // The panel hands focus to nobody when it closes; Home takes it back, as after a filter menu.
-    var setupPanelWasOpen by remember { mutableStateOf(setupPanelOpen) }
-    LaunchedEffect(setupPanelOpen) {
-        val closed = setupPanelWasOpen && !setupPanelOpen
-        setupPanelWasOpen = setupPanelOpen
-        if (!closed || contentMode !is HomeContentMode.Normal) return@LaunchedEffect
-        repeat(12) { attempt ->
-            delay(if (attempt == 0) 50 else 48)
-            requestHomeFocus()
-            if (homeRootHasFocus) return@LaunchedEffect
-        }
-    }
-    // A filter-bar menu (Discover's catalog / filters, Library's) is a focusable popup: it takes the
-    // keyboard while open and hands it to nobody when it closes. Opened and picked with the mouse,
-    // no press ever lands on this root to reclaim it (the click was inside the popup), so the arrow
-    // keys went nowhere until the next click on the page. Take it back once the menu is gone.
-    var browseFilterMenuWasOpen by remember { mutableStateOf(browseFilterMenuOpen) }
-    LaunchedEffect(browseFilterMenuOpen) {
-        val closed = browseFilterMenuWasOpen && !browseFilterMenuOpen
-        browseFilterMenuWasOpen = browseFilterMenuOpen
-        if (!closed || contentMode is HomeContentMode.Search) return@LaunchedEffect
-        repeat(12) { attempt ->
-            delay(if (attempt == 0) 50 else 48)
-            // A menu opened from the keyboard hands focus back to its filter, which is inside this root.
-            if (homeRootHasFocus) return@LaunchedEffect
-            requestHomeFocus()
-            if (homeRootHasFocus) return@LaunchedEffect
-        }
-    }
+    // Taking focus back after Home is uncovered, after the setup panel closes and after a filter menu closes used to be
+    // three retry loops here, one per way of losing it. The focus router's fallback (keyLayer below, KeyLayers) now
+    // covers those and every other way: the first arrow or OK that goes to no one puts focus back here and still acts.
     // Move content-area focus when the user presses Down from the search bar.
     LaunchedEffect(navigateToContentCount) {
         if (navigateToContentCount > 0) {
@@ -3766,13 +3727,17 @@ fun HomeScreen(
     BoxWithConstraints(
         modifier = modifier
             .fillMaxSize()
+            // Focus router fallback (KeyLayers): an arrow or OK that went to no one puts focus back here.
+            .keyLayer("Home", active = !homeFocusHeld) {
+                !homeScreenCovered && tvFocusRequester.requestFocusLogged()
+            }
             .focusRequester(tvFocusRequester)
             .onFocusChanged { homeRootHasFocus = it.hasFocus }
             .focusable()
             .onPointerEvent(PointerEventType.Press, PointerEventPass.Initial) { _ ->
                 // A click on Home is the user choosing it, so it takes focus even from the open
                 // setup panel; only Home's own automatic requests are held for the panel.
-                if (!homeScreenCovered) runCatching { tvFocusRequester.requestFocus() }
+                if (!homeScreenCovered) tvFocusRequester.requestFocusLogged()
             }
             .onPreviewKeyEvent { event ->
                 when {
@@ -3953,7 +3918,7 @@ fun HomeScreen(
                                     val onFilteredRow = tvRows.getOrNull(tvRowIndexForSection(tvFocus.sectionIndex))?.hasFilterStrip == true &&
                                         !(heroFocusable && tvFocus.sectionIndex == 0)
                                     if (onFilteredRow) {
-                                        runCatching { filterStripFocusRequester.requestFocus() }
+                                        filterStripFocusRequester.requestFocusLogged()
                                         if (filterStripHasFocus) return@onPreviewKeyEvent true
                                     }
                                     withCarriedTvItemIndex {
@@ -5553,24 +5518,6 @@ private suspend fun resolveHomeNextUpCandidate(
         )
     }
     val contentId = completedEntry.content.id
-    val meta = try {
-        MetaDetailsRepository.fetch(
-            type = completedEntry.content.type,
-            id = contentId,
-            // Set only for a manual resync retrying a card whose episode still had no thumbnail;
-            // the LRU would otherwise hand back the same artwork-less video list all session.
-            forceRefresh = forceMetaRefresh,
-            background = true,
-        )
-    } catch (error: Throwable) {
-        if (error is CancellationException) throw error
-        null
-    }
-    if (meta == null) {
-        logNextUpResolutionRejected(completedEntry, "meta-fetch-failed")
-        return NextUpResolveOutcome(card = null)
-    }
-
     val resolvedProgressEntries = if (isTraktProgressActive) {
         remapTraktProgressEntries(watchProgressEntries, contentId)
     } else {
@@ -5580,6 +5527,31 @@ private suspend fun resolveHomeNextUpCandidate(
         remapTraktWatchedItems(watchedItems, contentId)
     } else {
         watchedItems
+    }
+
+
+    // The card shows one episode: TMDB decorates the seed's season and the one after it, where the next episode
+    // almost always is, not every season of the series. A forced refresh (a resync for a missing thumbnail) bypasses
+    // the cache but needs no more seasons than that either.
+    val seedSeasons = setOf(completedEntry.seasonNumber, completedEntry.seasonNumber + 1)
+        .takeIf { completedEntry.seasonNumber > 0 }
+    var meta = try {
+        MetaDetailsRepository.fetch(
+            type = completedEntry.content.type,
+            id = contentId,
+            // Set only for a manual resync retrying a card whose episode still had no thumbnail;
+            // the LRU would otherwise hand back the same artwork-less video list all session.
+            forceRefresh = forceMetaRefresh,
+            background = true,
+            episodeSeasons = seedSeasons,
+        )
+    } catch (error: Throwable) {
+        if (error is CancellationException) throw error
+        null
+    }
+    if (meta == null) {
+        logNextUpResolutionRejected(completedEntry, "meta-fetch-failed")
+        return NextUpResolveOutcome(card = null)
     }
 
     val action = meta.seriesPrimaryAction(
@@ -5611,6 +5583,23 @@ private suspend fun resolveHomeNextUpCandidate(
         return NextUpResolveOutcome(card = null)
     }
 
+    // The next episode sits outside the seasons decorated above (a gap earlier in the show, a rewatch): decorate its
+    // season too, so the card still gets TMDB's title and still. One season, and only for these cards.
+    val actionSeason = action.seasonNumber
+    if (seedSeasons != null && actionSeason != null && actionSeason > 0 && actionSeason !in seedSeasons) {
+        val withActionSeason = try {
+            MetaDetailsRepository.fetch(
+                type = completedEntry.content.type,
+                id = contentId,
+                background = true,
+                episodeSeasons = setOf(actionSeason),
+            )
+        } catch (error: Throwable) {
+            if (error is CancellationException) throw error
+            null
+        }
+        if (withActionSeason != null) meta = withActionSeason
+    }
     val nextEpisode = meta.videoForSeriesAction(action)
     if (nextEpisode == null) {
         logNextUpResolutionRejected(completedEntry, "next-episode-missing-from-meta")
@@ -6034,8 +6023,13 @@ internal fun planNextUpResolution(
         }
         candidate.content.id to cached
     }.toMap()
+    // An episode that has not aired has no still to find yet: retrying it re-fetched the whole series on every launch
+    // for nothing (2026-11-13: five unaired Up Next episodes, every season of each). It is retried once it airs.
     val staleArtworkContentIds = cachedBySeries
-        .filterValues { (_, item) -> item.needsEpisodeThumbnailRefresh(hasArtworkLoadFailed) }
+        .filterValues { (_, item) ->
+            val airsAt = com.nuvio.app.features.watchprogress.parseReleaseDateToEpochMs(item.released)
+            (airsAt == null || airsAt <= nowMs) && item.needsEpisodeThumbnailRefresh(hasArtworkLoadFailed)
+        }
         .keys
     val staleReleasePrecisionContentIds = cachedBySeries
         .filterValues { (_, item) -> item.needsReleasePrecisionRefresh(todayIsoDate) }

@@ -49,6 +49,8 @@ int main() {
         const auto youtube = linuxSpeechSpotInput("https://host/video", "https://host/audio", "2");
         require(youtube.url == "https://host/audio" && youtube.aid.empty(),
                 "a separate audio stream is decoded on its own, without the player's track number");
+        const auto local = linuxSpeechSpotInput("https://host/video", "https://host/audio", "2", "/tmp/track.m4a");
+        require(local.url == "/tmp/track.m4a" && local.aid.empty(), "a local copy of the audio comes before the streams");
 
         const auto dir = std::filesystem::temp_directory_path() / "nuvio-speech-spot-test";
         std::filesystem::remove_all(dir);

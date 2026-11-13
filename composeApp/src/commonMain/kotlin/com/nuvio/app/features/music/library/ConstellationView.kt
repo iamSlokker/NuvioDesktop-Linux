@@ -1,5 +1,6 @@
 package com.nuvio.app.features.music.library
 
+import com.nuvio.app.core.ui.requestFocusLogged
 import com.nuvio.app.core.ui.collectIsKeyboardFocusedAsState
 import com.nuvio.app.core.ui.smoothBorder
 import androidx.compose.ui.window.PopupProperties
@@ -420,7 +421,7 @@ private fun ConstellationMap(
             .pointerInput(Unit) {
                 detectTapGestures(
                     onTap = { at ->
-                        runCatching { focusRequester.requestFocus() }
+                        focusRequester.requestFocusLogged()
                         onSelectNow(hitStar(pointsNow, screenNow, at.x, at.y))
                     },
                 )
@@ -812,6 +813,7 @@ private fun NotPlacedTray(artists: List<LibraryArtist>, library: List<LibraryArt
                             onDismissRequest = { pickerFor = null },
                             properties = PopupProperties(focusable = true),
                         ) {
+                            com.nuvio.app.core.ui.KeyRouteLayer("constellation menu") // the focus router leaves an open menu alone
                             GenrePickerPanel(
                                 artist = artist,
                                 library = library,
@@ -870,119 +872,6 @@ private val AbovePortrait = object : PopupPositionProvider {
     }
 }
 
-/**
- * What the tray offers for one artist with no genres: why it is not placed, a one-tap suggestion ([suggestGenres], never
- * applied on its own), the genres already on the map, a box to type one, and a retry that is withheld while a previous
- * empty look-up is being waited out. The chips toggle, up to three; Done writes the chosen ones as the artist's own
- * ([LibraryArtist.manualGenres]), in the order they were picked (the first leads). The artist room opens the same panel
- * to change a placed artist's genres ([onOpen] null there, as the room is already open); taking every chip off and
- * pressing Done clears the person's genres.
- */
-@OptIn(ExperimentalLayoutApi::class)
-@Composable
-internal fun GenrePickerPanel(
-    artist: LibraryArtist,
-    library: List<LibraryArtist>,
-    working: Boolean,
-    onApply: (List<String>) -> Unit,
-    onLookAgain: () -> Unit,
-    onOpen: (() -> Unit)?,
-) {
-    val colors = MaterialTheme.nuvio.colors
-    val now = LibraryClock.nowEpochMs()
-    val suggestions = remember(artist, library) { suggestGenres(artist, library) }
-    val choices = remember(library) { genreChoices(library) }
-    val wait = artist.retryTagsInMs(now)
-    var typed by remember { mutableStateOf("") }
-    var rejected by remember { mutableStateOf(false) }
-    var chosen by remember(artist.id) { mutableStateOf(artist.manualGenres) }
-    fun isChosen(genre: String) = chosen.any { sameGenre(it, genre) }
-    val toggle: (String) -> Unit = { genre -> chosen = toggledManualGenre(chosen, genre) }
-    val shape = RoundedCornerShape(16.dp)
-    Column(
-        Modifier
-            .width(360.dp)
-            .background(NuvioGlass.night(colors.background, colors.accent), shape)
-            .musicGlass(shape)
-            .verticalScroll(rememberScrollState())
-            .padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(10.dp),
-    ) {
-        Text(artist.name, style = MaterialTheme.typography.titleMedium, color = colors.textPrimary, maxLines = 1, overflow = TextOverflow.Ellipsis)
-        Text(
-            when {
-                working -> "Looking it up…"
-                artist.hasLookedUpGenres() && artist.genres.isNotEmpty() ->
-                    "Found online: ${artist.genres.take(3).joinToString(", ") { displayGenre(it) }}. The ones you pick come first."
-                artist.hasLookedUpGenres() -> "Genre data was found online. The ones you pick come first."
-                artist.tagMisses > 0 && wait > 0L ->
-                    "No genre data found online. The next look-up is in ${retryWaitText(wait)}; until then pick one yourself."
-                artist.tagMisses > 0 -> "No genre data found online last time. You can look again, or pick one yourself."
-                else -> "No genre data yet."
-            },
-            style = MaterialTheme.typography.bodySmall,
-            color = colors.textSecondary,
-        )
-        // What will be saved, in pick order; a tap takes one off. Typed genres show here too, as no chip below may name them.
-        Text(
-            if (chosen.isEmpty()) "Pick up to three" else if (manualGenresFull(chosen)) "Chosen (three, the most)" else "Chosen",
-            style = MaterialTheme.typography.labelMedium,
-            color = colors.textMuted,
-        )
-        if (chosen.isNotEmpty()) {
-            FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                chosen.forEach { genre -> BigChip(displayGenre(genre), selected = true) { toggle(genre) } }
-            }
-        }
-        if (suggestions.isNotEmpty()) {
-            Text("Suggested", style = MaterialTheme.typography.labelMedium, color = colors.textMuted)
-            suggestions.forEach { s ->
-                Row(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
-                    BigChip(displayGenre(s.genre), selected = isChosen(s.genre)) { toggle(s.genre) }
-                    Text(s.reason, style = MaterialTheme.typography.bodySmall, color = colors.textMuted, maxLines = 2, overflow = TextOverflow.Ellipsis)
-                }
-            }
-        }
-        if (choices.isNotEmpty()) {
-            Text("On your map", style = MaterialTheme.typography.labelMedium, color = colors.textMuted)
-            FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                choices.forEach { genre ->
-                    BigChip(displayGenre(genre), selected = isChosen(genre)) { toggle(genre) }
-                }
-            }
-        }
-        val apply: () -> Unit = {
-            val next = withTypedGenres(chosen, typed)
-            if (parseGenreInput(typed).isEmpty()) {
-                rejected = true
-            } else {
-                chosen = next
-                typed = ""
-            }
-        }
-        NuvioTextField(
-            value = typed,
-            onValueChange = {
-                typed = it
-                rejected = false
-            },
-            placeholder = "Or type some, like uk garage, grime",
-            isError = rejected,
-            supportingText = if (rejected) "That is not a genre the map can use" else null,
-            onImeAction = apply,
-            modifier = Modifier.fillMaxWidth(),
-        )
-        FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            if (typed.isNotBlank()) BigChip("Add", selected = false) { apply() }
-            // Saves the chosen genres (and any typed but not yet added) and places the artist; nothing is written until then.
-            val toSave = withTypedGenres(chosen, typed)
-            // Empty only clears what the person had chosen before (an unplaced artist has nothing to clear).
-            if (toSave != artist.manualGenres) BigChip("Done", selected = true) { onApply(toSave) }
-            if (!working && wait == 0L) BigChip("Look again", selected = false, onClick = onLookAgain)
-            if (onOpen != null) BigChip("Open artist room", selected = false, onClick = onOpen)
-        }
-    }
-}
 
 // endregion
 

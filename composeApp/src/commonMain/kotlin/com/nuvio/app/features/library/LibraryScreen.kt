@@ -1,5 +1,6 @@
 package com.nuvio.app.features.library
 
+import com.nuvio.app.core.ui.requestFocusLogged
 import com.nuvio.app.core.ui.LocalScreenCovered
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
@@ -202,7 +203,7 @@ fun LibraryScreen(
     }
 
     LaunchedEffect(Unit) {
-        if (isDesktop) try { screenFocusRequester.requestFocus() } catch (_: Exception) {}
+        if (isDesktop) screenFocusRequester.requestFocusLogged()
     }
 
     // Local files are rescanned here, not at launch, so starting the app doesn't wake the HDD.
@@ -281,7 +282,7 @@ fun LibraryScreen(
                     .focusRequester(screenFocusRequester)
                     .focusable()
                     .onPointerEvent(PointerEventType.Press, PointerEventPass.Initial) { _ ->
-                        try { screenFocusRequester.requestFocus() } catch (_: Exception) {}
+                        screenFocusRequester.requestFocusLogged()
                     }
                     .onPreviewKeyEvent { event ->
                         if (event.type != KeyEventType.KeyDown) return@onPreviewKeyEvent false
@@ -637,6 +638,7 @@ fun LibraryDisplayDropdownMenu(expanded: Boolean, onDismissRequest: () -> Unit) 
         border = BorderStroke(0.5.dp, LibraryNavMenuBorderColor),
         modifier = Modifier.width(260.dp),
     ) {
+        com.nuvio.app.core.ui.KeyRouteLayer("library menu") // the focus router leaves an open menu alone
         LibraryQuickAccessMenuItems(onDismissRequest = onDismissRequest)
     }
 }

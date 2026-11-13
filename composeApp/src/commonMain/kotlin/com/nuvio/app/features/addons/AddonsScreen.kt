@@ -1,5 +1,6 @@
 package com.nuvio.app.features.addons
 
+import com.nuvio.app.core.ui.requestFocusLogged
 import com.nuvio.app.core.ui.ditheredBackground
 import com.nuvio.app.features.settings.SettingsSectionGlassEdge
 import com.nuvio.app.features.settings.SettingsSectionGlassEdgeColor
@@ -668,7 +669,7 @@ private fun DesktopAddonSearchField(
             voiceOwner?.let { owner ->
                 com.nuvio.app.core.ui.VoiceSearchButton(
                     owner = owner,
-                    focusField = { runCatching { focusRequester.requestFocus() } },
+                    focusField = { focusRequester.requestFocusLogged() },
                     tint = tokens.colors.textMuted,
                     size = 28.dp,
                 )
@@ -790,6 +791,7 @@ private fun DesktopAddonSortMenu(
             shadowElevation = 0.dp,
             border = androidx.compose.foundation.BorderStroke(1.dp, SettingsSectionGlassEdge),
         ) {
+            com.nuvio.app.core.ui.KeyRouteLayer("addons menu") // the focus router leaves an open menu alone
             DesktopAddonSort.entries.forEach { option ->
                 val isSelected = option == sort
                 DropdownMenuItem(

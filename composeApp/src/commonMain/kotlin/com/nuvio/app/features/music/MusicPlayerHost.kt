@@ -1,5 +1,8 @@
 package com.nuvio.app.features.music
 
+import com.nuvio.app.features.player.AppShortcutAction
+import com.nuvio.app.features.player.appShortcutMatches
+import com.nuvio.app.core.ui.requestFocusLogged
 import androidx.compose.ui.platform.LocalDensity
 import kotlin.math.roundToInt
 import androidx.compose.ui.unit.IntOffset
@@ -203,7 +206,7 @@ fun MusicPlayerHost(
     val windowFocus = androidx.compose.ui.platform.LocalFocusManager.current
     androidx.compose.runtime.SideEffect { MusicKeyboard.focusManager = windowFocus }
     LaunchedEffect(big) {
-        if (big) runCatching { keys.requestFocus() }
+        if (big) keys.requestFocusLogged()
     }
 
     BoxWithConstraints(
@@ -222,7 +225,16 @@ fun MusicPlayerHost(
             .musicKeyboardRoot(takeFocus = false, isPlayer = true)
             .focusRequester(keys)
             .onPreviewKeyEvent { event ->
-                if (!big || event.type != KeyEventType.KeyDown) return@onPreviewKeyEvent false
+                if (event.type != KeyEventType.KeyDown) return@onPreviewKeyEvent false
+                // Back out of the bar, dock or card: Escape, Backspace or the Back shortcut (a pad's B) hands focus to
+                // the page again. Only the player shortcut did before, so B and Escape left focus stuck in the player
+                // until the mouse was used (2026-11-13).
+                if (!big) {
+                    val back = event.key == Key.Escape || event.key == Key.Backspace ||
+                        appShortcutMatches(AppShortcutAction.GoBack, event)
+                    return@onPreviewKeyEvent back && !com.nuvio.app.core.ui.TextInputFocusTracker.active.value &&
+                        MusicKeyboard.playerHasFocus() && MusicKeyboard.togglePlayerFocus()
+                }
                 when (event.key) {
                     Key.Escape -> {
                         MusicPlayback.setVideoView(MusicVideoView.Bar)
@@ -280,6 +292,9 @@ fun MusicPlayerHost(
             onSnapshot = { id, snapshot -> if (id == player.state.value.loadId) player.onSnapshot(snapshot) },
             onEnded = { id -> if (id == player.state.value.loadId) player.onSurfaceEnded() },
             onError = { id -> if (id == player.state.value.loadId) player.onSurfaceError() },
+            nextSource = state.gaplessNext,
+            continued = state.continuedLoadId == state.loadId,
+            onNextStarted = player::onGaplessStarted,
         )
         // The bar and the card wear the app's own glass and accent, like the rest of the app.
         run {

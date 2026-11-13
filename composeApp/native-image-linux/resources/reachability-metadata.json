@@ -16,6 +16,9 @@
       "glob": "audiosync/**"
     },
     {
+      "glob": "beat-tracking/**"
+    },
+    {
       "module": "java.base",
       "glob": "jdk/internal/icu/impl/data/icudt*/nfc.nrm"
     },

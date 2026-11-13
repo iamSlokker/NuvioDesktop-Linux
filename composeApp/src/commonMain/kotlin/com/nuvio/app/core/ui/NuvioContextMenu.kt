@@ -177,8 +177,8 @@ internal fun NuvioContextMenu(
         // leave the keyboard with no way in at all.
         val firstEnabled = frozenActions.indexOfFirst { it.enabled }
         val rowFocused = openedByKeyboard && firstEnabled >= 0 &&
-            runCatching { rowFocus[firstEnabled].requestFocus() }.isSuccess
-        if (!rowFocused) runCatching { menuFocus.requestFocus() }
+            rowFocus[firstEnabled].requestFocusLogged()
+        if (!rowFocused) menuFocus.requestFocusLogged()
         fadeIn.animateTo(1f, tween(durationMillis = 110, easing = NuvioTokens.Motion.standard))
     }
     PlatformBackHandler(enabled = true, onBack = onDismiss)
@@ -199,7 +199,7 @@ internal fun NuvioContextMenu(
         }
         // Disabled rows are stepped over.
         while (!frozenActions[next].enabled) next = (next + step).mod(rowFocus.size)
-        runCatching { rowFocus[next].requestFocus() }
+        rowFocus[next].requestFocusLogged()
     }
 
     if (!covered) Popup(
@@ -207,6 +207,7 @@ internal fun NuvioContextMenu(
         onDismissRequest = onDismiss,
         properties = PopupProperties(focusable = true),
     ) {
+        KeyRouteLayer("context menu")
         NuvioGlassMenuSurface(
             modifier = Modifier
                 .widthIn(min = ContextMenuMinWidth, max = ContextMenuMaxWidth)
@@ -330,7 +331,7 @@ private fun ContextMenuRow(
                             PointerEventType.Enter, PointerEventType.Move -> {
                                 if (enabled && !focusedByPointer && pointerEngaged()) {
                                     focusedByPointer = true
-                                    runCatching { focusRequester.requestFocus() }
+                                    focusRequester.requestFocusLogged()
                                 }
                             }
                             PointerEventType.Exit -> focusedByPointer = false

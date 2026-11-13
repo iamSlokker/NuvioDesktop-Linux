@@ -1,5 +1,8 @@
 package com.nuvio.app.features.music
 
+import com.nuvio.app.core.ui.requestFocusLogged
+import androidx.compose.foundation.layout.Spacer
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -59,7 +62,8 @@ import kotlinx.coroutines.delay
 /** How long the open menu waits for input before closing. */
 private const val OPTIONS_IDLE_MS = 8_000L
 
-private val MENU_WIDTH = 320.dp
+// Wide and short, two columns of two rows: opened from the top bar it ends above the visualiser box instead of covering it.
+private val MENU_WIDTH = 600.dp
 private val ROW_HEIGHT = 48.dp
 private val PILL_WIDTH = 84.dp
 
@@ -68,13 +72,10 @@ internal fun StageOptionsMenu(
     lyricsOn: Boolean,
     lyricStyle: LyricStyle,
     fadeQueue: Boolean,
-    /** Null when there is no booklet to switch (not an album, or a window too narrow for it). */
-    booklet: Boolean?,
     reduced: Boolean,
     onToggleLyrics: () -> Unit,
     onCycleLyricStyle: () -> Unit,
     onToggleFadeQueue: () -> Unit,
-    onToggleBooklet: () -> Unit,
     onToggleMotion: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -88,7 +89,7 @@ internal fun StageOptionsMenu(
 
     fun close() {
         open = false
-        runCatching { buttonFocus.requestFocus() }
+        buttonFocus.requestFocusLogged()
     }
 
     LaunchedEffect(open, touched) {
@@ -126,7 +127,8 @@ internal fun StageOptionsMenu(
                 onDismissRequest = { close() },
                 properties = PopupProperties(focusable = true),
             ) {
-                LaunchedEffect(Unit) { runCatching { firstRow.requestFocus() } }
+                com.nuvio.app.core.ui.KeyRouteLayer("stage options menu") // the focus router leaves an open menu alone
+                LaunchedEffect(Unit) { firstRow.requestFocusLogged() }
                 Column(
                     Modifier
                         .width(MENU_WIDTH)
@@ -151,27 +153,35 @@ internal fun StageOptionsMenu(
                         letterSpacing = 1.5.sp,
                         modifier = Modifier.padding(start = 14.dp, bottom = 6.dp, top = 2.dp),
                     )
-                    OptionRow("Lyrics", if (lyricsOn) "On" else "Off", on = lyricsOn, modifier = Modifier.focusRequester(firstRow)) {
-                        touched++
-                        onToggleLyrics()
-                    }
-                    OptionRow("Lyric style", lyricStyle.label.replaceFirstChar { it.uppercase() }, on = null, enabled = lyricsOn) {
-                        touched++
-                        onCycleLyricStyle()
-                    }
-                    OptionRow("Fade queue", if (fadeQueue) "On" else "Off", on = fadeQueue) {
-                        touched++
-                        onToggleFadeQueue()
-                    }
-                    if (booklet != null) {
-                        OptionRow("Liner notes", if (booklet) "On" else "Off", on = booklet) {
-                            touched++
-                            onToggleBooklet()
+                    Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                            OptionRow("Lyrics", if (lyricsOn) "On" else "Off", on = lyricsOn, modifier = Modifier.focusRequester(firstRow)) {
+                                touched++
+                                onToggleLyrics()
+                            }
+                            OptionRow("Lyric style", lyricStyle.label.replaceFirstChar { it.uppercase() }, on = null, enabled = lyricsOn) {
+                                touched++
+                                onCycleLyricStyle()
+                            }
+                            // The notes / visualiser box beside the lyrics.
+                            val settings = com.nuvio.app.features.music.library.MusicLibraryRepository.state.collectAsStateWithLifecycle().value.settings
+                            OptionRow("Side box", if (settings.stageBoxShown) "On" else "Off", on = settings.stageBoxShown) {
+                                touched++
+                                com.nuvio.app.features.music.library.MusicLibraryRepository.updateSettings(settings.copy(stageBoxShown = !settings.stageBoxShown))
+                            }
                         }
-                    }
-                    OptionRow("Motion", if (reduced) "Reduced" else "Full", on = !reduced) {
-                        touched++
-                        onToggleMotion()
+                        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                            OptionRow("Fade queue", if (fadeQueue) "On" else "Off", on = fadeQueue) {
+                                touched++
+                                onToggleFadeQueue()
+                            }
+                            OptionRow("Motion", if (reduced) "Reduced" else "Full", on = !reduced) {
+                                touched++
+                                onToggleMotion()
+                            }
+                            // Level with the left column's third row.
+                            Spacer(Modifier.height(ROW_HEIGHT))
+                        }
                     }
                 }
             }

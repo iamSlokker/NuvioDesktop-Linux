@@ -1,5 +1,6 @@
 package com.nuvio.app.features.search
 
+import com.nuvio.app.core.ui.requestFocusLogged
 import com.nuvio.app.features.player.AppShortcutAction
 import com.nuvio.app.features.player.appShortcutMatches
 
@@ -61,6 +62,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.nuvio.app.core.network.NetworkCondition
 import com.nuvio.app.core.network.NetworkStatusRepository
 import com.nuvio.app.core.ui.NuvioInputField
+import com.nuvio.app.core.ui.PublishKeyboardSuggestions
 import com.nuvio.app.core.ui.navigationKey
 import com.nuvio.app.core.ui.NuvioScreen
 import com.nuvio.app.core.ui.NuvioNetworkOfflineCard
@@ -125,7 +127,7 @@ fun SearchScreen(
 
     // Focus the outer box immediately so keyboard nav works as soon as the screen appears.
     LaunchedEffect(Unit) {
-        if (isDesktop) try { screenFocusRequester.requestFocus() } catch (_: Exception) {}
+        if (isDesktop) screenFocusRequester.requestFocusLogged()
     }
 
     LaunchedEffect(searchFocusRequestCount) {
@@ -134,8 +136,8 @@ fun SearchScreen(
             isInRowNav = false
             // Request the field immediately. The activation-key guard below prevents the
             // shortcut's S key from becoming query text while focus changes hands.
-            try { screenFocusRequester.requestFocus() } catch (_: Exception) {}
-            try { searchBarFocusRequester.requestFocus() } catch (_: Exception) {}
+            screenFocusRequester.requestFocusLogged()
+            searchBarFocusRequester.requestFocusLogged()
             delay(150)
             suppressSearchActivationKey = false
         }
@@ -230,6 +232,13 @@ fun SearchScreen(
             }
         }
     }
+
+    // Predictions for the on-screen keyboard: recent searches that start with what is typed, then the titles of the
+    // first results that contain it. Picking one puts it in the field.
+    // Recent searches, the first results' titles, then TMDB's films and shows for what is typed (SearchPredictions).
+    val onScreenTitles = remember(uiState.sections) { uiState.sections.flatMap { section -> section.items.take(4) }.map { it.name } }
+    val keyboardWords = rememberMediaPredictions(query, recentSearches, onScreenTitles)
+    PublishKeyboardSuggestions(keyboardWords) { picked -> query = picked }
 
     LaunchedEffect(addonRefreshKey, homeCatalogSettingsUiState.hideUnreleasedContent, homeCatalogSettingsUiState.hideWatchedContent) {
         SearchRepository.refreshDiscover(addonsUiState.addons)

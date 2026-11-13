@@ -1,5 +1,7 @@
 package com.nuvio.app.features.details
 
+import com.nuvio.app.core.ui.keyLayer
+import com.nuvio.app.core.ui.requestFocusLogged
 import com.nuvio.app.features.posterservice.CustomPosterScreen
 import com.nuvio.app.features.posterservice.rememberCustomPosters
 import androidx.compose.animation.AnimatedVisibilityScope
@@ -945,7 +947,7 @@ fun MetaDetailsScreen(
                     }
                     val resolvedSource = runCatching {
                         kotlinx.coroutines.withContext(com.nuvio.app.features.music.YouTubeCaller("hero trailer")) {
-                            TrailerPlaybackResolver.resolveFromYouTubeUrl(heroTrailerCandidate.youtubePlaybackUrl())
+                            TrailerPlaybackResolver.resolveTrailerFromYouTubeUrl(heroTrailerCandidate.youtubePlaybackUrl()) // fork:trailer-signed-in
                         }
                     }.getOrNull()?.sourceOrNull()
                     if (resolvedSource == null) {
@@ -1004,7 +1006,7 @@ fun MetaDetailsScreen(
                     trailerScope.launch {
                         val resolution = runCatching {
                             kotlinx.coroutines.withContext(com.nuvio.app.features.music.YouTubeCaller("hero trailer", urgent = true)) {
-                                TrailerPlaybackResolver.resolveFromYouTubeUrl(youtubeUrl)
+                                TrailerPlaybackResolver.resolveTrailerFromYouTubeUrl(youtubeUrl) // fork:trailer-signed-in
                             }
                         }.getOrNull()
                         if (currentRequestToken != trailerRequestToken) {
@@ -1045,7 +1047,7 @@ fun MetaDetailsScreen(
                             trailerScope.launch {
                                 val resolution = runCatching {
                                     kotlinx.coroutines.withContext(com.nuvio.app.features.music.YouTubeCaller("hero trailer", urgent = true)) {
-                                        TrailerPlaybackResolver.resolveFromYouTubeUrl(youtubeUrl)
+                                        TrailerPlaybackResolver.resolveTrailerFromYouTubeUrl(youtubeUrl) // fork:trailer-signed-in
                                     }
                                 }.getOrNull()
                                 if (currentRequestToken != trailerRequestToken) {
@@ -1447,7 +1449,7 @@ fun MetaDetailsScreen(
                     episodeSearchQuery = ""
                     episodeSearchInputReady = false
                     if (detailsKeyboardNavigationEnabled) {
-                        try { tvFocusRequester.requestFocus() } catch (_: Exception) {}
+                        tvFocusRequester.requestFocusLogged()
                     }
                 }
                 val tvCoroutineScope = rememberCoroutineScope()
@@ -1778,7 +1780,7 @@ fun MetaDetailsScreen(
                 val gameModeActive by GameModeController.active.collectAsStateWithLifecycle()
                 LaunchedEffect(detailsKeyboardNavigationEnabled, gameModeActive) {
                     if (detailsKeyboardNavigationEnabled && !gameModeActive) {
-                        runCatching { tvFocusRequester.requestFocus() }
+                        tvFocusRequester.requestFocusLogged()
                     }
                 }
 
@@ -2104,7 +2106,7 @@ fun MetaDetailsScreen(
                 // The picker held keyboard focus while it was open; take it back when it closes.
                 LaunchedEffect(streamPickerClosedCount) {
                     if (streamPickerClosedCount == 0 || !detailsKeyboardNavigationEnabled) return@LaunchedEffect
-                    try { tvFocusRequester.requestFocus() } catch (_: Exception) {}
+                    tvFocusRequester.requestFocusLogged()
                 }
                 LaunchedEffect(Unit) {
                     DetailTvKeyboardBridge.keys.collect { key ->
@@ -2157,13 +2159,17 @@ fun MetaDetailsScreen(
                         .then(
                             if (detailsKeyboardNavigationEnabled) {
                                 Modifier
+                                    // Focus router fallback (KeyLayers): an arrow or OK that went to no one puts focus
+                                    // back here.
+                                    .keyLayer("Details") { tvFocusRequester.requestFocusLogged() }
                                     .focusRequester(tvFocusRequester)
                                     .focusable()
                                     .onPointerEvent(PointerEventType.Move) { event ->
                                         mouseActivity.onMouseMoved(event.changes.first().position)
                                     }
                             } else {
-                                Modifier
+                                // Its controls take focus themselves; the fallback returns it to the last one (KeyLayers).
+                                Modifier.keyLayer("Details")
                             },
                         ),
                 ) {
@@ -2294,6 +2300,7 @@ fun MetaDetailsScreen(
                                         onHeightChanged = { heroHeightPx = it },
                                         heroTrailerSourceUrl = heroTrailerSourceUrl,
                                         heroTrailerSourceAudioUrl = heroTrailerSourceAudioUrl,
+                                        heroTrailerSourceHeaders = heroTrailerPlaybackSource?.headers.orEmpty(), // fork:trailer-signed-in
                                         heroTrailerReady = heroTrailerReady && heroTrailerPlayWhenReady,
                                         heroTrailerPlayWhenReady = heroTrailerPlayWhenReady,
                                         heroTrailerMuted = heroTrailerMuted,
@@ -2360,7 +2367,7 @@ fun MetaDetailsScreen(
                                             HeroTrailerAudioState.setVolume(newVolume)
                                         },
                                         onHeroTrailerReclaimFocus = {
-                                            try { tvFocusRequester.requestFocus() } catch (_: Exception) {}
+                                            tvFocusRequester.requestFocusLogged()
                                         },
                                         onHeroTrailerDismiss = dismissHeroTrailerPlayback,
                                         onHeroTrailerReady = {
@@ -3439,7 +3446,7 @@ private fun EpisodeSearchOverlay(
     LaunchedEffect(Unit) {
         // Let the overlay enter composition before handing focus to its text editor.
         delay(1)
-        try { focusRequester.requestFocus() } catch (_: Exception) {}
+        focusRequester.requestFocusLogged()
     }
 
     Column(

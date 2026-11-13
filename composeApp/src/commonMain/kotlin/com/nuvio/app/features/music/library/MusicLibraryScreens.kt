@@ -1,5 +1,6 @@
 package com.nuvio.app.features.music.library
 
+import com.nuvio.app.features.music.nebula.LosslessPill
 import com.nuvio.app.core.ui.collectIsKeyboardFocusedAsState
 import com.nuvio.app.features.music.MusicAlbum
 import com.nuvio.app.features.music.nebula.AddonAlbumRef
@@ -74,6 +75,7 @@ import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.nuvio.app.core.ui.NuvioAlertDialog
@@ -303,7 +305,6 @@ fun MusicArtistScreen(
     var filterName by rememberSaveable { mutableStateOf(ReleaseFilter.All.name) }
     var selectedKey by rememberSaveable { mutableStateOf<String?>(null) }
     var confirmRemove by remember { mutableStateOf(false) }
-    var showAbout by remember { mutableStateOf(false) }
     var showLinks by remember { mutableStateOf(false) }
     var demosOpen by rememberSaveable { mutableStateOf(false) }
     var playNotice by remember { mutableStateOf<String?>(null) }
@@ -392,14 +393,49 @@ fun MusicArtistScreen(
     }
 
     val playTarget = latest?.takeIf { it.isPlayable }
-    val shuffleTarget = artist.releases.filter { (it.isPlayable || addon.albumIdOf(it.key) != null) && !it.isDemo() }.randomOrNull()
+    // Shuffle all mixes songs from several of these (shuffleAllReleases), not one random release.
+    val shufflePool = artist.releases.filter { (it.isPlayable || addon.albumIdOf(it.key) != null) && !it.isDemo() }
+    val onShuffleAll: () -> Unit = {
+        playNotice = null
+        scope.launch {
+            if (!shuffleAllReleases(artist.name, artist.art.thumb, shufflePool, ::albumOf)) playNotice = "Nothing here is on YouTube Music yet."
+        }
+    }
 
-    ArtistRoom(
+    val onOpenRelease: (LibraryRelease) -> Unit = { release ->
+        val id = release.ytBrowseId
+        val addonId = albumPageIdOf(release)
+        when {
+            id == null && addonId != null -> onAlbumClick(addonId)
+            id == null -> selectedKey = release.key
+            release.playsOnClick() -> startPlayback(release, shuffled = false)
+            else -> onAlbumClick(id)
+        }
+    }
+    // fork:music-menu - queues [release] after what is playing (the release dialog's Add to queue), or with [next] right
+    // after the track playing.
+    fun queueRelease(release: LibraryRelease, next: Boolean = false) {
+        scope.launch {
+            val album = albumOf(release)
+            playNotice = when {
+                album == null -> "Couldn't open ${release.title}."
+                next && MusicPlayback.player.playNext(album) -> "${release.title} plays next."
+                !next && MusicPlayback.player.enqueue(album) -> "${release.title} is queued."
+                else -> null
+            }
+        }
+    }
+    val onPlayTopAlbums: () -> Unit = {
+        playNotice = null
+        scope.launch {
+            if (!playTopAlbums(catalog, top.releases, shuffled = false)) playNotice = "Nothing here is on YouTube Music yet."
+        }
+    }
+
+    // fork:artist-stage - the only artist page (the old one is gone, Nov 12 2026); on a narrow window its side panels give way.
+    ArtistStage(
         artist = artist,
         discography = discography,
-        latest = latest,
-        playTarget = playTarget,
-        canShuffle = shuffleTarget != null,
         notice = playNotice,
         saved = saved,
         refreshing = working?.status,
@@ -407,36 +443,26 @@ fun MusicArtistScreen(
         filter = filter,
         playableOnly = playableOnly,
         demosOpen = demosOpen || filter == ReleaseFilter.Demos,
-        onBack = onBack,
-        onPlay = { startPlayback(playTarget, shuffled = false) },
-        onShuffle = { startPlayback(shuffleTarget, shuffled = true) },
-        onPlayTop = {
-            playNotice = null
-            scope.launch {
-                if (!playTopAlbums(catalog, top.releases, shuffled = false)) playNotice = "Nothing here is on YouTube Music yet."
-            }
-        },
+        canShuffle = shufflePool.isNotEmpty(),
         topLabel = topLabel,
-        onAbout = { showAbout = true },
+        onBack = onBack,
+        onPlayLatest = { startPlayback(playTarget, shuffled = false) },
+        onShuffle = onShuffleAll,
+        onPlayTop = onPlayTopAlbums,
         onLinks = { showLinks = true },
-        onOpenArtist = onArtistClick,
         onRefresh = { MusicLibraryRepository.refresh(artist.id) },
         onRemove = { confirmRemove = true },
-        onOpen = { release ->
-            val id = release.ytBrowseId
-            val addonId = albumPageIdOf(release)
-            when {
-                id == null && addonId != null -> onAlbumClick(addonId)
-                id == null -> selectedKey = release.key
-                release.playsOnClick() -> startPlayback(release, shuffled = false)
-                else -> onAlbumClick(id)
-            }
-        },
+        onOpenArtist = onArtistClick,
+        onOpen = onOpenRelease,
         onInfo = { selectedKey = it.key },
         onPlayableOnly = { playableOnly = it },
         onFilter = { filterName = it.name },
         onToggleDemos = { demosOpen = !demosOpen },
         addonKeys = addonKeys,
+        onPlayRelease = { release, shuffled -> startPlayback(release, shuffled) },
+        onQueueRelease = { queueRelease(it) },
+        onPlayNextRelease = { queueRelease(it, next = true) },
+        onOpenAlbumId = onAlbumClick,
         modifier = modifier.fillMaxSize(),
     )
 
@@ -478,7 +504,6 @@ fun MusicArtistScreen(
         }
     }
 
-    if (showAbout) AboutDialog(artist) { showAbout = false }
     if (showLinks) {
         LinksDialog(artist.links, onOpen = { runCatching { uriHandler.openUri(it) } }) { showLinks = false }
     }
@@ -572,12 +597,21 @@ internal fun LibraryRelease.playsOnClick(): Boolean = kind == ReleaseKind.Single
  * addon has it, so it is drawn in full and says so.
  */
 @Composable
-internal fun ReleaseCard(group: ReleaseGroup, onClick: () -> Unit, onSecondary: (() -> Unit)? = null, addon: Boolean = false) {
+internal fun ReleaseCard(
+    group: ReleaseGroup,
+    onClick: () -> Unit,
+    onSecondary: (() -> Unit)? = null,
+    addon: Boolean = false,
+    width: Dp = 150.dp,
+    /** fork:music-menu - put before the card's own click handling (the More menu's trigger). */
+    extra: Modifier = Modifier,
+) {
     val colors = MaterialTheme.nuvio.colors
     val release = group.primary
     Column(
         modifier = Modifier
-            .width(150.dp)
+            .then(extra)
+            .width(width)
             .clip(RoundedCornerShape(10.dp))
             .secondaryClick(onSecondary)
             .musicKeyFocusRing(RoundedCornerShape(10.dp)).clickable(onClick = onClick)
@@ -586,6 +620,8 @@ internal fun ReleaseCard(group: ReleaseGroup, onClick: () -> Unit, onSecondary: 
     ) {
         Box(Modifier.fillMaxWidth().aspectRatio(1f)) {
             ReleaseCover(release, Modifier.fillMaxSize())
+            // fork:nebula - an overlay, so the card does not change size when the addon's answer arrives.
+            if (addon) LosslessPill()
             if (group.extraVersions > 0) {
                 Text(
                     "${group.versions.size} versions",
@@ -608,10 +644,6 @@ internal fun ReleaseCard(group: ReleaseGroup, onClick: () -> Unit, onSecondary: 
         ).joinToString(" · ")
         if (sub.isNotEmpty()) {
             Text(sub, style = MaterialTheme.typography.bodySmall, color = colors.textSecondary, maxLines = 1, overflow = TextOverflow.Ellipsis)
-        }
-        if (addon) {
-            // fork:nebula - the same wording as the badge on a YouTube Music album row.
-            Text("Lossless on your addon", style = MaterialTheme.typography.labelSmall, color = colors.accent, maxLines = 1, overflow = TextOverflow.Ellipsis)
         }
     }
 }
@@ -671,42 +703,6 @@ internal fun SegmentedPair(left: String, right: String, rightSelected: Boolean, 
 // endregion
 
 // region dialogs
-
-@Composable
-private fun AboutDialog(artist: LibraryArtist, onDismiss: () -> Unit) {
-    val colors = MaterialTheme.nuvio.colors
-    val facts = listOfNotNull(
-        artist.area?.let { "From" to it },
-        artist.style?.let { "Style" to it },
-        artist.mood?.let { "Mood" to it },
-        artist.fans?.let { "Deezer fans" to formatCount(it) },
-        artist.rating?.takeIf { it > 0.0 }?.let { "MusicBrainz rating" to "${(it * 10).toInt() / 10.0} / 5" },
-        artist.tags.takeIf { it.isNotEmpty() }?.let { "Tags" to it.take(8).joinToString(", ") },
-    )
-    NuvioAlertDialog(
-        onDismissRequest = onDismiss,
-        maxWidth = 640.dp,
-        title = { Text(artist.name) },
-        text = {
-            Column(
-                Modifier.heightIn(max = 460.dp).verticalScroll(rememberScrollState()),
-                verticalArrangement = Arrangement.spacedBy(12.dp),
-            ) {
-                artist.biography?.let {
-                    Text(it, style = MaterialTheme.typography.bodyMedium, color = colors.textPrimary)
-                    artist.biographySource?.let { src -> Text("From $src", style = MaterialTheme.typography.bodySmall, color = colors.textMuted) }
-                }
-                facts.forEach { (label, value) ->
-                    Row {
-                        Text("$label  ", style = MaterialTheme.typography.bodySmall, color = colors.textMuted)
-                        Text(value, style = MaterialTheme.typography.bodySmall, color = colors.textPrimary)
-                    }
-                }
-            }
-        },
-        confirmButton = { TextButton(onClick = onDismiss) { Text("Close") } },
-    )
-}
 
 /**
  * Links, one per site and grouped. Each row shows its address too, so a person on a TV (where
@@ -953,7 +949,11 @@ data class LibraryAlbumInfo(val artist: LibraryArtist, val release: LibraryRelea
         get() = artist.releases
             .filter { it.isPlayable && it.ytBrowseId != release.ytBrowseId && !it.isDemo() }
             .distinctBy { it.dedupeKey() }
-            .sortedByDescending { it.releaseDate ?: it.year ?: "" }
+            // fork:essentials - the artist's best first (the Top albums ranking), then the newest.
+            .sortedWith(
+                compareBy<LibraryRelease> { r -> artist.topAlbumKeys.indexOf(r.key).takeIf { it >= 0 } ?: Int.MAX_VALUE }
+                    .thenByDescending { it.releaseDate ?: it.year ?: "" },
+            )
             .take(10)
 }
 

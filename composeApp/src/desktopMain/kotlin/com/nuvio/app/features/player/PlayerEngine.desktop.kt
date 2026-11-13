@@ -277,6 +277,9 @@ private fun NativePlayerSurface(
     val latestOnError = rememberUpdatedState(onError)
 
     LaunchedEffect(controller, playbackAttemptId, sourceUrl) {
+        // The attach below (after redirect resolution) is what loads this source; until its file
+        // has loaded, the controller's tracks are still the previous file's.
+        controller.hideTracksUntilNextFileLoads()
         onControllerReady(controller)
     }
 
@@ -618,6 +621,15 @@ private fun NativePlayerSurface(
                 voice.session.value !is com.nuvio.app.features.voice.VoiceSessionState.Idle
             ) {
                 voice.cancelListening()
+                event.consume()
+                return@KeyEventDispatcher true
+            }
+            // Enter (the select key), when no player action is bound to it: onto the on-screen controls, which the
+            // arrows then walk. Until now the controls could only be reached with the mouse.
+            if (event.keyCode == AppShortcutsRepository.keyCode(AppShortcutAction.SelectFocused) &&
+                PlayerShortcutsRepository.actionForKeyCode(event.keyCode) == null
+            ) {
+                controller.openKeyboardPanel("controls")
                 event.consume()
                 return@KeyEventDispatcher true
             }
