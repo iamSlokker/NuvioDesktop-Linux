@@ -145,6 +145,7 @@ internal fun desktopSettingsSidebarSubItems(
             section(SettingsPage.Discover, Res.string.settings_discover_ai_section),
         )
         SettingsPage.RandomPlay -> listOf(
+            section(SettingsPage.RandomPlay, Res.string.tonight_section), // fork:tonight
             section(SettingsPage.RandomPlay, Res.string.random_play_section_catalog),
             section(SettingsPage.RandomPlay, Res.string.random_play_section_types),
             section(SettingsPage.RandomPlay, Res.string.random_play_section_filters),
@@ -209,6 +210,7 @@ internal fun desktopSettingsSidebarSubItems(
             emptyList()
         }
         SettingsPage.KeyboardShortcuts -> listOf(
+            section(SettingsPage.KeyboardShortcuts, Res.string.panel_ring_settings_section),
             section(SettingsPage.KeyboardShortcuts, Res.string.settings_shortcuts_navigation),
             section(SettingsPage.KeyboardShortcuts, Res.string.settings_shortcuts_section_player_playback),
             section(SettingsPage.KeyboardShortcuts, Res.string.settings_shortcuts_section_player_tracks),

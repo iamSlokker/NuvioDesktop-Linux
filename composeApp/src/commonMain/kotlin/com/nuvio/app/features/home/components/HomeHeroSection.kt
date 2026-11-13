@@ -99,6 +99,8 @@ import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.compositeOver
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.graphics.CompositingStrategy
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.FilterQuality
@@ -151,6 +153,8 @@ import com.nuvio.app.features.qualicache.QualityInlineBadges
 import com.nuvio.app.features.qualicache.rememberQualityBadgesEnabled
 import com.nuvio.app.features.qualicache.rememberQualityHighlights
 import com.nuvio.app.features.home.MetaPreview
+import com.nuvio.app.features.home.heroPeopleLabel
+import com.nuvio.app.features.home.isOffCatalogHeroItem
 import com.nuvio.app.features.playlist.isPlaylistPreview
 import com.nuvio.app.features.home.randomPlayCategoryOrNull
 import com.nuvio.app.features.home.HeroCastMember
@@ -230,6 +234,9 @@ private const val HERO_PICKER_FROST_BLUR_DP = 28f
 private const val HERO_PICKER_FROST_DIM = 0.45f
 private const val HERO_BACKDROP_FADE_FRACTION = 0.35f
 private const val HERO_METADATA_PREFETCH_CONCURRENCY = 4
+
+/** How many heroes each side of the one on screen are warmed ahead (see the warm-up in HomeHeroSection). */
+private const val HERO_METADATA_WARM_RADIUS = 2
 private val heroImageLog = Logger.withTag("HomeHeroImages")
 private val heroTrailerLog = Logger.withTag("HomeHeroTrailer")
 private val heroPrefetchLog = Logger.withTag("HeroDiscovery")
@@ -510,23 +517,51 @@ fun HomeHeroSection(
         val discoveryPriority = remember(heroInfoPriority) {
             HeroDiscoveryMetadataService.normalizePriority(heroInfoPriority)
         }
-        // Keep warming all nearby metadata, but put what the user can see first and avoid
-        // flooding the add-on/TMDB/image hosts with dozens of simultaneous cold requests.
-        val metadataTargets = (listOf(displayCurrentItemWithCast) + metadataPrefetchItems + displayItemsWithCast)
+        // Warm the hero on screen and its neighbours, not the whole carousel: every carousel item used to be warmed at
+        // launch (33 on one install, each a hero summary plus badges, credits, ratings and IMDb sub-genres; optimization
+        // audit B1). The rest is fetched as the carousel or the focus comes within reach of it.
+        val heroWarmNeighbours = run {
+            val count = displayItemsWithCast.size
+            val at = displayItemsWithCast.indexOfFirst { item ->
+                item.type == displayCurrentItemWithCast.type && item.id == displayCurrentItemWithCast.id
+            }
+            if (count == 0 || at < 0) {
+                displayItemsWithCast.take(HERO_METADATA_WARM_RADIUS + 1)
+            } else {
+                (-HERO_METADATA_WARM_RADIUS..HERO_METADATA_WARM_RADIUS)
+                    .map { step -> displayItemsWithCast[((at + step) % count + count) % count] }
+            }
+        }
+        val metadataTargets = (listOf(displayCurrentItemWithCast) + heroWarmNeighbours + metadataPrefetchItems)
             .distinctBy { item ->
                 "${item.type}:${item.id}"
             }
+        // The lookups run in a scope that outlives the effect below. The effect restarts each time the hero moves, and
+        // used to cancel every lookup still in flight, including those for titles that were still in range.
+        val heroWarmScope = rememberCoroutineScope()
+        val prefetchSlots = remember { Semaphore(HERO_METADATA_PREFETCH_CONCURRENCY) }
+        // Lookups already running, so a restart does not queue a second one for the same title.
+        val warmInFlight = remember { mutableSetOf<String>() }
         LaunchedEffect(metadataTargets, HeroDiscoveryMetadataService.CACHE_VERSION) {
             val settings = MdbListSettingsRepository.snapshot()
-            val prefetchSlots = Semaphore(HERO_METADATA_PREFETCH_CONCURRENCY)
+            fun launchOnce(tag: String, block: suspend kotlinx.coroutines.CoroutineScope.() -> Unit) {
+                if (!warmInFlight.add(tag)) return
+                heroWarmScope.launch {
+                    try {
+                        block()
+                    } finally {
+                        warmInFlight.remove(tag)
+                    }
+                }
+            }
             for (target in metadataTargets) {
                 val key = "${target.type}:${target.id}"
                 val discoveryKey = "$key:heroDiscoveryV${HeroDiscoveryMetadataService.CACHE_VERSION}"
                 // Every lookup below goes through the item's metadata identity rather than its own
                 // id: a cloud-library row is listed under a provider download key that resolves to
                 // nothing anywhere, so without this it has no cast, no ratings and no badges.
-                if (!castCache.containsKey(key) && target.type != "collection") {
-                    launch {
+                if (!castCache.containsKey(key) && !target.isOffCatalogHeroItem()) {
+                    launchOnce("cast:$key") {
                         prefetchSlots.withPermit {
                             castCache[key] = HeroCastMetadataService.fetch(
                                 type = target.metadataType,
@@ -535,8 +570,8 @@ fun HomeHeroSection(
                         }
                     }
                 }
-                if (!discoveryCache.containsKey(discoveryKey) && target.type != "collection") {
-                    launch {
+                if (!discoveryCache.containsKey(discoveryKey) && !target.isOffCatalogHeroItem()) {
+                    launchOnce("badges:$discoveryKey") {
                         val queuedAtMs = WatchProgressClock.nowEpochMs()
                         prefetchSlots.withPermit {
                             val waitedMs = WatchProgressClock.nowEpochMs() - queuedAtMs
@@ -552,8 +587,8 @@ fun HomeHeroSection(
                         }
                     }
                 }
-                if (!productionCache.containsKey(key) && target.type != "collection") {
-                    launch {
+                if (!productionCache.containsKey(key) && !target.isOffCatalogHeroItem()) {
+                    launchOnce("credits:$key") {
                         prefetchSlots.withPermit {
                             productionCache[key] = fetchHeroProductionCredits(
                                 type = target.metadataType,
@@ -562,12 +597,12 @@ fun HomeHeroSection(
                         }
                     }
                 }
-                if (!interestsCache.containsKey(key) && target.type != "collection") {
+                if (!interestsCache.containsKey(key) && !target.isOffCatalogHeroItem()) {
                     val imdbId = target.metadataId.takeIf { it.startsWith("tt", ignoreCase = true) }
                     if (imdbId == null) {
                         interestsCache[key] = emptyList()
                     } else {
-                        launch {
+                        launchOnce("interests:$key") {
                             prefetchSlots.withPermit {
                                 interestsCache[key] = ImdbInterestsService.fetch(imdbId)
                             }
@@ -575,7 +610,7 @@ fun HomeHeroSection(
                     }
                 }
                 if (ratingsCache.containsKey(key)) continue
-                if (target.type == "collection") {
+                if (target.isOffCatalogHeroItem()) {
                     ratingsCache[key] = emptyList()
                     continue
                 }
@@ -588,7 +623,7 @@ fun HomeHeroSection(
                     ratingsCache[key] = emptyList()
                     continue
                 }
-                launch {
+                launchOnce("ratings:$key") {
                     prefetchSlots.withPermit {
                         val enriched = MdbListMetadataService.enrichMeta(
                             meta = baseMeta,
@@ -1080,6 +1115,12 @@ private fun HeroBackdropImageLayer(
     LaunchedEffect(model) {
         if (model == null) onResolved(false)
     }
+    // fork:music-search - a music result whose backdrop is its own cover: not the cover itself (a small square picture blown
+    // up across the screen), but a clean gradient of the cover's own colours.
+    if (model != null && com.nuvio.app.features.music.home.MusicHeroLogos.isBlurred(model)) {
+        CoverColourBackdrop(coverUrl = model, modifier = modifier, onResolved = onResolved)
+        return
+    }
     if (framingPriorBias != null && model != null) {
         FramedHeroBackdropImageLayer(
             model = model,
@@ -1114,6 +1155,114 @@ private fun HeroBackdropImageLayer(
         },
     )
 }
+
+/**
+ * fork:music-search - a record's own cover as the hero's backdrop. Covers are square and the hero is wide, so a cover is
+ * never cropped to fill it (a square cut to 16:9 loses almost half of itself): the hero is a gradient of the cover's own
+ * colours (the main colour across it, the second and third drifting in from the far corners), and a large cover (at
+ * least [COVER_BACKDROP_MIN_PX] on both sides) stands whole at the right, full height, fading into that gradient at its
+ * left edge. A smaller one would be a small picture blown up, so it is the gradient alone. The hero's own scrims and the
+ * text sit on top. Resolves once it knows which, so the crossfade waits for it like for a picture.
+ */
+@Composable
+private fun CoverColourBackdrop(coverUrl: String, modifier: Modifier, onResolved: (hasArtwork: Boolean) -> Unit) {
+    val context = coil3.compose.LocalPlatformContext.current
+    val look by androidx.compose.runtime.produceState(CoverLookCache[coverUrl], coverUrl) {
+        if (value != null) return@produceState
+        // At its own size: that says whether it is big enough, and the colours are sampled from the same picture.
+        val image = (
+            coil3.SingletonImageLoader.get(context).execute(
+                coil3.request.ImageRequest.Builder(context).data(coverUrl).size(coil3.size.Size.ORIGINAL).build(),
+            ) as? coil3.request.SuccessResult
+        )?.image
+        val found = if (image == null) {
+            CoverLook(large = false, aspect = 1f, colours = emptyList())
+        } else {
+            CoverLook(
+                large = minOf(image.width, image.height) >= COVER_BACKDROP_MIN_PX,
+                aspect = image.width.toFloat() / image.height.coerceAtLeast(1),
+                colours = com.nuvio.app.features.home.extractHeroPaletteColors(image, count = 3),
+            )
+        }
+        CoverLookCache[coverUrl] = found
+        value = found
+    }
+    val known = look
+    val picked = known?.colours
+    LaunchedEffect(known != null) { if (known != null) onResolved(known.large || !picked.isNullOrEmpty()) }
+    if (known == null) return
+    Box(modifier) {
+        if (!picked.isNullOrEmpty()) CoverColourGradient(picked, Modifier.fillMaxSize())
+        if (known.large) {
+            AsyncImage(
+                model = coverUrl,
+                contentDescription = null,
+                modifier = Modifier
+                    .align(Alignment.CenterEnd)
+                    .fillMaxHeight()
+                    .aspectRatio(known.aspect.coerceIn(0.5f, 2f))
+                    // The cover's left edge melts into the gradient, so it reads as one picture rather than a square
+                    // pasted on.
+                    .graphicsLayer { compositingStrategy = androidx.compose.ui.graphics.CompositingStrategy.Offscreen }
+                    .drawWithContent {
+                        drawContent()
+                        drawRect(
+                            Brush.horizontalGradient(
+                                0f to Color.Transparent,
+                                COVER_EDGE_FADE to Color.Black,
+                                1f to Color.Black,
+                            ),
+                            blendMode = androidx.compose.ui.graphics.BlendMode.DstIn,
+                        )
+                    },
+                contentScale = ContentScale.Fit,
+                desktopImageScaling = NuvioDesktopImageScaling.Disabled,
+            )
+        }
+    }
+}
+
+/** The colour gradient behind (or instead of) a record's cover. */
+@Composable
+private fun CoverColourGradient(picked: List<Color>, modifier: Modifier) {
+    // A backdrop, not a poster, but bright enough to read as the cover's colours.
+    fun tone(c: Color, keep: Float) = androidx.compose.ui.graphics.lerp(Color.Black, c, keep)
+    val main = tone(picked[0], 0.86f)
+    val second = tone(picked.getOrElse(1) { picked[0] }, 0.8f)
+    val third = tone(picked.getOrElse(2) { picked.getOrElse(1) { picked[0] } }, 0.72f)
+    Box(
+        modifier
+            .background(Brush.linearGradient(listOf(main, tone(picked[0], 0.58f), Color.Black.copy(alpha = 0.7f).compositeOver(main))))
+            .drawBehind {
+                // The other colours as soft light from the top right and the bottom right, where no text sits.
+                drawRect(
+                    Brush.radialGradient(
+                        listOf(second.copy(alpha = 0.95f), Color.Transparent),
+                        center = androidx.compose.ui.geometry.Offset(size.width * 0.86f, size.height * 0.12f),
+                        radius = size.maxDimension * 0.62f,
+                    ),
+                )
+                drawRect(
+                    Brush.radialGradient(
+                        listOf(third.copy(alpha = 0.75f), Color.Transparent),
+                        center = androidx.compose.ui.geometry.Offset(size.width * 0.7f, size.height * 0.95f),
+                        radius = size.maxDimension * 0.5f,
+                    ),
+                )
+            },
+    )
+}
+
+/** Whether a cover stands whole at the right ([large]), its shape, and its [colours]; kept for the session. */
+private class CoverLook(val large: Boolean, val aspect: Float, val colours: List<Color>)
+
+private val CoverLookCache = HashMap<String, CoverLook>()
+
+/** A cover at least this many pixels on both sides is sharp enough to stand whole in the hero. */
+private const val COVER_BACKDROP_MIN_PX = 1000
+
+/** How much of the cover's width, from its left edge, fades into the gradient. */
+private const val COVER_EDGE_FADE = 0.28f
 
 /**
  * [HeroBackdropImageLayer] with automatic framing: the crop follows this backdrop's own
@@ -1331,7 +1480,7 @@ private fun DesktopHomeHeroFrame(
     // per poster passed over — dozens of extractions a minute, which is both wasted work and the
     // surest way to get this client's media URLs refused.
     LaunchedEffect(heroTrailerFocusKey, tvHeroActive, heroTrailerHomeActive) {
-        if (!tvHeroActive || !heroTrailerHomeActive || currentItem.type == "collection") {
+        if (!tvHeroActive || !heroTrailerHomeActive || currentItem.isOffCatalogHeroItem()) {
             return@LaunchedEffect
         }
         delay(HERO_TRAILER_PREFETCH_DWELL_MS)
@@ -1364,7 +1513,7 @@ private fun DesktopHomeHeroFrame(
         heroTrailerFocusNonce,
         heroTrailerHomeActive,
     ) {
-        if (!heroTrailerAutoplayEnabled || !heroTrailerHomeActive || currentItem.type == "collection") {
+        if (!heroTrailerAutoplayEnabled || !heroTrailerHomeActive || currentItem.isOffCatalogHeroItem()) {
             return@LaunchedEffect
         }
         // Don't count dwell time during the app's startup grace window, while continue-watching
@@ -1391,7 +1540,7 @@ private fun DesktopHomeHeroFrame(
                 "homeActive=$heroTrailerHomeActive key=$heroTrailerFocusKey"
         }
         if (request == null || !tvHeroActive || !heroTrailerHomeActive ||
-            currentItem.type == "collection"
+            currentItem.isOffCatalogHeroItem()
         ) {
             return@LaunchedEffect
         }
@@ -1501,8 +1650,16 @@ private fun DesktopHomeHeroFrame(
     LaunchedEffect(heroTrailerVisible, tvHeroActive) {
         if (tvHeroActive) HomeHeroTrailerManualTrigger.setActive(heroTrailerVisible)
     }
+    LaunchedEffect(heroTrailerReady, tvHeroActive) {
+        if (tvHeroActive) HomeHeroTrailerManualTrigger.setOnScreen(heroTrailerReady)
+    }
     DisposableEffect(tvHeroActive) {
-        onDispose { if (tvHeroActive) HomeHeroTrailerManualTrigger.setActive(false) }
+        onDispose {
+            if (tvHeroActive) {
+                HomeHeroTrailerManualTrigger.setActive(false)
+                HomeHeroTrailerManualTrigger.setOnScreen(false)
+            }
+        }
     }
     // Full backdrop runs the artwork the whole way down and the whole way across; the default
     // stops it above the shelf and confines it to the right-hand region, which is what makes the
@@ -1707,6 +1864,7 @@ private fun DesktopHomeHeroFrame(
                 HomeHeroTrailerSurface(
                     sourceUrl = source.videoUrl,
                     sourceAudioUrl = source.audioUrl,
+                    sourceHeaders = source.headers, // fork:trailer-signed-in
                     playWhenReady = heroTrailerPlaybackRequested,
                     muted = heroTrailerMuted,
                     volume = heroTrailerVolume,
@@ -1785,8 +1943,10 @@ private fun DesktopHomeHeroFrame(
 
         // Where the metadata column's box ends and how tall it would naturally be; the people
         // panel above it decides how much of that it actually gets.
+        // fork:music-search - a screen can lift TV Mode's column and give its plot more lines (LocalImmersiveHeroTuning).
+        val heroTuning = LocalImmersiveHeroTuning.current
         val immersiveContentBottom = layout.heroHeight - immersiveContentBottomPadding +
-            immersiveHeroContentOffsetY(layout.heroHeight)
+            immersiveHeroContentOffsetY(layout.heroHeight) - heroTuning.lift
         val immersiveNaturalContentHeight = immersiveHeroContentHeight(layout.heroHeight)
         val immersiveCompactPeoplePanel = immersiveMode &&
             immersiveContentBottom - immersiveHeroPeoplePanelBottom(rows = 2) <
@@ -1840,6 +2000,7 @@ private fun DesktopHomeHeroFrame(
                             HeroPeopleBlock(
                                 cast = cast,
                                 production = production,
+                                starringLabel = item.heroPeopleLabel(),
                                 activeTab = peoplePanelTab,
                                 onTabChange = { peoplePanelTab = it },
                                 onCastClick = onCastClick,
@@ -1860,7 +2021,7 @@ private fun DesktopHomeHeroFrame(
                             Modifier
                                 .padding(bottom = immersiveContentBottomPadding)
                                 .height(immersiveContentHeight)
-                                .offset(y = immersiveHeroContentOffsetY(layout.heroHeight))
+                                .offset(y = immersiveHeroContentOffsetY(layout.heroHeight) - heroTuning.lift)
                         } else {
                             // Anchor to a fixed top baseline so cast/genre/ratings/synopsis stay
                             // put between items instead of drifting as content height changes
@@ -2377,7 +2538,7 @@ private fun DesktopHeroContentBlock(
                     showReleaseMetadata = !qualityBadgesEnabled,
                     includeAgeRating = false,
                 ).isNotBlank() || !item.ageRating.isNullOrBlank(),
-                hasRatings = ratings.isNotEmpty(),
+                hasRatings = ratings.isNotEmpty() || com.nuvio.app.features.music.home.MusicHeroLogos.factsFor(item.id) != null,
                 hasSynopsis = !item.description.isNullOrBlank(),
                 hasFooter = qualityHighlights.isNotEmpty() ||
                     (qualityBadgesEnabled && (!item.releaseInfo.isNullOrBlank() || item.runtime != null)),
@@ -2435,7 +2596,55 @@ private fun DesktopHeroContentBlock(
                     .height(desktopHeroLogoSlotHeight(layout))
             }
 
-            if (logoUrl != null) {
+            if (logoUrl != null && item.type.startsWith(com.nuvio.app.features.home.MUSIC_HERO_TYPE_PREFIX) &&
+                // An artist's name logo is drawn like a film's (the branch below); only artwork gets the lockup.
+                !com.nuvio.app.features.music.home.MusicHeroLogos.isNameLogo(logoUrl)
+            ) {
+                // fork:music-search - a music result's "logo" is its artwork (a cover is no title on its own): the picture
+                // in the logo slot with the name under it, within the slot's height so nothing below moves.
+                androidx.compose.foundation.layout.Column(
+                    modifier = logoSlotModifier,
+                    verticalArrangement = Arrangement.spacedBy(10.dp, if (immersiveBudget != null) Alignment.Bottom else Alignment.CenterVertically),
+                    horizontalAlignment = Alignment.Start,
+                ) {
+                    val disc = com.nuvio.app.features.music.home.MusicHeroLogos.discFor(logoUrl)
+                    if (disc != null && item.posterShape != com.nuvio.app.features.home.PosterShape.Landscape) {
+                        // The record's disc out to the right of its cover, as on the album page and the Stage.
+                        Box(Modifier.weight(1f, fill = false).aspectRatio(1f + HERO_DISC_PEEK)) {
+                            AsyncImage(
+                                model = disc,
+                                contentDescription = null,
+                                modifier = Modifier.align(Alignment.CenterEnd).fillMaxHeight(0.94f).aspectRatio(1f)
+                                    .clip(androidx.compose.foundation.shape.CircleShape),
+                                contentScale = ContentScale.Crop,
+                            )
+                            AsyncImage(
+                                model = logoUrl,
+                                contentDescription = item.name,
+                                modifier = Modifier.align(Alignment.CenterStart).fillMaxHeight().aspectRatio(1f)
+                                    .clip(androidx.compose.foundation.shape.RoundedCornerShape(12.dp)),
+                                contentScale = ContentScale.Crop,
+                            )
+                        }
+                    } else AsyncImage(
+                        model = logoUrl,
+                        contentDescription = item.name,
+                        modifier = Modifier
+                            .weight(1f, fill = false)
+                            .aspectRatio(if (item.posterShape == com.nuvio.app.features.home.PosterShape.Landscape) 16f / 9f else 1f)
+                            .clip(androidx.compose.foundation.shape.RoundedCornerShape(12.dp)),
+                        contentScale = ContentScale.Crop,
+                    )
+                    Text(
+                        text = item.name,
+                        style = MaterialTheme.typography.headlineMedium,
+                        color = MaterialTheme.colorScheme.onBackground,
+                        fontWeight = FontWeight.Black,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
+            } else if (logoUrl != null) {
                 // Adaptive and Basic centre the logo in the space above the cast row, so a wide,
                 // short logo no longer sits on the cast with the space above it empty, and a tall
                 // one grows evenly both ways. TV Mode keeps it on the cast row: its slot is a
@@ -2554,6 +2763,19 @@ private fun DesktopHeroContentBlock(
 
             if (!item.heroMetadataPending) {
                 HomeHeroRatingsRow(ratings = ratings)
+                // fork:music-search - a song's or record's facts (year, tempo, label, length) in the ratings' place.
+                if (item.type.startsWith(com.nuvio.app.features.home.MUSIC_HERO_TYPE_PREFIX)) {
+                    com.nuvio.app.features.music.home.MusicHeroLogos.factsFor(item.id)?.let { facts ->
+                        Spacer(modifier = Modifier.height(14.dp))
+                        Text(
+                            text = facts,
+                            style = MaterialTheme.typography.titleSmall,
+                            color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.78f),
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                    }
+                }
 
                 item.description
                     ?.replace(Regex("\\s+"), " ")
@@ -2582,8 +2804,20 @@ private fun DesktopHeroContentBlock(
     }
 }
 
+/** fork:music-search - how far a record's disc peeks out of its cover in the logo slot. */
+private const val HERO_DISC_PEEK = 0.32f
+
 /** Lines of synopsis the hero shows before the rest has to be scrolled into view. */
 private const val HeroSynopsisMaxLines = 5
+
+/**
+ * fork:music-search - how one screen's TV Mode hero differs from Home's: the metadata column (logo, genres, plot) [lift]ed
+ * that far above the shelf, and the plot allowed up to [synopsisMaxLines] lines when the column has the room (Home's is 5).
+ * A composition local rather than a parameter: the hero's composables are near the JVM's argument limit.
+ */
+internal data class ImmersiveHeroTuning(val lift: Dp = 0.dp, val synopsisMaxLines: Int = HeroSynopsisMaxLines)
+
+internal val LocalImmersiveHeroTuning = androidx.compose.runtime.staticCompositionLocalOf { ImmersiveHeroTuning() }
 
 private class ImmersiveHeroColumnBudget(val synopsisMaxLines: Int)
 
@@ -2618,7 +2852,7 @@ private fun immersiveHeroColumnBudget(
     val synopsisLine = typography.bodyLarge.lineHeightDp()
     val lines = ((availableHeight - fixed) / synopsisLine).toInt()
     return ImmersiveHeroColumnBudget(
-        lines.coerceIn(IMMERSIVE_HERO_SYNOPSIS_MIN_LINES, HeroSynopsisMaxLines),
+        lines.coerceIn(IMMERSIVE_HERO_SYNOPSIS_MIN_LINES, maxOf(HeroSynopsisMaxLines, LocalImmersiveHeroTuning.current.synopsisMaxLines)),
     )
 }
 
@@ -2780,6 +3014,7 @@ private enum class HeroPeoplePanelTab {
     Production,
 }
 
+@kotlinx.serialization.Serializable
 private data class HeroProductionCredit(
     val label: String,
     val role: String,
@@ -2790,6 +3025,8 @@ private data class HeroProductionCredit(
 private fun HeroPeopleBlock(
     cast: List<HeroCastMember>,
     production: List<HeroProductionCredit>,
+    /** Replaces "Starring" (a music result's artists). */
+    starringLabel: String? = null,
     activeTab: HeroPeoplePanelTab,
     onTabChange: (HeroPeoplePanelTab) -> Unit,
     onCastClick: ((HeroCastMember) -> Unit)?,
@@ -2807,6 +3044,7 @@ private fun HeroPeopleBlock(
         HeroPeopleTabs(
             activeTab = effectiveTab,
             showProduction = production.isNotEmpty(),
+            starringLabel = starringLabel,
             onTabChange = onTabChange,
         )
         Spacer(modifier = Modifier.height(18.dp))
@@ -2821,6 +3059,7 @@ private fun HeroPeopleBlock(
 private fun HeroPeopleTabs(
     activeTab: HeroPeoplePanelTab,
     showProduction: Boolean,
+    starringLabel: String? = null,
     onTabChange: (HeroPeoplePanelTab) -> Unit,
 ) {
     Row(
@@ -2828,7 +3067,7 @@ private fun HeroPeopleTabs(
         verticalAlignment = Alignment.CenterVertically,
     ) {
         HeroPeopleTabLabel(
-            text = stringResource(Res.string.meta_starring),
+            text = starringLabel ?: stringResource(Res.string.meta_starring),
             selected = activeTab == HeroPeoplePanelTab.Starring,
             onClick = { onTabChange(HeroPeoplePanelTab.Starring) },
         )
@@ -3163,12 +3402,22 @@ private suspend fun fetchHeroProductionCredits(
     type: String,
     id: String,
 ): List<HeroProductionCredit> {
+    // Kept between launches (see HeroBundleCache).
+    val serializer = kotlinx.serialization.builtins.ListSerializer(HeroProductionCredit.serializer())
+    val key = "$type:$id"
+    com.nuvio.app.features.home.HeroBundleCache.get("credits", key, serializer)?.let { return it }
     // Summary rather than the details-screen record: a director and a writer do not need every
     // episode of every season fetched to find them.
     val meta = MetaDetailsRepository.peek(type = type, id = id)
         ?: MetaDetailsRepository.fetchHeroSummary(type = type, id = id)
         ?: return emptyList()
-    return heroProductionCredits(meta)
+    return heroProductionCredits(meta).also { credits ->
+        com.nuvio.app.features.home.HeroBundleCache.put(
+            "credits", key, credits, serializer,
+            isEmpty = credits.isEmpty(),
+            isSeries = type.equals("series", ignoreCase = true) || type.equals("tv", ignoreCase = true),
+        )
+    }
 }
 
 private fun heroProductionCredits(meta: MetaDetails): List<HeroProductionCredit> =
@@ -3340,7 +3589,7 @@ internal fun desktopHeroLogoSlotHeight(layout: HomeHeroLayout): Dp {
 
 private fun compactHeroMetaParts(item: MetaPreview): List<String> =
     buildList {
-        if (item.type != "collection" && !item.isPlaylistPreview() && item.randomPlayCategoryOrNull() == null) {
+        if (!item.isOffCatalogHeroItem() && !item.isPlaylistPreview() && item.randomPlayCategoryOrNull() == null) {
             // metadataType, not type: a cloud-library row's own type is the addon's `library`, which
             // would otherwise read as the literal word "Library" where the genres belong.
             add(item.metadataType.replaceFirstChar(Char::uppercase))
@@ -3414,7 +3663,7 @@ private fun desktopHeroGenreParts(
             }
         }
     }
-    if (values.isEmpty() && (item.type == "collection" || item.isPlaylistPreview() || item.randomPlayCategoryOrNull() != null)) return emptyList()
+    if (values.isEmpty() && (item.isOffCatalogHeroItem() || item.isPlaylistPreview() || item.randomPlayCategoryOrNull() != null)) return emptyList()
     // metadataType, not type: see [compactHeroMetaParts].
     return values.ifEmpty { listOf(HeroGenrePart(item.metadataType.replaceFirstChar(Char::uppercase))) }
 }

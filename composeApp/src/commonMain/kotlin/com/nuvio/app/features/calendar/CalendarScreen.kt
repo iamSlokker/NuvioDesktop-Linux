@@ -1,5 +1,7 @@
 package com.nuvio.app.features.calendar
 
+import com.nuvio.app.core.ui.keyLayer
+import com.nuvio.app.core.ui.requestFocusLogged
 import com.nuvio.app.core.ui.smoothBorder
 import com.nuvio.app.features.player.AppShortcutAction
 import com.nuvio.app.features.player.appShortcutMatches
@@ -294,17 +296,16 @@ fun CalendarScreen(
         }
     }
 
-    // Keyboard-focus keeper. On fast back-navigation the focus node may not be attached yet, or
-    // focus gets stolen by the nav transition after a one-shot requestFocus — which left keyboard
-    // nav dead until a mouse click. While the calendar doesn't hold focus, keep re-requesting
-    // until it sticks (re-runs whenever calendarHasFocus flips).
-    LaunchedEffect(calendarHasFocus, navigatingAway) {
-        if (!calendarHasFocus && !navigatingAway) {
-            repeat(25) {
-                runCatching { screenFocusRequester.requestFocus() }
-                delay(48)
-                if (calendarHasFocus || navigatingAway) return@LaunchedEffect
-            }
+    // Focus on arrival. On fast back-navigation the focus node may not be attached yet, or the nav
+    // transition takes focus after a one-shot request, so it is asked for over a short while. Losing
+    // focus later used to re-run this (a keeper loop); the focus router's fallback (keyLayer below)
+    // covers that now: the next arrow or OK that goes to no one puts focus back and still acts.
+    LaunchedEffect(navigatingAway) {
+        if (navigatingAway) return@LaunchedEffect
+        repeat(25) {
+            if (calendarHasFocus) return@LaunchedEffect
+            screenFocusRequester.requestFocusLogged()
+            delay(48)
         }
     }
 
@@ -313,11 +314,12 @@ fun CalendarScreen(
             .fillMaxSize()
             // The settings sky, so the glass below sits on the backdrop it was designed against.
             .settingsSkyBackground(MaterialTheme.nuvio.colors.background, MaterialTheme.nuvio.colors.accent)
+            .keyLayer("Calendar", active = !navigatingAway) { screenFocusRequester.requestFocusLogged() }
             .focusRequester(screenFocusRequester)
             .onFocusChanged { calendarHasFocus = it.hasFocus }
             .focusable()
             .onPointerEvent(PointerEventType.Press, PointerEventPass.Initial) { _ ->
-                try { screenFocusRequester.requestFocus() } catch (_: Exception) {}
+                screenFocusRequester.requestFocusLogged()
             }
             .onPreviewKeyEvent { event ->
                 if (event.type != KeyEventType.KeyDown) return@onPreviewKeyEvent false

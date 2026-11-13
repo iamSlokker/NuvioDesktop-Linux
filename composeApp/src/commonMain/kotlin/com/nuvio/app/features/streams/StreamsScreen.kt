@@ -1,5 +1,7 @@
 package com.nuvio.app.features.streams
 
+import com.nuvio.app.core.ui.requestFocusLogged
+import com.nuvio.app.core.ui.keyLayer
 import com.nuvio.app.core.ui.smoothBorder
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
@@ -807,6 +809,8 @@ fun StreamsScreen(
             .then(
                 if (isDesktop) {
                     Modifier
+                        // Focus router fallback (KeyLayers): an arrow or OK that went to no one puts focus back here.
+                        .keyLayer("Sources") { keyboardFocusRequester.requestFocusLogged() }
                         .focusRequester(keyboardFocusRequester)
                         .focusable()
                         .onPreviewKeyEvent { event ->
@@ -1928,6 +1932,7 @@ private fun StreamSortChip() {
             border = BorderStroke(0.5.dp, LibraryNavMenuBorderColor),
             modifier = Modifier.width(220.dp),
         ) {
+            com.nuvio.app.core.ui.KeyRouteLayer("sources menu") // the focus router leaves an open menu alone
             StreamListSortOrder.entries.forEach { option ->
                 LibraryMenuItem(label = option.label, selected = option == order) {
                     StreamBadgeSettingsRepository.setListSortOrder(option)
@@ -2128,6 +2133,41 @@ internal fun StreamList(
                 com.nuvio.app.features.voice.VoiceScreenTargets.sources = null
             }
         }
+    }
+
+    // fork:phone-remote sources - the same list, in the same order, for the phone to show and pick from (by place,
+    // through the voice hook above).
+    val remoteOwner = remember { Any() }
+    val remoteStreams = voiceStreams.value
+    val remoteLaunch by StreamPickerController.request.collectAsStateWithLifecycle()
+    LaunchedEffect(remoteStreams, debridEnabled, uiState.isAnyLoading, remoteLaunch) {
+        val launch = remoteLaunch?.launch
+        val title = when {
+            launch == null -> "Sources"
+            launch.seasonNumber != null && launch.episodeNumber != null ->
+                "${launch.title} · S${launch.seasonNumber} E${launch.episodeNumber}"
+            else -> launch.title
+        }
+        com.nuvio.app.features.remote.RemoteSources.publish(
+            remoteOwner,
+            com.nuvio.app.features.remote.RemoteSourceList(
+                title = title,
+                loading = uiState.isAnyLoading,
+                sources = remoteStreams.take(REMOTE_SOURCES_MAX).map { stream ->
+                    com.nuvio.app.features.remote.RemoteSource(
+                        name = stream.streamLabel,
+                        detail = (stream.description ?: stream.title)?.takeIf { it.isNotBlank() },
+                        addon = stream.sourceName?.takeIf { it.isNotBlank() } ?: stream.addonName,
+                        sizeBytes = stream.behaviorHints.videoSize ?: stream.debridCacheStatus?.cachedSize,
+                        instant = stream.isCachedDebridTorrentStream || stream.isDirectDebridStream,
+                        playable = stream.isSelectableForPlayback(debridEnabled),
+                    )
+                },
+            ),
+        )
+    }
+    androidx.compose.runtime.DisposableEffect(remoteOwner) {
+        onDispose { com.nuvio.app.features.remote.RemoteSources.clear(remoteOwner) }
     }
 
     val formatStreamSize = rememberStreamSizeLabelFormat()
@@ -2525,6 +2565,9 @@ internal fun buildStreamListEntries(
 /** The most stable thing a row can be recognised by across a re-sorted, re-fetched list. */
 private fun StreamItem.lazyRowIdentity(): String =
     url ?: infoHash ?: clientResolve?.infoHash ?: streamLabel
+
+/** The most sources the phone is sent: a list longer than this is scrolled on the TV. */
+private const val REMOTE_SOURCES_MAX = 80
 
 private fun orderedStreams(groups: List<AddonStreamGroup>): List<StreamItem> =
     groups.flatMap { group ->

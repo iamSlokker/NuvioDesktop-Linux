@@ -226,6 +226,7 @@ internal object InnerTubeXFallback : MusicStreamFallback {
             "$videoId: video through ${stream.clientName} (${stream.profileId}), " +
                 "${stream.videoWidth ?: 0}x${stream.videoHeight ?: 0}${if (manifest) ", HLS" else ""}"
         }
+        com.nuvio.app.features.preroll.StreamLoudnessBook.record(listOfNotNull(videoUrl, audioUrl), stream.loudnessDb)
         return TrailerPlaybackSource(
             videoUrl = videoUrl,
             audioUrl = audioUrl,
@@ -257,7 +258,13 @@ internal object InnerTubeXFallback : MusicStreamFallback {
         }
         // fork:innertubex-sabr - WEB_CREATOR is what an age gate leaves; its direct URL stops after ~45 s.
         if (stream.clientName == "WEB_CREATOR") resolveAudioOverSabr(videoId)?.let { return it }
-        log.i { "$videoId: ${stream.clientName} (${stream.profileId}), ${(stream.bitrate ?: 0) / 1000} kbps" }
+        log.i {
+            "$videoId: ${stream.clientName} (${stream.profileId}), ${(stream.bitrate ?: 0) / 1000} kbps, " +
+                "loudness ${stream.loudnessDb?.let { "$it dB" } ?: "not given"}"
+        }
+        // fork:loudness - YouTube's loudness figure for the stream, so the player plans its gain from it (it was dropped
+        // here, and every track opened this way started from a guess and was corrected part way in).
+        com.nuvio.app.features.preroll.StreamLoudnessBook.record(listOf(stream.audioUrl), stream.loudnessDb)
         return TrailerPlaybackSource(videoUrl = stream.audioUrl, headers = stream.headers)
     }
 

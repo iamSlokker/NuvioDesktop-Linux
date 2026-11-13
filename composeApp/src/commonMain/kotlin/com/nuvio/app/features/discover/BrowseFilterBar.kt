@@ -1,5 +1,9 @@
 package com.nuvio.app.features.discover
 
+import androidx.compose.foundation.focusGroup
+import androidx.compose.ui.focus.FocusDirection
+import androidx.compose.ui.focus.focusProperties
+import com.nuvio.app.core.ui.requestFocusLogged
 import com.nuvio.app.core.ui.collectIsKeyboardFocusedAsState
 import com.nuvio.app.core.ui.smoothBorder
 import com.nuvio.app.core.ui.LocalScreenCovered
@@ -149,6 +153,19 @@ fun BrowseFilterStrip(
                     Modifier
                         .focusRequester(stripFocus.requester)
                         .onFocusChanged { stripFocus.onFocusChanged(it.hasFocus) }
+                        // Left and Right stop at the bar's ends. Unbounded, Right past the last filter moved
+                        // focus to whatever lay that way outside the page (the top bar), where no arrow is
+                        // handled, and navigation was lost until another tab was opened (2026-11-13).
+                        .focusProperties {
+                            onExit = {
+                                if (requestedFocusDirection == FocusDirection.Left ||
+                                    requestedFocusDirection == FocusDirection.Right
+                                ) {
+                                    cancelFocusChange()
+                                }
+                            }
+                        }
+                        .focusGroup()
                 } else {
                     Modifier
                 },
@@ -261,6 +278,7 @@ fun BrowseFilterMenu(
                 onDismissRequest = { setOpenAt(null) },
                 properties = PopupProperties(focusable = true),
             ) {
+                com.nuvio.app.core.ui.KeyRouteLayer("filter menu")
                 CompositionLocalProvider(LocalBrowseMenuKeyboardOpened provides openedByKeyboard) {
                     BrowseFilterMenuSurface(maxHeight = maxHeight) {
                         content { setOpenAt(null) }
@@ -306,7 +324,7 @@ private fun BrowseFilterIconButton(
     LaunchedEffect(refocusAfterMenu) {
         if (!refocusAfterMenu) return@LaunchedEffect
         delay(16)
-        runCatching { focusRequester.requestFocus() }
+        focusRequester.requestFocusLogged()
     }
     Box(
         modifier = Modifier
@@ -372,7 +390,7 @@ private fun BrowseFilterMenuSurface(maxHeight: Dp, content: @Composable ColumnSc
     if (LocalBrowseMenuKeyboardOpened.current) {
         LaunchedEffect(Unit) {
             delay(16)
-            runCatching { firstChoice.requestFocus() }
+            firstChoice.requestFocusLogged()
         }
     }
     NuvioGlassMenuSurface(
@@ -612,6 +630,38 @@ fun BrowseYearsEditor(
             BrowseDecades.forEach { (label, from, to) ->
                 val on = yearFrom == from && yearTo == to
                 BrowseMenuChip(text = label, on = on) { if (on) onChange(null, null) else onChange(from, to) }
+            }
+        }
+    }
+}
+
+/** A tag by name: TMDB's keyword search, as [BrowseStudioPicker] finds a studio. */
+@Composable
+fun BrowseKeywordPicker(onPick: (TmdbBrowseKeyword) -> Unit) {
+    var query by remember { mutableStateOf("") }
+    var hits by remember { mutableStateOf<List<TmdbBrowseKeyword>>(emptyList()) }
+    LaunchedEffect(query) {
+        if (query.trim().length < 2) {
+            hits = emptyList()
+            return@LaunchedEffect
+        }
+        delay(300)
+        hits = runCatching { TmdbBrowse.searchKeywords(query) }.getOrDefault(emptyList())
+    }
+    Column(modifier = Modifier.width(300.dp).padding(6.dp), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+        NuvioTextField(
+            value = query,
+            onValueChange = { query = it },
+            placeholder = stringResource(Res.string.browse_filter_find_a_tag),
+            modifier = Modifier.fillMaxWidth().padding(bottom = 4.dp),
+        )
+        hits.forEach { keyword ->
+            BrowseMenuCheck(on = false, onClick = {
+                onPick(keyword)
+                query = ""
+                hits = emptyList()
+            }) {
+                Text(keyword.name, maxLines = 1, overflow = TextOverflow.Ellipsis)
             }
         }
     }

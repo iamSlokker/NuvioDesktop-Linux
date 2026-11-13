@@ -868,7 +868,7 @@
   <string name="settings_portable_mode">Modalità portatile</string>
   <string name="settings_portable_mode_description">Mantiene impostazioni e cache in una cartella data accanto a Nuvio.exe invece che in AppData. Il passaggio riavvia Nuvio e sposta i tuoi dati.</string>
   <string name="settings_portable_mode_enable_title">Passare alla modalità portatile?</string>
-  <string name="settings_portable_mode_enable_message">Nuvio si riavvierà e copierà le tue impostazioni in una cartella data accanto a Nuvio.exe. Le cache di immagini e torrent non vengono copiate; si ricostruiscono mentre navighi. La cartella AppData resta com'è.\n\nSe hai un'esclusione antivirus per Nuvio, aggiungi anche la nuova cartella data.</string>
+  <string name="settings_portable_mode_enable_message">Nuvio si riavvierà e copierà le tue impostazioni in una cartella data accanto a Nuvio.exe. Le cache di immagini e torrent non vengono copiate; si ricostruiscono mentre navighi. La cartella AppData resta com'è.&#10;&#10;Se hai un'esclusione antivirus per Nuvio, aggiungi anche la nuova cartella data.</string>
   <string name="settings_portable_mode_disable_title">Disattivare la modalità portatile?</string>
   <string name="settings_portable_mode_disable_message">Nuvio si riavvierà e ricopierà le tue impostazioni in AppData. La cartella portatile viene conservata come data.old accanto a Nuvio.exe e potrai eliminarla in seguito.</string>
   <string name="settings_portable_mode_restart">Riavvia</string>
@@ -1844,7 +1844,7 @@
   <string name="settings_playback_desktop_anime_svp_overlay_desc">Mostra sul video il metodo di interpolazione attivo e il frame rate di origine/uscita. Si applica dalla prossima riproduzione.</string>
   <string name="settings_playback_desktop_custom_shader_paths">Libreria shader</string>
   <string name="settings_playback_desktop_custom_shader_paths_desc">Aggiungi un file shader o una cartella per riga. Le cartelle rendono disponibili in Miglioramenti per anime i file .glsl e .hook al loro interno.</string>
-  <string name="settings_playback_desktop_custom_shader_paths_hint">es.\nC:\Shaders\Anime4K-Ultra.glsl\nC:\Shaders\MyPack</string>
+  <string name="settings_playback_desktop_custom_shader_paths_hint">es.&#10;C:\Shaders\Anime4K-Ultra.glsl&#10;C:\Shaders\MyPack</string>
   <string name="settings_playback_desktop_custom_shader_paths_warning">Gli shader personalizzati vengono eseguiti nel renderer di mpv e possono ridurre le prestazioni o compromettere la riproduzione. Scegli Off in Miglioramenti per anime se uno shader causa problemi.</string>
   <string name="settings_playback_desktop_seek_thumbnails">Miniature della barra di avanzamento</string>
   <string name="settings_playback_desktop_seek_thumbnails_desc">Mostra l'anteprima dei fotogrammi passando sopra la timeline. Solo locale mostra le anteprime dei file su questo PC o sulla tua rete, evitando i limiti di richieste dei servizi debrid; Locale + Seekr aggiunge le miniature di Seekr. Disattivato nel preset A consumo.</string>
@@ -1863,7 +1863,7 @@
     <string name="settings_playback_desktop_headphone_surround_desc">Per cuffie e auricolari: le tracce surround suonano come se provenissero da altoparlanti intorno a te, invece di essere mixate piatte su sinistra e destra. Le sorgenti stereo suonano un po' più basse. Nessun effetto con il passthrough audio.</string>
   <string name="settings_playback_desktop_custom_mpv_options">Opzioni MPV</string>
   <string name="settings_playback_desktop_custom_mpv_options_desc">Un'opzione per riga nel formato chiave=valore. Applicate sopra le impostazioni predefinite di Nuvio; le opzioni non valide vengono ignorate.</string>
-  <string name="settings_playback_desktop_custom_mpv_options_hint">es.\nprofile=gpu-hq\ndeband=no</string>
+  <string name="settings_playback_desktop_custom_mpv_options_hint">es.&#10;profile=gpu-hq&#10;deband=no</string>
   <string name="settings_playback_hero_tv_trailer">Riproduzione trailer nell'hero</string>
   <string name="settings_playback_hero_tv_trailer_description">Premi T per riprodurre il trailer in questa posizione.</string>
   <string name="settings_playback_hero_tv_trailer_delay">Attesa prima della riproduzione</string>
@@ -3411,7 +3411,7 @@
   <string name="collections_editor_trakt_list_title_format">Lista Trakt %1$s</string>
   <string name="external_player_android_system">Lettore di sistema Android</string>
   <string name="p2p_consent_title">Streaming P2P</string>
-  <string name="p2p_consent_body">Questo stream usa la tecnologia peer-to-peer (P2P). Attivando il P2P, riconosci e accetti che:\n\n• Il tuo indirizzo IP sarà visibile agli altri peer della rete\n• Sei l'unico responsabile dei contenuti a cui accedi\n• Confermi di avere il diritto legale di riprodurre questo contenuto in streaming nella tua giurisdizione\n• Nuvio non ospita, distribuisce né controlla alcun contenuto P2P\n• Nuvio non si assume alcuna responsabilità per eventuali conseguenze legali derivanti dall'uso dello streaming P2P\n\nUsi questa funzione interamente a tuo rischio. Puoi disattivare il P2P in qualsiasi momento nelle Impostazioni.</string>
+  <string name="p2p_consent_body">Questo stream usa la tecnologia peer-to-peer (P2P). Attivando il P2P, riconosci e accetti che:&#10;&#10;• Il tuo indirizzo IP sarà visibile agli altri peer della rete&#10;• Sei l'unico responsabile dei contenuti a cui accedi&#10;• Confermi di avere il diritto legale di riprodurre questo contenuto in streaming nella tua giurisdizione&#10;• Nuvio non ospita, distribuisce né controlla alcun contenuto P2P&#10;• Nuvio non si assume alcuna responsabilità per eventuali conseguenze legali derivanti dall'uso dello streaming P2P&#10;&#10;Usi questa funzione interamente a tuo rischio. Puoi disattivare il P2P in qualsiasi momento nelle Impostazioni.</string>
   <string name="p2p_consent_enable">Attiva P2P</string>
   <string name="p2p_consent_cancel">Annulla</string>
   <string name="settings_p2p_title">Streaming P2P</string>
@@ -4126,6 +4126,7 @@
   <string name="shortcut_app_go_home">Vai alla Home</string>
   <string name="shortcut_app_open_search">Apri Cerca</string>
   <string name="shortcut_app_open_library">Apri Libreria (premi di nuovo per tornare alla Home)</string>
+  <string name="shortcut_app_open_settings">Apri Impostazioni (premi di nuovo per tornare alla Home)</string>
   <string name="shortcut_app_open_discover">Apri Scopri (premi di nuovo per tornare alla Home)</string>
   <string name="shortcut_app_open_calendar">Apri Calendario</string>
   <string name="shortcut_app_open_live_tv">Apri TV in diretta (premi di nuovo per tornare alla Home)</string>
@@ -4756,6 +4757,12 @@
   <string name="playlist_add_to_playlist_2">Aggiungi alla playlist</string>
   <string name="browse_filter_any_year">Qualsiasi anno</string>
   <string name="browse_filter_find_a_studio">Trova uno studio…</string>
+  <string name="browse_filter_find_a_tag">Trova un tag…</string>
+  <string name="browse_filter_must_match_every_tag">Deve corrispondere a ogni tag</string>
+  <string name="browse_filter_tags_anime_note">Con Solo anime, tutti i tag devono corrispondere</string>
+  <string name="browse_filter_anime_included">Anime: inclusi</string>
+  <string name="browse_filter_anime_only">Anime: solo anime</string>
+  <string name="browse_filter_anime_excluded">Anime: esclusi</string>
   <string name="browse_filter_trending_this_week">Di tendenza questa settimana</string>
   <string name="browse_filter_top_rated">Più votati</string>
   <string name="browse_filter_most_voted">Con più voti</string>
@@ -4981,4 +4988,27 @@
   <string name="settings_backup_import_confirm">Importare %1$d file di impostazioni da %2$s?</string>
   <string name="settings_backup_import_untouched">Le impostazioni che il backup non contiene restano invariate.</string>
   <string name="settings_backup_read_failed">Impossibile leggere quel backup: %1$s</string>
+    <string name="shortcut_app_open_panel_ring">Apri l\'anello dei pannelli</string>
+    <string name="panel_ring_settings_section">Anello dei pannelli</string>
+    <string name="panel_ring_settings_note">Un tasto, un pulsante o una pressione del mouse per ogni pannello: puntane uno e rilascia per passare.</string>
+    <string name="panel_ring_pad_button">Pulsante del controller</string>
+    <string name="panel_ring_pad_button_description">Tienilo premuto per aprire l\'anello e punta con una delle levette; un tocco rapido esegue ancora l\'azione del pulsante.</string>
+    <string name="panel_ring_off">Disattivato</string>
+    <string name="panel_ring_mouse">Tieni premuto il tasto centrale del mouse</string>
+    <string name="panel_ring_mouse_description">Apre l\'anello sul puntatore; trascina verso un pannello e rilascia.</string>
+    <string name="panel_ring_size">Dimensione dell\'anello</string>
+    <string name="panel_ring_size_small">Piccolo</string>
+    <string name="panel_ring_size_medium">Medio</string>
+    <string name="panel_ring_size_large">Grande</string>
+    <string name="panel_ring_hint_aim">Punta un pannello</string>
+    <string name="panel_ring_hint_keyboard">Premi un numero · Esc chiude</string>
+    <string name="panel_ring_hint_mouse">Rilascia per passare</string>
+    <string name="panel_ring_hint_gamepad">Rilascia %1$s per passare · B chiude</string>
+    <string name="panel_ring_search_description">Cambia pannello da un anello: R, tieni LB o tieni il tasto centrale del mouse</string>
+    <string name="gamepad_rebind_title">Pulsante %1$s</string>
+    <string name="gamepad_rebind_hint">Scegli cosa fa questo pulsante. Tenuto premuto, il pulsante dell\'anello apre comunque l\'anello.</string>
+    <string name="gamepad_rebind_browsing">Durante la navigazione</string>
+    <string name="gamepad_rebind_player">Durante la riproduzione</string>
+    <string name="gamepad_rebind_changed">Modificato</string>
+    <string name="gamepad_rebind_search_description">Riassegna i pulsanti del controller, per la navigazione e la riproduzione</string>
 </resources>

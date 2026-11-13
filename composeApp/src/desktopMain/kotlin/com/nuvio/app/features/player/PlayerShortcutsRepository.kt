@@ -165,6 +165,8 @@ object AppShortcutsRepository {
         AppShortcutAction.OpenLiveTv to KeyEvent.VK_V,
         AppShortcutAction.OpenMusic to KeyEvent.VK_U,
         AppShortcutAction.OpenYouTube to KeyEvent.VK_Y,
+        // O for Options: S is Search. The player's O (Sources) is a separate set of keys.
+        AppShortcutAction.OpenSettings to KeyEvent.VK_O,
         AppShortcutAction.FocusMusicPlayer to KeyEvent.VK_B,
         AppShortcutAction.ToggleTrailer to KeyEvent.VK_T,
         AppShortcutAction.ToggleTrailerMute to KeyEvent.VK_M,
@@ -176,6 +178,8 @@ object AppShortcutsRepository {
         AppShortcutAction.DismissOverlay to KeyEvent.VK_ESCAPE,
         // fork:voice-control - free in the app and in the player (K is the player's alternate play/pause).
         AppShortcutAction.VoiceCommand to KeyEvent.VK_N,
+        // R for Ring: the panel ring (features/panelring). The player's R (speed toggle) is a separate set of keys.
+        AppShortcutAction.OpenPanelRing to KeyEvent.VK_R,
     )
     private val store = DesktopStorage.store("nuvio_app_shortcuts")
     @Volatile private var bindings: Map<AppShortcutAction, Int> = defaults

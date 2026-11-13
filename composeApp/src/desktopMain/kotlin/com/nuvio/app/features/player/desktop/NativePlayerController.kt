@@ -185,6 +185,13 @@ internal class NativePlayerController(
     @Volatile private var linuxCornerRadiusPx = 0
     private val linuxPendingDisposalHandles = mutableListOf<Long>() // Guarded by handleLock.
     private val attachGeneration = AtomicLong(0L)
+
+    // While >= 0: the attach generation that was current when a new source was handed to this
+    // controller. Until a later generation reports fileLoaded, the live handle still holds the
+    // previous file, and its track list must not be read as the new one's (see
+    // hideTracksUntilNextFileLoads).
+    @Volatile
+    private var tracksHiddenThroughGeneration = -1L
     @Volatile
     private var disposed = false
     @Volatile
@@ -1666,7 +1673,8 @@ internal class NativePlayerController(
     }
 
     fun openKeyboardPanel(panel: String) {
-        if (panel != "sources" && panel != "episodes" && panel != "iptvChannels") return
+        // "controls": the HUD's own control navigation (Enter, then the arrows; see controls.js).
+        if (panel != "sources" && panel != "episodes" && panel != "iptvChannels" && panel != "controls") return
         val current = handle.takeIf { it != 0L } ?: return
         keyboardPanelOpen = true
         NativePlayerBridge.runJavaScript(
@@ -2054,6 +2062,12 @@ internal class NativePlayerController(
             }
             else -> {
                 if (type == "fileLoaded") {
+                    // Events reach here only for the current generation, so a later one than the
+                    // hide marker means the new source's file is the one now loaded.
+                    val hiddenThrough = tracksHiddenThroughGeneration
+                    if (hiddenThrough >= 0 && attachGeneration.get() > hiddenThrough) {
+                        tracksHiddenThroughGeneration = -1L
+                    }
                     handle.takeIf { it != 0L }?.let { current ->
                         applyPendingSubtitleConfiguration(current)
                         // Align the overlay's tracked volume with mpv's real (possibly restored)
@@ -2587,7 +2601,9 @@ internal class NativePlayerController(
         val file = File.createTempFile("speech-", ".f32", directory)
         return try {
             val result = NativePlayerBridge.decodeSpeechSpot(current, startSeconds, durationSeconds, file.absolutePath)
-            if (result != 0 || file.length() < 4) return null
+            // -1 is the native 90 s limit (or a start that failed): whatever was written by then is real audio, and the caller
+            // carries on from where it ends; any other failure gave nothing worth keeping.
+            if ((result != 0 && result != -1) || file.length() < 4) return null
             // ao=pcm with audio-format=float writes raw little-endian float32 samples.
             val samples = ByteBuffer.wrap(file.readBytes()).order(ByteOrder.LITTLE_ENDIAN).asFloatBuffer()
             FloatArray(samples.remaining()).also(samples::get)
@@ -2612,6 +2628,58 @@ internal class NativePlayerController(
             FloatArray(samples.remaining()).also(samples::get)
         } finally {
             file.delete()
+        }
+    }
+
+    /** fork:visualiser - the audio decodes read this local copy instead of opening the stream again; null goes back to the stream. A build without the native call just keeps reading the stream. */
+    /**
+     * fork:gapless - queues [url] behind what is playing, in this same player, with [options] for it alone ("af=...").
+     * Null drops whatever was queued. Calls that need a native bridge without it (macOS) do nothing.
+     */
+    fun queueNext(url: String?, headers: Map<String, String>, options: List<String>) {
+        val current = handle.takeIf { it != 0L } ?: return
+        try {
+            NativePlayerBridge.queueNext(
+                current,
+                url.orEmpty(),
+                if (url == null) emptyArray() else headers.withDefaultPlaybackUserAgent(url).toHeaderLines().toTypedArray(),
+                options.toTypedArray(),
+            )
+        } catch (_: UnsatisfiedLinkError) {
+        }
+    }
+
+    /** fork:gapless - points the audio decode (loudness, track map) at the queued stream that is now playing. */
+    fun setSpotSource(url: String?, headers: Map<String, String>) {
+        val current = handle.takeIf { it != 0L } ?: return
+        try {
+            NativePlayerBridge.setSpotSource(
+                current,
+                url,
+                if (url == null) emptyArray() else headers.withDefaultPlaybackUserAgent(url).toHeaderLines().toTypedArray(),
+            )
+        } catch (_: UnsatisfiedLinkError) {
+        }
+    }
+
+    /** fork:gapless - the playlist entry playing, or -1 (no player, or a bridge without it). */
+    fun playlistPos(): Long {
+        val current = handle.takeIf { it != 0L } ?: return -1L
+        return try {
+            NativePlayerBridge.playlistPos(current)
+        } catch (_: UnsatisfiedLinkError) {
+            -1L
+        }
+    }
+
+    /** True when this player can queue a track behind the current one (the Windows bridge). */
+    val supportsQueueing: Boolean get() = DesktopHostOs.current == DesktopHostOs.WINDOWS
+
+    fun setAudioSpotFile(path: String?) {
+        val current = handle.takeIf { it != 0L } ?: return
+        try {
+            NativePlayerBridge.setAudioSpotFile(current, path)
+        } catch (_: UnsatisfiedLinkError) {
         }
     }
 
@@ -2781,7 +2849,20 @@ internal class NativePlayerController(
         NativePlayerBridge.runJavaScript(current, "window.nuvioSetPlayerBadges && window.nuvioSetPlayerBadges($payload)")
     }
 
+    /**
+     * Reports no tracks until the next source's file has loaded. The surface hands this controller
+     * to the player screen as soon as the source changes, but the attach (and with it the live
+     * player's `loadfile`) only follows the redirect resolution. Reading tracks in that window
+     * returned the previous episode's list, whose already-selected subtitle the screen took as its
+     * preferred track being on; the reused player then cleared `sid` for the new file and nothing
+     * selected it again. UI thread.
+     */
+    fun hideTracksUntilNextFileLoads() {
+        tracksHiddenThroughGeneration = attachGeneration.get()
+    }
+
     private fun decodeTracks(readJson: (Long) -> String): List<NativeMpvTrack> {
+        if (tracksHiddenThroughGeneration >= 0) return emptyList()
         val current = handle.takeIf { it != 0L } ?: return emptyList()
         return runCatching {
             json.decodeFromString<List<NativeMpvTrack>>(readJson(current))

@@ -12,30 +12,7 @@ package com.nuvio.app.features.music.library
  *  - The cluster "Ladder into": with a genre chip chosen, a pill leads a ladder into that genre.
  */
 
-private const val LADDER_PREFIX = "ladder: "
-private const val WHERE_NEXT_PREFIX = "Where next from "
-private const val OUT_FROM_PREFIX = "Out from "
-
-/** True when the artist was saved from a ladder: the ladder screen's "ladder: ..." label or the artist page's "Where next from ...". */
-internal fun foundViaLadder(foundVia: String?): Boolean =
-    foundVia != null && (foundVia.startsWith(LADDER_PREFIX.trim()) || foundVia.startsWith(WHERE_NEXT_PREFIX))
-
-/** How the artist was found, without the stored "ladder: " prefix: "Into shoegaze", "Out from Sting", "Where next from Sting". */
-internal fun foundViaText(foundVia: String?): String? =
-    foundVia?.removePrefix(LADDER_PREFIX.trim())?.trim()?.takeIf { it.isNotEmpty() }
-
-/** The artist a ladder led out from, when the label names one ("Out from Sting", "Where next from Sting"); null for "Into ..." labels. */
-internal fun foundViaSource(foundVia: String?): String? {
-    val text = foundViaText(foundVia) ?: return null
-    val name = when {
-        text.startsWith(WHERE_NEXT_PREFIX) -> text.removePrefix(WHERE_NEXT_PREFIX)
-        text.startsWith(OUT_FROM_PREFIX) -> text.removePrefix(OUT_FROM_PREFIX)
-        else -> return null
-    }
-    return name.trim().takeIf { it.isNotEmpty() }
-}
-
-/** A line on the map from an artist found through a ladder to the Library artist the ladder led out from. */
+/** A line on the map from an artist found through a ladder to the Library artist the ladder led out from (helpers in FoundVia.kt). */
 internal data class FoundViaLink(val foundId: String, val sourceId: String)
 
 /**

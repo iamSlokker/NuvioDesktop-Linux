@@ -868,7 +868,7 @@
   <string name="settings_portable_mode">Přenosný režim</string>
   <string name="settings_portable_mode_description">Uchovává nastavení a mezipaměti ve složce data vedle Nuvio.exe místo v AppData. Přepnutí restartuje Nuvio a přesune vaše data.</string>
   <string name="settings_portable_mode_enable_title">Přepnout na přenosný režim?</string>
-  <string name="settings_portable_mode_enable_message">Nuvio se restartuje a zkopíruje vaše nastavení do složky data vedle Nuvio.exe. Mezipaměti obrázků a torrentů se nekopírují; při procházení se znovu vytvoří. Vaše složka AppData zůstane beze změny.\n\nPokud máte pro Nuvio výjimku v antiviru, přidejte do ní i novou složku data.</string>
+  <string name="settings_portable_mode_enable_message">Nuvio se restartuje a zkopíruje vaše nastavení do složky data vedle Nuvio.exe. Mezipaměti obrázků a torrentů se nekopírují; při procházení se znovu vytvoří. Vaše složka AppData zůstane beze změny.&#10;&#10;Pokud máte pro Nuvio výjimku v antiviru, přidejte do ní i novou složku data.</string>
   <string name="settings_portable_mode_disable_title">Vypnout přenosný režim?</string>
   <string name="settings_portable_mode_disable_message">Nuvio se restartuje a zkopíruje vaše nastavení zpět do AppData. Přenosná složka se zachová jako data.old vedle Nuvio.exe a poté ji můžete smazat.</string>
   <string name="settings_portable_mode_restart">Restartovat</string>
@@ -1844,7 +1844,7 @@
   <string name="settings_playback_desktop_anime_svp_overlay_desc">Vykreslí na video aktivní metodu interpolace a snímkovou frekvenci zdroje/výstupu. Projeví se od dalšího spuštění přehrávání.</string>
   <string name="settings_playback_desktop_custom_shader_paths">Knihovna shaderů</string>
   <string name="settings_playback_desktop_custom_shader_paths_desc">Přidejte jeden soubor shaderu nebo složku na řádek. U složek se ve Vylepšeních pro anime zobrazí jejich přímé soubory .glsl a .hook.</string>
-  <string name="settings_playback_desktop_custom_shader_paths_hint">např.\nC:\Shaders\Anime4K-Ultra.glsl\nC:\Shaders\MyPack</string>
+  <string name="settings_playback_desktop_custom_shader_paths_hint">např.&#10;C:\Shaders\Anime4K-Ultra.glsl&#10;C:\Shaders\MyPack</string>
   <string name="settings_playback_desktop_custom_shader_paths_warning">Vlastní shadery běží uvnitř vykreslovače mpv a mohou snížit výkon nebo narušit přehrávání. Pokud shader způsobuje potíže, vyberte ve Vylepšeních pro anime možnost Vypnuto.</string>
   <string name="settings_playback_desktop_seek_thumbnails">Náhledy na posuvníku</string>
   <string name="settings_playback_desktop_seek_thumbnails_desc">Zobrazí náhledy snímků při najetí na časovou osu. Možnost Pouze místní vytváří náhledy jen u souborů na tomto počítači nebo v síti, čímž se vyhnete omezením debrid služeb; Místní + Seekr přidá náhledy ze Seekru. U předvolby s měřeným připojením vypnuto.</string>
@@ -1863,7 +1863,7 @@
     <string name="settings_playback_desktop_headphone_surround_desc">Pro sluchátka a pecky: prostorové stopy zní, jako by hrály z reproduktorů kolem vás, místo aby se ploše smíchaly do levého a pravého kanálu. Stereo zdroje hrají o něco tišeji. Při průchodu zvuku (passthrough) nemá vliv.</string>
   <string name="settings_playback_desktop_custom_mpv_options">Možnosti MPV</string>
   <string name="settings_playback_desktop_custom_mpv_options_desc">Jedna možnost na řádek ve tvaru klíč=hodnota. Použijí se nad výchozími hodnotami Nuvia; neplatné možnosti se ignorují.</string>
-  <string name="settings_playback_desktop_custom_mpv_options_hint">např.\nprofile=gpu-hq\ndeband=no</string>
+  <string name="settings_playback_desktop_custom_mpv_options_hint">např.&#10;profile=gpu-hq&#10;deband=no</string>
   <string name="settings_playback_hero_tv_trailer">Přehrávání traileru v hlavním banneru</string>
   <string name="settings_playback_hero_tv_trailer_description">Stisknutím T přehrajete trailer na tomto místě.</string>
   <string name="settings_playback_hero_tv_trailer_delay">Počkat před přehráním</string>
@@ -3419,7 +3419,7 @@
   <string name="collections_editor_trakt_list_title_format">Seznam Trakt %1$s</string>
   <string name="external_player_android_system">Přehrávač systému Android</string>
   <string name="p2p_consent_title">P2P streamování</string>
-  <string name="p2p_consent_body">Tento stream využívá technologii peer-to-peer (P2P). Zapnutím P2P berete na vědomí a souhlasíte s tím, že:\n\n• Vaše IP adresa bude viditelná ostatním uzlům v síti\n• Za obsah, ke kterému přistupujete, odpovídáte výhradně vy\n• Potvrzujete, že máte právo tento obsah ve své jurisdikci streamovat\n• Nuvio žádný P2P obsah nehostuje, nešíří ani nekontroluje\n• Nuvio nenese žádnou odpovědnost za právní důsledky vyplývající z vašeho používání P2P streamování\n\nTuto funkci používáte zcela na vlastní riziko. P2P můžete kdykoli vypnout v Nastavení.</string>
+  <string name="p2p_consent_body">Tento stream využívá technologii peer-to-peer (P2P). Zapnutím P2P berete na vědomí a souhlasíte s tím, že:&#10;&#10;• Vaše IP adresa bude viditelná ostatním uzlům v síti&#10;• Za obsah, ke kterému přistupujete, odpovídáte výhradně vy&#10;• Potvrzujete, že máte právo tento obsah ve své jurisdikci streamovat&#10;• Nuvio žádný P2P obsah nehostuje, nešíří ani nekontroluje&#10;• Nuvio nenese žádnou odpovědnost za právní důsledky vyplývající z vašeho používání P2P streamování&#10;&#10;Tuto funkci používáte zcela na vlastní riziko. P2P můžete kdykoli vypnout v Nastavení.</string>
   <string name="p2p_consent_enable">Zapnout P2P</string>
   <string name="p2p_consent_cancel">Zrušit</string>
   <string name="settings_p2p_title">P2P streamování</string>
@@ -4134,6 +4134,7 @@
   <string name="shortcut_app_go_home">Přejít na Domů</string>
   <string name="shortcut_app_open_search">Otevřít Hledání</string>
   <string name="shortcut_app_open_library">Otevřít Knihovnu (opakovaně zpět na Domů)</string>
+  <string name="shortcut_app_open_settings">Otevřít Nastavení (opakovaně zpět na Domů)</string>
   <string name="shortcut_app_open_discover">Otevřít Objevit (opakovaně zpět na Domů)</string>
   <string name="shortcut_app_open_calendar">Otevřít Kalendář</string>
   <string name="shortcut_app_open_live_tv">Otevřít Živou televizi (opakovaně zpět na Domů)</string>
@@ -4764,6 +4765,12 @@
   <string name="playlist_add_to_playlist_2">Přidat do playlistu</string>
   <string name="browse_filter_any_year">Jakýkoli rok</string>
   <string name="browse_filter_find_a_studio">Najít studio…</string>
+  <string name="browse_filter_find_a_tag">Najít štítek…</string>
+  <string name="browse_filter_must_match_every_tag">Musí odpovídat všem štítkům</string>
+  <string name="browse_filter_tags_anime_note">Se zapnutým Jen anime musí odpovídat všechny štítky</string>
+  <string name="browse_filter_anime_included">Anime: zahrnuto</string>
+  <string name="browse_filter_anime_only">Anime: jen anime</string>
+  <string name="browse_filter_anime_excluded">Anime: vyloučeno</string>
   <string name="browse_filter_trending_this_week">Trendy tento týden</string>
   <string name="browse_filter_top_rated">Nejlépe hodnocené</string>
   <string name="browse_filter_most_voted">Nejvíce hlasů</string>
@@ -4989,4 +4996,27 @@
   <string name="settings_backup_import_confirm">Importovat %1$d souborů nastavení z %2$s?</string>
   <string name="settings_backup_import_untouched">Nastavení, která záloha neobsahuje, zůstanou beze změny.</string>
   <string name="settings_backup_read_failed">Zálohu se nepodařilo přečíst: %1$s</string>
+    <string name="shortcut_app_open_panel_ring">Otevřít kruh panelů</string>
+    <string name="panel_ring_settings_section">Kruh panelů</string>
+    <string name="panel_ring_settings_note">Jedna klávesa, tlačítko nebo podržení myši pro všechny panely: zamiřte na jeden a pusťte pro přepnutí.</string>
+    <string name="panel_ring_pad_button">Tlačítko ovladače</string>
+    <string name="panel_ring_pad_button_description">Podržením otevřete kruh a miřte kteroukoli páčkou; krátké stisknutí dál provede vlastní akci tlačítka.</string>
+    <string name="panel_ring_off">Vypnuto</string>
+    <string name="panel_ring_mouse">Podržet prostřední tlačítko myši</string>
+    <string name="panel_ring_mouse_description">Otevře kruh u ukazatele; táhněte k panelu a pusťte.</string>
+    <string name="panel_ring_size">Velikost kruhu</string>
+    <string name="panel_ring_size_small">Malý</string>
+    <string name="panel_ring_size_medium">Střední</string>
+    <string name="panel_ring_size_large">Velký</string>
+    <string name="panel_ring_hint_aim">Zamiřte na panel</string>
+    <string name="panel_ring_hint_keyboard">Stiskněte číslo · Esc zavře</string>
+    <string name="panel_ring_hint_mouse">Pusťte pro přepnutí</string>
+    <string name="panel_ring_hint_gamepad">Pusťte %1$s pro přepnutí · B zavře</string>
+    <string name="panel_ring_search_description">Přepínání panelů z kruhu: R, podržet LB nebo podržet prostřední tlačítko myši</string>
+    <string name="gamepad_rebind_title">Tlačítko %1$s</string>
+    <string name="gamepad_rebind_hint">Vyberte, co toto tlačítko dělá. Podržené tlačítko kruhu panelů kruh stále otevře.</string>
+    <string name="gamepad_rebind_browsing">Při procházení</string>
+    <string name="gamepad_rebind_player">Při přehrávání</string>
+    <string name="gamepad_rebind_changed">Změněno</string>
+    <string name="gamepad_rebind_search_description">Přemapovat tlačítka ovladače pro procházení i přehrávání</string>
 </resources>

@@ -39,7 +39,8 @@ import java.awt.dnd.DropTargetDragEvent
 import java.awt.dnd.DropTargetDropEvent
 import com.nuvio.app.core.sync.AppForegroundMonitor
 import com.nuvio.app.core.build.AppVersionPolicy
-import com.nuvio.app.core.ui.linuxShortcutFocus
+import com.nuvio.app.core.ui.keyRouteInner
+import com.nuvio.app.core.ui.keyRouteOuter
 import com.nuvio.app.core.ui.DesktopNavigationGestureBridge
 import com.nuvio.app.core.ui.HoldToSelect
 import com.nuvio.app.core.ui.SwallowedClickRescue
@@ -51,6 +52,7 @@ import com.nuvio.app.core.ui.loadDesktopTrayIconImage
 import com.nuvio.app.core.ui.loadDesktopWindowIconImages
 import com.nuvio.app.features.input.GamepadInput
 import com.nuvio.app.features.input.GamepadSettingsRepository
+import com.nuvio.app.features.remote.PhoneRemote
 import com.nuvio.app.features.p2p.P2pStreamingEngine
 import com.nuvio.app.features.player.DesktopRendererApi
 import com.nuvio.app.features.player.PlatformPlayerSurface
@@ -648,12 +650,8 @@ fun main(args: Array<String>) {
             title = if (smokePlayerUrl == null) "Nuvio HTPC" else "Nuvio Player Smoke",
             state = windowState,
             icon = painterResource(NuvioDesktopIconPath),
-            // An arrow no control took, often because the control holding focus left the screen: on a music page,
-            // focus goes back onto the page (see MusicKeyboard). Window-level so it also runs with nothing focused.
-            onKeyEvent = { event ->
-                com.nuvio.app.core.ui.arrowFocusDirection(event) != null &&
-                    com.nuvio.app.features.music.MusicKeyboard.onUnhandledArrow()
-            },
+            // An arrow no control took (often because the control holding focus left the screen) is handled by the
+            // focus router's fallback in the key listener below (KeyLayers): Music and Settings register there.
         ) {
             remember {
                 System.out.println(
@@ -891,8 +889,34 @@ fun main(args: Array<String>) {
                 // being used; moving, clicking or scrolling the mouse hides them again (see KeyboardInputMode).
                 val inputModeListener = AWTEventListener { event ->
                     when (event.id) {
-                        KeyEvent.KEY_PRESSED -> if ((event as KeyEvent).keyCode in KEYBOARD_NAVIGATION_KEYS) {
-                            com.nuvio.app.core.ui.KeyboardInputMode.active = true
+                        KeyEvent.KEY_PRESSED -> {
+                            val keyCode = (event as KeyEvent).keyCode
+                            if (keyCode in KEYBOARD_NAVIGATION_KEYS) com.nuvio.app.core.ui.KeyboardInputMode.active = true
+                            // Any other key (a hotkey) that reached nobody because nothing held focus: put focus back
+                            // on the screen on top and send it again (KeyLayers). Navigation keys are handled below.
+                            if (
+                                keyCode !in KEYBOARD_NAVIGATION_KEYS &&
+                                keyCode != KeyEvent.VK_ESCAPE &&
+                                keyCode !in FOCUS_FALLBACK_SKIPPED_KEYS
+                            ) {
+                                val pressed = event as KeyEvent
+                                java.awt.EventQueue.invokeLater { replayKeyNobodyTook(pressed, onlyWhenFocusLost = true) }
+                            }
+                            // Logging only: follow the key through its handlers, then write where it went.
+                            if (keyCode in KEYBOARD_NAVIGATION_KEYS || keyCode == KeyEvent.VK_ESCAPE) {
+                                com.nuvio.app.core.ui.KeyRouteLog.keyPressed(KeyEvent.getKeyText(keyCode))
+                                val pressed = event as KeyEvent
+                                java.awt.EventQueue.invokeLater {
+                                    val focusManager = KeyboardFocusManager.getCurrentKeyboardFocusManager()
+                                    val owner = focusManager.focusOwner?.javaClass?.name?.substringAfterLast('.')
+                                        ?: if (focusManager.focusedWindow == null) "another app" else "no component"
+                                    com.nuvio.app.core.ui.KeyRouteLog.settle(owner)
+                                    // Focus router fallback (KeyLayers): an arrow or OK that nothing in the window took
+                                    // (Compose consumes every key it handles, popups included) puts focus back on the
+                                    // screen on top and is sent again. Not inside a dialog window or an open popup.
+                                    if (keyCode in FOCUS_FALLBACK_KEYS) replayKeyNobodyTook(pressed, onlyWhenFocusLost = false)
+                                }
+                            }
                         }
                         MouseEvent.MOUSE_MOVED, MouseEvent.MOUSE_PRESSED, MouseEvent.MOUSE_DRAGGED, MouseEvent.MOUSE_WHEEL ->
                             com.nuvio.app.core.ui.KeyboardInputMode.active = false
@@ -931,13 +955,20 @@ fun main(args: Array<String>) {
                 // the window: the poll thread parks immediately unless the user enabled it.
                 GamepadSettingsRepository.ensureLoaded()
                 GamepadInput.start()
+                // fork:phone-remote - the phone sends the same keystrokes a pad does, so it shares
+                // the pad's lifetime. Off the UI thread: listing network adapters can be slow on Windows.
+                kotlin.concurrent.thread(isDaemon = true, name = "phone-remote-start") { PhoneRemote.start() }
                 // Same reasoning: idle is idle wherever the user is in the app, and the shade has
                 // to cover the native player as much as the browsing screens.
                 val uninstallScreensaver = com.nuvio.app.features.screensaver.DesktopScreensaver.install(
                     window,
                     exitDesktopApplication,
                 )
+                // The panel ring's keys first: while it is open it owns the keyboard, Escape included.
+                val uninstallPanelRing = com.nuvio.app.features.panelring.PanelRingInput.install()
                 KeyboardFocusManager.getCurrentKeyboardFocusManager().addKeyEventDispatcher(backNavigationDispatcher)
+                KeyboardFocusManager.getCurrentKeyboardFocusManager().addKeyEventDispatcher(heldKeyReleaseDispatcher)
+                com.nuvio.app.core.ui.KeyLayers.onFocusSettled = { heldKeyReleaseDispatcher.swallowHeldReleases() }
                 Toolkit.getDefaultToolkit().systemEventQueue.push(mouseFiveShiftEventQueue)
                 Toolkit.getDefaultToolkit().addAWTEventListener(
                     mouseBackButtonListener,
@@ -952,13 +983,17 @@ fun main(args: Array<String>) {
                     linuxPictureInPicture?.close()
                     window.removeWindowListener(pictureInPictureWindowListener)
                     uninstallScreensaver()
+                    uninstallPanelRing()
                     GamepadInput.stop()
+                    PhoneRemote.stop()
                     DesktopNavigationGestureBridge.setHorizontalScrollModifierActive(false)
                     uninstallFullscreenWatchdog()
                     uninstallDisplayMetricsTracking()
                     window.removeWindowFocusListener(windowFocusListener)
                     window.removeWindowStateListener(windowStateListener)
                     KeyboardFocusManager.getCurrentKeyboardFocusManager().removeKeyEventDispatcher(backNavigationDispatcher)
+                    KeyboardFocusManager.getCurrentKeyboardFocusManager().removeKeyEventDispatcher(heldKeyReleaseDispatcher)
+                    com.nuvio.app.core.ui.KeyLayers.onFocusSettled = null
                     Toolkit.getDefaultToolkit().removeAWTEventListener(mouseBackButtonListener)
                     Toolkit.getDefaultToolkit().removeAWTEventListener(inputModeListener)
                     mouseFiveShiftEventQueue.uninstall()
@@ -1040,6 +1075,8 @@ fun main(args: Array<String>) {
                         // Clicks lost to a list still easing from the wheel are replayed by
                         // MouseFiveShiftEventQueue; this is where they are recognised.
                         .detectClicksSwallowedByScrolling()
+                        // Logging only: where each navigation key ends up (KeyRouteLog).
+                        .keyRouteOuter()
                         // Bubble-phase handling means focused text fields retain ordinary paste.
                         // Elsewhere, a copied HTTP(S) media URL opens through the same direct-play
                         // path as a dropped local file; App rejects it while playback is active.
@@ -1123,6 +1160,7 @@ fun main(args: Array<String>) {
                                 AppShortcutAction.OpenLiveTv,
                                 AppShortcutAction.OpenMusic,
                                 AppShortcutAction.OpenYouTube,
+                                AppShortcutAction.OpenSettings,
                                 // Routed through App so it inherits the same guard the other
                                 // navigation shortcuts get: nothing fires while the player is up.
                                 AppShortcutAction.ToggleGameMode -> {
@@ -1133,6 +1171,8 @@ fun main(args: Array<String>) {
                                     toggleDesktopAppFullscreen(window)
                                     true
                                 }
+                                AppShortcutAction.OpenPanelRing ->
+                                    com.nuvio.app.features.panelring.PanelRingInput.openFromKeyboard()
                                 AppShortcutAction.FocusMusicPlayer ->
                                     com.nuvio.app.features.music.MusicKeyboard.togglePlayerFocus()
                                 // Home takes the trailer key itself; reaching here on a music page it has no trailer to
@@ -1159,7 +1199,7 @@ fun main(args: Array<String>) {
                                 else -> false
                             }
                         }
-                        .linuxShortcutFocus()
+                        .keyRouteInner()
                         .dragAndDropTarget(
                             shouldStartDragAndDrop = { event ->
                                 // Accept the drag hover if it carries a file list.
@@ -1210,6 +1250,8 @@ fun main(args: Array<String>) {
                     }
                     // Above the app so it covers whatever screen owns the focused field, and hosted
                     // here rather than inside App() because it is desktop-only.
+                    // Over the app and under the on-screen keyboard: the panel ring (R, hold LB, hold the middle button).
+                    com.nuvio.app.features.panelring.PanelRingOverlay(window)
                     com.nuvio.app.features.input.OnScreenKeyboardOverlay()
                     com.nuvio.app.core.ui.FrameCadenceTelemetry()
                     com.nuvio.app.core.ui.FrameBudgetTelemetry()
@@ -1239,6 +1281,8 @@ fun main(args: Array<String>) {
             runCatching { HeroCastMetadataService.flushPendingWrites() }
             runCatching { MdbListMetadataService.flushPendingWrites() }
             runCatching { com.nuvio.app.features.details.LightweightMetaDiskCache.flushPendingWrites() }
+            runCatching { com.nuvio.app.features.home.HeroBundleCache.flushPendingWrites() }
+            runCatching { com.nuvio.app.features.metadata.AnimeArtworkDiskCache.flushPendingWrites() }
             runCatching { com.nuvio.app.features.details.filler.AnimeFillerRepository.flushPendingWrites() }
             runCatching { com.nuvio.app.features.streams.CwStreamCache.flushPendingWrites() }
         }
@@ -1330,6 +1374,77 @@ private fun swallowHeldSelectKey(event: KeyEvent): Boolean {
 }
 
 /** The keys that mean "moving around with the keyboard" (or a pad's D-pad and A, which arrive as these). */
+/**
+ * Focus router fallback (KeyLayers): [pressed] came back from the window unconsumed. When the screen on top does not
+ * hold focus, focus goes back to it and the key is sent again. [onlyWhenFocusLost]: only when nothing at all holds
+ * focus (hotkeys), so an unused letter on a top-bar button does not pull focus off it.
+ */
+private fun replayKeyNobodyTook(pressed: KeyEvent, onlyWhenFocusLost: Boolean) {
+    if (pressed.isConsumed || com.nuvio.app.core.ui.KeyLayers.replaying) return
+    if (onlyWhenFocusLost && com.nuvio.app.core.ui.KeyRouteLog.focusHeld) return
+    val focusManager = KeyboardFocusManager.getCurrentKeyboardFocusManager()
+    val window = focusManager.focusedWindow as? androidx.compose.ui.awt.ComposeWindow ?: return
+    if (com.nuvio.app.core.ui.KeyRouteLog.popupOpen) return
+    if (com.nuvio.app.core.ui.KeyLayers.reclaim(KeyEvent.getKeyText(pressed.keyCode)) == null) return
+    val target: java.awt.Component = focusManager.focusOwner ?: window
+    com.nuvio.app.core.ui.KeyLayers.replaying = true
+    try {
+        target.dispatchEvent(
+            KeyEvent(
+                target,
+                KeyEvent.KEY_PRESSED,
+                System.currentTimeMillis(),
+                pressed.modifiersEx,
+                pressed.keyCode,
+                pressed.keyChar,
+                pressed.keyLocation,
+            ),
+        )
+    } finally {
+        com.nuvio.app.core.ui.KeyLayers.replaying = false
+    }
+}
+
+/**
+ * Tracks which keys are held down. When the focus router settles focus on a screen ([KeyLayers.onFocusSettled]), the
+ * release of every key still held is kept from the window: that press belonged to whatever had focus before (a
+ * shortcut that switched panels), and a screen that acts on a key's release must not see half of it. A new press of
+ * the same key clears it. Modifiers are left alone. UI thread only.
+ */
+private object heldKeyReleaseDispatcher : java.awt.KeyEventDispatcher {
+    private val held = HashSet<Int>()
+    private val swallow = HashSet<Int>()
+
+    fun swallowHeldReleases() {
+        swallow += held.filter { it !in FOCUS_FALLBACK_SKIPPED_KEYS }
+    }
+
+    override fun dispatchKeyEvent(event: KeyEvent): Boolean = when (event.id) {
+        KeyEvent.KEY_PRESSED -> {
+            held += event.keyCode
+            swallow -= event.keyCode
+            false
+        }
+        KeyEvent.KEY_RELEASED -> {
+            held -= event.keyCode
+            swallow.remove(event.keyCode)
+        }
+        else -> false
+    }
+}
+
+/** Keys the fallback never sends on: Back (the window takes Escape and Backspace itself) and bare modifiers. */
+private val FOCUS_FALLBACK_SKIPPED_KEYS = setOf(
+    KeyEvent.VK_BACK_SPACE, KeyEvent.VK_SHIFT, KeyEvent.VK_CONTROL, KeyEvent.VK_ALT, KeyEvent.VK_ALT_GRAPH,
+    KeyEvent.VK_META, KeyEvent.VK_WINDOWS, KeyEvent.VK_CAPS_LOCK, KeyEvent.VK_NUM_LOCK, KeyEvent.VK_CONTEXT_MENU,
+    KeyEvent.VK_UNDEFINED,
+)
+
+/** Keys the focus router's fallback sends on to the screen on top when nothing took them (see KeyLayers). */
+private val FOCUS_FALLBACK_KEYS = setOf(
+    KeyEvent.VK_UP, KeyEvent.VK_DOWN, KeyEvent.VK_LEFT, KeyEvent.VK_RIGHT, KeyEvent.VK_ENTER,
+)
+
 private val KEYBOARD_NAVIGATION_KEYS = setOf(
     KeyEvent.VK_UP, KeyEvent.VK_DOWN, KeyEvent.VK_LEFT, KeyEvent.VK_RIGHT,
     KeyEvent.VK_TAB, KeyEvent.VK_ENTER, KeyEvent.VK_PAGE_UP, KeyEvent.VK_PAGE_DOWN, KeyEvent.VK_HOME, KeyEvent.VK_END,

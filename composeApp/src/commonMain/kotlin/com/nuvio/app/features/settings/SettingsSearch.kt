@@ -1,5 +1,6 @@
 package com.nuvio.app.features.settings
 
+import com.nuvio.app.core.ui.requestFocusLogged
 import androidx.compose.material.icons.rounded.MusicNote
 import com.nuvio.app.core.i18n.platformString
 import com.nuvio.app.core.ui.ditheredBackground
@@ -704,6 +705,24 @@ private fun settingsSearchEntries(
             description = resolve(Res.string.settings_search_controller_support_navigate_nuvio_with_an),
             pageLabel = resolve(Res.string.compose_settings_page_keyboard_shortcuts),
             section = resolve(Res.string.settings_shortcuts_controller),
+            icon = Icons.Rounded.Keyboard,
+        )
+        addRow(
+            page = SettingsPage.KeyboardShortcuts,
+            key = "panel-ring",
+            title = resolve(Res.string.panel_ring_settings_section),
+            description = resolve(Res.string.panel_ring_search_description),
+            pageLabel = resolve(Res.string.compose_settings_page_keyboard_shortcuts),
+            section = resolve(Res.string.panel_ring_settings_section),
+            icon = Icons.Rounded.Keyboard,
+        )
+        addRow(
+            page = SettingsPage.KeyboardShortcuts,
+            key = "gamepad-rebind",
+            title = resolve(Res.string.settings_shortcuts_controller_buttons),
+            description = resolve(Res.string.gamepad_rebind_search_description),
+            pageLabel = resolve(Res.string.compose_settings_page_keyboard_shortcuts),
+            section = resolve(Res.string.settings_shortcuts_controller_buttons),
             icon = Icons.Rounded.Keyboard,
         )
         addRow(
@@ -2720,8 +2739,15 @@ private fun settingsSearchEntries(
         listOf(
             PlaybackSearchRow("music-show-tab", resolve(Res.string.settings_music_show_tab), resolve(Res.string.settings_music_show_tab_description), resolve(Res.string.settings_music_section_general)),
             PlaybackSearchRow("music-reduced-motion", resolve(Res.string.settings_music_reduced_motion), resolve(Res.string.settings_music_reduced_motion_description), resolve(Res.string.settings_music_section_general)),
+            PlaybackSearchRow("music-album-notes", resolve(Res.string.settings_music_album_notes), resolve(Res.string.settings_music_album_notes_description), resolve(Res.string.settings_music_section_general)),
+            PlaybackSearchRow("music-view-shelf", resolve(Res.string.settings_music_view_shelf), resolve(Res.string.settings_music_view_shelf_description), resolve(Res.string.settings_music_section_views)),
+            PlaybackSearchRow("music-view-crates", resolve(Res.string.settings_music_view_crates), resolve(Res.string.settings_music_view_crates_description), resolve(Res.string.settings_music_section_views)),
+            PlaybackSearchRow("music-view-constellation", resolve(Res.string.settings_music_view_constellation), resolve(Res.string.settings_music_view_constellation_description), resolve(Res.string.settings_music_section_views)),
+            PlaybackSearchRow("music-view-eras", resolve(Res.string.settings_music_view_eras), resolve(Res.string.settings_music_view_eras_description), resolve(Res.string.settings_music_section_views)),
+            PlaybackSearchRow("music-view-playlists", resolve(Res.string.settings_music_view_playlists), resolve(Res.string.settings_music_view_playlists_description), resolve(Res.string.settings_music_section_views)),
             PlaybackSearchRow("music-fanart-key", resolve(Res.string.settings_music_fanart_key), resolve(Res.string.settings_music_fanart_key_description), resolve(Res.string.settings_music_section_sources)),
             PlaybackSearchRow("music-lastfm-key", resolve(Res.string.settings_music_lastfm_key), resolve(Res.string.settings_music_lastfm_key_description), resolve(Res.string.settings_music_section_sources)),
+            PlaybackSearchRow("music-gemini-key", resolve(Res.string.settings_music_gemini_key), resolve(Res.string.settings_music_gemini_key_description), resolve(Res.string.settings_music_section_sources)),
             PlaybackSearchRow("music-audiodb-key", resolve(Res.string.settings_music_audiodb_key), resolve(Res.string.settings_music_audiodb_key_description), resolve(Res.string.settings_music_section_sources)),
             PlaybackSearchRow("music-where-next", resolve(Res.string.settings_music_where_next), resolve(Res.string.settings_music_where_next_description), resolve(Res.string.settings_music_section_sources)),
             PlaybackSearchRow("music-mb-offline", resolve(Res.string.settings_music_mb_offline), resolve(Res.string.settings_music_mb_offline_absent), resolve(Res.string.settings_music_section_sources)),
@@ -2801,6 +2827,25 @@ private fun settingsSearchEntries(
                 icon = Icons.Rounded.Lightbulb,
             )
         }
+    }
+
+    // fork:search-rows
+    for (row in forkSearchRowsForPlatform()) {
+        val label = if (row.page == SettingsPage.ContinueWatching && isDesktop) {
+            homeLayoutPage
+        } else {
+            resolve(row.pageLabel)
+        }
+        addRow(
+            page = row.page,
+            key = row.key,
+            title = resolve(row.title),
+            description = row.description?.let { resolve(it) }.orEmpty(),
+            pageLabel = label,
+            section = resolve(row.section),
+            category = if (row.noCategory) "" else generalCategory,
+            icon = forkSearchIcon,
+        )
     }
 
     // Every page exposed by Settings must remain discoverable. Keep the assertion beside the
@@ -3118,7 +3163,7 @@ internal fun SettingsSearchField(
                 }
                 com.nuvio.app.core.ui.VoiceSearchButton(
                     owner = "settings-search",
-                    focusField = { runCatching { fieldFocus.requestFocus() } },
+                    focusField = { fieldFocus.requestFocusLogged() },
                     tint = tokens.colors.textMuted,
                     size = 28.dp,
                 )
