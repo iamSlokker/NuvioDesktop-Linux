@@ -9,7 +9,8 @@ import kotlin.test.*
 class LinuxStorageIsolationTest {
     @Test fun xdgRootStaysInsideFixture() = withHeadlessFixture { runHeadlessProbe(it, LinuxStorageIsolationProbe::class.java, "xdg") }
     @Test fun missingXdgUsesTemporaryHome() = withHeadlessFixture { runHeadlessProbe(it, LinuxStorageIsolationProbe::class.java, "fallback", configFallback = true) }
-    @Test fun legacyMigrationCopiesIntoXdgWithoutTouchingOriginal() = withHeadlessFixture { runHeadlessProbe(it, LinuxStorageIsolationProbe::class.java, "migration") }
+    // Upstream dropped the import from the old `nuvio` folder (2026-11-13): it is left alone and the install counts as new.
+    @Test fun legacyFolderIsLeftAloneAndCountsAsFresh() = withHeadlessFixture { runHeadlessProbe(it, LinuxStorageIsolationProbe::class.java, "migration") }
     @Test fun existingDestinationWinsOverLegacy() = withHeadlessFixture { runHeadlessProbe(it, LinuxStorageIsolationProbe::class.java, "existing") }
     @Test fun profileKeysPersistAcrossFreshProcessesAndCleanupPreservesOtherData() = withHeadlessFixture {
         runHeadlessProbe(it, LinuxStorageIsolationProbe::class.java, "writeProfiles")
@@ -50,12 +51,12 @@ internal object LinuxStorageIsolationProbe {
                 assertFalse(Files.exists(root.resolve("data/nuviohtpc")))
             }
             "migration", "existing" -> {
-                assertFalse(DesktopStorage.isFreshInstall)
-                assertEquals(if (scenario == "existing") "current" else "legacy", Files.readString(destination.resolve("marker")))
+                assertEquals(scenario == "migration", DesktopStorage.isFreshInstall)
+                if (scenario == "existing") assertEquals("current", Files.readString(destination.resolve("marker")))
+                else assertFalse(Files.exists(destination.resolve("marker")))
                 assertEquals("legacy", Files.readString(legacy.resolve("marker")))
                 assertEquals("legacy-library", Files.readString(legacy.resolve("games/library.json")))
-                if (scenario == "migration") assertEquals("legacy-library", Files.readString(destination.resolve("games/library.json")))
-                else assertFalse(Files.exists(destination.resolve("games/library.json")))
+                assertFalse(Files.exists(destination.resolve("games/library.json")))
                 assertFalse(Files.list(parent).use { paths -> paths.anyMatch { it.fileName.toString().contains(".migrating-") } })
             }
             "writeProfiles" -> {
