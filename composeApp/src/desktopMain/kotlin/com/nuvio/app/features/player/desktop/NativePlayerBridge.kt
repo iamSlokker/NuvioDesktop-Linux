@@ -56,7 +56,9 @@ internal object NativePlayerBridge {
                     closing.join(LINUX_EXIT_DISPOSE_TIMEOUT_MS)
                     // Then the windows: exit() unloads the GL driver (libGLX's __glXFini) while Compose could still be
                     // drawing on the EDT, and a SIGTERM during playback crashed in glClear (2 of 17 runs). Bounded, so a
-                    // busy EDT cannot hold the exit.
+                    // busy EDT cannot hold the exit. Not after a lost display: disposing then reads it, and skiko
+                    // crashed in XVisualIDFromVisual.
+                    if (runCatching { x11DisplayLost() }.getOrDefault(false)) return@Thread
                     val windows = Thread({
                         runCatching {
                             java.awt.EventQueue.invokeAndWait { java.awt.Window.getWindows().forEach { it.dispose() } }
@@ -78,6 +80,9 @@ internal object NativePlayerBridge {
 
     /** Where the bridge keeps `logs\` and `shader-cache\`: [DesktopStorage.rootDir]. */
     private external fun setDataDirectory(directory: String)
+
+    /** Linux only: whether an X connection was lost, so the app is quitting without its display. */
+    private external fun x11DisplayLost(): Boolean
 
     external fun create(
         hostViewPtr: Long,
