@@ -45,7 +45,6 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.input.key.KeyEventType
 import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.onPreviewKeyEvent
@@ -252,10 +251,12 @@ internal fun NuvioContextMenu(
                     .focusRequester(menuFocus)
                     .onPreviewKeyEvent { event ->
                         if (event.type != KeyEventType.KeyDown) return@onPreviewKeyEvent false
-                        when (event.key) {
-                            Key.DirectionDown -> { moveFocus(1); true }
-                            Key.DirectionUp -> { moveFocus(-1); true }
-                            Key.Escape -> { onDismiss(); true }
+                        // navAction() so a rebound Move Up/Down and Dismiss Overlay reach the menu,
+                        // and the raw arrow/Escape defaults stop acting once rebound.
+                        when (event.navAction()) {
+                            NavAction.Down -> { moveFocus(1); true }
+                            NavAction.Up -> { moveFocus(-1); true }
+                            NavAction.Dismiss -> { onDismiss(); true }
                             else -> false
                         }
                     }

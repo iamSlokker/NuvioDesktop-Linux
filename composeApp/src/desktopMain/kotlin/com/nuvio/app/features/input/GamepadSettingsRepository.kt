@@ -18,8 +18,16 @@ import kotlinx.coroutines.flow.asStateFlow
  * whether the middle mouse button opens it.
  */
 object GamepadSettingsRepository {
-    /** Off by default: a pad plugged in for a game should not start driving the UI unasked. */
-    const val DEFAULT_ENABLED = false
+    /**
+     * On by default.
+     *
+     * It used to be off, on the reasoning that a pad plugged in for a game should not start driving
+     * the UI unasked. That reasoning does not survive the sign-in screen: Settings is behind the
+     * login, so a user who has never signed in cannot reach the toggle to turn it on, and the pad
+     * they are holding does nothing. A controller that is plugged in is a controller the user
+     * intends to use, and the poll thread costs nothing while no pad is present.
+     */
+    const val DEFAULT_ENABLED = true
 
     /**
      * Fraction of full stick deflection ignored as noise. Xbox pads rest well inside 0.20 even
@@ -36,10 +44,15 @@ object GamepadSettingsRepository {
     const val MAX_REPEAT_INTERVAL_MS = 250
 
     /**
-     * Off by default: with it on, every click into a text field raises the panel, which a desk user
-     * with a real keyboard would find in the way. It is for the couch, with only a mouse to hand.
+     * On by default.
+     *
+     * It used to be off, on the reasoning that a desk user with a real keyboard would find the
+     * panel in the way. That reasoning does not survive the sign-in screen: Settings is behind the
+     * login, so a user who has not signed in cannot reach the toggle, and a remote that maps its
+     * buttons to keyboard keys is neither a gamepad nor a mouse — nothing else raises the panel for
+     * them. A desk user can turn it off once they are in.
      */
-    const val DEFAULT_MOUSE_KEYBOARD = false
+    const val DEFAULT_MOUSE_KEYBOARD = true
 
     private const val KEY_ENABLED = "gamepad_enabled"
     private const val KEY_DEAD_ZONE = "gamepad_dead_zone_pct"

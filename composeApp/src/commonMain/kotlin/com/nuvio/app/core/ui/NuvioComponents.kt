@@ -1,5 +1,7 @@
 package com.nuvio.app.core.ui
 
+import com.nuvio.app.features.settings.settingsNavItem
+
 import com.nuvio.app.core.ui.smoothBorder
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
@@ -57,9 +59,12 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -236,18 +241,32 @@ fun NuvioActionLabel(
     modifier: Modifier = Modifier,
     onClick: (() -> Unit)? = null,
 ) {
+    val ringShape = RoundedCornerShape(NuvioTokens.Radius.sm)
     Text(
         text = text,
         // Masked so a gradient accent sweeps the label the way it sweeps a filled accent surface;
-        // a no-op on the built-in palettes, which paint accents flat.
+        // a no-op on the built-in palettes, which paint accents flat. The focus ring is the one
+        // settingsNavItem adds around the padded control; drawing another here around the bare
+        // glyphs gave a focused action two rings.
         modifier = modifier
+            .clip(ringShape)
             .then(
                 if (onClick != null) {
-                    Modifier.clickable(onClick = onClick)
+                    // A settings section's heading action ("Reset", "Refresh") sits beside the
+                    // centred title, where Compose's spatial focus never finds it: Settings walks its
+                    // own item ladder, so an action outside it could only be clicked with a pointer.
+                    // Registering it as an item puts it on that ladder, without making it the page's
+                    // first stop (registerAsEntry = false).
+                    Modifier
+                        .settingsNavItem(onActivate = onClick, registerAsEntry = false)
+                        .clickable(onClick = onClick)
                 } else {
                     Modifier
                 }
             )
+            // Padding sits inside the ring, so the ring clears the glyphs: drawn at the text's own
+            // bounds it shaved the sides of 'Sign out' and 'Reset to Default'.
+            .padding(horizontal = NuvioTokens.Space.s8, vertical = NuvioTokens.Space.s2)
             .accentGradientMask(),
         style = MaterialTheme.typography.titleMedium.accentBrush(),
         color = MaterialTheme.nuvio.colors.accent,
@@ -343,16 +362,28 @@ fun NuvioPrimaryButton(
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
     height: Dp = NuvioTokens.Space.s48 + NuvioTokens.Space.s4,
+    /**
+     * Draws the app's 2dp accent ring around the button while the keyboard is on it. Off by
+     * default because the sweep of light is already the signal elsewhere; pages whose controls are
+     * otherwise plain surfaces ask for the ring so a focused control is never invisible.
+     */
+    focusRing: Boolean = false,
     onClick: () -> Unit = {},
 ) {
     val tokens = MaterialTheme.nuvio
     val interactionSource = remember { MutableInteractionSource() }
     val isFocused by interactionSource.collectIsFocusedAsState()
     val isHovered by interactionSource.collectIsHoveredAsState()
+    // Read from the focus target itself rather than the interaction source: a disabled button's
+    // `clickable` emits no interactions, so a ring driven by them disappeared on exactly the
+    // control the keyboard was on.
+    var hasFocus by remember { mutableStateOf(false) }
+    val ringVisible = focusRing && hasFocus && KeyboardInputMode.active
     Box(
         modifier = modifier
             .fillMaxWidth()
             .height(height)
+            .onFocusChanged { hasFocus = it.isFocused }
             .nuvioSweepHighlight(
                 highlighted = enabled && (isFocused || isHovered),
                 cornerRadius = NuvioTokens.Radius.button,
@@ -365,10 +396,26 @@ fun NuvioPrimaryButton(
                 shape = tokens.shapes.button,
                 alpha = if (enabled) 1f else tokens.opacity.disabled,
             )
-            .clickable(
+            // Painted after the fill, so the stroke is not covered by it. Drawn for a disabled
+            // button too: it still has focus, and a focused control that looks unfocused is exactly
+            // the dead end this page had.
+            .then(
+                if (ringVisible) {
+                    Modifier.border(
+                        width = tokens.borders.medium,
+                        color = tokens.colors.borderFocus,
+                        shape = tokens.shapes.button,
+                    )
+                } else {
+                    Modifier
+                },
+            )
+            // Focusable and Select-activated, not just clickable: without this the arrows and a
+            // pad's D-pad cannot reach the button at all, which is how the sign-in page ended up
+            // mouse-only. Existing pointer behaviour is unchanged.
+            .selectWithKeyboardOrPointer(
                 enabled = enabled,
                 interactionSource = interactionSource,
-                indication = null,
                 onClick = onClick,
             ),
         contentAlignment = Alignment.Center,
@@ -398,6 +445,7 @@ fun NuvioInputField(
     modifier: Modifier = Modifier,
     readOnly: Boolean = false,
     trailingContent: (@Composable (() -> Unit))? = null,
+    focusRequester: androidx.compose.ui.focus.FocusRequester? = null,
 ) {
     NuvioTextField(
         value = value,
@@ -407,6 +455,7 @@ fun NuvioInputField(
         readOnly = readOnly,
         textStyle = MaterialTheme.typography.bodyLarge,
         trailingContent = trailingContent?.let { content -> { content() } },
+        focusRequester = focusRequester,
     )
 }
 
@@ -476,17 +525,35 @@ fun NuvioStatusModal(
 ) {
     if (!isVisible) return
     val tokens = MaterialTheme.nuvio
+    // One dismiss path for the dialog itself, the Back key, Escape and a pad's B, all held off while
+    // the action is running.
+    val dismissRequest: () -> Unit = { if (!isBusy) onDismiss?.invoke() ?: onConfirm() }
+    // The dialog opens with the safe action under the keys: Cancel when there is one, since every
+    // caller of this dialog is a confirmation whose other buttons change something.
+    val firstActionFocus = remember { androidx.compose.ui.focus.FocusRequester() }
+    val hasDismiss = !isBusy && dismissText != null && onDismiss != null
+    val hasSecondary = secondaryText != null && onSecondary != null
+    LaunchedEffect(isVisible, isBusy) {
+        if (!isVisible || isBusy) return@LaunchedEffect
+        withFrameNanos { }
+        runCatching { firstActionFocus.requestFocus() }
+    }
+    val firstActionModifier: Modifier = Modifier.focusRequester(firstActionFocus)
 
     BasicAlertDialog(
-        onDismissRequest = {
-            if (!isBusy) {
-                onDismiss?.invoke() ?: onConfirm()
-            }
-        },
+        onDismissRequest = dismissRequest,
     ) {
+        DialogBackRegistration(onDismiss = dismissRequest)
         NuvioDialogSurface(modifier = modifier.fillMaxWidth()) {
             Column(
-                modifier = Modifier.padding(start = tokens.spacing.dialogPadding, end = tokens.spacing.dialogPadding, top = tokens.spacing.dialogPadding, bottom = 8.dp),
+                // A desktop dialog starts with nothing focused and Compose moves focus on Tab only,
+                // so the actions below were unreachable with a remote or the arrow keys. With this,
+                // the first action takes the keys and Left/Right walk Cancel, the alternative and
+                // the confirm button, Enter activates the one that holds them.
+                modifier = Modifier
+                    .arrowKeyFocusNavigation()
+                    .dismissOnBackKey(dismissRequest)
+                    .padding(start = tokens.spacing.dialogPadding, end = tokens.spacing.dialogPadding, top = tokens.spacing.dialogPadding, bottom = 8.dp),
             ) {
                 if (isBusy) {
                     CircularProgressIndicator(
@@ -511,45 +578,103 @@ fun NuvioStatusModal(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.End,
                 ) {
-                    if (!isBusy && dismissText != null && onDismiss != null) {
-                        Button(
+                    if (hasDismiss) {
+                        StatusActionButton(
+                            text = dismissText,
+                            modifier = firstActionModifier,
                             onClick = onDismiss,
-                            shape = tokens.shapes.button,
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = tokens.colors.surfaceCard,
-                                contentColor = tokens.colors.textPrimary,
-                            ),
-                        ) {
-                            Text(dismissText)
-                        }
+                        )
                         Spacer(modifier = Modifier.width(NuvioTokens.Space.s10))
                     }
                     if (secondaryText != null && onSecondary != null) {
-                        Button(
-                            onClick = onSecondary,
+                        StatusActionButton(
+                            text = secondaryText,
+                            // Without a Cancel this is the first button the dialog shows.
+                            modifier = if (hasDismiss) Modifier else firstActionModifier,
                             enabled = !isBusy,
-                            shape = tokens.shapes.button,
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = tokens.colors.surfaceCard,
-                                contentColor = tokens.colors.textPrimary,
-                            ),
-                        ) {
-                            Text(secondaryText)
-                        }
+                            onClick = onSecondary,
+                        )
                         Spacer(modifier = Modifier.width(NuvioTokens.Space.s10))
                     }
-                    Button(
-                        onClick = onConfirm,
+                    StatusActionButton(
+                        text = confirmText,
+                        // The confirm button only leads when it is the only action on the row.
+                        modifier = if (hasDismiss || hasSecondary) Modifier else firstActionModifier,
                         enabled = !isBusy,
-                        shape = tokens.shapes.button,
-                    ) {
-                        Text(confirmText)
-                    }
+                        accent = true,
+                        onClick = onConfirm,
+                    )
                 }
             }
         }
     }
 }
+
+/**
+ * One action of [NuvioStatusModal].
+ *
+ * Material's [Button] paints no focus indicator on the desktop, so a dialog answered with a remote
+ * gave no sign of which button Enter would run. The ring is this app's usual one
+ * ([NuvioPrimaryButton] draws the same): [NuvioTokens.Borders.medium] of `borderFocus` around the
+ * shape, while the keyboard is the input in use. It is drawn by a wrapper rather than on the button
+ * itself, because the Button's own fill paints over a border in its modifier chain; the 2dp of room
+ * it needs is reserved whether or not the ring shows, so a focused button does not jump.
+ */
+@Composable
+private fun StatusActionButton(
+    text: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true,
+    accent: Boolean = false,
+) {
+    val tokens = MaterialTheme.nuvio
+    var hasFocus by remember { mutableStateOf(false) }
+    val ringVisible = statusActionRingVisible(hasFocus, KeyboardInputMode.active)
+    Box(
+        modifier = modifier
+            // hasFocus, not isFocused: the focus target is the Button inside this wrapper.
+            .onFocusChanged { hasFocus = it.hasFocus }
+            .padding(StatusActionRingWidth)
+            .then(
+                if (ringVisible) {
+                    Modifier.border(
+                        width = tokens.borders.medium,
+                        color = tokens.colors.borderFocus,
+                        shape = tokens.shapes.button,
+                    )
+                } else {
+                    Modifier
+                },
+            ),
+    ) {
+        Button(
+            onClick = onClick,
+            enabled = enabled,
+            shape = tokens.shapes.button,
+            colors = if (accent) {
+                ButtonDefaults.buttonColors()
+            } else {
+                ButtonDefaults.buttonColors(
+                    containerColor = tokens.colors.surfaceCard,
+                    contentColor = tokens.colors.textPrimary,
+                )
+            },
+        ) {
+            Text(text)
+        }
+    }
+}
+
+private val StatusActionRingWidth = 2.dp
+
+/**
+ * When a modal action shows its focus ring: while it holds focus AND the keyboard or a pad is what
+ * is being used. A pointer click focuses a button too, and a ring there would claim a selection the
+ * user did not make with the keys.
+ */
+internal fun statusActionRingVisible(hasFocus: Boolean, keyboardInput: Boolean): Boolean =
+    hasFocus && keyboardInput
 
 @Composable
 fun NuvioToastHost(

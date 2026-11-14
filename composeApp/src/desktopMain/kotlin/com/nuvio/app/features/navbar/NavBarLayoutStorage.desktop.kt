@@ -7,6 +7,7 @@ internal actual object NavBarLayoutStorage {
     private val store = DesktopStorage.store("nuvio_navbar_layout")
     private const val ORDER_KEY = "order"
     private const val GAMES_KEY = "games_in_nav"
+    private const val VOICE_KEY = "voice_in_nav"
     private const val TONIGHT_KEY = "tonight_in_nav"
 
     actual fun loadOrder(): String? = store.getString(ORDER_KEY)?.takeIf { it.isNotBlank() }
@@ -16,6 +17,10 @@ internal actual object NavBarLayoutStorage {
     actual fun loadGamesInNav(): Boolean? = store.getBoolean(GAMES_KEY)
 
     actual fun saveGamesInNav(value: Boolean) = store.putBoolean(GAMES_KEY, value)
+
+    actual fun loadVoiceInNav(): Boolean? = store.getBoolean(VOICE_KEY)
+
+    actual fun saveVoiceInNav(value: Boolean) = store.putBoolean(VOICE_KEY, value)
 
     actual fun loadTonightInNav(): Boolean? = store.getBoolean(TONIGHT_KEY)
 

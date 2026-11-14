@@ -25,8 +25,14 @@ fun KeyEvent.navigationKey(): Key {
         appShortcutMatches(AppShortcutAction.SelectFocused, this) -> Key.Enter
         appShortcutMatches(AppShortcutAction.GoBack, this) -> Key.Backspace
         appShortcutMatches(AppShortcutAction.DismissOverlay, this) -> Key.Escape
+        appShortcutMatches(AppShortcutAction.MoveUp, this) -> Key.DirectionUp
+        appShortcutMatches(AppShortcutAction.MoveDown, this) -> Key.DirectionDown
+        appShortcutMatches(AppShortcutAction.MoveLeft, this) -> Key.DirectionLeft
+        appShortcutMatches(AppShortcutAction.MoveRight, this) -> Key.DirectionRight
         // Once rebound, the historical defaults must stop acting as hidden alternates.
         key == Key.Enter || key == Key.NumPadEnter || key == Key.Backspace || key == Key.Escape -> Key.Unknown
+        key == Key.DirectionUp || key == Key.DirectionDown ||
+            key == Key.DirectionLeft || key == Key.DirectionRight -> Key.Unknown
         else -> key
     }
     if (!WasdNavigation.enabled) return actionKey

@@ -34,6 +34,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -127,11 +128,17 @@ fun NuvioTextField(
     keyboardType: KeyboardType = KeyboardType.Text,
     imeAction: ImeAction? = null,
     onImeAction: (() -> Unit)? = null,
+    /** Done normally drops focus; a page that must stay keyboard-navigable can keep it. */
+    clearFocusOnDone: Boolean = true,
     focusRequester: FocusRequester? = null,
+    /** Called with the inner text node's focus state, alongside the field's own border tracking. */
+    onFocusChanged: ((Boolean) -> Unit)? = null,
     leadingContent: @Composable (RowScope.() -> Unit)? = null,
     trailingContent: @Composable (RowScope.() -> Unit)? = null,
     /** The glass pane's outline; a search box among pill buttons passes a pill. */
     shape: Shape = FieldShape,
+    /** Minimum height. The header search sits in a 46dp icon row, so it passes a smaller one. */
+    minHeight: Dp = FieldMinHeight,
 ) {
     val tokens = MaterialTheme.nuvio
     var focused by remember { mutableStateOf(false) }
@@ -216,7 +223,7 @@ fun NuvioTextField(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .heightIn(min = FieldMinHeight)
+                .heightIn(min = minHeight)
                 // The glass fill under the focus tint (which is clear while unfocused).
                 .ditheredBackground(NuvioGlass.Fill, shape)
                 .background(containerBrush, shape)
@@ -269,7 +276,12 @@ fun NuvioTextField(
                         imeAction = resolvedImeAction,
                     ),
                     keyboardActions = KeyboardActions(
-                        onDone = onImeAction?.let { action -> { action(); focusManager.clearFocus() } },
+                        onDone = onImeAction?.let { action ->
+                            {
+                                action()
+                                if (clearFocusOnDone) focusManager.clearFocus()
+                            }
+                        },
                         onNext = { focusManager.moveFocus(androidx.compose.ui.focus.FocusDirection.Next) },
                         onGo = onImeAction?.let { action -> { action() } },
                         onSearch = onImeAction?.let { action -> { action() } },
@@ -277,7 +289,10 @@ fun NuvioTextField(
                     modifier = Modifier
                         .fillMaxWidth()
                         .then(focusRequester?.let { Modifier.focusRequester(it) } ?: Modifier)
-                        .onFocusChanged { focused = it.isFocused }
+                        .onFocusChanged {
+                            focused = it.isFocused
+                            onFocusChanged?.invoke(it.isFocused)
+                        }
                         // Tracked here rather than at each call site: a value containing "h" would
                         // otherwise navigate to Home mid-typing. Every field gets it for free.
                         .trackTextInputFocus(),
@@ -338,6 +353,15 @@ fun NuvioFieldIconButton(
 }
 
 /**
+ * Starts an edit on a [NuvioNumberStepper] from outside it, which is what clicking the number
+ * does. Settings fills one in so that Select on the stepper's keyboard stop opens the editor;
+ * every other caller leaves it out.
+ */
+class NuvioStepperEditHandle {
+    internal var start: (() -> Unit)? = null
+}
+
+/**
  * The app's number input: `[ -  value  + ]` as one bordered unit rather than three loose parts.
  *
  * Holding either end auto-repeats and accelerates, so walking a value a long way no longer means
@@ -359,6 +383,8 @@ fun NuvioNumberStepper(
     fieldWidth: Dp = 62.dp,
     /** Let the value take whatever width [modifier] gives the stepper, instead of [fieldWidth]. */
     fillWidth: Boolean = false,
+    /** Lets a caller open the editor from its own keyboard handling; see [NuvioStepperEditHandle]. */
+    editHandle: NuvioStepperEditHandle? = null,
 ) {
     val tokens = MaterialTheme.nuvio
     var editing by remember { mutableStateOf(false) }
@@ -390,6 +416,13 @@ fun NuvioNumberStepper(
 
     LaunchedEffect(editing) {
         if (editing) focusRequester.requestFocusLogged()
+    }
+
+    // A new hook each recomposition would restart the effect; the handle is stable, and its lambda
+    // only flips a state this composable owns.
+    DisposableEffect(editHandle) {
+        editHandle?.start = { startEditing() }
+        onDispose { editHandle?.start = null }
     }
 
     val stepperAccentEnd = tokens.colors.accentGradientEnd
@@ -470,7 +503,9 @@ fun NuvioNumberStepper(
                                 event.type != KeyEventType.KeyDown -> false
                                 event.key == Key.Escape -> {
                                     editing = false
-                                    focusManager.clearFocus()
+                                    // Move focus to the previous stop instead of clearing it: with
+                                    // nothing focused, no key reaches the screen and navigation stops.
+                                    focusManager.moveFocus(androidx.compose.ui.focus.FocusDirection.Previous)
                                     true
                                 }
                                 event.key == Key.Enter || event.key == Key.NumPadEnter -> {

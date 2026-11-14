@@ -4,8 +4,10 @@ import com.nuvio.app.features.player.AppShortcutsRepository
 import com.nuvio.app.features.player.PlayerShortcutsRepository
 import com.nuvio.app.features.player.desktop.LinuxHdrInputRoute
 import java.awt.Component
+import java.awt.Frame
 import java.awt.KeyboardFocusManager
 import java.awt.Toolkit
+import java.awt.Window
 import java.awt.event.KeyEvent
 
 /**
@@ -80,14 +82,25 @@ internal object GamepadKeyInjector {
      * The component synthetic events are addressed to, or null when the app is not frontmost. A pad
      * is a global device: without that check the controller would keep driving Nuvio from inside
      * whatever application the user actually switched to.
+     *
+     * The focus owner is preferred, but it is not always reported: under Wayland, KWin does not
+     * hand Xwayland a focus owner the way X11 does, so `focusedWindow` comes back null while the
+     * window is plainly focused on screen. Returning null there dropped every pad press — the pad
+     * was read, translated to the right arrow key, and then thrown away. Falling back to the app's
+     * own showing window keeps the "only while Nuvio is frontmost" guard (a background app's
+     * windows are not the largest showing frame) while making the pad work on Wayland.
      */
     /** True while a Nuvio window is the one in front. */
     fun appFocused(): Boolean = focusTarget() != null
 
     private fun focusTarget(): Component? {
         val focusManager = KeyboardFocusManager.getCurrentKeyboardFocusManager()
-        val window = focusManager.focusedWindow ?: return null
-        return focusManager.focusOwner ?: window
+        val window = focusManager.focusedWindow
+        if (window != null) return focusManager.focusOwner ?: window
+        // No AWT focus owner: use the app's own window if it is the one on screen.
+        return Window.getWindows()
+            .filter { it.isShowing && it.isVisible && it is Frame }
+            .maxByOrNull { it.width.toLong() * it.height }
     }
 
     private fun post(event: KeyEvent) {

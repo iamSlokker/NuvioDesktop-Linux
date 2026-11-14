@@ -243,12 +243,16 @@ private val NuvioRippleConfiguration = RippleConfiguration(
     color = Color.Black,
 )
 
+val LocalPureBlackBackground = androidx.compose.runtime.staticCompositionLocalOf { false }
+
 @Composable
 fun NuvioTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
     appTheme: AppTheme = AppTheme.WHITE,
     customThemePalette: ThemeColorPalette = ThemeColors.Custom,
     amoled: Boolean = false,
+    /** Complete-black appearance: page backdrops draw flat #000000, with no wash or glows. */
+    pureBlackBackground: Boolean = false,
     accentGradientDirection: AccentGradientDirection = AccentGradientDirection.Default,
     appFontFamilyName: String = "",
     /** Text size multiplier for [appFontFamilyName]; the bundled face always draws at 1. */
@@ -294,6 +298,7 @@ fun NuvioTheme(
         LocalRippleConfiguration provides NuvioRippleConfiguration,
         LocalAppTheme provides appTheme,
         LocalAppFontFamilyName provides appFontFamilyName,
+        LocalPureBlackBackground provides pureBlackBackground,
     ) {
         MaterialTheme(
             colorScheme = colorScheme,

@@ -219,6 +219,11 @@ internal object OnScreenKeyboard {
     fun dismiss() {
         dismissedWhileFocused = true
         setVisible(false)
+        // The panel is a separate popup window. Dismissing it can leave the main window's Compose
+        // focus owner unset even though the text field still looks focused, which makes the page
+        // look alive while the pad's keys go nowhere. The sign-in page restores the control that
+        // opened the keyboard; other screens have nothing listening, so this is a no-op there.
+        com.nuvio.app.features.auth.AuthFocusRestore.request()
     }
 
     private fun setVisible(value: Boolean) {

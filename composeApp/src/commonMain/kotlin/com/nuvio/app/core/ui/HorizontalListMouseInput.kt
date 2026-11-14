@@ -70,7 +70,9 @@ internal fun Modifier.desktopHorizontalListNavigation(
         .onKeyEvent { keyEvent ->
             if (keyEvent.type != KeyEventType.KeyDown) return@onKeyEvent false
             val step = scrollStepPx ?: (state.layoutInfo.viewportSize.width * 0.85f)
-            when (keyEvent.key) {
+            // navigationKey(): a rebound Move Left/Right must move this row, and the historical arrow
+            // default must stop acting once it is rebound (fork step 1, see NavAction.kt).
+            when (keyEvent.navigationKey()) {
                 Key.DirectionRight -> {
                     coroutineScope.launch { state.animateScrollBy(step) }
                     true

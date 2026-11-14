@@ -13,11 +13,11 @@ import kotlin.test.assertTrue
 
 /** Real settings/storage in isolated child JVMs; no controller, windows or native loading. */
 class MouseKeyboardSettingsTest {
-    @Test fun freshInstallKeepsMouseKeyboardDisabledWithoutEnablingController() = withHeadlessFixture {
+    @Test fun freshInstallEnablesMouseKeyboardAndController() = withHeadlessFixture {
         runHeadlessProbe(it, MouseKeyboardSettingsProbe::class.java, "defaults")
     }
 
-    @Test fun mouseSettingSurvivesFreshJvmAndDisablingRemovesOnlyItsOwnKey() = withHeadlessFixture {
+    @Test fun mouseSettingSurvivesFreshJvmAndReturningToDefaultRemovesOnlyItsOwnKey() = withHeadlessFixture {
         runHeadlessProbe(it, MouseKeyboardSettingsProbe::class.java, "write")
         runHeadlessProbe(it, MouseKeyboardSettingsProbe::class.java, "read-and-disable")
         runHeadlessProbe(it, MouseKeyboardSettingsProbe::class.java, "read-disabled")
@@ -40,48 +40,48 @@ internal object MouseKeyboardSettingsProbe {
         val otherProfileKey = ProfileScopedKey.of("osk_mouse_enabled", 2)
         when (args[1]) {
             "defaults" -> {
-                assertFalse(mouseKeyboardState().value)
-                assertFalse(gamepadEnabledState().value)
+                assertTrue(mouseKeyboardState().value)
+                assertTrue(gamepadEnabledState().value)
                 assertFalse(gamepadConnectedState().value)
                 assertNull(store.getBoolean(mouseKey))
             }
             "write" -> {
                 store.putBoolean(otherProfileKey, true)
-                setMouseKeyboard(true)
-                assertTrue(mouseKeyboardState().value)
-                assertEquals(true, store.getBoolean(mouseKey))
-                assertFalse(gamepadEnabledState().value)
+                setMouseKeyboard(false)
+                assertFalse(mouseKeyboardState().value)
+                assertEquals(false, store.getBoolean(mouseKey))
+                assertTrue(gamepadEnabledState().value)
                 assertFalse(gamepadConnectedState().value)
                 assertEquals(GamepadSettingsRepository.DEFAULT_DEAD_ZONE, gamepadDeadZoneState().value)
                 assertEquals(GamepadSettingsRepository.DEFAULT_REPEAT_INTERVAL_MS, gamepadRepeatIntervalState().value)
             }
             "read-and-disable" -> {
-                assertTrue(mouseKeyboardState().value)
-                setMouseKeyboard(false)
                 assertFalse(mouseKeyboardState().value)
+                setMouseKeyboard(true)
+                assertTrue(mouseKeyboardState().value)
                 assertNull(store.getBoolean(mouseKey))
                 assertEquals(true, store.getBoolean(otherProfileKey))
             }
             "read-disabled" -> {
-                assertFalse(mouseKeyboardState().value)
+                assertTrue(mouseKeyboardState().value)
                 assertNull(store.getBoolean(mouseKey))
                 assertEquals(true, store.getBoolean(otherProfileKey))
             }
             "reset-controller" -> {
-                setMouseKeyboard(true)
-                setGamepadEnabled(true)
+                setMouseKeyboard(false)
+                setGamepadEnabled(false)
                 setGamepadDeadZone(0.50f)
                 setGamepadRepeatIntervalMs(200)
                 resetGamepadSettings()
-                assertTrue(mouseKeyboardState().value)
-                assertEquals(true, store.getBoolean(mouseKey))
-                assertFalse(gamepadEnabledState().value)
+                assertFalse(mouseKeyboardState().value)
+                assertEquals(false, store.getBoolean(mouseKey))
+                assertTrue(gamepadEnabledState().value)
                 assertEquals(GamepadSettingsRepository.DEFAULT_DEAD_ZONE, gamepadDeadZoneState().value)
                 assertEquals(GamepadSettingsRepository.DEFAULT_REPEAT_INTERVAL_MS, gamepadRepeatIntervalState().value)
             }
             "read-after-reset" -> {
-                assertTrue(mouseKeyboardState().value)
-                assertFalse(gamepadEnabledState().value)
+                assertFalse(mouseKeyboardState().value)
+                assertTrue(gamepadEnabledState().value)
                 assertEquals(GamepadSettingsRepository.DEFAULT_DEAD_ZONE, gamepadDeadZoneState().value)
                 assertEquals(GamepadSettingsRepository.DEFAULT_REPEAT_INTERVAL_MS, gamepadRepeatIntervalState().value)
             }

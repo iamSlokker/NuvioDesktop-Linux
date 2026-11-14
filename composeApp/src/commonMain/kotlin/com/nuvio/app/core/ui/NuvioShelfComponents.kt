@@ -22,6 +22,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.size
@@ -127,6 +128,12 @@ fun <T> NuvioShelfSection(
     // Replaces the header's title text with caller-drawn content (Discover's clickable
     // catalog/genre segments). [title] is still required and still carries the accessibility name.
     titleContent: (@Composable () -> Unit)? = null,
+    // fork:linux-rows - pads the header band to at least this height. Linux TV Mode stacks the same
+    // rows under Home, Discover and Library, where Home's plain title and the other two's filter
+    // bar are different heights: without this the rows below start at different places on each
+    // tab. The content is centred in the band, so the titles line up too. Null (every other
+    // surface) leaves the header at its content height.
+    headerMinHeight: Dp? = null,
     // Small muted chip drawn right after the title (Home's optional "catalog provider" tag).
     // Ignored when [titleContent] replaces the title.
     titleTag: String? = null,
@@ -263,6 +270,7 @@ fun <T> NuvioShelfSection(
                 trailingContent = headerTrailingContent,
                 titleContent = titleContent,
                 titleTag = titleTag,
+                slotMinHeight = headerMinHeight,
             )
         }
         Box(modifier = bodyModifier.fillMaxWidth()) {
@@ -595,6 +603,11 @@ fun NuvioPosterCard(
     fallbackImageUrl: String? = null,
     shape: NuvioPosterShape = NuvioPosterShape.Poster,
     basePosterWidthDpOverride: Int? = null,
+    /**
+     * Landscape cards only: a fixed card width that replaces the one derived from the poster width.
+     * Null keeps the derived width. The height still follows the landscape aspect ratio.
+     */
+    landscapeCardWidthOverride: Dp? = null,
     detailLine: String? = null,
     showTitleBelow: Boolean = true,
     bottomLeftLogoUrl: String? = null,
@@ -617,7 +630,8 @@ fun NuvioPosterCard(
     val posterCardStyle = rememberHomePosterCardStyleUiState()
     val tokens = MaterialTheme.nuvio
     val basePosterWidthDp = basePosterWidthDpOverride ?: posterCardStyle.widthDp
-    val cardWidth = shape.cardWidth(basePosterWidthDp = basePosterWidthDp)
+    val cardWidth = landscapeCardWidthOverride?.takeIf { shape == NuvioPosterShape.Landscape }
+        ?: shape.cardWidth(basePosterWidthDp = basePosterWidthDp)
     val cardShape = RoundedCornerShape(posterCardStyle.cornerRadiusDp.dp)
     val catalogLogoOverlaySize = catalogLogoOverlaySize(
         basePosterWidthDp = basePosterWidthDp,
@@ -833,6 +847,8 @@ private fun NuvioShelfSectionHeader(
     trailingContent: (@Composable () -> Unit)? = null,
     titleContent: (@Composable () -> Unit)? = null,
     titleTag: String? = null,
+    /** fork:linux-rows - see [NuvioShelfSection.headerMinHeight]. */
+    slotMinHeight: Dp? = null,
 ) {
     val tokens = MaterialTheme.nuvio
     val viewAllPlaceholderModifier = if (onViewAllClick == null) {
@@ -860,11 +876,18 @@ private fun NuvioShelfSectionHeader(
         Modifier
     }
     Column(
-        modifier = modifier.fillMaxWidth(),
+        modifier = modifier
+            .fillMaxWidth()
+            // fork:linux-rows - the whole header band gets a uniform floor, so rows whose header
+            // is a title and rows whose header is a filter bar start their cards at the same y.
+            // The content is centred in the band, so the titles themselves also line up.
+            .then(if (slotMinHeight != null) Modifier.heightIn(min = slotMinHeight) else Modifier),
+        verticalArrangement = Arrangement.Center,
     ) {
         if (trailingContent == null) {
             Row(
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(tokens.spacing.controlGap),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
@@ -892,7 +915,8 @@ private fun NuvioShelfSectionHeader(
             // without trailing content. Keeping content clear of the title and the pill is the
             // trailing slot's job — see NuvioShelfHeaderTrailingSideMarginFraction.
             BoxWithConstraints(
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth(),
                 contentAlignment = Alignment.Center,
             ) {
                 if (titleContent != null) {

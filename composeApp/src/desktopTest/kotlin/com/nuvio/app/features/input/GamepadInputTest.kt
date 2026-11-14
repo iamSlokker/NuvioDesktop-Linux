@@ -173,6 +173,13 @@ class GamepadInputTest {
                 // The panel ring is not a button's tap: holding the ring button (LB by default,
                 // GamepadSettingsRepository.ringButton) opens it, and it reaches every tab above.
                 AppShortcutAction.OpenPanelRing,
+                // Directional navigation is the D-pad itself, bound as fixed arrow keys rather than
+                // as these rebindable keyboard actions. The four names exist so keyboard users can
+                // rebind movement; the pad already performs the movement.
+                AppShortcutAction.MoveUp,
+                AppShortcutAction.MoveDown,
+                AppShortcutAction.MoveLeft,
+                AppShortcutAction.MoveRight,
             ),
             AppShortcutAction.entries.toSet() - boundApp,
             "app actions with no button",

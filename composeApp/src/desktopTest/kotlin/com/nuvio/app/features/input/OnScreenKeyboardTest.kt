@@ -121,4 +121,16 @@ class OnScreenKeyboardTest {
         assertEquals('1', digit.character(caps = false))
         assertEquals('1', digit.character(caps = true))
     }
+
+    @Test
+    fun `the panel follows its own scale slider`() {
+        assertEquals(1f, oskAppUiScale(0))
+        assertEquals(1.25f, oskAppUiScale(25))
+        assertEquals(1.5f, oskAppUiScale(50))
+        assertEquals(2f, oskAppUiScale(100))
+        assertEquals(0.5f, oskAppUiScale(-50))
+        // The slider offers -50..100; anything beyond lands on its ends rather than on a huge panel.
+        assertEquals(2f, oskAppUiScale(200))
+        assertEquals(0.5f, oskAppUiScale(-200))
+    }
 }

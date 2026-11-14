@@ -19,9 +19,13 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.focus.FocusDirection
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.text.font.FontWeight
@@ -89,16 +93,20 @@ fun NuvioModalDialog(
     val colors = MaterialTheme.nuvio.colors
     val shape = RoundedCornerShape(DIALOG_CORNER)
 
+    DialogBackRegistration(onDismiss = onDismissRequest)
     Dialog(
         onDismissRequest = onDismissRequest,
         // The Material default clamps modals to a narrow platform width, which squeezes content
         // like the episode grid into an unreadable column.
         properties = DialogProperties(usePlatformDefaultWidth = false),
     ) {
+        // Two focus systems meet here: upstream's router (KeyRouteLayer/keyLayer, which returns focus
+        // to the last control inside this window) and the port's dialog navigation (first focus plus
+        // arrow/Back handling on the content column). Both are kept.
         KeyRouteLayer("dialog", menu = false)
-        // A screen of its own for the focus router (KeyLayers): focus lost inside it comes back to its last control.
+        DialogFirstFocus()
         NuvioDialogSurface(modifier = modifier.widthIn(max = maxWidth).keyLayer("Dialog"), shape = shape) {
-          Column {
+          Column(Modifier.arrowKeyFocusNavigation().dismissOnBackKey(onDismissRequest)) {
             Column(
                 modifier = Modifier.fillMaxWidth().padding(start = 24.dp, end = 24.dp, top = 22.dp, bottom = 16.dp),
                 verticalArrangement = Arrangement.spacedBy(3.dp),
@@ -161,16 +169,17 @@ fun NuvioAlertDialog(
     maxWidth: androidx.compose.ui.unit.Dp = 560.dp,
 ) {
     val shape = RoundedCornerShape(DIALOG_CORNER)
+    DialogBackRegistration(onDismiss = onDismissRequest)
     Dialog(
         onDismissRequest = onDismissRequest,
         properties = DialogProperties(usePlatformDefaultWidth = false),
     ) {
         KeyRouteLayer("alert dialog", menu = false)
-        // A screen of its own for the focus router (KeyLayers): focus lost inside it comes back to its last control.
+        DialogFirstFocus()
         NuvioDialogSurface(modifier = modifier.widthIn(max = maxWidth).keyLayer("Dialog"), shape = shape) {
             // A dialog is its own window: the arrows (and a pad's D-pad) move between its controls and buttons, which
             // desktop Compose leaves to Tab otherwise.
-            Column(Modifier.arrowKeyFocusNavigation()) {
+            Column(Modifier.arrowKeyFocusNavigation().dismissOnBackKey(onDismissRequest)) {
                 title?.let {
                     Column(
                         modifier = Modifier
@@ -229,6 +238,22 @@ private fun DialogHairline() {
             .height(1.dp)
             .background(NuvioGlass.EdgeColor),
     )
+}
+
+/**
+ * Focuses the first focusable control in a newly opened dialog, once its window has attached and
+ * composed its controls. A desktop `Dialog` is its own focus owner and starts with nothing focused,
+ * so without this a remote or keyboard user has to press an arrow before any control takes the keys.
+ * The focus owner here is the dialog's, so the page behind it keeps its own focused control and gets
+ * it back untouched when the dialog closes.
+ */
+@Composable
+private fun DialogFirstFocus() {
+    val focusManager = LocalFocusManager.current
+    LaunchedEffect(Unit) {
+        withFrameNanos { }
+        focusManager.moveFocus(FocusDirection.Down)
+    }
 }
 
 private val DIALOG_CORNER = 20.dp

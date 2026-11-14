@@ -54,6 +54,8 @@ internal expect object NavBarLayoutStorage {
     fun saveOrder(value: String?)
     fun loadGamesInNav(): Boolean?
     fun saveGamesInNav(value: Boolean)
+    fun loadVoiceInNav(): Boolean?
+    fun saveVoiceInNav(value: Boolean)
     fun loadTonightInNav(): Boolean?
     fun saveTonightInNav(value: Boolean)
 }
@@ -91,6 +93,17 @@ object NavBarLayoutRepository {
     fun setGamesInNav(enabled: Boolean) {
         NavBarLayoutStorage.saveGamesInNav(enabled)
         _gamesInNav.value = enabled
+    }
+
+    private val _voiceInNav by lazy { MutableStateFlow(NavBarLayoutStorage.loadVoiceInNav() ?: true) }
+
+    /** Show the microphone below Settings. On by default, matching the upstream sidebar. */
+    val voiceInNav: StateFlow<Boolean>
+        get() = _voiceInNav.asStateFlow()
+
+    fun setVoiceInNav(enabled: Boolean) {
+        NavBarLayoutStorage.saveVoiceInNav(enabled)
+        _voiceInNav.value = enabled
     }
 
     private val _tonightInNav by lazy { MutableStateFlow(NavBarLayoutStorage.loadTonightInNav() ?: true) }
