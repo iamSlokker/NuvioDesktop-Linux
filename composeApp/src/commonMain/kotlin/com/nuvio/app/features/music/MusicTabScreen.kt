@@ -49,6 +49,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import com.nuvio.app.core.ui.arrowFocusDirection
+import com.nuvio.app.core.ui.navigationKey
 import androidx.compose.ui.input.key.onKeyEvent
 import androidx.compose.ui.focus.FocusDirection
 import androidx.compose.ui.focus.focusProperties
@@ -175,6 +176,14 @@ internal object MusicTabState {
     /** Crates' first stop on its left panel (the open shelf, or All shelves): Down from the view pills. */
     val cratesEntry = FocusRequester()
 
+    /**
+     * Back onto the page under the box: its first control, or, while the page has nothing focusable
+     * yet (a search that is still loading, an empty result), the view/kinds row. Focus must land on
+     * something real: with nothing focused the window never offers the next Back/Escape to the tab
+     * host, so the navigation bar could not be reached from here.
+     */
+    fun focusBody(): Boolean = runCatching { bodyFocus.requestFocus() }.getOrDefault(false) || focusPills()
+
     /** Enter was pressed before the results came in: they take focus when they arrive. */
     var focusResultsWhenReady by mutableStateOf(false)
 }
@@ -199,9 +208,14 @@ object MusicTopBarSearch {
     internal var focusRequests by mutableIntStateOf(0)
         private set
 
+    /** True while the Music search box is composed. */
+    internal var active by mutableStateOf(false)
+
     /** The search key on the Music tab: into the Music box rather than the video search. */
-    fun requestFocus() {
+    fun requestFocus(): Boolean {
+        if (!active) return false
         focusRequests++
+        return true
     }
 
     /**
@@ -433,6 +447,10 @@ private fun MusicGlassField(
     // The search shortcut focuses the box. Requests made before this box existed are not replayed, and the key's own
     // "s" is kept out of the empty box it just focused.
     val focusRequester = fieldFocus
+    DisposableEffect(Unit) {
+        MusicTopBarSearch.active = true
+        onDispose { MusicTopBarSearch.active = false }
+    }
     var handledFocusRequests by remember { mutableIntStateOf(MusicTopBarSearch.focusRequests) }
     var swallowActivationKey by remember { mutableStateOf(false) }
     LaunchedEffect(MusicTopBarSearch.focusRequests) {
@@ -516,7 +534,7 @@ private fun MusicGlassField(
                     }
                 }
                 // Backspace in an empty box is the app's Back, as everywhere else; there is nothing to delete.
-                if (query.isEmpty() && event.key == Key.Backspace) {
+                if (query.isEmpty() && event.navigationKey() == Key.Backspace) {
                     if (event.type == KeyEventType.KeyDown) com.nuvio.app.core.ui.DesktopNavigationGestureBridge.requestBack()
                     return@onPreviewKeyEvent true
                 }
@@ -525,11 +543,20 @@ private fun MusicGlassField(
                     if (event.type == KeyEventType.KeyDown) MusicTabState.focusResultsWhenReady = true
                     return@onPreviewKeyEvent true
                 }
-                if (event.key != Key.Escape) return@onPreviewKeyEvent false
+                if (event.navigationKey() != Key.Escape) return@onPreviewKeyEvent false
                 // Escape clears the box and puts the keyboard back on the page under it, rather than nowhere.
+                // With the box already empty there is no level left to close, so that press is the
+                // navigation bar's: the tab host's hand-off stands aside for a focused text field, so
+                // the box asks for the bar itself.
                 if (event.type == KeyEventType.KeyUp) {
-                    onQueryChange("")
-                    if (!MusicTabState.bodyFocus.requestFocusLogged()) focusManager.clearFocus()
+                    if (query.isEmpty()) {
+                        // Nothing left to close: the bar is the next level. Ask the top bar too, so
+                        // a window without a sidebar does not end up with no focus at all.
+                        com.nuvio.app.core.ui.dismissToBarOr { focusManager.clearFocus() }
+                    } else {
+                        onQueryChange("")
+                        if (!MusicTabState.focusBody()) focusManager.clearFocus()
+                    }
                 }
                 true
             },

@@ -31,6 +31,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
@@ -127,16 +128,19 @@ internal fun MusicVideoControlStrip(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(6.dp, Alignment.End),
             ) {
-                val muted = state.volume == 0
-                StripButton(if (muted) Icons.AutoMirrored.Rounded.VolumeOff else Icons.AutoMirrored.Rounded.VolumeUp, if (muted) "Unmute" else "Mute") {
-                    if (muted) player.setVolume(unmutedVolume) else { unmutedVolume = state.volume; player.setVolume(0) }
+                val volumeControlEnabled by com.nuvio.app.features.player.PlayerSettingsRepository.uiState.collectAsState()
+                if (volumeControlEnabled.desktopVolumeControlEnabled) {
+                    val muted = state.volume == 0
+                    StripButton(if (muted) Icons.AutoMirrored.Rounded.VolumeOff else Icons.AutoMirrored.Rounded.VolumeUp, if (muted) "Unmute" else "Mute") {
+                        if (muted) player.setVolume(unmutedVolume) else { unmutedVolume = state.volume; player.setVolume(0) }
+                    }
+                    SeekBar(
+                        fraction = state.volume / 100f,
+                        onSeek = { player.setVolume((it * 100).toInt()) },
+                        modifier = Modifier.width(96.dp),
+                        onNudge = { d -> player.setVolume((state.volume + d * 5).coerceIn(0, 100)) },
+                    )
                 }
-                SeekBar(
-                    fraction = state.volume / 100f,
-                    onSeek = { player.setVolume((it * 100).toInt()) },
-                    modifier = Modifier.width(96.dp),
-                    onNudge = { d -> player.setVolume((state.volume + d * 5).coerceIn(0, 100)) },
-                )
                 // Grouped with shuffle: the two buttons about the queue, after the volume.
                 state.track?.let { track ->
                     StripButton(Icons.Rounded.PlaylistAdd, "Add to playlist") { PlaylistPicker.request(listOf(track.forPlaylist(state.album))) }
@@ -249,6 +253,8 @@ internal fun MusicVolumeControl(
     tint: Color = Color.White.copy(alpha = 0.9f),
     glass: Boolean = false,
 ) {
+    val playerSettings by com.nuvio.app.features.player.PlayerSettingsRepository.uiState.collectAsState()
+    if (!playerSettings.desktopVolumeControlEnabled) return
     var unmutedVolume by remember { mutableIntStateOf(if (state.volume > 0) state.volume else 50) }
     val muted = state.volume == 0
     val label = if (muted) "Unmute" else "Mute"

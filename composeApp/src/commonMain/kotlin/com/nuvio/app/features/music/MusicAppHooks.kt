@@ -9,6 +9,12 @@ import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.snap
 import androidx.compose.animation.core.tween
 import androidx.compose.runtime.Composable
+import com.nuvio.app.core.ui.navigationKey
+import androidx.compose.ui.input.key.type
+import androidx.compose.ui.input.key.onKeyEvent
+import androidx.compose.ui.input.key.key
+import androidx.compose.ui.input.key.KeyEventType
+import androidx.compose.ui.input.key.Key
 import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -68,7 +74,21 @@ fun MusicTabHost(
         onPlaylistClick = { navigate(MusicPlaylistRoute(it)) },
         // The keyboard arrives on the page (the shelf, the start screen, the results), never in the search box: a focused
         // box takes the letter shortcuts and Backspace for typing.
-        modifier = modifier.fillMaxSize().musicKeyboardRoot(entry = musicTabBodyFocus()),
+        modifier = modifier
+            .fillMaxSize()
+            // Back on the tab closes a ladder first (the outer hand-off), then hands the keys to the
+            // navigation bar. The outer hand-off is outside this screen and did not see the key when
+            // a music page's own root held it.
+            .onKeyEvent { event ->
+                if (event.type != KeyEventType.KeyDown) return@onKeyEvent false
+                val leave = event.key == Key.Escape || event.key == Key.Backspace ||
+                    event.navigationKey() == Key.Escape || event.navigationKey() == Key.Backspace
+                if (!leave) return@onKeyEvent false
+                if (com.nuvio.app.core.ui.TabBackInterceptor.handle()) return@onKeyEvent true
+                com.nuvio.app.core.ui.RootNavFocus.enterSidebar() ||
+                    com.nuvio.app.core.ui.RootNavFocus.enterTopBar()
+            }
+            .musicKeyboardRoot(entry = musicTabBodyFocus(), releaseArrowsAtEdge = true),
         topChromePadding = topChromePadding ?: 0.dp,
     )
 }

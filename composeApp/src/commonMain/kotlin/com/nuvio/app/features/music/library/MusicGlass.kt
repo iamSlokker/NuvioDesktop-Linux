@@ -66,10 +66,14 @@ internal fun Modifier.musicGlass(
  * while the control, or something inside it, holds keyboard or pad focus. Goes before the control's clickable.
  */
 @Composable
-internal fun Modifier.musicKeyFocusRing(shape: Shape = RoundedCornerShape(10.dp)): Modifier {
+internal fun Modifier.musicKeyFocusRing(
+    shape: Shape = RoundedCornerShape(10.dp),
+    /** Show the ring however focus arrived, including a pointer click on the nav bar's cover. */
+    always: Boolean = false,
+): Modifier {
     var focused by remember { mutableStateOf(false) }
     val ring = MaterialTheme.nuvio.colors.borderFocus
     return this
         .onFocusChanged { focused = it.hasFocus }
-        .then(if (focused && KeyboardInputMode.active) Modifier.smoothBorder(2.dp, ring, shape) else Modifier)
+        .then(if (focused && (always || KeyboardInputMode.active)) Modifier.smoothBorder(2.dp, ring, shape) else Modifier)
 }

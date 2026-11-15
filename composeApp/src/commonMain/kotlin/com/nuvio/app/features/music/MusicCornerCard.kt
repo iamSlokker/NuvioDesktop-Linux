@@ -4,6 +4,8 @@ import com.nuvio.app.core.ui.KeyboardInputMode
 import androidx.compose.foundation.layout.offset
 import com.nuvio.app.core.ui.ditheredBackground
 import com.nuvio.app.core.ui.NuvioGlass
+import com.nuvio.app.core.ui.navigationKey
+import com.nuvio.app.features.music.library.musicKeyFocusRing
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.Crossfade
@@ -58,8 +60,12 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
@@ -140,6 +146,21 @@ internal fun MusicCornerCard(
             val fade = if (reduced) snap<Float>() else tween(400)
             val cardSource = remember { MutableInteractionSource() }
             val cardFocused by cardSource.collectIsFocusedAsState()
+            // fork:music-navbar - the album row asks for the mini player: the play/pause control gets
+            // the keys, the first thing anyone reaches for.
+            val playFocus = remember { FocusRequester() }
+            var playFocused by remember { mutableStateOf(false) }
+            val barFocusRequested = MusicPlayback.barFocusRequests.value
+            LaunchedEffect(barFocusRequested) {
+                if (barFocusRequested == 0 || !visible) return@LaunchedEffect
+                if (!MusicPlayback.consumeBarFocusRequest()) return@LaunchedEffect
+                repeat(60) {
+                    if (playFocused) return@LaunchedEffect
+                    withFrameNanos { }
+                    if (playFocused) return@LaunchedEffect
+                    runCatching { playFocus.requestFocus() }
+                }
+            }
             // fork:music - wherever the person dragged it, as wide as they made it.
             val placement by MusicPlayback.cardPlacement.collectAsStateWithLifecycle()
             val areaWidth = maxWidth
@@ -176,17 +197,30 @@ internal fun MusicCornerCard(
                         .focusable(interactionSource = cardSource)
                         .onKeyEvent { event ->
                             val enterKey = event.key == Key.Enter || event.key == Key.NumPadEnter
-                            if (cardFocused && enterKey && event.type == KeyEventType.KeyDown) {
-                                onOpenNowPlaying()
-                                true
-                            } else {
-                                false
+                            val leaveKey = event.key == Key.Escape || event.key == Key.Backspace ||
+                                event.navigationKey() == Key.Escape || event.navigationKey() == Key.Backspace
+                            when {
+                                cardFocused && enterKey && event.type == KeyEventType.KeyDown -> {
+                                    onOpenNowPlaying()
+                                    true
+                                }
+                                leaveKey && event.type == KeyEventType.KeyDown -> {
+                                    if (!com.nuvio.app.core.ui.RootNavFocus.enterSidebar()) {
+                                        com.nuvio.app.core.ui.RootNavFocus.enterTopBar()
+                                    }
+                                    true
+                                }
+                                else -> false
                             }
                         },
                 ) {
                     Row(Modifier.fillMaxSize().padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
                         Box(
-                            Modifier.size(CornerCoverSize).clip(RoundedCornerShape(22.dp)).clickable(onClick = onOpenNowPlaying),
+                            Modifier
+                                .size(CornerCoverSize)
+                                .clip(RoundedCornerShape(22.dp))
+                                .musicKeyFocusRing(RoundedCornerShape(22.dp))
+                                .clickable(onClick = onOpenNowPlaying),
                         ) {
                             Crossfade(targetState = cover, animationSpec = fade, modifier = Modifier.fillMaxSize()) { url ->
                                 if (url != null) {
@@ -263,7 +297,7 @@ internal fun MusicCornerCard(
                                 IconButton(onClick = { player.previous() }, modifier = Modifier.size(56.dp)) {
                                     Icon(Icons.Rounded.SkipPrevious, "Previous", tint = colors.textPrimary, modifier = Modifier.size(34.dp))
                                 }
-                                PlayRing(state, player)
+                                PlayRing(state, player, playFocus) { playFocused = it }
                                 IconButton(onClick = { player.next() }, enabled = state.hasNext, modifier = Modifier.size(56.dp)) {
                                     Icon(
                                         Icons.Rounded.SkipNext,
@@ -312,10 +346,24 @@ internal fun MusicCornerCard(
 
 /** The play/pause button inside a thin ring that fills with the track's progress. */
 @Composable
-private fun PlayRing(state: MusicPlayerState, player: MusicPlayer) {
+private fun PlayRing(
+    state: MusicPlayerState,
+    player: MusicPlayer,
+    playFocus: FocusRequester,
+    onFocusChanged: (Boolean) -> Unit,
+) {
     val colors = MaterialTheme.nuvio.colors
     val fraction = if (state.durationMs > 0L) (state.positionMs.toFloat() / state.durationMs).coerceIn(0f, 1f) else 0f
-    Box(Modifier.size(76.dp).clip(CircleShape).clickable { player.togglePlayback() }, contentAlignment = Alignment.Center) {
+    Box(
+        Modifier
+            .size(76.dp)
+            .clip(CircleShape)
+            .musicKeyFocusRing(CircleShape, always = true)
+            .focusRequester(playFocus)
+            .onFocusChanged { onFocusChanged(it.isFocused) }
+            .clickable { player.togglePlayback() },
+        contentAlignment = Alignment.Center,
+    ) {
         Canvas(Modifier.fillMaxSize()) {
             val width = 4.dp.toPx()
             val topLeft = Offset(width / 2, width / 2)

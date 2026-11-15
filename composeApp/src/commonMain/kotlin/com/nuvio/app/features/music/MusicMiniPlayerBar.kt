@@ -13,6 +13,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.foundation.layout.offset
 import com.nuvio.app.core.ui.ditheredBackground
 import com.nuvio.app.core.ui.NuvioGlass
+import com.nuvio.app.core.ui.navigationKey
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.Crossfade
@@ -40,7 +41,6 @@ import androidx.compose.foundation.focusable
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.foundation.interaction.collectIsFocusedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -76,6 +76,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.withFrameNanos
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -111,7 +112,9 @@ import androidx.compose.material.icons.rounded.OpenInFull
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntRect
 import androidx.compose.ui.unit.IntSize
@@ -171,6 +174,27 @@ fun MusicMiniPlayerBar(
     val pillState = remember { MutableTransitionState(initiallyShown && slim) }
     pillState.targetState = showPill
     val onScreen = cardState.currentState || cardState.targetState || pillState.currentState || pillState.targetState
+    // fork:music-navbar - the nav bar's album row asks for these controls. The request is observed
+    // even while the card is hidden, because the card composes only once it is expanded; the retries
+    // cover that slide-in. Focus is read back, not assumed: only [playFocused] proves the control
+    // really has the keys.
+    val barFocusRequested = MusicPlayback.barFocusRequests.value
+    val cardFocus = remember { FocusRequester() }
+    var cardFocused by remember { mutableStateOf(false) }
+    // The album row hands the keys straight to play/pause: the control a person reaches for first.
+    val playFocus = remember { FocusRequester() }
+    var playFocused by remember { mutableStateOf(false) }
+    LaunchedEffect(barFocusRequested) {
+        // Only the mini player actually on screen answers the request, and only once.
+        if (barFocusRequested == 0 || !visible) return@LaunchedEffect
+        if (!MusicPlayback.consumeBarFocusRequest()) return@LaunchedEffect
+        repeat(90) {
+            if (playFocused) return@LaunchedEffect
+            withFrameNanos { }
+            if (playFocused) return@LaunchedEffect
+            runCatching { playFocus.requestFocus() }
+        }
+    }
     val enter = if (reduced) EnterTransition.None else slideInVertically(tween(320)) { it } + fadeIn(tween(240))
     val exit = if (reduced) ExitTransition.None else slideOutVertically(tween(260)) { it } + fadeOut(tween(200))
     BoxWithConstraints(
@@ -203,8 +227,7 @@ fun MusicMiniPlayerBar(
             val cover = state.coverUrl
             val fade = if (reduced) snap<Float>() else tween(400)
             val cardSource = remember { MutableInteractionSource() }
-            val cardFocused by cardSource.collectIsFocusedAsState()
-            // fork:music - wherever the person dragged it, as wide as they made it.
+            // fork:music-navbar - wherever the person dragged it, as wide as they made it.
             val placement by MusicPlayback.barPlacement.collectAsStateWithLifecycle()
             val areaWidth = maxWidth
             val frame = musicBarFrame(areaWidth, areaHeight, MusicBarCardHeight, placement)
@@ -235,19 +258,34 @@ fun MusicMiniPlayerBar(
                         .background(NuvioGlass.night(colors.background, colors.accent))
                         .ditheredBackground(NuvioGlass.Fill, shape)
                         .border(
-                            if (cardFocused && KeyboardInputMode.active) BorderStroke(3.dp, colors.focusRing) else BorderStroke(1.dp, NuvioGlass.EdgeColor),
+                            // fork:music-navbar - the nav bar's album row focuses this card, and that
+                            // has to be visible whether the pointer or the keys asked for it.
+                            if (cardFocused) BorderStroke(3.dp, colors.focusRing) else BorderStroke(1.dp, NuvioGlass.EdgeColor),
                             shape,
                         )
                         // The card itself can take focus; with it focused, Enter opens the full Now Playing view.
                         // (Its buttons and bars keep their own keys: this only fires when the card is the focus.)
+                        .focusRequester(cardFocus)
+                        .onFocusChanged { cardFocused = it.isFocused }
                         .focusable(interactionSource = cardSource)
                         .onKeyEvent { event ->
+                            if (!cardFocused) return@onKeyEvent false
                             val enterKey = event.key == Key.Enter || event.key == Key.NumPadEnter
-                            if (cardFocused && enterKey && event.type == KeyEventType.KeyDown) {
-                                onOpenNowPlaying()
-                                true
-                            } else {
-                                false
+                            val leaveKey = event.key == Key.Escape || event.key == Key.Backspace ||
+                                event.navigationKey() == Key.Escape || event.navigationKey() == Key.Backspace
+                            when {
+                                enterKey && event.type == KeyEventType.KeyDown -> {
+                                    onOpenNowPlaying()
+                                    true
+                                }
+                                // Back on the mini player hands the keys to whichever nav bar asked for it.
+                                leaveKey && event.type == KeyEventType.KeyDown -> {
+                                    if (!com.nuvio.app.core.ui.RootNavFocus.enterSidebar()) {
+                                        com.nuvio.app.core.ui.RootNavFocus.enterTopBar()
+                                    }
+                                    true
+                                }
+                                else -> false
                             }
                         },
                 ) {
@@ -332,11 +370,13 @@ fun MusicMiniPlayerBar(
                             }
                         }
                         Spacer(Modifier.width(12.dp))
-                        Transport(state, player)
+                        Transport(state, player, playFocus) { playFocused = it }
                         Spacer(Modifier.width(4.dp))
+                        val moreRequester = remember { FocusRequester() }
                         MoreButton(
                             open = moreOpen,
                             onToggle = { moreOpen = !moreOpen },
+                            modifier = Modifier.focusRequester(moreRequester),
                         ) {
                             MorePanel(
                                 state = state,
@@ -346,7 +386,12 @@ fun MusicMiniPlayerBar(
                                 onCollapse = if (!video) onCollapse else null,
                                 onOpenNowPlaying = onOpenNowPlaying,
                                 onSetVideoView = onSetVideoView,
-                                onDismiss = { moreOpen = false },
+                                onDismiss = {
+                                    moreOpen = false
+                                    // The popup owns its own focus owner; without this the keys die
+                                    // when it closes. Put them back on the button that opened it.
+                                    runCatching { moreRequester.requestFocus() }
+                                },
                             )
                         }
                     }
@@ -473,7 +518,12 @@ internal fun subtitle(state: MusicPlayerState, withQuality: Boolean = false): St
 
 /** The three controls that stay on the bar: previous, play or pause, next. */
 @Composable
-private fun Transport(state: MusicPlayerState, player: MusicPlayer) {
+private fun Transport(
+    state: MusicPlayerState,
+    player: MusicPlayer,
+    playFocus: FocusRequester,
+    onPlayFocusChanged: (Boolean) -> Unit,
+) {
     val colors = MaterialTheme.nuvio.colors
     IconButton(onClick = { player.previous() }, modifier = Modifier.size(56.dp)) {
         Icon(Icons.Rounded.SkipPrevious, contentDescription = "Previous", tint = colors.textPrimary, modifier = Modifier.size(34.dp))
@@ -483,7 +533,11 @@ private fun Transport(state: MusicPlayerState, player: MusicPlayer) {
             .size(68.dp)
             .clip(CircleShape)
             .background(colors.accentFill)
-            .musicKeyFocusRing(CircleShape).clickable { player.togglePlayback() },
+            .musicKeyFocusRing(CircleShape, always = true)
+            .focusRequester(playFocus)
+            .onFocusChanged { onPlayFocusChanged(it.isFocused) }
+            .testTag("musicBarPlayPause")
+            .clickable { player.togglePlayback() },
         contentAlignment = Alignment.Center,
     ) {
         if (state.isLoading && state.playWhenReady) {
@@ -512,13 +566,18 @@ private fun Transport(state: MusicPlayerState, player: MusicPlayer) {
  * and (when the panel is open) shows in the accent colour.
  */
 @Composable
-internal fun MoreButton(open: Boolean, onToggle: () -> Unit, panel: @Composable () -> Unit) {
+internal fun MoreButton(
+    open: Boolean,
+    onToggle: () -> Unit,
+    modifier: Modifier = Modifier,
+    panel: @Composable () -> Unit,
+) {
     val colors = MaterialTheme.nuvio.colors
     val source = remember { MutableInteractionSource() }
     val focused by source.collectIsKeyboardFocusedAsState()
     Box {
         Box(
-            modifier = Modifier
+            modifier = modifier
                 .size(56.dp)
                 .clip(CircleShape)
                 .background(if (focused || open) Color.White.copy(alpha = 0.14f) else Color.Transparent)
@@ -632,7 +691,10 @@ internal fun MorePanel(
                 onDismiss()
                 setMusicBarStyle(style.next())
             }
-            VolumeRow(state.volume, onChange = { player.setVolume(it.coerceIn(0, 100)) })
+            val volumeControl by com.nuvio.app.features.player.PlayerSettingsRepository.uiState.collectAsStateWithLifecycle()
+            if (volumeControl.desktopVolumeControlEnabled) {
+                VolumeRow(state.volume, onChange = { player.setVolume(it.coerceIn(0, 100)) })
+            }
             if (onCollapse != null) {
                 PanelRow(Icons.Rounded.KeyboardArrowDown, "Minimise to the dock") { onDismiss(); onCollapse() }
             }
@@ -644,7 +706,15 @@ internal fun MorePanel(
                     )
                 }
             }
-            PanelRow(Icons.Rounded.Close, "Close player") { onDismiss(); player.stop() }
+            PanelRow(Icons.Rounded.Close, "Close player") {
+                onDismiss()
+                player.stop()
+                // Closing the player must leave a real focus stop: the sidebar if it is drawn,
+                // otherwise the top bar. Otherwise the arrows do nothing on the page behind.
+                if (!com.nuvio.app.core.ui.RootNavFocus.enterSidebar()) {
+                    com.nuvio.app.core.ui.RootNavFocus.enterTopBar()
+                }
+            }
         }
     }
 }

@@ -16,7 +16,8 @@ import com.nuvio.app.core.ui.focusedControl
 import androidx.compose.ui.focus.focusProperties
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
-import androidx.compose.ui.input.key.Key
+import com.nuvio.app.core.ui.NavAction
+import com.nuvio.app.core.ui.navAction
 import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.onKeyEvent
 import com.nuvio.app.core.ui.LocalScreenCovered
@@ -126,6 +127,12 @@ internal fun Modifier.musicKeyboardRoot(
     entry: FocusRequester? = null,
     /** The player itself (see [MusicKeyboard.togglePlayerFocus]). */
     isPlayer: Boolean = false,
+    /**
+     * Lets an arrow that moved focus nowhere go unconsumed, for a root inside the Music tab: the tab
+     * host's hand-off then answers Left at the left edge with the navigation bar. Off for the pushed
+     * pages and the player overlays, which sit outside that host.
+     */
+    releaseArrowsAtEdge: Boolean = false,
 ): Modifier {
     val requester = remember { FocusRequester() }
     val root = remember(entry) { MusicKeyboard.Root(requester, takeFocus, entry, isPlayer) }
@@ -161,10 +168,13 @@ internal fun Modifier.musicKeyboardRoot(
         // player shortcut saves that on the way out and restores it on the way back.
         .focusRequester(requester)
         .focusGroup()
-        .arrowKeyFocusNavigation()
+        // A root inside the tab releases an arrow that moved focus nowhere, so Left at the left edge
+        // reaches the tab host's hand-off and the navigation bar. The pushed pages and the player
+        // overlays keep their arrows: nothing above them answers a released Left.
+        .arrowKeyFocusNavigation(releaseWhenStuck = releaseArrowsAtEdge)
         // An Enter no control used would otherwise be read by desktop Compose as "focus the first thing inside the
         // focused item" (Enter doubles as the D-pad centre), and focus seemed to jump down the page.
-        .onKeyEvent { it.key == Key.Enter || it.key == Key.NumPadEnter }
+        .onKeyEvent { it.navAction() == NavAction.Select }
 }
 
 private const val FOCUS_TRIES = 12

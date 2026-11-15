@@ -64,9 +64,16 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.withFrameNanos
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.ui.input.key.Key
+import androidx.compose.ui.input.key.KeyEventType
+import androidx.compose.ui.input.key.key
+import androidx.compose.ui.input.key.onKeyEvent
 import androidx.compose.ui.input.key.onPreviewKeyEvent
+import androidx.compose.ui.input.key.type
+import com.nuvio.app.core.ui.navigationKey
 import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.runtime.mutableStateOf
@@ -75,6 +82,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
@@ -159,6 +167,12 @@ fun MusicNowPlayingHost(
 ) {
     val state by player.state.collectAsStateWithLifecycle()
     val open by MusicPlayback.nowPlayingOpen.collectAsStateWithLifecycle()
+    val firstControl = remember { androidx.compose.ui.focus.FocusRequester() }
+    LaunchedEffect(open) {
+        if (!open) return@LaunchedEffect
+        withFrameNanos { }
+        runCatching { firstControl.requestFocus() }
+    }
     // The view goes with the player: a stopped player has nothing to show next time it starts.
     LaunchedEffect(state.isActive) {
         if (!state.isActive) MusicPlayback.nowPlayingOpen.value = false
@@ -179,6 +193,7 @@ fun MusicNowPlayingHost(
                 onOpenArtist = onOpenArtist,
                 onOpenAlbum = onOpenAlbum,
                 onOpenMusicTab = onOpenMusicTab,
+                firstControl = firstControl,
                 modifier = Modifier.fillMaxSize(), // takes the whole window; the content clears the bar itself
             )
         }
@@ -195,6 +210,7 @@ private fun MusicNowPlayingScreen(
     onOpenArtist: (String) -> Unit,
     onOpenAlbum: (String) -> Unit,
     onOpenMusicTab: () -> Unit,
+    firstControl: androidx.compose.ui.focus.FocusRequester? = null,
     modifier: Modifier = Modifier,
 ) {
     val colors = MaterialTheme.nuvio.colors
@@ -318,7 +334,19 @@ private fun MusicNowPlayingScreen(
         modifier
             .background(Color.Black)
             .musicKeyboardRoot(trapFocus = true)
+            // Back leaves the full player, rather than only moving focus to the collapse button.
             .onPreviewKeyEvent { inputTick++; false }
+            .onKeyEvent { event ->
+                val leave = event.type == KeyEventType.KeyDown &&
+                    (event.key == Key.Escape || event.key == Key.Backspace ||
+                        event.navigationKey() == Key.Escape || event.navigationKey() == Key.Backspace)
+                if (leave) {
+                    onClose()
+                    true
+                } else {
+                    false
+                }
+            }
             .pointerInput(Unit) {
                 awaitPointerEventScope {
                     while (true) {
@@ -580,6 +608,7 @@ private fun MusicNowPlayingScreen(
         }
         StageTopBar(
             title = state.albumTitle.orEmpty(),
+            firstControl = firstControl,
             view = if (state.mode == MusicPlayMode.Video) StageView.Video else StageView.Stage,
             reduced = reduced,
             canFullscreen = realVideo,
@@ -644,6 +673,7 @@ private fun StageTopBar(
     view: StageView,
     reduced: Boolean,
     canFullscreen: Boolean,
+    firstControl: androidx.compose.ui.focus.FocusRequester? = null,
     onClose: () -> Unit,
     onView: (StageView) -> Unit,
     onToggleMotion: () -> Unit,
@@ -664,7 +694,9 @@ private fun StageTopBar(
         horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         Row(
-            Modifier.height(40.dp).clip(CircleShape).background(Color.Black.copy(alpha = 0.45f)).musicKeyFocusRing(CircleShape).clickable(onClick = onClose)
+            Modifier.height(40.dp).clip(CircleShape).background(Color.Black.copy(alpha = 0.45f)).musicKeyFocusRing(CircleShape)
+                .then(if (firstControl != null) Modifier.focusRequester(firstControl) else Modifier)
+                .clickable(onClick = onClose)
                 .padding(start = 12.dp, end = 16.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(8.dp),

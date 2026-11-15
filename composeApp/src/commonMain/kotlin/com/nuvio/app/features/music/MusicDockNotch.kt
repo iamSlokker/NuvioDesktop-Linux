@@ -58,11 +58,13 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.input.key.type
+import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.input.key.onKeyEvent
 import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.KeyEventType
@@ -72,12 +74,14 @@ import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.nuvio.app.core.ui.NuvioAsyncImage
 import com.nuvio.app.core.ui.NuvioGlass
+import com.nuvio.app.core.ui.navigationKey
 import com.nuvio.app.core.ui.nuvio
 import com.nuvio.app.features.music.library.musicGlass
 import kotlinx.coroutines.Dispatchers
@@ -120,6 +124,8 @@ internal fun MusicDockNotch(
     onExpandVideo: (() -> Unit)? = null,
     /** The notch sits in the top half: the panel grows down from it rather than up. */
     opensDown: Boolean = false,
+    /** True when the dock is the person's chosen player, not a bar or corner card minimised to it. */
+    isPlayerStyle: Boolean = true,
 ) {
     val source = remember { MutableInteractionSource() }
     val hovered by source.collectIsHoveredAsState()
@@ -129,6 +135,23 @@ internal fun MusicDockNotch(
     // Reaching the dock with the keyboard goes straight on to the open panel's play button, so the arrows and Enter
     // work on its controls; the dock itself, a box around them, has nothing to press.
     val panelEntry = remember { FocusRequester() }
+    // fork:music-navbar - the nav bar's album cover asks for the mini player: focus the notch, which
+    // opens the panel and hands the keys on to its play button (the effect below). Focus is read
+    // back rather than assumed, because the notch may still be sliding in.
+    val notchFocus = remember { FocusRequester() }
+    val barFocusRequested = MusicPlayback.barFocusRequests.value
+    LaunchedEffect(barFocusRequested) {
+        // A bar or corner minimised to the dock still draws it, but then the dock is not what the
+        // album row should focus: leaving it collapsed lets that style come back and take the keys.
+        if (!isPlayerStyle) return@LaunchedEffect
+        if (barFocusRequested == 0) return@LaunchedEffect
+        if (!MusicPlayback.consumeBarFocusRequest()) return@LaunchedEffect
+        repeat(30) {
+            if (focusWithin) return@LaunchedEffect
+            withFrameNanos { }
+            runCatching { notchFocus.requestFocus() }
+        }
+    }
     LaunchedEffect(focused) {
         if (!focused) return@LaunchedEffect
         repeat(6) {
@@ -162,8 +185,21 @@ internal fun MusicDockNotch(
             .musicGlass(shape, keyFocused = focused)
             .hoverable(source)
             .onFocusChanged { focusWithin = it.hasFocus }
+            // Back out of the player hands the keys to whichever navigation bar is drawn, exactly as
+            // Back does from a page. Preview: the panel's own buttons keep their keys first.
+            .onPreviewKeyEvent { event ->
+                if (event.type != KeyEventType.KeyDown) return@onPreviewKeyEvent false
+                val leave = event.key == Key.Escape || event.key == Key.Backspace ||
+                    event.navigationKey() == Key.Escape || event.navigationKey() == Key.Backspace
+                if (!leave) return@onPreviewKeyEvent false
+                if (!com.nuvio.app.core.ui.RootNavFocus.enterSidebar()) {
+                    com.nuvio.app.core.ui.RootNavFocus.enterTopBar()
+                }
+                true
+            }
             // The dock's one focus stop (the folded notch's own click is mouse-only): focusing it opens the panel, the
             // arrows go on into the panel's buttons, and Enter on the dock itself brings the full player back.
+            .focusRequester(notchFocus)
             .focusable(interactionSource = source)
             .onKeyEvent { event ->
                 val enter = event.key == Key.Enter || event.key == Key.NumPadEnter
@@ -457,7 +493,16 @@ private fun DockNowPlaying(
     // The played part of the bar takes the cover's colour.
     val tint = rememberCoverTint(state.coverUrl)
     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-        Cover(state.coverUrl, size = 56)
+        // The cover is the way into the full Now Playing page, as it is on the bar and the corner card.
+        Cover(
+            state.coverUrl,
+            size = 56,
+            modifier = Modifier
+                .testTag("musicDockCover")
+                .clip(RoundedCornerShape(12.dp))
+                .musicKeyFocusRing(RoundedCornerShape(12.dp))
+                .clickable(onClick = onRestore),
+        )
         Column(Modifier.weight(1f)) {
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text(
@@ -485,7 +530,8 @@ private fun DockNowPlaying(
                 icon = if (state.playWhenReady) Icons.Rounded.Pause else Icons.Rounded.PlayArrow,
                 description = if (state.playWhenReady) "Pause" else "Play",
                 filled = true,
-                modifier = Modifier.focusRequester(entry),
+                ringAlways = true,
+                modifier = Modifier.focusRequester(entry).testTag("musicDockPlayPause"),
             ) { player.togglePlayback() }
             DockButton(Icons.Rounded.SkipNext, "Next", enabled = state.hasNext) { player.next() }
             onExpandVideo?.let { DockButton(Icons.Rounded.OpenInFull, "Expand video", onClick = it) }
@@ -514,10 +560,10 @@ private fun DockNowPlaying(
 }
 
 @Composable
-private fun Cover(url: String?, size: Int, round: Boolean = false) {
+private fun Cover(url: String?, size: Int, round: Boolean = false, modifier: Modifier = Modifier) {
     val colors = MaterialTheme.nuvio.colors
     Box(
-        Modifier.size(size.dp).clip(if (round) CircleShape else RoundedCornerShape((size / 5).dp)).background(colors.surfaceElevated),
+        modifier.size(size.dp).clip(if (round) CircleShape else RoundedCornerShape((size / 5).dp)).background(colors.surfaceElevated),
         contentAlignment = Alignment.Center,
     ) {
         if (url != null) {
@@ -534,6 +580,7 @@ private fun DockButton(
     description: String,
     filled: Boolean = false,
     enabled: Boolean = true,
+    ringAlways: Boolean = false,
     modifier: Modifier = Modifier,
     /** A toggle that is on (shuffle, repeat): drawn in the accent. */
     active: Boolean = false,
@@ -547,7 +594,7 @@ private fun DockButton(
             .size(if (small) 30.dp else 36.dp)
             .clip(CircleShape)
             .then(if (filled) Modifier.background(colors.accentFill) else Modifier)
-            .musicKeyFocusRing(CircleShape).clickable(enabled = enabled, onClick = onClick),
+            .musicKeyFocusRing(CircleShape, always = ringAlways).clickable(enabled = enabled, onClick = onClick),
         contentAlignment = Alignment.Center,
     ) {
         Icon(

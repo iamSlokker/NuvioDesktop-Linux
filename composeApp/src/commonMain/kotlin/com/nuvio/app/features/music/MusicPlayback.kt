@@ -21,6 +21,38 @@ data class MusicInlineVideoFrame(val left: Float, val top: Float, val width: Flo
  * [MusicPlayerHost] at the app root plays it and draws the mini-player.
  */
 object MusicPlayback {
+    /** Bumped when the nav bar's album cover asks for the mini player's controls. */
+    val barFocusRequests = androidx.compose.runtime.mutableStateOf(0)
+
+    /** The last request a mini player answered. Only the player on screen consumes it, and only once. */
+    private var barFocusConsumed = 0
+
+    /**
+     * True for the one mini player that is on screen, once per album-row request. The bar, dock and
+     * corner card all observe the counter; this keeps a player that re-enters the composition from
+     * stealing the keys again with an old request.
+     */
+    fun consumeBarFocusRequest(): Boolean {
+        val current = barFocusRequests.value
+        if (current == barFocusConsumed) return false
+        barFocusConsumed = current
+        return true
+    }
+
+    /**
+     * The nav bar's album row: bring the mini player back in the person's own style, open it and
+     * hand it the keys. The mini player observes [barFocusRequests].
+     */
+    fun requestBarFocus() {
+        // Present the mini player itself, not another surface that would cover it: the full Now
+        // Playing view, a ladder's slim pill and a fullscreen video all hide it.
+        nowPlayingOpen.value = false
+        slimBar.value = false
+        setVideoView(MusicVideoView.Bar)
+        barCollapsed.value = false
+        barFocusRequests.value++
+    }
+
     /** A ladder asked for from outside the Music tab (a genre chip on the Stage); the tab opens it and clears it. */
     internal val pendingLadder = MutableStateFlow<com.nuvio.app.features.music.library.LadderRequest?>(null)
 
@@ -104,6 +136,29 @@ object MusicPlayback {
 
 /** Where a first ever session starts: loud enough to hear, not the full-scale blast it used to be. */
 private const val DEFAULT_MUSIC_VOLUME = 50
+
+/**
+ * Where the keys sit across the nav bar / mini player hand-off (see the sidebar's album row).
+ * The mini player's Back hands them back to whichever bar drew the album row.
+ */
+internal enum class MusicKeysOwner { NavBar, MiniPlayer }
+
+/** The mini player's expansion + key ownership as a pure value, so the transition is testable. */
+internal data class MusicBarNavState(
+    val collapsed: Boolean,
+    val keysOwner: MusicKeysOwner,
+)
+
+/**
+ * Activating the nav bar's album/now-playing row: expands the mini player at the bottom of the
+ * screen and hands it the keys ([MusicPlayback.requestBarFocus]).
+ */
+internal fun activateAlbumRowFromNav(state: MusicBarNavState): MusicBarNavState =
+    state.copy(collapsed = false, keysOwner = MusicKeysOwner.MiniPlayer)
+
+/** Back on the mini player: the keys return to the nav bar; the bar itself stays expanded. */
+internal fun backFromMiniPlayer(state: MusicBarNavState): MusicBarNavState =
+    state.copy(keysOwner = MusicKeysOwner.NavBar)
 
 /** 3:07 or 1:02:09. Negative and unknown (0) lengths show as 0:00. */
 internal fun formatMusicTime(ms: Long): String {
