@@ -23,6 +23,7 @@ class LinuxHdrInputTest {
         KeyEvent.VK_A to PlayerShortcutAction.NextAudio,
         KeyEvent.VK_E to PlayerShortcutAction.OpenEpisodes,
         KeyEvent.VK_O to PlayerShortcutAction.OpenSources,
+        KeyEvent.VK_P to PlayerShortcutAction.OpenPlayerMenu,
         KeyEvent.VK_Z to PlayerShortcutAction.CycleZoom,
         KeyEvent.VK_N to PlayerShortcutAction.SkipInterval,
         KeyEvent.VK_F7 to PlayerShortcutAction.CycleSvp,
@@ -72,6 +73,7 @@ class LinuxHdrInputTest {
         assertEquals(LinuxHdrInputAction.LeaveHdr, action(LINUX_HDR_KEY_LEAVE))
         assertEquals(LinuxHdrInputAction.LeaveHdr, action(KeyEvent.VK_E))
         assertEquals(LinuxHdrInputAction.LeaveHdr, action(KeyEvent.VK_O))
+        assertEquals(LinuxHdrInputAction.LeaveHdr, action(KeyEvent.VK_P))
         assertEquals(LinuxHdrInputAction.SkipInterval, action(KeyEvent.VK_N))
         assertEquals(LinuxHdrInputAction.CycleHdr, action(KeyEvent.VK_H))
         assertEquals(LinuxHdrInputAction.ToggleDiagnostics, action(KeyEvent.VK_I))

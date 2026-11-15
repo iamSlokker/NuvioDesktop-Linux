@@ -9792,6 +9792,12 @@ function handlePlayerEscape(linux = false) {
 
 window.nuvioHandleLinuxEscape = () => {
   if (isHeroTrailerSurface || state.heroTrailerMode) return;
+  // While the keys drive a panel or the player menu, Escape is theirs (a page back, then closed), as
+  // Kotlin's dispatchKeyboardPanelKey hands it over on Windows; the Linux Escape arrives before that.
+  if (keyboardPanelMode && !subtitleHexField) {
+    window.nuvioHandleKeyboardPanelKey("Escape");
+    return;
+  }
   handlePlayerEscape(true);
 };
 
