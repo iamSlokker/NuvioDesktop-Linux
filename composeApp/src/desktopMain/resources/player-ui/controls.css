@@ -36,6 +36,9 @@
   --feedback-hidden-scale: .85;
   /* Top offset for the optional top-centre pill position; clears the header at any scale. */
   --pill-top: calc(var(--user-scale) * 132px);
+  /* Corner radius of the seek bar's track. The Linux focus ring on the bar uses it too, so the two
+   * stay the same shape. */
+  --hud-bar-radius: 999px;
   --hp: 20px;
   --vp: 16px;
   --title: 18px;
@@ -43,18 +46,18 @@
   --meta: 12px;
   --center-gap: 56px;
   --center-lift: 10px;
-  --slider-bottom: 10px;
+  --slider-bottom: 8px;
   --slider-touch: 22px;
   --slider-scale: .82;
   --overlay-bottom: calc(var(--slider-bottom) + var(--slider-touch) + 98px);
-  --control-row-height: 58px;
+  --control-row-height: 52px;
   --time: 12px;
-  --header-icon: 20px;
-  --header-button: 36px;
+  --header-icon: 19px;
+  --header-button: 34px;
   --side-pad: 10px;
-  --side-icon: 26px;
-  --play-pad: 13px;
-  --play-icon: 34px;
+  --side-icon: 24px;
+  --play-pad: 12px;
+  --play-icon: 32px;
   --motion-fast: 120ms;
   --motion-standard: 180ms;
   --motion-panel: 220ms;
@@ -85,16 +88,16 @@
     --meta: 12px;
     --center-gap: 72px;
     --center-lift: 14px;
-    --slider-bottom: 12px;
+    --slider-bottom: 8px;
     --slider-touch: 24px;
     --slider-scale: .78;
     --time: 12px;
-    --header-icon: 20px;
-    --header-button: 36px;
+    --header-icon: 19px;
+    --header-button: 34px;
     --side-pad: 12px;
-    --side-icon: 30px;
-    --play-pad: 15px;
-  --play-icon: 38px;
+    --side-icon: 28px;
+    --play-pad: 14px;
+  --play-icon: 36px;
   }
 }
 
@@ -107,16 +110,16 @@
     --meta: 13px;
     --center-gap: 88px;
     --center-lift: 18px;
-    --slider-bottom: 14px;
+    --slider-bottom: 10px;
     --slider-touch: 26px;
     --slider-scale: .74;
     --time: 13px;
-    --header-icon: 22px;
-    --header-button: 38px;
+    --header-icon: 20px;
+    --header-button: 36px;
     --side-pad: 13px;
-    --side-icon: 32px;
-    --play-pad: 16px;
-  --play-icon: 42px;
+    --side-icon: 30px;
+    --play-pad: 15px;
+  --play-icon: 40px;
   }
 }
 
@@ -129,16 +132,16 @@
     --meta: 14px;
     --center-gap: 112px;
     --center-lift: 24px;
-    --slider-bottom: 16px;
+    --slider-bottom: 12px;
     --slider-touch: 28px;
     --slider-scale: .72;
     --time: 14px;
-    --header-icon: 24px;
-    --header-button: 40px;
+    --header-icon: 22px;
+    --header-button: 38px;
     --side-pad: 14px;
-    --side-icon: 34px;
-    --play-pad: 18px;
-    --play-icon: 44px;
+    --side-icon: 32px;
+    --play-pad: 17px;
+    --play-icon: 42px;
   }
 }
 
@@ -2026,7 +2029,7 @@ button svg * {
 
 .scrub::-webkit-slider-runnable-track {
   height: 4px;
-  border-radius: 999px;
+  border-radius: var(--hud-bar-radius);
   /* Played fill -> lighter "buffered" (demuxer-cached ahead) band -> dark track. */
   background:
     linear-gradient(
@@ -4565,7 +4568,7 @@ svg {
  * late 4px override defeated the responsive 16–28px tokens above and made the HUD appear to jump
  * down when a newly-created WebView picked up that newer stylesheet. */
 :root {
-  --slider-bottom: calc(var(--user-scale) * 28px);
+  --slider-bottom: calc(var(--user-scale) * 24px);
 }
 #episodesModal .filter-row { padding-inline: 28px; }
 #episodesModal .track-list { padding: 10px 28px 18px; }
@@ -4713,23 +4716,23 @@ svg {
   --title: calc(var(--user-scale) * 30px);
   --episode: calc(var(--user-scale) * 17px);
   --meta: calc(var(--user-scale) * 15px);
-  --center-gap: calc(var(--user-scale) * 118px);
+  --center-gap: calc(var(--user-scale) * 112px);
   --center-lift: calc(var(--user-scale) * 26px);
   --slider-touch: calc(var(--user-scale) * 30px);
   --time: calc(var(--user-scale) * 15px);
-  --header-icon: calc(var(--user-scale) * 25px);
-  --header-button: calc(var(--user-scale) * 42px);
+  --header-icon: calc(var(--user-scale) * 24px);
+  --header-button: calc(var(--user-scale) * 40px);
   --side-pad: calc(var(--user-scale) * var(--control-icon-scale) * 15px);
-  --side-icon: calc(var(--user-scale) * var(--control-icon-scale) * 36px);
-  --play-pad: calc(var(--user-scale) * var(--control-icon-scale) * 19px);
-  --play-icon: calc(var(--user-scale) * var(--control-icon-scale) * 48px);
+  --side-icon: calc(var(--user-scale) * var(--control-icon-scale) * 34px);
+  --play-pad: calc(var(--user-scale) * var(--control-icon-scale) * 18px);
+  --play-icon: calc(var(--user-scale) * var(--control-icon-scale) * 46px);
 }
 
 .player-clock-time { font-size: calc(var(--user-scale) * 24px); }
 .desktop-control-row .action { padding: calc(var(--user-scale) * var(--control-icon-scale) * 10px); }
 .desktop-control-row .action svg {
-  width: calc(var(--user-scale) * var(--control-icon-scale) * 26px);
-  height: calc(var(--user-scale) * var(--control-icon-scale) * 26px);
+  width: calc(var(--user-scale) * var(--control-icon-scale) * 24px);
+  height: calc(var(--user-scale) * var(--control-icon-scale) * 24px);
 }
 .center-controls { gap: calc(var(--user-scale) * var(--control-icon-scale) * 32px); }
 .player-volume-control { width: calc(var(--user-scale) * 190px); }
@@ -4749,7 +4752,7 @@ svg {
      The control cluster sits ~20px up (lower than the earlier 34px so the buttons return toward
      the bottom); the seek bar is then pushed a further step up via .timeline-row margin below,
      opening a gap between the scrubber and the button row. */
-  --slider-bottom: calc(var(--user-scale) * 20px);
+  --slider-bottom: calc(var(--user-scale) * 16px);
   /* The legacy HUD's header is 25% shorter, so its pills can sit correspondingly higher. */
   --pill-top: calc(var(--user-scale) * 104px);
 }
@@ -5529,7 +5532,7 @@ svg {
    layout, so every time rule here targets them through that container. Kept last so the generic
    desktop grid/track sizing above cannot re-widen the row. */
 .player.minimal-hud {
-  --slider-bottom: calc(var(--user-scale) * 14px);
+  --slider-bottom: calc(var(--user-scale) * 12px);
   --side-icon: calc(var(--user-scale) * var(--control-icon-scale) * 24px);
 }
 .player.minimal-hud .timeline-row {
@@ -5557,8 +5560,8 @@ svg {
   padding: 0;
 }
 .player.minimal-hud .play-control svg {
-  width: calc(var(--user-scale) * var(--control-icon-scale) * 26px);
-  height: calc(var(--user-scale) * var(--control-icon-scale) * 26px);
+  width: calc(var(--user-scale) * var(--control-icon-scale) * 24px);
+  height: calc(var(--user-scale) * var(--control-icon-scale) * 24px);
 }
 .player.minimal-hud .time-cluster {
   order: 1;
@@ -5744,7 +5747,7 @@ svg {
    icons. Kept last, after the minimal block, for the same reason that one is: the generic desktop
    grid sizing above must not re-widen the row. */
 .player.ultra-hud {
-  --slider-bottom: calc(var(--user-scale) * 10px);
+  --slider-bottom: calc(var(--user-scale) * 9px);
 }
 /* The picture carries most of the frame here; the edge gradient only needs to keep the seek line
    and the two glyphs legible. */
@@ -5885,6 +5888,12 @@ svg {
   box-shadow: none;
 }
 
+/* "Player Volume Control: Off" -- the TV handles volume. Hiding the wrapper also removes the icon
+   and slider from the HUD nav order, because navFocusable needs a rendered rect. */
+.player.volume-control-hidden #playerVolumeControl {
+  display: none;
+}
+
 /* Official Nuvio layout (the "Player Controls Layout: Official Nuvio" setting -> .player.official-hud).
    The bottom bar of the official Nuvio Desktop player (NuvioMedia/NuvioDesktop), which shipped after
    this fork split off. Only the bottom bar is ported: the header, clock and side notches stay ours.
@@ -5897,7 +5906,7 @@ svg {
    overflow toggle by measurement exactly as in the other layouts. Kept last, like the minimal and
    ultra blocks, so the generic desktop grid sizing above cannot re-widen the row. */
 .player.official-hud {
-  --slider-bottom: calc(var(--user-scale) * 28px);
+  --slider-bottom: calc(var(--user-scale) * 24px);
 }
 .player.official-hud .progress {
   left: calc(var(--user-scale) * 28px);
@@ -5924,7 +5933,7 @@ svg {
 }
 .player.official-hud .scrub::-webkit-slider-runnable-track {
   height: calc(var(--user-scale) * 10px);
-  border-radius: 999px;
+  border-radius: var(--hud-bar-radius);
   /* Upstream paints the played part with the theme gradient when there is one, white otherwise;
      the buffered band between played and unplayed is this fork's and is kept. */
   background:
@@ -7666,6 +7675,65 @@ svg {
 }
 #subtitleModal .style-switch:hover { border-color: rgba(255, 255, 255, .26); }
 #subtitleModal .style-switch:focus-visible { outline: 2px solid var(--theme-focus); outline-offset: 2px; }
+/* Keyboard highlight on the Style tab (Linux). Dropdown items have their own highlight below. */
+#subtitleModal .style-row .keyboard-focused:not(.style-dropdown-option),
+#subtitleModal .subtitle-tab.keyboard-focused {
+  outline: 2px solid rgba(158, 202, 255, .95);
+  outline-offset: 3px;
+}
+
+/* Font dropdown: the trigger reads as the select did; the menu opens over the rows below it. */
+#subtitleModal .style-dropdown { position: relative; }
+#subtitleModal .style-dropdown-trigger {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 180px;
+  cursor: pointer;
+  text-align: left;
+}
+.style-dropdown-label {
+  flex: 1 1 auto;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.style-dropdown-caret { opacity: .7; }
+.style-dropdown-menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  z-index: 30;
+  min-width: 100%;
+  max-height: 260px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 6px;
+  background: rgba(28, 28, 30, .98);
+  border: 1px solid rgba(255, 255, 255, .16);
+  border-radius: 8px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, .45);
+}
+.style-dropdown-menu[hidden] { display: none; }
+.style-dropdown-option {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 7px 10px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: rgba(255, 255, 255, .92);
+  font: inherit;
+  font-size: 13px;
+  text-align: left;
+  cursor: pointer;
+}
+.style-dropdown-option:hover,
+.style-dropdown-option.keyboard-focused { background: rgba(158, 202, 255, .18); }
+.style-dropdown-option.selected::after { content: "\2713"; opacity: .8; }
 
 /* Swatches: a little larger, with a ring set off from the colour for the selected one. */
 #subtitleModal .style-group .swatch-row { gap: 9px; }
@@ -7740,6 +7808,14 @@ svg {
 }
 .chapter-markers,
 .player.official-hud .chapter-markers { display: none; }
+/* Linux HUD nav focus. The outline follows each control's own border-radius, so round buttons get a
+ * round ring. The seek input has no radius of its own, so it takes the bar's radius. */
+.player.linux-host .chrome-nav-focus {
+  outline: 2px solid var(--hud-focus-ring, rgba(255, 255, 255, .92));
+  outline-offset: 3px;
+}
+.player.linux-host #seek.chrome-nav-focus { border-radius: var(--hud-bar-radius); }
+
 /* fork:preshow */
 /* Pre-show pipeline: a Skip pill only. The volume slider and mute button are hidden; the rules use
    the chrome's id so they win over the scaled sizes defined for the shared trailer buttons. */

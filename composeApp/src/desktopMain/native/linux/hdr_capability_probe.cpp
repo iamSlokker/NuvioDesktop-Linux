@@ -113,7 +113,7 @@ void imageReady(void *data, wp_image_description_v1 *image, uint32_t identity) {
     d.info = wp_image_description_v1_get_information(image);
     wp_image_description_info_v1_add_listener(d.info, &infoListener, &d);
 }
-const wp_image_description_v1_listener imageListener = {imageFailed, imageReady};
+const wp_image_description_v1_listener imageListener = {imageFailed, imageReady, nullptr};
 
 struct Output {
     wl_output *proxy = nullptr;
@@ -187,7 +187,7 @@ void preferredChanged(void *data, wp_color_management_surface_feedback_v1 *, uin
     if (w.preferredIdentity && w.preferredIdentity != identity) w.descriptionChanged = true;
     w.preferredIdentity = identity;
 }
-const wp_color_management_surface_feedback_v1_listener feedbackListener = {preferredChanged};
+const wp_color_management_surface_feedback_v1_listener feedbackListener = {preferredChanged, nullptr};
 
 void global(void *data, wl_registry *registry, uint32_t name, const char *interface, uint32_t version) {
     auto &w = *static_cast<Wayland *>(data);

@@ -1,6 +1,10 @@
 package com.nuvio.app.features.player
 
 import com.nuvio.app.features.player.desktop.LinuxShaderMedia
+import com.nuvio.app.features.player.desktop.LinuxHudSelectRepeatGuard
+import com.nuvio.app.features.player.desktop.linuxHudNavKey
+import com.nuvio.app.features.player.desktop.linuxVolumeKeyType
+import com.nuvio.app.features.player.desktop.playerOwnsKeys
 import com.nuvio.app.features.player.desktop.linuxShaderProfile
 import com.nuvio.app.core.i18n.localizedString
 import androidx.compose.foundation.background
@@ -496,6 +500,8 @@ private fun NativePlayerSurface(
         GamepadContext.playerActive = true
         // The screensaver's "during playback" switch keys off the same fact.
         DesktopScreensaver.playerActive = true
+        // Linux only: a held Enter-class key is forwarded once per press, not once per auto-repeat.
+        val selectRepeat = LinuxHudSelectRepeatGuard()
         // Holding the play/pause key while playing plays at 2x until it is let go; a tap still pauses on release.
         // Paused, the key plays at once as before. Mirrors the HUD's own hold (controls.js, playHold*).
         var playHoldKey = 0
@@ -510,18 +516,23 @@ private fun NativePlayerSurface(
                 // behind it. The controller also consumes key-up/repeat for our own window.
                 return@KeyEventDispatcher controller.dispatchLinuxEscapeKey(event)
             }
-            if (event.id == KeyEvent.KEY_RELEASED && playHoldKey != 0 && event.keyCode == playHoldKey) {
-                playHoldJob?.cancel()
-                playHoldJob = null
-                playHoldKey = 0
-                if (playHoldActive) {
-                    playHoldActive = false
-                    controller.dispatchKeyboardShortcut("holdSpeedEnd", 0.0)
-                } else {
-                    controller.dispatchKeyboardShortcut("keyboardToggle", 1.0)
+            if (event.id == KeyEvent.KEY_RELEASED) {
+                if (DesktopHostOs.current == DesktopHostOs.LINUX) {
+                    selectRepeat.release(event.keyCode)
                 }
-                event.consume()
-                return@KeyEventDispatcher true
+                if (playHoldKey != 0 && event.keyCode == playHoldKey) {
+                    playHoldJob?.cancel()
+                    playHoldJob = null
+                    playHoldKey = 0
+                    if (playHoldActive) {
+                        playHoldActive = false
+                        controller.dispatchKeyboardShortcut("holdSpeedEnd", 0.0)
+                    } else {
+                        controller.dispatchKeyboardShortcut("keyboardToggle", 1.0)
+                    }
+                    event.consume()
+                    return@KeyEventDispatcher true
+                }
             }
             if (event.id != KeyEvent.KEY_PRESSED) return@KeyEventDispatcher false
             // Auto-repeat of a held play/pause key: the hold is already timing or running.
@@ -530,7 +541,16 @@ private fun NativePlayerSurface(
                 return@KeyEventDispatcher true
             }
             // fork:pip-browse - the video in its corner box over the app: the keys drive the app.
-            if (com.nuvio.app.features.player.PlayerBrowsePip.active.value) return@KeyEventDispatcher false
+            // fork:youtube-mini-player - same for the YouTube corner player and classic PiP: the
+            // player only owns the keys while the video fills the window (see playerOwnsKeys).
+            if (!playerOwnsKeys(
+                    controller.miniPlayer,
+                    com.nuvio.app.features.player.desktop.desktopPictureInPictureState.value,
+                    com.nuvio.app.features.player.PlayerBrowsePip.active.value,
+                )
+            ) {
+                return@KeyEventDispatcher false
+            }
             if (event.isMetaDown || event.isControlDown || event.isAltDown || event.isShiftDown) {
                 return@KeyEventDispatcher false
             }
@@ -568,13 +588,18 @@ private fun NativePlayerSurface(
             // routed to a focused Nuvio window, which defeats the point of a media key; they are
             // owned by the Windows media session in player_bridge.cpp and arrive as the
             // "media*" events handled in setControlCallbacks above.
+            // Every key the player forwards as navigation is a rebindable action, read here so a
+            // rebind takes effect on the next press: the arrows are AppShortcutAction.Move*, Select
+            // is SelectFocused, Escape is DismissOverlay, Enter is PlayPause. The native side and
+            // controls.js keep receiving the fixed names they know.
+            val navKeys = com.nuvio.app.features.player.desktop.HudNavKeyBindings.current()
             val panelKey = when (event.keyCode) {
-                KeyEvent.VK_UP -> "ArrowUp"
-                KeyEvent.VK_DOWN -> "ArrowDown"
-                KeyEvent.VK_LEFT -> "ArrowLeft"
-                KeyEvent.VK_RIGHT -> "ArrowRight"
-                AppShortcutsRepository.keyCode(AppShortcutAction.SelectFocused) -> "Enter"
-                AppShortcutsRepository.keyCode(AppShortcutAction.DismissOverlay) -> "Escape"
+                navKeys.up -> "ArrowUp"
+                navKeys.down -> "ArrowDown"
+                navKeys.left -> "ArrowLeft"
+                navKeys.right -> "ArrowRight"
+                navKeys.select -> "Enter"
+                navKeys.dismiss -> "Escape"
                 // Play / pause (a pad's A in the player) picks while the keys drive a panel or the player menu.
                 else -> if (controller.isKeyboardPanelOpen && playHoldKey == 0 &&
                     PlayerShortcutsRepository.actionForKeyCode(event.keyCode).let {
@@ -582,7 +607,24 @@ private fun NativePlayerSurface(
                     }
                 ) "Enter" else null
             }
+            val hudNavKey = if (DesktopHostOs.current == DesktopHostOs.LINUX) {
+                linuxHudNavKey(event.keyCode, controller.hudNavState, navKeys)
+            } else {
+                null
+            }
+            val forwardsEnter = DesktopHostOs.current == DesktopHostOs.LINUX &&
+                ((panelKey == "Enter" && controller.panelOpenForKeys) || hudNavKey == "Enter")
+            if (forwardsEnter && !selectRepeat.accept(event.keyCode)) {
+                event.consume()
+                return@KeyEventDispatcher true
+            }
             if (panelKey != null && controller.dispatchKeyboardPanelKey(panelKey)) {
+                event.consume()
+                return@KeyEventDispatcher true
+            }
+            // Linux HUD navigation: while controls.js reports a state that allows it, arrows and the
+            // bound Select key drive the HUD instead of seeking. Panels above keep priority.
+            if (hudNavKey != null && controller.dispatchHudNavKey(hudNavKey)) {
                 event.consume()
                 return@KeyEventDispatcher true
             }
@@ -608,12 +650,20 @@ private fun NativePlayerSurface(
                 event.consume()
                 return@KeyEventDispatcher true
             }
+            // Up and Down are volume here. With "Player volume control" off they are swallowed
+            // instead, so they change nothing and do not fall through to the player beneath.
+            if (event.keyCode == KeyEvent.VK_UP || event.keyCode == KeyEvent.VK_DOWN) {
+                linuxVolumeKeyType(
+                    event.keyCode,
+                    PlayerSettingsRepository.uiState.value.desktopVolumeControlEnabled,
+                )?.let { controller.dispatchKeyboardShortcut(it, 1.0) }
+                event.consume()
+                return@KeyEventDispatcher true
+            }
             // Directional controls stay fixed so keyboard/panel navigation remains recoverable.
             val fixedType = when (event.keyCode) {
                 KeyEvent.VK_LEFT -> "keyboardSeekBack"
                 KeyEvent.VK_RIGHT -> "keyboardSeekForward"
-                KeyEvent.VK_UP -> "volumeUp"
-                KeyEvent.VK_DOWN -> "volumeDown"
                 else -> null
             }
             if (fixedType != null) {

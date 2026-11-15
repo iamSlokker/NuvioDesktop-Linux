@@ -86,6 +86,8 @@ data class PlayerSettingsUiState(
     // The action row's buttons in the user's order, by `data-command`; empty keeps controls.html's order.
     val desktopHudButtonOrder: List<String> = emptyList(),
     val desktopAlwaysShowClockEnabled: Boolean = false,
+    // Shows the HUD volume icon and slider. Off when the TV handles volume; M still mutes.
+    val desktopVolumeControlEnabled: Boolean = false,
     // Adds the playing source (release name + provider) as the bottom row of the paused metadata
     // overlay. Off by default: the raw release strings are noisy, and only some viewers want them.
     val desktopPauseOverlaySourceEnabled: Boolean = false,
@@ -314,6 +316,7 @@ object PlayerSettingsRepository {
     private var desktopHiddenHudButtons: Set<String> = emptySet()
     private var desktopHudButtonOrder: List<String> = emptyList()
     private var desktopAlwaysShowClockEnabled = false
+    private var desktopVolumeControlEnabled = false
     private var desktopPauseOverlaySourceEnabled = false
     private var desktopPauseOverlayEnabled = true
     private var desktopPlaybackSpeedFineIncrementsEnabled = false
@@ -474,6 +477,7 @@ object PlayerSettingsRepository {
         desktopHiddenHudButtons = emptySet()
         desktopHudButtonOrder = emptyList()
         desktopAlwaysShowClockEnabled = false
+        desktopVolumeControlEnabled = false
         desktopPauseOverlaySourceEnabled = false
         desktopPauseOverlayEnabled = true
         desktopPlaybackSpeedFineIncrementsEnabled = false
@@ -646,6 +650,7 @@ object PlayerSettingsRepository {
             desktopLegacyHudEnabled = false
         }
         desktopAlwaysShowClockEnabled = PlayerSettingsStorage.loadDesktopAlwaysShowClockEnabled() ?: false
+        desktopVolumeControlEnabled = PlayerSettingsStorage.loadDesktopVolumeControlEnabled() ?: false
         desktopPauseOverlaySourceEnabled = PlayerSettingsStorage.loadDesktopPauseOverlaySourceEnabled() ?: false
         desktopPauseOverlayEnabled = PlayerSettingsStorage.loadDesktopPauseOverlayEnabled() ?: true
         desktopPlaybackSpeedFineIncrementsEnabled =
@@ -1058,6 +1063,14 @@ object PlayerSettingsRepository {
         desktopAlwaysShowClockEnabled = enabled
         publish()
         PlayerSettingsStorage.saveDesktopAlwaysShowClockEnabled(enabled)
+    }
+
+    fun setDesktopVolumeControlEnabled(enabled: Boolean) {
+        ensureLoaded()
+        if (desktopVolumeControlEnabled == enabled) return
+        desktopVolumeControlEnabled = enabled
+        publish()
+        PlayerSettingsStorage.saveDesktopVolumeControlEnabled(enabled)
     }
 
     fun setDesktopPauseOverlaySourceEnabled(enabled: Boolean) {
@@ -1889,6 +1902,7 @@ object PlayerSettingsRepository {
             desktopHiddenHudButtons = desktopHiddenHudButtons,
             desktopHudButtonOrder = desktopHudButtonOrder,
             desktopAlwaysShowClockEnabled = desktopAlwaysShowClockEnabled,
+            desktopVolumeControlEnabled = desktopVolumeControlEnabled,
             desktopPauseOverlaySourceEnabled = desktopPauseOverlaySourceEnabled,
             desktopPauseOverlayEnabled = desktopPauseOverlayEnabled,
             desktopPlaybackSpeedFineIncrementsEnabled = desktopPlaybackSpeedFineIncrementsEnabled,

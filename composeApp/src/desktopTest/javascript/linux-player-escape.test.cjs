@@ -16,6 +16,8 @@ function fixture(overrides = {}) {
   let listener;
   const ctx = {
     isHeroTrailerSurface: false, state: { heroTrailerMode: false, skipSubmitToastDismissible: false },
+    styleDropdownOpen: false, closeStyleDropdown: () => {},
+    linuxHost: false, hideHudForNav: () => { calls.push('hideHud'); ctx.state = { ...ctx.state, controlsVisible: false }; },
     subtitleHexField: '', contextMenuOpen: false, actionOverflowOpen: false,
     colorGradePanelOpen: false, activeModal: '', error: '', window: {},
     document: { addEventListener(type, fn) { assert.equal(type, 'keydown'); listener = fn; } },
@@ -52,6 +54,15 @@ for (const modal of ['sources', 'episodes', 'audio', 'subtitles', 'speed', 'vide
     f.calls.length = 0; f.linux(); assert.deepEqual(f.calls, ['skipSubmitDismiss']);
   });
 }
+test('Linux Back hides a visible HUD first, then leaves on the next Back', () => {
+  const f = fixture({ linuxHost: true, state: { controlsVisible: true, heroTrailerMode: false, skipSubmitToastDismissible: false } });
+  f.linux(); assert.deepEqual(f.calls, ['hideHud']);
+  f.calls.length = 0; f.linux(); assert.deepEqual(f.calls, ['escapeBack']);
+});
+test('Back with a modal open still closes the modal before the HUD', () => {
+  const f = fixture({ linuxHost: true, activeModal: 'audio', state: { controlsVisible: true } });
+  f.linux(); assert.deepEqual(f.calls, ['modal', 'focus']);
+});
 test('non-dismissible result toast permits escapeBack', () => {
   const f = fixture({ state: { skipSubmitToastDismissible: false } });
   f.linux(); assert.deepEqual(f.calls, ['escapeBack']);

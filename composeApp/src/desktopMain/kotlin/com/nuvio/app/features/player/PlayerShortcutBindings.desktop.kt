@@ -91,9 +91,16 @@ internal fun playerShortcutKeyCodeLabel(keyCode: Int): String = when (keyCode) {
 
 // Keys the dispatcher handles as fixed/navigation and therefore cannot be reassigned. Escape is
 // handled separately (cancels the capture).
-private val ReservedKeyCodes = setOf(
+//
+// The player's arrows (seek, volume, panel navigation) stay fixed, so the player rebind rejects
+// them. The app's arrows are now rebindable Move Up/Down/Left/Right, so the app rebind allows them.
+private val PlayerReservedKeyCodes = setOf(
     KeyEvent.VK_LEFT, KeyEvent.VK_RIGHT, KeyEvent.VK_UP, KeyEvent.VK_DOWN,
 )
+
+// App navigation directions are themselves rebindable actions; no key is reserved from the app
+// rebind (conflicts are caught by the per-key "already assigned" check instead).
+private val AppReservedKeyCodes: Set<Int> = emptySet()
 
 // Pure modifier presses are ignored so the capture keeps listening for a real key.
 private val ModifierKeyCodes = setOf(
@@ -127,7 +134,7 @@ actual fun PlayerShortcutRebindDialog(action: PlayerShortcutAction, onDismiss: (
                             vk in ModifierKeyCodes -> Unit // keep listening
                             event.isCtrlPressed || event.isAltPressed || event.isMetaPressed ->
                                 error = localizedString(Res.string.shortcuts_rebind_modifier_unsupported)
-                            vk in ReservedKeyCodes ->
+                            vk in PlayerReservedKeyCodes ->
                                 error = localizedString(Res.string.shortcuts_rebind_player_reserved, playerShortcutKeyCodeLabel(vk))
                             else -> {
                                 val existing = PlayerShortcutsRepository.actionForKeyCode(vk)
@@ -225,7 +232,7 @@ actual fun AppShortcutRebindDialog(action: AppShortcutAction, onDismiss: () -> U
                             vk in ModifierKeyCodes -> Unit
                             event.isCtrlPressed || event.isAltPressed || event.isMetaPressed ->
                                 error = localizedString(Res.string.shortcuts_rebind_modifier_unsupported)
-                            vk in ReservedKeyCodes ->
+                            vk in AppReservedKeyCodes ->
                                 error = localizedString(Res.string.shortcuts_rebind_app_reserved, playerShortcutKeyCodeLabel(vk))
                             else -> {
                                 val existing = AppShortcutsRepository.actionForKeyCode(vk)

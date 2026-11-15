@@ -270,6 +270,10 @@ internal class NativePlayerController(
     private var pendingSubtitleDelayMs: Int? = null
     @Volatile
     private var keyboardPanelOpen = false
+    /** Whether a keyboard panel is open, so the dispatcher forwards Enter to it. */
+    internal val panelOpenForKeys: Boolean get() = keyboardPanelOpen
+    /** Linux HUD navigation state reported by controls.js; see [LinuxHudNavState]. */
+    internal var hudNavState = LinuxHudNavState.UNAVAILABLE
     // Whether the current title was detected as anime (genre heuristic / caches). Pushed in by the
     // desktop engine so the F10 cycle and the shader context menu can mark which choice is actually
     // in effect right now (auto-applied preset vs Off) before any session force exists.
@@ -1705,6 +1709,16 @@ internal class NativePlayerController(
         NativePlayerBridge.runJavaScript(current, "window.nuvioIptvDigit && window.nuvioIptvDigit(${digit.coerceIn(0, 9)})")
     }
 
+    /** Linux HUD navigation: forwards one key name to controls.js. The JS decides what it does. */
+    fun dispatchHudNavKey(code: String): Boolean {
+        val current = handle.takeIf { it != 0L } ?: return false
+        NativePlayerBridge.runJavaScript(
+            current,
+            "window.nuvioHandleHudNavKey && window.nuvioHandleHudNavKey(${code.toJsonString()})",
+        )
+        return true
+    }
+
     /** A keyboard panel or the player menu is being driven by the keys (the HUD says so). */
     val isKeyboardPanelOpen: Boolean get() = keyboardPanelOpen
 
@@ -1889,6 +1903,10 @@ internal class NativePlayerController(
             }
             return
         }
+        if (type == "hudNavState") {
+            hudNavState = value.toInt()
+            return
+        }
         if (type == "keyboardPanelOpened") {
             keyboardPanelOpen = true
             return
@@ -1926,6 +1944,10 @@ internal class NativePlayerController(
                 // A YouTube video's watch page takes the button: page to filling the screen and back.
                 if (!com.nuvio.app.features.youtube.handleYouTubeFullscreenButton(window)) toggleDesktopAppFullscreen(window)
             }
+            // The HUD's Theater button, shown in YouTube mode only: toggles the watch page's theater.
+            "theater" -> com.nuvio.app.features.youtube.YouTubeFeedRepository.setTheaterMode(
+                !com.nuvio.app.features.youtube.YouTubeFeedRepository.theaterMode.value,
+            )
             // The HUD's Escape (with nothing of its own to close). The back button still sends "back".
             // A D-pad key while the post-show cards are up (the controls page forwards them: it holds keyboard focus).
             "postShowKey" -> PostShowController.press(value.toInt())
@@ -2393,6 +2415,7 @@ internal class NativePlayerController(
             }
         }
         keyboardPanelOpen = false
+        hudNavState = LinuxHudNavState.UNAVAILABLE
         lastSentControlsStructureKey = null
         hudLabelsSent = false
         lastSentMediaSessionKey = null

@@ -34,6 +34,7 @@ internal actual object PlayerSettingsStorage {
     private const val desktopHiddenHudButtonsKey = "desktop_hidden_hud_buttons"
     private const val desktopHudButtonOrderKey = "desktop_hud_button_order"
     private const val desktopAlwaysShowClockEnabledKey = "desktop_always_show_clock_enabled"
+    private const val desktopVolumeControlEnabledKey = "desktop_volume_control_enabled"
     private const val desktopPauseOverlaySourceEnabledKey = "desktop_pause_overlay_source_enabled"
     private const val desktopPauseOverlayEnabledKey = "desktop_pause_overlay_enabled"
     private const val desktopPlaybackSpeedFineIncrementsEnabledKey = "desktop_playback_speed_fine_increments_enabled"
@@ -308,6 +309,8 @@ internal actual object PlayerSettingsStorage {
     actual fun saveDesktopHudButtonOrder(commands: String) = saveString(desktopHudButtonOrderKey, commands)
     actual fun loadDesktopAlwaysShowClockEnabled(): Boolean? = loadBoolean(desktopAlwaysShowClockEnabledKey)
     actual fun saveDesktopAlwaysShowClockEnabled(enabled: Boolean) = saveBoolean(desktopAlwaysShowClockEnabledKey, enabled)
+    actual fun loadDesktopVolumeControlEnabled(): Boolean? = loadBoolean(desktopVolumeControlEnabledKey)
+    actual fun saveDesktopVolumeControlEnabled(enabled: Boolean) = saveBoolean(desktopVolumeControlEnabledKey, enabled)
     actual fun loadDesktopPauseOverlaySourceEnabled(): Boolean? = loadBoolean(desktopPauseOverlaySourceEnabledKey)
     actual fun saveDesktopPauseOverlaySourceEnabled(enabled: Boolean) =
         saveBoolean(desktopPauseOverlaySourceEnabledKey, enabled)

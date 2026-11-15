@@ -177,6 +177,10 @@ object AppShortcutsRepository {
         AppShortcutAction.SelectFocused to KeyEvent.VK_ENTER,
         AppShortcutAction.GoBack to KeyEvent.VK_BACK_SPACE,
         AppShortcutAction.DismissOverlay to KeyEvent.VK_ESCAPE,
+        AppShortcutAction.MoveUp to KeyEvent.VK_UP,
+        AppShortcutAction.MoveDown to KeyEvent.VK_DOWN,
+        AppShortcutAction.MoveLeft to KeyEvent.VK_LEFT,
+        AppShortcutAction.MoveRight to KeyEvent.VK_RIGHT,
         // fork:voice-control - free in the app and in the player (K is the player's alternate play/pause).
         AppShortcutAction.VoiceCommand to KeyEvent.VK_N,
         // R for Ring: the panel ring (features/panelring). The player's R (speed toggle) is a separate set of keys.

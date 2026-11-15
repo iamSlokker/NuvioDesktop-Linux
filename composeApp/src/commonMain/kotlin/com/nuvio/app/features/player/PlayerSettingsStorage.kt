@@ -33,6 +33,8 @@ internal expect object PlayerSettingsStorage {
     fun saveDesktopHudButtonOrder(commands: String)
     fun loadDesktopAlwaysShowClockEnabled(): Boolean?
     fun saveDesktopAlwaysShowClockEnabled(enabled: Boolean)
+    fun loadDesktopVolumeControlEnabled(): Boolean?
+    fun saveDesktopVolumeControlEnabled(enabled: Boolean)
     fun loadDesktopPauseOverlaySourceEnabled(): Boolean?
     fun saveDesktopPauseOverlaySourceEnabled(enabled: Boolean)
     fun loadDesktopPauseOverlayEnabled(): Boolean?

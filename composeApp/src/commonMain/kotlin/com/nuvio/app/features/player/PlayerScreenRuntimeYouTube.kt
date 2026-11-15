@@ -32,7 +32,12 @@ internal fun PlayerScreenRuntime.BindYouTubeRelatedEffect() {
     // fork:youtube-watch-page - the page can show while this player is up (YouTubeWatchLayout).
     androidx.compose.runtime.DisposableEffect(Unit) {
         com.nuvio.app.features.youtube.YouTubeWatchLayout.begin()
-        onDispose { com.nuvio.app.features.youtube.YouTubeWatchLayout.end() }
+        onDispose { com.nuvio.app.features.youtube.YouTubeWatchLayout.end(videoId) }
+    }
+    // fork:youtube-mini-player - the tab's cards need to know which video is in the corner. Keyed on the
+    // id so a hand-over to the next video (same player, new id) updates it too.
+    LaunchedEffect(videoId) {
+        com.nuvio.app.features.youtube.YouTubeWatchLayout.setPlayingVideo(videoId)
     }
     LaunchedEffect(videoId) {
         youTubeStoryboard = null

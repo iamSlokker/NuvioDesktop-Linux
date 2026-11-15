@@ -150,6 +150,9 @@
     <symbol id="icon-fullscreen" viewBox="0 0 24 24">
       <path d="M4 4h6v2H6v4H4V4Zm10 0h6v6h-2V6h-4V4ZM4 14h2v4h4v2H4v-6Zm14 0h2v6h-6v-2h4v-4Z"/>
     </symbol>
+    <symbol id="icon-theater" viewBox="0 0 24 24">
+      <path d="M3 5h18v11H3V5Zm2 2v7h14V7H5Zm-2 6h2v3H3v-3Zm4 0h2v3H7v-3Zm4 0h2v3h-2v-3Zm4 0h2v3h-2v-3Z"/>
+    </symbol>
   </svg>
 
   <div class="player" id="playerRoot" tabindex="-1">
@@ -436,6 +439,9 @@
             <!-- Ultra layout only (see .player.ultra-hud in controls.css). Not overflow-capable on
                  purpose: it must stay in the row beside the gear, never fold into the popover. -->
             <button class="action ultra-fullscreen-action" id="fullscreenButton" type="button" data-command="toggleFullscreen" aria-label="Fullscreen" title="Fullscreen" data-i18n-aria-label="player_hud_fullscreen" data-i18n-title="player_hud_fullscreen"><svg><use href="#icon-fullscreen"></use></svg><span data-i18n="player_hud_fullscreen">Fullscreen</span></button>
+            <!-- YouTube watch page only (see .youtube-video in controls.css). Theater toggles the
+                 page's theater mode; the label flips between the two views in controls.js. -->
+            <button class="action ultra-fullscreen-action youtube-only-action" id="theaterButton" type="button" data-command="theater" aria-label="Theater mode" title="Theater mode" hidden data-i18n-aria-label="player_hud_theater" data-i18n-title="player_hud_theater"><svg><use href="#icon-theater"></use></svg><span id="theaterLabel" data-i18n="player_hud_theater">Theater</span></button>
             <!-- Two static children for the ultra layout's popover: controls.js parks
                  #playerVolumeControl in the volume row and folds the .action buttons into the icon
                  row beneath it (every other layout appends them to the menu itself). Both are

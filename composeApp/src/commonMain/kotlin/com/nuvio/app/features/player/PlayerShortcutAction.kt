@@ -73,6 +73,12 @@ enum class AppShortcutAction(val id: String, val displayNameRes: StringResource)
     SelectFocused("select_focused", Res.string.shortcut_app_select_focused),
     GoBack("go_back", Res.string.shortcut_app_go_back),
     DismissOverlay("dismiss_overlay", Res.string.shortcut_app_dismiss_overlay),
+    // Directional navigation. Default to the arrow keys, but rebindable like Select/Back/Dismiss:
+    // every navigation consumer resolves these through [navigationKey], never the raw arrow keys.
+    MoveUp("move_up", Res.string.shortcut_app_move_up),
+    MoveDown("move_down", Res.string.shortcut_app_move_down),
+    MoveLeft("move_left", Res.string.shortcut_app_move_left),
+    MoveRight("move_right", Res.string.shortcut_app_move_right),
     VoiceCommand("voice_command", Res.string.shortcut_app_voice_command), // fork:voice-control
     OpenPanelRing("open_panel_ring", Res.string.shortcut_app_open_panel_ring),
 }

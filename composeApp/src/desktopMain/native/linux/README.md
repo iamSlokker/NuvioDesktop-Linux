@@ -394,9 +394,13 @@ identify any nonstandard dependency prefix; no Homebrew location is in source.
 Output: `composeApp/build/native/linux/libplayer_bridge.so`. The existing Linux
 loader already searches this development location. CMake's build RUNPATH includes
 libmpv/JAWT directories and `$ORIGIN`; this remains a local build, not a portable
-runtime distribution. Loader/staging logic and packaging are unchanged. The build
-is still opt-in, so a missing bridge cannot block ordinary application launch;
-attempting playback reports a player error.
+runtime distribution. The build is still opt-in, so a missing bridge cannot block
+ordinary application launch; attempting playback reports a player error. A locally
+built app image is the exception: `createDistributable` and
+`createReleaseDistributable` depend on this build and stage the bridge, the libmpv
+it linked against and `libquickjs.so` into the image's `lib/native`, the folder a
+packaged Linux layout is expected to carry them in
+(composeApp/linux-native-runtime.gradle.kts).
 
 ```bash
 CMAKE_PREFIX_PATH="$(brew --prefix libx11):$(brew --prefix xorgproto)" MPV_ROOT="$(brew --prefix mpv)" \

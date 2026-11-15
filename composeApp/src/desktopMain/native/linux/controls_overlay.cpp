@@ -727,8 +727,12 @@ void LinuxControlsOverlay::close() {
 
 void LinuxControlsOverlay::setWindowFocused(bool focused) {
     GtkThread::get().post([self = state_, focused] {
-        if (self->closing || !self->window) return;
+        if (self->closing) return;
+        // Remember it even when the GTK window has not been created yet: AWT reports focus as soon
+        // as the player attaches, which can be posted before create()'s task runs. Dropping the flag
+        // there left the HUD hidden for the whole session, because focus never changes again.
         self->hostWindowFocused = focused;
+        if (!self->window) return;
         if (self->pipHudVisibility.suppressed()) return;
         if (!focused) gtk_widget_hide(self->window);
         else if (!self->layout(true)) self->destroy();

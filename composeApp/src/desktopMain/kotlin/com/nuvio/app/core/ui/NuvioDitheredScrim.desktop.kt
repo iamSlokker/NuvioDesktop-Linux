@@ -243,10 +243,62 @@ half4 main(float2 coord) {
 private val verticalGradientEffect: RuntimeEffect by lazy { RuntimeEffect.makeForShader(VERTICAL_GRADIENT_SKSL) }
 
 internal actual fun nuvioDitheredVerticalGradient(colorStops: Array<Pair<Float, Color>>): Brush =
-    DitheredVerticalGradient(colorStops.toList())
+    DitheredVerticalGradient(cappedToShaderStops(colorStops.toList()))
+
+/**
+ * [stops] reduced to the shader's [NuvioScrimRamp.MAX_STOPS], by resampling a denser ramp at even
+ * fractions of its own span. A ramp that already fits is returned unchanged.
+ *
+ * The shader's loop bound is a compile-time constant, so a denser ramp cannot be handed to it as
+ * written, and the stop count is not something a caller can be trusted to keep in mind: a ramp
+ * built from a curve is exactly the kind of thing that grows a sample or two. Truncating would be
+ * worse than resampling — a dense ramp is dense because it follows a curve, so dropping its tail
+ * would hold the last kept stop's alpha across everything after it and the fade would stop short.
+ * Resampling keeps both endpoints and the shape between them, and a flat run at the end of the
+ * ramp (a solid tail) stays flat, because every position inside it reads that flat alpha.
+ */
+internal fun cappedToShaderStops(stops: List<Pair<Float, Color>>): List<Pair<Float, Color>> {
+    val cap = NuvioScrimRamp.MAX_STOPS
+    if (stops.size <= cap) return stops
+    val first = stops.first().first
+    val span = stops.last().first - first
+    return List(cap) { index ->
+        val position = first + span * index / (cap - 1).toFloat()
+        position to stopColorAt(stops, position)
+    }
+}
+
+/** The ramp's colour at [position], interpolated between the two stops that bracket it. */
+private fun stopColorAt(stops: List<Pair<Float, Color>>, position: Float): Color {
+    if (position <= stops.first().first) return stops.first().second
+    for (index in 0 until stops.size - 1) {
+        val low = stops[index]
+        val high = stops[index + 1]
+        if (position > high.first) continue
+        val width = high.first - low.first
+        val t = if (width <= 0f) 1f else (position - low.first) / width
+        return blendStops(low.second, high.second, t)
+    }
+    return stops.last().second
+}
+
+/** Premultiplied interpolation, as Skia blends a gradient's stops and this shader's ramps do. */
+private fun blendStops(from: Color, to: Color, t: Float): Color {
+    val alpha = from.alpha + (to.alpha - from.alpha) * t
+    if (alpha <= 0f) return Color(red = from.red, green = from.green, blue = from.blue, alpha = 0f)
+    fun channel(fromChannel: Float, toChannel: Float): Float =
+        (fromChannel * from.alpha + (toChannel * to.alpha - fromChannel * from.alpha) * t) / alpha
+    return Color(
+        red = channel(from.red, to.red),
+        green = channel(from.green, to.green),
+        blue = channel(from.blue, to.blue),
+        alpha = alpha,
+    )
+}
 
 private class DitheredVerticalGradient(private val stops: List<Pair<Float, Color>>) : ShaderBrush() {
     init {
+        // [cappedToShaderStops] has already resampled anything longer: this only asserts it.
         require(stops.isNotEmpty() && stops.size <= NuvioScrimRamp.MAX_STOPS) {
             "dithered gradients take 1..${NuvioScrimRamp.MAX_STOPS} stops"
         }

@@ -2,6 +2,7 @@ package com.nuvio.app.features.player.desktop
 
 import co.touchlab.kermit.Logger
 import com.nuvio.app.core.build.AppVersionConfig
+import com.nuvio.app.core.build.DesktopDevRun
 import com.nuvio.app.core.storage.DesktopStorage
 import java.io.File
 import java.nio.file.Files
@@ -42,7 +43,16 @@ internal object NativePlayerBridge {
             // A missing development bridge must not poison class initialization or app startup.
             runCatching { loadNativeLibrary() }.onFailure { error ->
                 linuxLoadFailure = error
-                log.w(error) { "Linux native player bridge unavailable; in-app playback remains disabled." }
+                // The cause (not just "unavailable") is what tells a missing build apart from a
+                // missing host library, a wrong path or an architecture mismatch.
+                log.e(error) {
+                    "Linux native player bridge unavailable; in-app playback remains disabled. " +
+                        "Cause: ${error.message ?: error::class.simpleName}"
+                }
+            }
+            if (linuxLoadFailure == null) {
+                runCatching { setDataDirectory(DesktopStorage.rootDir.toAbsolutePath().toString()) }
+                    .onFailure { log.w { "Native bridge data folder not set: ${it.message}" } }
             }
             if (linuxLoadFailure == null) {
                 runCatching { setDataDirectory(DesktopStorage.rootDir.toAbsolutePath().toString()) }
@@ -360,19 +370,43 @@ internal object NativePlayerBridge {
      * first real bridge call happens to land (historically the AWT event thread).
      */
     fun ensureNativeLibraryLoaded() {
-        linuxLoadFailure?.let { throw IllegalStateException("Linux native player bridge is unavailable.", it) }
+        linuxLoadFailure?.let { failure ->
+            throw IllegalStateException(
+                "Linux native player bridge is unavailable: " +
+                    (failure.message ?: failure::class.simpleName ?: "unknown load error") +
+                    ". Build it with :composeApp:buildLinuxPlayerBridge, or install a package that ships " +
+                    "libplayer_bridge.so (and libmpv.so.2) in lib/native.",
+                failure,
+            )
+        }
+    }
+
+    /** One-line state for diagnostic screens/logs: loaded path, or the exact load failure. */
+    fun linuxLoadDiagnostics(): String = when {
+        DesktopHostOs.current != DesktopHostOs.LINUX -> "not Linux"
+        linuxLoadFailure != null ->
+            "unavailable: ${linuxLoadFailure?.message ?: linuxLoadFailure?.javaClass?.simpleName}"
+        loadedRuntimeDir != null -> "loaded from ${loadedRuntimeDir?.absolutePath}"
+        else -> "available"
     }
 
     private fun loadNativeLibrary() {
         val platform = DesktopHostOs.current
         if (platform == DesktopHostOs.LINUX) {
             val libraryName = nativeLibraryName(platform)
-            val library = findPackagedNativeRuntime(
+            val packaged = findPackagedNativeRuntime(
                 platform, System.getProperty("java.home")?.let(::File),
                 listOf(libraryName, "libmpv.so.2"),
-            )?.resolve(libraryName)
-                ?: findLocalBuildLibrary(nativeDirectoryName(platform), libraryName)
-                ?: error("Linux native player bridge not found; run :composeApp:buildLinuxPlayerBridge first.")
+            )
+            val local = findLocalBuildLibrary(nativeDirectoryName(platform), libraryName)
+            val library = packaged?.resolve(libraryName) ?: local
+                ?: error(
+                    "Linux native player bridge not found. Looked for ${packaged?.resolve(libraryName)?.absolutePath ?: "packaged lib/native/$libraryName"} " +
+                        "and development ${File("composeApp/build/native/linux/$libraryName").absolutePath} / " +
+                        "${File("build/native/linux/$libraryName").absolutePath}" +
+                        (if (DesktopDevRun.allowsLocalNativeBuilds) "" else " (local native builds are refused outside a dev run)") +
+                        ". Run :composeApp:buildLinuxPlayerBridge first.",
+                )
             System.load(library.absolutePath)
             loadedRuntimeDir = library.parentFile
             return

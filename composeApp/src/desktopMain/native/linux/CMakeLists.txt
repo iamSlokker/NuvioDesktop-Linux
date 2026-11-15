@@ -54,6 +54,11 @@ target_link_options(player_bridge PRIVATE "LINKER:-z,defs")
 target_sources(player_bridge PRIVATE logind_power.cpp)
 
 get_filename_component(MPV_LIBRARY_DIR "${MPV_LIBRARY}" DIRECTORY)
+# A packaged layout has to ship the same shared object this bridge records as NEEDED, and only
+# CMake knows which one it resolved (MPV_ROOT, or the system search above). Read back by
+# composeApp/linux-native-runtime.gradle.kts, which stages it as lib/native/libmpv.so.2.
+get_filename_component(MPV_LIBRARY_REAL "${MPV_LIBRARY}" REALPATH)
+file(GENERATE OUTPUT "${CMAKE_BINARY_DIR}/mpv-library.txt" CONTENT "${MPV_LIBRARY_REAL}\n")
 option(NUVIO_PACKAGE_BUILD "Use relocatable jpackage Linux library layout" OFF)
 set_target_properties(player_bridge PROPERTIES
     CXX_STANDARD 17

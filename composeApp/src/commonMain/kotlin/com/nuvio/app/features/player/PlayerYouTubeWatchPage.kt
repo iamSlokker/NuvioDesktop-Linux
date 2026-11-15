@@ -62,7 +62,16 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.foundation.focusable
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.input.key.Key
+import androidx.compose.ui.input.key.KeyEventType
+import androidx.compose.ui.input.key.key
+import androidx.compose.ui.input.key.onPreviewKeyEvent
+import androidx.compose.ui.input.key.type
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Color
@@ -87,6 +96,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.nuvio.app.core.ui.NuvioAsyncImage
 import com.nuvio.app.core.ui.NuvioPosterHoverTooltip
+import com.nuvio.app.features.music.library.musicKeyFocusRing
+import com.nuvio.app.core.ui.arrowKeyFocusNavigation
 import com.nuvio.app.core.ui.NuvioTextField
 import com.nuvio.app.core.ui.nuvio
 import com.nuvio.app.features.youtube.WATCH_LATER_PLAYLIST_ID
@@ -103,7 +114,6 @@ import com.nuvio.app.features.youtube.YouTubeWatchQueue
 import com.nuvio.app.features.youtube.formatYouTubeCount
 import com.nuvio.app.features.youtube.isYouTubeVideoWatched
 import com.nuvio.app.features.youtube.requestYouTubeFastStream
-import com.nuvio.app.features.youtube.requestYouTubeFullscreen
 import com.nuvio.app.features.youtube.youTubeDisplayTitle
 import com.nuvio.app.features.youtubemusic.YouTubeMusicAuth
 import kotlinx.coroutines.CoroutineScope
@@ -387,7 +397,10 @@ private fun PlayerScreenRuntime.WatchDetails(comments: YouTubeWatchComments, mod
         thumbnailUrl = poster,
         channelId = details?.channelId,
     )
-    Column(modifier, verticalArrangement = Arrangement.spacedBy(12.dp)) {
+    Column(
+        modifier.arrowKeyFocusNavigation(),
+        verticalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
         Text(
             text = details?.title ?: title,
             style = MaterialTheme.typography.titleLarge,
@@ -396,6 +409,8 @@ private fun PlayerScreenRuntime.WatchDetails(comments: YouTubeWatchComments, mod
             maxLines = 2,
             overflow = TextOverflow.Ellipsis,
         )
+        // Theater and full screen live on the HUD control row (controls.js), so navigation from the
+        // player down reaches Subscribe, Like and the rest first.
         WatchActions(current, details, signedIn)
         WatchDescription(details?.views, details?.published, details?.description)
         WatchComments(comments, signedIn)
@@ -424,7 +439,6 @@ private fun WatchActions(current: YouTubeVideo, details: YouTubeVideoDetails?, s
     val inWatchLater = current.videoId in watchLater
     val queue by YouTubeWatchQueue.videos.collectAsState()
     val queued = queue.any { it.videoId == current.videoId }
-    val theater by YouTubeFeedRepository.theaterMode.collectAsState()
     val fastStream by YouTubeFastStreamState.status.collectAsState()
     var choosingPlaylist by remember(current.videoId) { mutableStateOf(false) }
     fun failed() {
@@ -432,7 +446,11 @@ private fun WatchActions(current: YouTubeVideo, details: YouTubeVideoDetails?, s
     }
 
     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        Row(
+            Modifier.arrowKeyFocusNavigation(releaseWhenStuck = true),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
             ChannelBlock(current, details, signedIn, onFailed = ::failed, modifier = Modifier.weight(1f))
             if (signedIn) {
                 WatchIconButton(Icons.Rounded.ThumbUp, if (liked) "Remove like" else "Like", on = liked, badge = likes?.let(::formatYouTubeCount)) {
@@ -479,10 +497,6 @@ private fun WatchActions(current: YouTubeVideo, details: YouTubeVideoDetails?, s
                     requestYouTubeFastStream(!fastStream.active || fastStream.windowed)
                 }
             }
-            WatchIconButton(TheaterIcon, if (theater) "Default view" else "Theater mode", on = theater) {
-                YouTubeFeedRepository.setTheaterMode(!theater)
-            }
-            WatchIconButton(Icons.Rounded.Fullscreen, "Full screen", on = false, onClick = ::requestYouTubeFullscreen)
         }
         status?.let {
             Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -965,6 +979,7 @@ private fun WatchIconButton(icon: ImageVector, label: String, on: Boolean, badge
         Row(
             Modifier
                 .height(40.dp)
+                .musicKeyFocusRing(shape)
                 .clip(shape)
                 .background(
                     when {
@@ -996,6 +1011,7 @@ private fun WatchPill(icon: ImageVector?, label: String, on: Boolean, onClick: (
     val tint = if (on) tokens.colors.accent else Color.White
     Row(
         Modifier
+            .musicKeyFocusRing(shape)
             .height(36.dp)
             .clip(shape)
             .background(
@@ -1015,36 +1031,6 @@ private fun WatchPill(icon: ImageVector?, label: String, on: Boolean, onClick: (
         icon?.let { Icon(it, contentDescription = null, tint = tint, modifier = Modifier.size(18.dp)) }
         Text(label, style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.SemiBold, color = tint, maxLines = 1)
     }
-}
-
-/**
- * Theater mode's icon: a wide screen (a frame across the whole width) with the picture spanning it,
- * drawn here as Material has no icon for it.
- */
-private val TheaterIcon: ImageVector by lazy {
-    ImageVector.Builder(name = "Theater", defaultWidth = 24.dp, defaultHeight = 24.dp, viewportWidth = 24f, viewportHeight = 24f)
-        .path(fill = SolidColor(Color.Black), pathFillType = PathFillType.EvenOdd) {
-            // The frame: an outer wide rectangle with the inside cut out.
-            moveTo(1.5f, 5.5f)
-            lineTo(22.5f, 5.5f)
-            lineTo(22.5f, 18.5f)
-            lineTo(1.5f, 18.5f)
-            close()
-            moveTo(3.5f, 7.5f)
-            lineTo(3.5f, 16.5f)
-            lineTo(20.5f, 16.5f)
-            lineTo(20.5f, 7.5f)
-            close()
-        }
-        .path(fill = SolidColor(Color.Black)) {
-            // The picture, edge to edge inside it.
-            moveTo(5f, 9.5f)
-            lineTo(19f, 9.5f)
-            lineTo(19f, 14.5f)
-            lineTo(5f, 14.5f)
-            close()
-        }
-        .build()
 }
 
 /** Comments posted from the page before YouTube's own copy is loaded: shown at once under this id prefix. */
