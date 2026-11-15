@@ -123,7 +123,8 @@ internal fun linuxHdrInputAction(
         PlayerShortcutAction.ChannelUp -> LinuxHdrInputAction.Event("iptvChannel", 1.0)
         PlayerShortcutAction.ChannelDown -> LinuxHdrInputAction.Event("iptvChannel", -1.0)
         PlayerShortcutAction.OpenSources,
-        PlayerShortcutAction.OpenEpisodes -> LinuxHdrInputAction.LeaveHdr
+        PlayerShortcutAction.OpenEpisodes,
+        PlayerShortcutAction.OpenPlayerMenu -> LinuxHdrInputAction.LeaveHdr
         PlayerShortcutAction.SkipInterval -> LinuxHdrInputAction.SkipInterval
         PlayerShortcutAction.CycleHdr -> LinuxHdrInputAction.CycleHdr
         PlayerShortcutAction.ToggleMpvDiagnostics -> LinuxHdrInputAction.ToggleDiagnostics

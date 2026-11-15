@@ -11,27 +11,22 @@ class LinuxPlayerMenuTest {
     private val controlsJs = resource("/player-ui/controls.js")
     private val controlsHtml = resource("/player-ui/controls.html")
 
-    @Test fun theMenuEntryTheLinuxHostRemovesStillExists() {
-        assertTrue("const contextMenuItems = [" in controlsJs, "contextMenuItems is no longer a top-level array")
-        val video = controlsJs.substringAfter("const contextMenuItems = [").substringAfter("label: \"Video\"")
-            .substringBefore("label: \"Tools\"")
-        assertTrue(
-            "action: \"send:keyboardCycleAnimeSvp\", toggleKey: \"svpInChain\"" in video,
-            "the Video menu has no SVP toggle to remove",
-        )
-        // The menu is built once at load; the script must remove the built row, found by this attribute.
-        assertTrue("button.dataset.toggleKey = item.toggleKey" in controlsJs)
-        assertTrue("[data-toggle-key=\"svpInChain\"]" in LINUX_PLAYER_MENU_SCRIPT)
-    }
-
-    @Test fun theRtxRowsTheLinuxHostRemovesStillExist() {
-        val video = controlsJs.substringAfter("const contextMenuItems = [").substringAfter("label: \"Video\"")
-            .substringBefore("label: \"Tools\"")
-        for ((action, toggle) in listOf("toggleRtxVsr" to "rtxVsrEnabled", "toggleRtxTrueHdr" to "rtxTrueHdrEnabled")) {
-            assertTrue("action: \"send:$action\", toggleKey: \"$toggle\"" in video, "the Video menu has no $action row to remove")
-            assertTrue("'send:$action'" in LINUX_PLAYER_MENU_SCRIPT)
-            assertTrue("[data-toggle-key=\"$toggle\"]" in LINUX_PLAYER_MENU_SCRIPT)
+    @Test fun theQuickTilesTheLinuxHostRemovesStillExist() {
+        assertTrue("const QUICK_TILES = [" in controlsJs, "QUICK_TILES is no longer a top-level array")
+        val tiles = controlsJs.substringAfter("const QUICK_TILES = [").substringBefore("\n];")
+        for ((action, toggle) in listOf(
+            "keyboardCycleAnimeSvp" to "svpInChain",
+            "toggleRtxTrueHdr" to "rtxTrueHdrEnabled",
+            "toggleRtxVsr" to "rtxVsrEnabled",
+        )) {
+            assertTrue("send(\"$action\", 0), null, \"$toggle\"]" in tiles, "the Quick actions grid has no $action tile to remove")
+            assertTrue("'$toggle'" in LINUX_PLAYER_MENU_SCRIPT)
+            assertTrue("[data-quick-toggle=\"$toggle\"]" in LINUX_PLAYER_MENU_SCRIPT)
         }
+        // The grid is built once at load (the toggle key in [3]); the script must remove the built tiles.
+        assertTrue("buildQuickTiles(contextMenu);" in controlsJs)
+        assertTrue("if (toggleKey) tile.dataset.quickToggle = toggleKey;" in controlsJs)
+        assertTrue("QUICK_TILES.forEach(([label, run, valueField, toggleKey, youTubeHidden])" in controlsJs)
     }
 
     @Test fun theHudButtonTheLinuxHostRemovesStillExists() {
