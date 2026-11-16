@@ -25,6 +25,8 @@ import com.nuvio.app.features.player.PlayerHeroTrailerState
 import com.nuvio.app.features.player.desktop.DesktopHostOs
 import com.nuvio.app.features.player.desktop.NativePlayerController
 import com.nuvio.app.features.player.desktop.NativePlayerHost
+import com.nuvio.app.features.player.desktop.heroTrailerHostUsesFullBounds
+import com.nuvio.app.features.player.desktop.linuxHeroPlayWhenReady
 import kotlinx.coroutines.delay
 
 private val previewLog = Logger.withTag("IptvLivePreview")
@@ -42,8 +44,9 @@ internal actual fun IptvLivePreview(
     onShowing: (Boolean) -> Unit,
 ) {
     val supported = DesktopHostOs.current == DesktopHostOs.WINDOWS || DesktopHostOs.current == DesktopHostOs.MACOS
+    val linux = DesktopHostOs.current == DesktopHostOs.LINUX // fork:linux
     val latestOnShowing = rememberUpdatedState(onShowing)
-    if (!supported || url == null) {
+    if ((!supported && !linux) || url == null) {
         LaunchedEffect(Unit) { latestOnShowing.value(false) }
         return
     }
@@ -53,7 +56,8 @@ internal actual fun IptvLivePreview(
             focusTraversalKeysEnabled = false
         }
     }
-    val controller = remember(host) { NativePlayerController(host) }
+    // fork:linux - a hero surface there: the one Linux player, started at real bounds (LinuxHeroHostGeometry).
+    val controller = remember(host) { NativePlayerController(host, linuxHeroSurface = linux) }
     var painted by remember { mutableStateOf(false) }
     var showing by remember(url) { mutableStateOf(false) }
     var failed by remember(url) { mutableStateOf(false) }
@@ -110,6 +114,12 @@ internal actual fun IptvLivePreview(
         controller.setMpvProperty("panscan", "1.0")
     }
 
+    // fork:linux - the preview holds the one Linux player only while it may play, as the hero trailers do.
+    val linuxActive = linuxHeroPlayWhenReady(true)
+    LaunchedEffect(controller, url, linuxActive) {
+        if (linux) controller.setLinuxHeroActive(linuxActive)
+    }
+
     LaunchedEffect(controller, url) {
         var lastPosition = -1L
         while (true) {
@@ -143,7 +153,13 @@ internal actual fun IptvLivePreview(
         CompositionLocalProvider(LocalDensity provides LocalNuvioBaseDensity.current) {
             SwingPanel(
                 factory = { host },
-                modifier = if (showing) Modifier.fillMaxSize() else Modifier.align(Alignment.BottomEnd).requiredSize(1.dp),
+                // fork:linux - mpv starts only at real bounds there, so the window takes the card while the channel
+                // opens (black until the picture moves) and goes back to one pixel if it never does.
+                modifier = if (heroTrailerHostUsesFullBounds(DesktopHostOs.current, showing, !linux || (linuxActive && !failed))) {
+                    Modifier.fillMaxSize()
+                } else {
+                    Modifier.align(Alignment.BottomEnd).requiredSize(1.dp)
+                },
                 background = Color.Black,
             )
         }

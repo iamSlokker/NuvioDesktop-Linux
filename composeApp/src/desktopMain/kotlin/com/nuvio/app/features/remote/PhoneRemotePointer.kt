@@ -159,7 +159,7 @@ internal object PhoneRemotePointer {
         robot?.let { return it }
         if (unavailable) return null
         return try {
-            Robot().also { robot = it }
+            linuxPointerRobot().also { robot = it } // fork:linux - the RemoteDesktop portal on Wayland (LinuxRemotePointer.kt)
         } catch (error: Exception) {
             // Headless, or a desktop that refuses synthetic input: say so once, then ignore the pointer.
             unavailable = true

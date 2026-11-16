@@ -33,7 +33,7 @@ if(NOT EXISTS "${MPV_INCLUDE_DIR}/mpv/client.h" OR
     message(FATAL_ERROR "libmpv headers/library not found; set MPV_ROOT to the mpv installation prefix")
 endif()
 
-add_library(player_bridge SHARED player_bridge.cpp memory_breakdown.cpp xlib_threads.cpp x11_error_handler_guard.cpp now_playing_glass.cpp awt_view_resolver.cpp controls_overlay.cpp seek_thumbnails.cpp playback_inhibitor.cpp screensaver_idle.cpp mpris_session.cpp linux_gamepad.cpp window_chrome.cpp window_chrome_jni.cpp pip_geometry_jni.cpp hdr_wayland_session.cpp flatpak_update.cpp flatpak_update_jni.cpp file_chooser_portal.cpp file_chooser_portal_jni.cpp)
+add_library(player_bridge SHARED player_bridge.cpp memory_breakdown.cpp xlib_threads.cpp x11_error_handler_guard.cpp now_playing_glass.cpp awt_view_resolver.cpp controls_overlay.cpp seek_thumbnails.cpp playback_inhibitor.cpp screensaver_idle.cpp mpris_session.cpp linux_gamepad.cpp window_chrome.cpp window_chrome_jni.cpp pip_geometry_jni.cpp hdr_wayland_session.cpp flatpak_update.cpp flatpak_update_jni.cpp file_chooser_portal.cpp file_chooser_portal_jni.cpp remote_pointer_portal.cpp remote_pointer_portal_jni.cpp)
 target_sources(player_bridge PRIVATE status_notifier.cpp status_notifier_jni.cpp)
 target_sources(player_bridge PRIVATE botguard_page_jni.cpp)
 # Optional X11 idle fallback. Wayland sessions never use an XWayland global idle estimate.
@@ -357,6 +357,12 @@ add_executable(linux_flatpak_update_probe EXCLUDE_FROM_ALL tests/flatpak_update_
 target_compile_features(linux_flatpak_update_probe PRIVATE cxx_std_17)
 target_compile_options(linux_flatpak_update_probe PRIVATE -Wall -Wextra -Werror)
 target_link_libraries(linux_flatpak_update_probe PRIVATE PkgConfig::GTK3)
+
+# Private-bus remote desktop portal pointer contract (tests/remote_pointer_portal_test.py).
+add_executable(linux_remote_pointer_portal_probe EXCLUDE_FROM_ALL tests/remote_pointer_portal_probe.cpp remote_pointer_portal.cpp)
+target_compile_features(linux_remote_pointer_portal_probe PRIVATE cxx_std_17)
+target_compile_options(linux_remote_pointer_portal_probe PRIVATE -Wall -Wextra -Werror)
+target_link_libraries(linux_remote_pointer_portal_probe PRIVATE PkgConfig::GTK3 Threads::Threads)
 
 # Private-bus file chooser and file transfer portal contract (tests/file_chooser_portal_test.py).
 add_executable(linux_file_chooser_portal_probe EXCLUDE_FROM_ALL tests/file_chooser_portal_probe.cpp file_chooser_portal.cpp)

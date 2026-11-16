@@ -23,6 +23,9 @@ import sys
 KOTLIN_ROOTS = ('composeApp/src/commonMain/', 'composeApp/src/desktopMain/kotlin/', 'composeApp/src/desktopMain/innertubex/')
 NATIVE_ROOT = 'composeApp/src/desktopMain/native/'
 LINUX_NATIVE = NATIVE_ROOT + 'linux/'
+# Native code the Linux packages build besides the bridge: whisper.cpp's JNI is shared with Windows
+# (tools/linux/packaging/whisper/build.py compiles it into libnuvio_whisper.so).
+LINUX_BUILT_NATIVE = (LINUX_NATIVE, NATIVE_ROOT + 'whisper-jni/')
 HUD_FILES = ('composeApp/src/desktopMain/resources/player-ui/controls.js',
              'composeApp/src/desktopMain/resources/player-ui/controls.html')
 # Where a HUD command can be handled on Linux: the bridge and the shared desktop code it reports to.
@@ -82,8 +85,9 @@ def tree_text(repo, roots, suffixes=('.kt', '.cpp', '.h', '.hpp', '.c', '.js', '
     return texts
 
 
-def word_in(texts, word, ignore=()):
-    pattern = re.compile(r'\b%s\b' % re.escape(word))
+def word_in(texts, word, ignore=(), jni=False):
+    # jni: also the tail of a full JNI symbol (Java_..._Class_name), as whisper_jni.cpp spells them.
+    pattern = re.compile(r'%s%s\b' % (r'(?:\b|(?<=_))' if jni else r'\b', re.escape(word)))
     return any(pattern.search(text) for path, text in texts.items() if path not in ignore)
 
 
@@ -94,7 +98,7 @@ def external_funs(repo, since, to, native_texts):
         match = EXTERNAL_FUN.search(text)
         if match:
             name = match.group(1) or match.group(2)
-            yield Item('external fun', path, number, name, word_in(native_texts, name))
+            yield Item('external fun', path, number, name, word_in(native_texts, name, jni=True))
 
 
 def has_linux_case(lines, index):
@@ -134,7 +138,7 @@ def hud_entries(repo, since, to, handler_texts):
 
 
 def checklist(repo, since, to):
-    native = tree_text(repo, (LINUX_NATIVE,))
+    native = tree_text(repo, LINUX_BUILT_NATIVE)
     handlers = tree_text(repo, LINUX_HANDLERS)
     return {
         'external fun': list(external_funs(repo, since, to, native)),
