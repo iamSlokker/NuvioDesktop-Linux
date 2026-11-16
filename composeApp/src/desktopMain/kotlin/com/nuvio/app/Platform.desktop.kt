@@ -37,7 +37,19 @@ internal actual fun desktopDisplayMetrics(): DesktopDisplayMetrics? = activeDesk
  */
 private fun updateDesktopDisplayMetrics(window: Window) {
     activeDesktopDisplayMetrics = runCatching {
-        metricsForConfiguration(configurationForWindow(window))
+        val metrics = metricsForConfiguration(configurationForWindow(window))
+        // Some XWayland/Compose combinations report a 1x1 default screen while the real window is
+        // already sized. Fall back to the window itself so the UI does not lay out at 1x1.
+        if (metrics.sizePx.width <= 1 || metrics.sizePx.height <= 1) {
+            metrics.copy(
+                sizePx = IntSize(
+                    width = window.width.coerceAtLeast(1),
+                    height = window.height.coerceAtLeast(1),
+                ),
+            )
+        } else {
+            metrics
+        }
     }.getOrNull() ?: activeDesktopDisplayMetrics
 }
 

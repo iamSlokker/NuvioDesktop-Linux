@@ -16,7 +16,7 @@
 
 This fork is unaffiliated with the Nuvio team. Don't worry about the commit disparity, Nuvio's team makes many small commits while I bundle everything into a single release commit for simplicity as this is mostly a solo focused project. 
 
-If you're a Linux user check out [Slokker's Linux Fork.](https://github.com/iamSlokker/NuvioDesktop-Linux) It supports appimage, flatpack or debian. It's based on the nightly releases of this project.
+Built off [Slokker's Linux fork](https://github.com/iamSlokker/NuvioDesktop-Linux) of [UmbraProject's NuvioHTPC](https://github.com/UmbraProjects/NuvioDesktop) version of [Nuvio Desktop](https://github.com/NuvioMedia/NuvioDesktop). It supports appimage, flatpack, debian and RPM. It's based on the nightly releases of this project.
 
 Linux development status and redistribution gates are documented in the
 [final readiness report](docs/FINAL-READINESS-REPORT.md). See
@@ -28,6 +28,9 @@ redistribution remains blocked by the documented source/rights/availability revi
 
 # Home Theatre features
 
+* Changed input handling and app navigation for out the box experience with remote/keyboard/gamepad
+* QR login added
+* Tweaked hero UI, player UI
 * Mouse, keyboard or controller friendly TV Mode with full-screen navigation, adaptive hero, row-jump navigation, cast and award information. This applies across all panels, not just home.
 * Game Mode for browsing and launching your game library alongside your media.
 * IPTV from your own provider (Xtream Codes, Stalker portal or M3U) with a programme guide, favourites and an in-player channel switcher, based on Slokker's GoatTV (used with Permission).

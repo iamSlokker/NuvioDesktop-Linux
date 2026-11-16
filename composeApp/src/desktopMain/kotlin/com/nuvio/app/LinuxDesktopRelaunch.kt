@@ -8,7 +8,13 @@ import java.nio.file.Path
 
 /** Linux package wrappers establish the native runtime; never restart the bare jpackage binary. */
 internal object LinuxDesktopRelaunch {
-    internal data class Launcher(val path: Path, val flatpak: Boolean = false, val latestFlatpak: Boolean = false)
+    internal data class Launcher(
+        val path: Path,
+        val flatpak: Boolean = false,
+        val latestFlatpak: Boolean = false,
+        /** Set for a dev run, whose start is a JVM command line rather than a package launcher. */
+        val explicitCommand: List<String>? = null,
+    )
 
     /**
      * [latestFlatpak] starts the newest deployed version in a new sandbox (after a Flatpak update);
@@ -16,12 +22,15 @@ internal object LinuxDesktopRelaunch {
      */
     fun relaunch(latestFlatpak: Boolean = false): Boolean {
         val environment = System.getenv()
-        val launcher = resolveLauncher(System.getProperty("jpackage.app-path"), environment)
+        val packaged = resolveLauncher(System.getProperty("jpackage.app-path"), environment)
             ?.let { if (latestFlatpak) latestFlatpakLauncher(it) ?: return false else it }
-            ?: return false
+        val launcher = packaged ?: devRunLauncher() ?: return false
         return start(
             launcher = launcher,
             directory = DesktopStorage.rootDir,
+            // A packaged launcher sets its own working directory; a dev run expects the one Gradle
+            // gave it, where build/ and the local native binaries it loads are relative to.
+            workingDirectory = if (packaged == null) currentWorkingDirectory() else null,
             parentPid = ProcessHandle.current().pid(),
             environment = environment,
             properties = PreservedProperties.mapNotNull { key -> System.getProperty(key)?.let { key to it } }.toMap(),
@@ -29,6 +38,11 @@ internal object LinuxDesktopRelaunch {
             requestExit = ::exitSoon,
         )
     }
+
+    /** The directory this process was started in; the dev relaunch runs from the same one. */
+    private fun currentWorkingDirectory(): Path? = runCatching { Path.of(System.getProperty("user.dir")) }
+        .getOrNull()
+        ?.takeIf { Files.isDirectory(it) }
 
     internal fun resolveLauncher(
         packagedLauncher: String?,
@@ -57,11 +71,83 @@ internal object LinuxDesktopRelaunch {
         executable: (Path) -> Boolean = { Files.isRegularFile(it) && Files.isExecutable(it) },
     ): Launcher? = launcher.takeIf { it.flatpak && executable(FlatpakSpawn) }?.copy(latestFlatpak = true)
 
+    /**
+     * An unpackaged start (a Gradle `run`, or any `java -cp` launch) has no package launcher, so
+     * [resolveLauncher] finds nothing and an account switch used to close the app for good. Rebuild
+     * the same JVM start instead: the class path, the main class, and every JVM input argument this
+     * process was given, so the new copy runs exactly as this one did.
+     */
+    internal fun devRunLauncher(
+        javaHome: String? = System.getProperty("java.home"),
+        classPath: String? = System.getProperty("java.class.path"),
+        mainClass: String? = devMainClass(),
+        inputArguments: List<String> = JvmInputArguments,
+        executable: (Path) -> Boolean = { Files.isRegularFile(it) && Files.isExecutable(it) },
+    ): Launcher? {
+        val java = javaHome?.takeIf(String::isNotBlank)
+            ?.let { Path.of(it).resolve("bin").resolve("java") }
+            ?: return null
+        if (!java.isAbsolute || !executable(java)) return null
+        return devJavaCommand(java, inputArguments, classPath, mainClass)
+            ?.let { Launcher(java, explicitCommand = it) }
+    }
+
+    /**
+     * `<java> <jvm args> -cp <class path> <main class>`. A class path already present in
+     * [inputArguments] is dropped first: the JVM takes the last one, and the one this process is
+     * running from is the one the new copy has to inherit.
+     */
+    internal fun devJavaCommand(
+        java: Path,
+        inputArguments: List<String>,
+        classPath: String?,
+        mainClass: String?,
+    ): List<String>? {
+        val cp = classPath?.takeIf(String::isNotBlank) ?: return null
+        val main = mainClass?.takeIf(String::isNotBlank) ?: return null
+        // Linux caps a single argument at 128 KB and the whole line at ARG_MAX (commonly 2 MB).
+        if (cp.length > MaxInlineClassPath) return null
+        val kept = mutableListOf<String>()
+        var index = 0
+        while (index < inputArguments.size) {
+            val argument = inputArguments[index]
+            when {
+                argument in ClassPathFlags -> index += 2
+                ClassPathFlags.any { argument.startsWith("$it=") } -> index += 1
+                else -> {
+                    kept += argument
+                    index += 1
+                }
+            }
+        }
+        return listOf(java.toString()) + kept + listOf("-cp", cp, main)
+    }
+
+    private val ClassPathFlags = listOf("-cp", "-classpath", "--class-path")
+
+    /** Beyond this a dev relaunch gives up rather than build an argument Linux would reject. */
+    private val MaxInlineClassPath = 100_000
+
+    /**
+     * The main class this JVM was started with, from `sun.java.command`'s first token. A source-file
+     * launch (`java Foo.java`) puts a path there, which is not a class this process could restart.
+     */
+    private fun devMainClass(): String? = System.getProperty("sun.java.command")
+        ?.trim()
+        ?.substringBefore(' ')
+        ?.takeIf { it.isNotBlank() && !it.endsWith(".jar") && !it.endsWith(".java") && '/' !in it }
+        ?: "com.nuvio.app.MainKt"
+
+    private val JvmInputArguments: List<String> by lazy {
+        runCatching { java.lang.management.ManagementFactory.getRuntimeMXBean().inputArguments }
+            .getOrDefault(emptyList())
+    }
+
     /** The command the helper execs once this process has exited. */
-    internal fun command(launcher: Launcher): List<String> = if (launcher.latestFlatpak) {
-        listOf(FlatpakSpawn.toString(), "--latest-version", launcher.path.toString())
-    } else {
-        listOf(launcher.path.toString())
+    internal fun command(launcher: Launcher): List<String> = when {
+        launcher.explicitCommand != null -> launcher.explicitCommand
+        launcher.latestFlatpak -> listOf(FlatpakSpawn.toString(), "--latest-version", launcher.path.toString())
+        else -> listOf(launcher.path.toString())
     }
 
     private val FlatpakSpawn: Path = Path.of("/usr/bin/flatpak-spawn")
@@ -74,6 +160,7 @@ internal object LinuxDesktopRelaunch {
         properties: Map<String, String>,
         startProcess: (ProcessBuilder) -> Unit,
         requestExit: () -> Unit,
+        workingDirectory: Path? = null,
     ): Boolean {
         val childEnvironment = childEnvironment(launcher, environment, properties) ?: return false
         val script = Files.createTempFile(directory, "relaunch-linux-", ".sh")
@@ -81,7 +168,7 @@ internal object LinuxDesktopRelaunch {
             Files.writeString(script, HelperScript)
             val process = ProcessBuilder(
                 listOf("/bin/sh", script.toString(), parentPid.toString(), "40") + command(launcher),
-            ).directory(directory.toFile())
+            ).directory((workingDirectory ?: directory).toFile())
                 .redirectInput(File("/dev/null"))
                 .redirectOutput(ProcessBuilder.Redirect.INHERIT)
                 .redirectError(ProcessBuilder.Redirect.INHERIT)

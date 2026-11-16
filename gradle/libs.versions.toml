@@ -15,6 +15,8 @@ supabase = "3.4.1"
 quickjsKt = "1.0.15"
 ksoup = "0.2.6"
 reorderable = "3.0.0"
+# QR pairing code (core is pure Java, no android/graphics). Same version Nuvio TV uses.
+zxing = "3.5.3"
 
 [libraries]
 kotlin-test = { module = "org.jetbrains.kotlin:kotlin-test", version.ref = "kotlin" }
@@ -48,6 +50,7 @@ supabase-realtime = { module = "io.github.jan-tennert.supabase:realtime-kt", ver
 quickjs-kt = { module = "io.github.dokar3:quickjs-kt", version.ref = "quickjsKt" }
 ksoup = { module = "com.fleeksoft.ksoup:ksoup", version.ref = "ksoup" }
 reorderable = { module = "sh.calvin.reorderable:reorderable", version.ref = "reorderable" }
+zxing-core = { group = "com.google.zxing", name = "core", version.ref = "zxing" }
 
 [plugins]
 composeMultiplatform = { id = "org.jetbrains.compose", version.ref = "composeMultiplatform" }

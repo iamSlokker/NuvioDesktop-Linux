@@ -80,6 +80,70 @@ class LinuxDesktopRelaunchTest {
         assertNull(LinuxDesktopRelaunch.resolveLauncher("/missing/nuvio", emptyMap()) { false })
     }
 
+    // A Gradle `run` has no package launcher, so an account switch used to exit and stay exited.
+    @Test
+    fun developerRunRebuildsItsOwnJvmStartInsteadOfStayingClosed() {
+        val java = Path.of("/opt/jdk/bin/java")
+        val command = assertNotNull(LinuxDesktopRelaunch.devJavaCommand(
+            java,
+            listOf("-Dskiko.renderApi=OPENGL", "-Dsun.java2d.d3d=false"),
+            "/build/classes:/build/libs/nuvio.jar",
+            "com.nuvio.app.MainKt",
+        ))
+        assertEquals(
+            listOf(
+                "/opt/jdk/bin/java", "-Dskiko.renderApi=OPENGL", "-Dsun.java2d.d3d=false",
+                "-cp", "/build/classes:/build/libs/nuvio.jar", "com.nuvio.app.MainKt",
+            ),
+            command,
+        )
+        // The launcher re-execs exactly this, not the package path it does not have.
+        assertEquals(
+            command,
+            LinuxDesktopRelaunch.command(
+                LinuxDesktopRelaunch.Launcher(java, explicitCommand = command),
+            ),
+        )
+    }
+
+    @Test
+    fun developerRunDropsTheClassPathItWasAlreadyGivenAndRepeatsThisProcessesOne() {
+        // Gradle passes -cp itself; the JVM takes the last one, so a stale copy must not survive.
+        val command = assertNotNull(LinuxDesktopRelaunch.devJavaCommand(
+            Path.of("/opt/jdk/bin/java"),
+            listOf("-cp", "/stale/classes", "--class-path=/also/stale", "-Xmx2g"),
+            "/live/classes",
+            "com.nuvio.app.MainKt",
+        ))
+        assertEquals(
+            listOf("/opt/jdk/bin/java", "-Xmx2g", "-cp", "/live/classes", "com.nuvio.app.MainKt"),
+            command,
+        )
+    }
+
+    @Test
+    fun developerRunGivesUpRatherThanStartSomethingThatCannotWork() {
+        val java = Path.of("/opt/jdk/bin/java")
+        assertNull(LinuxDesktopRelaunch.devJavaCommand(java, emptyList(), null, "com.nuvio.app.MainKt"))
+        assertNull(LinuxDesktopRelaunch.devJavaCommand(java, emptyList(), "  ", "com.nuvio.app.MainKt"))
+        assertNull(LinuxDesktopRelaunch.devJavaCommand(java, emptyList(), "/cp", null))
+        // Beyond a single argument Linux accepts, so a truncated start is not attempted.
+        assertNull(LinuxDesktopRelaunch.devJavaCommand(java, emptyList(), "x".repeat(100_001), "com.nuvio.app.MainKt"))
+        // No java to run, or no java executable.
+        assertNull(LinuxDesktopRelaunch.devRunLauncher(javaHome = null, classPath = "/cp", mainClass = "com.nuvio.app.MainKt") { true })
+        assertNull(LinuxDesktopRelaunch.devRunLauncher(javaHome = "/opt/jdk", classPath = "/cp", mainClass = "com.nuvio.app.MainKt") { false })
+        // With a java to run it is a launcher whose command is the rebuilt JVM start.
+        assertEquals(
+            LinuxDesktopRelaunch.Launcher(
+                Path.of("/opt/jdk/bin/java"),
+                explicitCommand = listOf("/opt/jdk/bin/java", "-cp", "/cp", "com.nuvio.app.MainKt"),
+            ),
+            LinuxDesktopRelaunch.devRunLauncher(
+                javaHome = "/opt/jdk", classPath = "/cp", mainClass = "com.nuvio.app.MainKt", inputArguments = emptyList(),
+            ) { true },
+        )
+    }
+
     @Test
     fun appImageEnvironmentPreservesProfileAndDesktopButDropsExpiredRuntimePaths() {
         val environment = mapOf(
