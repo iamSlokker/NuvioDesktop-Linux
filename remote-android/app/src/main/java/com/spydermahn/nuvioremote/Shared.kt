@@ -8,7 +8,15 @@ import android.provider.Settings
 import java.net.HttpURLConnection
 import java.net.URL
 
-enum class PadMode { Touchpad, DPad }
+enum class PadMode(val label: String) {
+    Touchpad("Touchpad"), DPad("D-pad"),
+    /** The phone as an air mouse for the PC's cursor (GyroPointer.kt). */
+    Pointer("Pointer"),
+    ;
+
+    /** The mode the switch in the pad's corner goes to next. */
+    fun next(): PadMode = entries[(ordinal + 1) % entries.size]
+}
 
 /** How bright the phone is in dark mode (the window's own brightness, 0 to 1). */
 enum class DarkLevel(val label: String, val brightness: Float) {
@@ -67,6 +75,13 @@ class PcStore(context: Context) {
             prefs.edit().putString(KEY_PAD, value.name).apply()
         }
 
+    /** How fast the pointer moves the cursor (GyroPointer.kt). */
+    var pointerSpeed: PointerSpeed
+        get() = runCatching { PointerSpeed.valueOf(prefs.getString(KEY_POINTER_SPEED, null) ?: "") }.getOrDefault(PointerSpeed.Normal)
+        set(value) {
+            prefs.edit().putString(KEY_POINTER_SPEED, value.name).apply()
+        }
+
     /** A PC's network cards and broadcast addresses (from its WAKE line), to wake it later. */
     fun wake(address: String): ServerLine.Wake? {
         val saved = prefs.getString("$KEY_WAKE$address", null) ?: return null
@@ -87,6 +102,20 @@ class PcStore(context: Context) {
             prefs.edit().putString(KEY_DARK, value.name).apply()
         }
 
+    /** Poster wallpaper: the lock screen shows what the TV plays (off until turned on). */
+    var posterWallpaper: Boolean
+        get() = prefs.getBoolean(KEY_POSTER_WALLPAPER, false)
+        set(value) {
+            prefs.edit().putBoolean(KEY_POSTER_WALLPAPER, value).apply()
+        }
+
+    /** The art now on the lock screen from the TV, or null when the user's own picture is there. */
+    var wallpaperUrl: String?
+        get() = prefs.getString(KEY_WALLPAPER_URL, null)
+        set(value) {
+            prefs.edit().apply { if (value == null) remove(KEY_WALLPAPER_URL) else putString(KEY_WALLPAPER_URL, value) }.commit()
+        }
+
     /** The PC the remote was last connected to, if it is still paired. */
     fun last(): SavedPc? = lastAddress?.let { address -> saved().firstOrNull { it.address == address } }
 
@@ -95,8 +124,11 @@ class PcStore(context: Context) {
         const val KEY_LAST = "last_pc"
         const val KEY_THEME = "theme_"
         const val KEY_PAD = "pad_mode"
+        const val KEY_POINTER_SPEED = "pointer_speed"
         const val KEY_DARK = "dark_level"
         const val KEY_WAKE = "wake_"
+        const val KEY_POSTER_WALLPAPER = "poster_wallpaper"
+        const val KEY_WALLPAPER_URL = "wallpaper_url"
     }
 }
 
@@ -120,6 +152,13 @@ object Covers {
     /** Blocking; call off the main thread. Null when there is no picture to be had. */
     fun load(url: String): Bitmap? {
         cached(url)?.let { return it }
+        val bitmap = fetch(url, MAX_SIDE) ?: return null
+        synchronized(this) { kept[url] = bitmap }
+        return bitmap
+    }
+
+    /** Blocking and not kept: [url]'s picture with its shorter side brought down to about [maxSide]. */
+    fun fetch(url: String, maxSide: Int): Bitmap? {
         if (!url.startsWith("http://") && !url.startsWith("https://")) return null
         val bytes = runCatching {
             val connection = URL(url).openConnection() as HttpURLConnection
@@ -135,10 +174,7 @@ object Covers {
         val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
         BitmapFactory.decodeByteArray(bytes, 0, bytes.size, bounds)
         var sample = 1
-        while (bounds.outWidth / (sample * 2) >= MAX_SIDE && bounds.outHeight / (sample * 2) >= MAX_SIDE) sample *= 2
-        val bitmap = BitmapFactory.decodeByteArray(bytes, 0, bytes.size, BitmapFactory.Options().apply { inSampleSize = sample })
-            ?: return null
-        synchronized(this) { kept[url] = bitmap }
-        return bitmap
+        while (bounds.outWidth / (sample * 2) >= maxSide && bounds.outHeight / (sample * 2) >= maxSide) sample *= 2
+        return BitmapFactory.decodeByteArray(bytes, 0, bytes.size, BitmapFactory.Options().apply { inSampleSize = sample })
     }
 }

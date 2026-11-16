@@ -42,6 +42,8 @@ data class UiState(
     val continueWatching: List<ResumeItem> = emptyList(),
     /** The TV's Tonight picker while it is on screen; the remote mirrors it. */
     val tonight: TonightScreenInfo? = null,
+    /** The TV's Live TV stage while it is on screen; the remote mirrors it. */
+    val liveTv: LiveTvScreenInfo? = null,
     /** The source list while the TV shows one; the remote shows it to pick from. */
     val sources: SourceList? = null,
     /** Nuvio's catalog search for the Watch tab's query; null until asked. */
@@ -74,6 +76,7 @@ data class UiState(
     /** The TV's theme; the phone wears it. */
     val theme: RemoteTheme = RemoteTheme.Default,
     val padMode: PadMode = PadMode.Touchpad,
+    val pointerSpeed: PointerSpeed = PointerSpeed.Normal,
     /** Dark mode: the phone black and dim, gestures anywhere (see DarkModeScreen). */
     val dark: Boolean = false,
     val darkLevel: DarkLevel = DarkLevel.Medium,
@@ -126,6 +129,7 @@ class RemoteViewModel(application: Application) : AndroidViewModel(application) 
             saved = store.saved(),
             theme = store.last()?.let { store.theme(it.address) } ?: RemoteTheme.Default,
             padMode = store.padMode,
+            pointerSpeed = store.pointerSpeed,
             darkLevel = store.darkLevel,
         ),
     )
@@ -335,6 +339,66 @@ class RemoteViewModel(application: Application) : AndroidViewModel(application) 
         _state.update { it.copy(padMode = mode) }
     }
 
+    fun setPointerSpeed(speed: PointerSpeed) {
+        store.pointerSpeed = speed
+        _state.update { it.copy(pointerSpeed = speed) }
+    }
+
+    // --- The pointer (GyroPointer.kt) ---
+    // The gyro sends up to a hundred steps a second. They are added up here and the io thread sends what has built up
+    // when it gets to it, so a slow network makes the cursor take bigger steps rather than fall behind the phone.
+    private val pendingX = java.util.concurrent.atomic.AtomicInteger()
+    private val pendingY = java.util.concurrent.atomic.AtomicInteger()
+    private val pointFlushQueued = java.util.concurrent.atomic.AtomicBoolean()
+
+    /** Moves the TV's cursor by [dx], [dy] in POINT units; dropped while not connected (no reconnect per step). */
+    fun point(dx: Int, dy: Int) {
+        pendingX.addAndGet(dx)
+        pendingY.addAndGet(dy)
+        if (pointFlushQueued.getAndSet(true)) return
+        io.execute {
+            pointFlushQueued.set(false)
+            val x = pendingX.getAndSet(0)
+            val y = pendingY.getAndSet(0)
+            if (x == 0 && y == 0) return@execute
+            sendIfConnected { it.point(x, y) }
+        }
+    }
+
+    fun pointCentre() = sendOrReconnect { it.control("POINT_CENTRE") }
+
+    /** `left`, `right` or `middle`. */
+    fun click(button: String) = sendOrReconnect { it.control("CLICK $button") }
+
+    /** Wheel notches, positive is down. */
+    fun scroll(notches: Int) = sendOrReconnect { it.control("SCROLL $notches") }
+
+    /** Sideways wheel notches, positive is right. */
+    fun scrollSideways(notches: Int) = sendOrReconnect { it.control("HSCROLL $notches") }
+
+    /**
+     * Holds a mouse button down on the PC for a drag; [release] lets go. Sent in order with the POINT steps (one io
+     * thread), so a drag ends where the cursor got to. The PC lets go by itself if the phone disconnects.
+     */
+    fun press(button: String) {
+        flushPoint()
+        sendOrReconnect { it.control("PRESS $button") }
+    }
+
+    fun release(button: String) {
+        flushPoint()
+        sendOrReconnect { it.control("RELEASE $button") }
+    }
+
+    /** Queues what the gyro has built up ahead of a button change. */
+    private fun flushPoint() {
+        io.execute {
+            val x = pendingX.getAndSet(0)
+            val y = pendingY.getAndSet(0)
+            if (x != 0 || y != 0) sendIfConnected { it.point(x, y) }
+        }
+    }
+
     fun type(text: String) = sendOrReconnect { it.text(text) }
 
     fun backspace(count: Int) = sendOrReconnect { session -> repeat(count) { session.key(RemoteKey.Backspace) } }
@@ -395,6 +459,19 @@ class RemoteViewModel(application: Application) : AndroidViewModel(application) 
         }
     }
 
+    /** On the io thread already: sends only if connected, and never starts a reconnect. */
+    private fun sendIfConnected(action: (RemoteSession) -> Unit) {
+        val current = session ?: return
+        if (!current.isOpen || _state.value.link != Link.Connected) return
+        try {
+            action(current)
+        } catch (_: IOException) {
+            closeSession()
+            _state.update { it.copy(link = Link.Offline) }
+            viewModelScope.launch { reconnect() }
+        }
+    }
+
     private fun sendOrReconnect(action: (RemoteSession) -> Unit) {
         io.execute {
             val current = session
@@ -447,6 +524,7 @@ class RemoteViewModel(application: Application) : AndroidViewModel(application) 
                     is ServerLine.Continue -> _state.update { it.copy(continueWatching = line.items) }
                     is ServerLine.Sources -> _state.update { it.copy(sources = line.list) }
                     is ServerLine.Tonight -> _state.update { it.copy(tonight = line.screen) }
+                    is ServerLine.LiveTv -> _state.update { it.copy(liveTv = line.screen) }
                     is ServerLine.Audio -> _state.update { it.copy(audio = line) }
                     is ServerLine.Subtitles -> _state.update { it.copy(subtitles = line) }
                     is ServerLine.Queue -> _state.update { it.copy(queue = line) }
@@ -466,6 +544,7 @@ class RemoteViewModel(application: Application) : AndroidViewModel(application) 
                         }
                     }
                     is ServerLine.Opening -> notify("Opening ${line.what} on the TV")
+                    is ServerLine.Score -> ScoreNotifications.show(getApplication(), line)
                     is ServerLine.Menu -> _state.update { state ->
                         val open = state.menu
                         if (open == null || open.target != line.target) state else state.copy(menu = open.copy(loaded = line))
@@ -527,7 +606,7 @@ class RemoteViewModel(application: Application) : AndroidViewModel(application) 
     private fun closeSession() {
         session?.close()
         session = null
-        _state.update { it.copy(nowPlaying = null, cover = null, sources = null, tonight = null) }
+        _state.update { it.copy(nowPlaying = null, cover = null, sources = null, tonight = null, liveTv = null) }
     }
 
     /** A ping every few seconds, so a PC that went to sleep shows as offline before the next press. */
@@ -723,6 +802,11 @@ class RemoteViewModel(application: Application) : AndroidViewModel(application) 
     }
 
     fun pickSource(source: SourceInfo) = sendOrReconnect { it.pickSource(source.number) }
+
+    /** Taps on the Live TV mirror (Nov 14). */
+    fun liveTvStage(name: String) = sendOrReconnect { it.liveTvStage(name) }
+    fun liveTvItem(group: String, index: Int) = sendOrReconnect { it.liveTvItem(group, index) }
+    fun liveTvAll() = sendOrReconnect { it.liveTvAll() }
 
     /** A tap on the Tonight mirror; see RemoteSession.tonight. */
     fun tonight(action: String, number: Int = 0) = sendOrReconnect { it.tonight(action, number) }

@@ -8,6 +8,8 @@ actual fun phoneRemoteState(): StateFlow<PhoneRemoteState> = PhoneRemote.state
 
 actual fun setPhoneRemoteEnabled(enabled: Boolean) = PhoneRemote.setEnabled(enabled)
 
+actual fun setPhoneRemoteAimStrength(strength: AimStrength) = PhoneRemote.setAimStrength(strength)
+
 actual fun resetPhoneRemotePairing() = PhoneRemote.resetPairing()
 
 actual fun phoneRemoteQrModules(text: String): List<BooleanArray>? = runCatching {

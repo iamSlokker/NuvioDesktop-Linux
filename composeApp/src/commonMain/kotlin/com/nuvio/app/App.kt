@@ -1460,7 +1460,19 @@ private fun MainAppContent(
         // Live TV plays in the built-in player only: the proxy relay and live reconnects are mpv's.
         LaunchedEffect(navController) {
             com.nuvio.app.features.iptv.IptvPlaybackRequests.requests.collect { launch ->
-                navController.navigateToPlayer(launch)
+                // fork:live-tv-departure - with a player already up, a live channel plays in it, and anything else
+                // (a film) gives way to the channel.
+                if (navController.currentDestination?.hasRoute<PlayerRoute>() == true) {
+                    val running = com.nuvio.app.features.iptv.IptvPlaybackRequests.inPlayer
+                    if (running != null) {
+                        running(launch)
+                    } else {
+                        navController.popBackStack()
+                        navController.navigateToPlayer(launch)
+                    }
+                } else {
+                    navController.navigateToPlayer(launch)
+                }
             }
         }
         val uriHandler = LocalUriHandler.current
@@ -3177,15 +3189,31 @@ private fun MainAppContent(
             )
         }
         val onHeroCastClick: (HeroCastMember) -> Unit = { person ->
-            val tmdbId = person.tmdbId
-            if (tmdbId != null && tmdbId > 0) {
+            // The Production chips pass their role in English ("Director", "Writer", ...).
+            val department = when (person.role?.trim()?.lowercase()) {
+                "director" -> "Directing"
+                "writer", "creator" -> "Writing"
+                "producer" -> "Production"
+                else -> null
+            }
+            fun open(tmdbId: Int) {
                 navController.navigateIfResumed(
                     PersonDetailRoute(
                         personId = tmdbId,
                         personName = person.name,
                         personPhoto = person.photo,
+                        preferCrew = department != null,
                     ),
                 )
+            }
+            val tmdbId = person.tmdbId
+            if (tmdbId != null && tmdbId > 0) {
+                open(tmdbId)
+            } else if (person.name.isNotBlank()) {
+                // Named without a TMDB id (addon cast, cached crew): find them by name.
+                coroutineScope.launch {
+                    TmdbService.findPersonId(person.name, department ?: "Acting")?.let(::open)
+                }
             }
         }
         // A discovery badge click. Studio and director badges reuse the screens the details page
@@ -3616,24 +3644,39 @@ private fun MainAppContent(
                             }
                         },
                         onCastClick = { person, avatarTransitionKey ->
-                            val tmdbId = person.tmdbId
-                            if (tmdbId != null && tmdbId > 0) {
+                            val role = person.role
+                            val isDirector = role != null &&
+                                (role.equals("Director", ignoreCase = true) || role.equals(directorRole, ignoreCase = true))
+                            val isWriter = role != null &&
+                                (role.equals("Writer", ignoreCase = true) || role.equals(writerRole, ignoreCase = true))
+                            val isCreator = role != null &&
+                                (role.equals("Creator", ignoreCase = true) || role.equals(creatorRole, ignoreCase = true))
+                            val isProducer = role.equals("Producer", ignoreCase = true)
+                            fun open(tmdbId: Int) {
                                 navController.navigateIfResumed(
                                     PersonDetailRoute(
                                         personId = tmdbId,
                                         personName = person.name,
                                         personPhoto = person.photo,
                                         castAvatarTransitionKey = avatarTransitionKey,
-                                        preferCrew = person.role?.let {
-                                            it.equals("Director", ignoreCase = true) ||
-                                                it.equals(directorRole, ignoreCase = true) ||
-                                                it.equals("Writer", ignoreCase = true) ||
-                                                it.equals(writerRole, ignoreCase = true) ||
-                                                it.equals("Creator", ignoreCase = true)
-                                                || it.equals(creatorRole, ignoreCase = true)
-                                        } ?: false,
+                                        preferCrew = isDirector || isWriter || isCreator || isProducer,
                                     ),
                                 )
+                            }
+                            val tmdbId = person.tmdbId
+                            if (tmdbId != null && tmdbId > 0) {
+                                open(tmdbId)
+                            } else {
+                                // Crew named by an addon without TMDB ids: find them by name.
+                                coroutineScope.launch {
+                                    val department = when {
+                                        isDirector -> "Directing"
+                                        isWriter || isCreator -> "Writing"
+                                        isProducer -> "Production"
+                                        else -> "Acting"
+                                    }
+                                    TmdbService.findPersonId(person.name, department)?.let(::open)
+                                }
                             }
                         },
                         onCompanyClick = { company, entityKind ->
@@ -3675,6 +3718,12 @@ private fun MainAppContent(
                                     ),
                                 )
                             }
+                        },
+                        onPosterLongClick = { meta ->
+                            hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
+                            selectedPosterAnchor = PosterZoomAnchorHolder.consume()
+                            selectedPosterMenuPosition = ContextMenuInvocation.consume()
+                            selectedPosterActionTarget = PosterActionTarget(preview = meta)
                         },
                         sharedTransitionScope = this@SharedTransitionLayout,
                         animatedVisibilityScope = this,
@@ -5199,6 +5248,13 @@ private fun MainAppContent(
             Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.BottomCenter) {
                 com.nuvio.app.features.voice.VoiceControlOverlay()
             }
+
+            // fork:live-scores - goal and match-event pop-ups (Settings > Live TV > Live scores). Takes no input; over a
+            // playing video the HUD draws the same card, since the video surface covers this layer.
+            com.nuvio.app.features.livescores.LiveScoreOverlay()
+
+            // fork:live-tv-departure - the "starting soon" reminder card (Live TV > a programme's page > Remind me).
+            com.nuvio.app.features.iptv.IptvReminderOverlay()
 
             // Settings > Advanced > Memory overlay. Draws nothing when off; over the player the HUD
             // shows it instead, since the video surface covers this layer.
@@ -6745,6 +6801,7 @@ private fun DesktopHoverSidebar(
     val liveTvTabVisible = com.nuvio.app.features.iptv.rememberLiveTvTabVisible()
     var profileStackVisible by remember { mutableStateOf(false) }
     val profileTopPadding = statusBarPadding + 18.dp
+    val itemsAtTop by ThemeSettingsRepository.desktopSidebarItemsTop.collectAsStateWithLifecycle()
     fun selectTab(tab: AppScreenTab) {
         profileStackVisible = false
         onTabSelected(tab)
@@ -6796,9 +6853,17 @@ private fun DesktopHoverSidebar(
             }
 
             Column(
-                modifier = Modifier
-                    .align(Alignment.Center)
-                    .fillMaxWidth(),
+                modifier = if (itemsAtTop) {
+                    // Grouped under the profile (Settings > Appearance > Sidebar items), for a compact column.
+                    Modifier
+                        .align(Alignment.TopCenter)
+                        .padding(top = profileTopPadding + 52.dp + 18.dp)
+                        .fillMaxWidth()
+                } else {
+                    Modifier
+                        .align(Alignment.Center)
+                        .fillMaxWidth()
+                },
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
                 // In the order set under Settings > Appearance > Navigation order (NavBarLayout.kt);
