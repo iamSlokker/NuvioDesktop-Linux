@@ -573,6 +573,12 @@ object IptvRepository {
         lastFailureAt.clear()
     }
 
+    /** Replaces the whole Live TV setup, e.g. from a restored Google Drive backup. */
+    fun replaceFromBackup(settings: IptvSettings) {
+        _settings.value = settings
+        persist()
+    }
+
     private fun mutate(change: (IptvSettings) -> IptvSettings) {
         _settings.update(change)
         persist()

@@ -6,6 +6,12 @@ import com.nuvio.app.features.settings.SettingsSectionGlassEdge
 import com.nuvio.app.features.settings.SettingsSectionGlassEdgeColor
 import com.nuvio.app.features.settings.SettingsSectionGlassFill
 import com.nuvio.app.features.settings.SettingsSectionGlassShape
+import com.nuvio.app.features.settings.settingsNavIconButton
+import com.nuvio.app.features.settings.settingsNavItem
+import com.nuvio.app.features.settings.SettingsMenuPanel
+import com.nuvio.app.features.settings.rememberMenuPlacement
+import com.nuvio.app.features.settings.settingsMenuInitialIndex
+import com.nuvio.app.features.settings.settingsMenuItem
 import androidx.compose.material.icons.rounded.Link
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.draw.alpha
@@ -39,8 +45,6 @@ import androidx.compose.material.icons.rounded.Edit
 import androidx.compose.material.icons.rounded.Extension
 import androidx.compose.material.icons.rounded.KeyboardArrowDown
 import androidx.compose.material.icons.rounded.Settings
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -67,7 +71,10 @@ import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.layout.boundsInWindow
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -573,6 +580,7 @@ private fun DesktopSegmentedFilterSegment(
             .background(
                 if (selected) tokens.colors.accentFill(0.16f) else SolidColor(Color.Transparent),
             )
+            .settingsNavItem(onActivate = onClick)
             .clickable(onClick = onClick)
             .padding(horizontal = 14.dp, vertical = 7.dp),
         contentAlignment = Alignment.Center,
@@ -717,6 +725,7 @@ private fun DesktopAccentButton(
                 brush = if (pressedLook) SolidColor(tokens.colors.accentStrong) else tokens.colors.accentFill,
                 shape = shape,
             )
+            .settingsNavItem(onActivate = { if (enabled) onClick() })
             .clickable(enabled = enabled, onClick = onClick),
         shape = shape,
         color = Color.Transparent,
@@ -753,11 +762,16 @@ private fun DesktopAddonSortMenu(
 ) {
     var expanded by remember { mutableStateOf(false) }
     val tokens = MaterialTheme.nuvio
-    Box(modifier = modifier) {
+    var anchorBounds by remember { mutableStateOf<Rect?>(null) }
+    Box(
+        modifier = modifier.onGloballyPositioned { anchorBounds = it.boundsInWindow() },
+    ) {
+        val placement = rememberMenuPlacement(anchorBounds, DesktopAddonSort.entries.size)
         Surface(
             modifier = Modifier
                 .fillMaxWidth()
                 .height(40.dp)
+                .settingsNavItem(onActivate = { expanded = true })
                 .clickable { expanded = true },
             shape = SettingsSectionGlassShape,
             color = Color.Transparent,
@@ -782,35 +796,55 @@ private fun DesktopAddonSortMenu(
                 )
             }
         }
-        DropdownMenu(
+        SettingsMenuPanel(
             expanded = expanded,
+            placement = placement,
+            widthModifier = modifier,
+            isTablet = true,
+            itemCount = DesktopAddonSort.entries.size,
+            initialIndex = settingsMenuInitialIndex(
+                DesktopAddonSort.entries.indexOf(sort),
+                DesktopAddonSort.entries.size,
+            ),
+            multiSelect = false,
+            onCommit = { index ->
+                DesktopAddonSort.entries.getOrNull(index)?.let { onSortChange(it) }
+            },
             onDismissRequest = { expanded = false },
-            shape = SettingsSectionGlassShape,
-            containerColor = tokens.colors.background,
-            tonalElevation = 0.dp,
-            shadowElevation = 0.dp,
-            border = androidx.compose.foundation.BorderStroke(1.dp, SettingsSectionGlassEdge),
-        ) {
+        ) { activeIndex ->
             com.nuvio.app.core.ui.KeyRouteLayer("addons menu") // the focus router leaves an open menu alone
-            DesktopAddonSort.entries.forEach { option ->
+            DesktopAddonSort.entries.forEachIndexed { index, option ->
                 val isSelected = option == sort
-                DropdownMenuItem(
-                    text = {
-                        Text(
-                            text = stringResource(option.labelRes),
-                            color = if (isSelected) tokens.colors.accent else tokens.colors.textPrimary,
-                            fontWeight = if (isSelected) {
-                                androidx.compose.ui.text.font.FontWeight.SemiBold
-                            } else {
-                                androidx.compose.ui.text.font.FontWeight.Normal
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .settingsMenuItem(
+                            active = index == activeIndex,
+                            interactionSource = remember { MutableInteractionSource() },
+                            onClick = {
+                                onSortChange(option)
+                                expanded = false
                             },
                         )
-                    },
-                    onClick = {
-                        onSortChange(option)
-                        expanded = false
-                    },
-                )
+                        .padding(horizontal = 14.dp, vertical = 10.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text(
+                        text = stringResource(option.labelRes),
+                        color = if (isSelected || index == activeIndex) {
+                            tokens.colors.accent
+                        } else {
+                            tokens.colors.textPrimary
+                        },
+                        fontWeight = if (isSelected) {
+                            androidx.compose.ui.text.font.FontWeight.SemiBold
+                        } else {
+                            androidx.compose.ui.text.font.FontWeight.Normal
+                        },
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
             }
         }
     }
@@ -1083,6 +1117,7 @@ private fun DesktopAddonStatusIndicator(
         Row(
             modifier = Modifier
                 .clip(RoundedCornerShape(8.dp))
+                .settingsNavItem(onActivate = { AddonRepository.setAddonEnabled(addon.manifestUrl, !addon.enabled) })
                 .clickable { AddonRepository.setAddonEnabled(addon.manifestUrl, !addon.enabled) }
                 .padding(horizontal = 6.dp, vertical = 4.dp),
             verticalAlignment = Alignment.CenterVertically,
@@ -1143,7 +1178,9 @@ private fun DesktopAddonActionButton(
     IconButton(
         enabled = enabled,
         onClick = onClick,
-        modifier = Modifier.size(32.dp),
+        modifier = Modifier
+            .size(32.dp)
+            .settingsNavIconButton(onClick = onClick),
     ) {
         Icon(
             imageVector = icon,

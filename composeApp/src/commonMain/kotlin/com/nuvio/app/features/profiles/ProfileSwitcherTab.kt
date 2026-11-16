@@ -14,6 +14,7 @@ import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.focusable
 import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -40,15 +41,20 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.SolidColor
@@ -69,10 +75,14 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Popup
 import androidx.compose.ui.window.PopupProperties
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import com.nuvio.app.core.ui.NuvioAsyncImage as AsyncImage
 import com.nuvio.app.core.ui.NuvioTokens
 import com.nuvio.app.core.ui.accentFill
 import com.nuvio.app.core.ui.nuvio
+import com.nuvio.app.core.ui.sidebarKeyNavigation
 import com.nuvio.app.isIos
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -82,6 +92,16 @@ import org.jetbrains.compose.resources.stringResource
 import kotlin.math.max
 import kotlin.math.min
 import com.nuvio.app.core.ui.accentBrush
+
+/** Asks the composed switcher to open its profile panel (the top bar's profile slot, by keyboard). */
+object ProfileSwitcherTabRequests {
+    private val _open = MutableStateFlow(0)
+    val open: StateFlow<Int> = _open.asStateFlow()
+
+    fun requestOpen() {
+        _open.value++
+    }
+}
 
 @Composable
 fun ProfileSwitcherTab(
@@ -109,6 +129,13 @@ fun ProfileSwitcherTab(
     val density = LocalDensity.current
 
     var showPopup by remember { mutableStateOf(false) }
+    val openRequest by ProfileSwitcherTabRequests.open.collectAsStateWithLifecycle()
+    var handledOpenRequest by remember { mutableStateOf(openRequest) }
+    LaunchedEffect(openRequest) {
+        if (openRequest == handledOpenRequest) return@LaunchedEffect
+        handledOpenRequest = openRequest
+        if (profiles.isNotEmpty()) showPopup = true
+    }
     // Keep popup composed while exit animation plays
     var popupVisible by remember { mutableStateOf(false) }
     var pinProfile by remember { mutableStateOf<NuvioProfile?>(null) }
@@ -382,21 +409,77 @@ fun SidebarProfileSwitcherStack(
         }
     }
 
+    // The open stack is its own focus region, like the sidebar's rows: its entries are walked by
+    // index, Select chooses, and Back/Dismiss/Right close it. Its rows are drawn with the ring on
+    // the index the keys are on, while the container itself holds focus so the sidebar's row list
+    // (which shares the same keys) is not the one answering.
+    val focusRequester = remember { FocusRequester() }
+    var stackHasFocus by remember { mutableStateOf(false) }
+    var focusIndex by remember { mutableIntStateOf(0) }
+    val rowCount = profiles.size + if (profiles.size < 4) 1 else 0
+    val latestRowCount by rememberUpdatedState(rowCount)
+    val latestProfiles by rememberUpdatedState(profiles)
+
+    // The active profile is where the keys land when the stack opens.
+    LaunchedEffect(Unit) {
+        val activeIndex = latestProfiles.indexOfFirst { it.profileIndex == activeProfile?.profileIndex }
+        if (activeIndex >= 0) focusIndex = activeIndex
+        runCatching { focusRequester.requestFocus() }
+    }
+
+    // A profile removed (or the list otherwise shrinking) pulls the cursor back inside.
+    LaunchedEffect(latestRowCount) {
+        if (latestRowCount <= 0) return@LaunchedEffect
+        focusIndex = focusIndex.coerceIn(0, latestRowCount - 1)
+    }
+
+    // Moving focus away from the stack (to another navbar icon or any other element) closes it.
+    var everFocused by remember { mutableStateOf(false) }
+    LaunchedEffect(stackHasFocus) {
+        if (stackHasFocus) {
+            everFocused = true
+        } else if (everFocused) {
+            onDismissRequest()
+        }
+    }
+
+    fun activate(index: Int) {
+        val profile = latestProfiles.getOrNull(index)
+        if (profile != null) {
+            chooseProfile(profile)
+        } else {
+            onDismissRequest()
+            onAddProfileRequested()
+        }
+    }
+
     Column(
-        modifier = modifier,
+        modifier = modifier
+            .focusRequester(focusRequester)
+            .onFocusChanged { stackHasFocus = it.hasFocus }
+            .focusable()
+            .sidebarKeyNavigation(
+                index = { focusIndex },
+                count = { latestRowCount },
+                onMove = { focusIndex = it },
+                onActivate = { activate(focusIndex) },
+                onLeave = { onDismissRequest() },
+            ),
         verticalArrangement = Arrangement.spacedBy(4.dp),
     ) {
-        profiles.forEach { profile ->
+        profiles.forEachIndexed { index, profile ->
             SidebarProfileSwitcherRow(
                 profile = profile,
                 avatars = avatars,
                 isActive = profile.profileIndex == activeProfile?.profileIndex,
+                focused = stackHasFocus && focusIndex == index,
                 onClick = { chooseProfile(profile) },
             )
         }
 
         if (profiles.size < 4) {
             SidebarAddProfileRow(
+                focused = stackHasFocus && focusIndex == profiles.size,
                 onClick = {
                     onDismissRequest()
                     onAddProfileRequested()
@@ -433,6 +516,7 @@ private fun SidebarProfileSwitcherRow(
     avatars: List<AvatarCatalogItem>,
     isActive: Boolean,
     onClick: () -> Unit,
+    focused: Boolean = false,
 ) {
     val tokens = MaterialTheme.nuvio
     Row(
@@ -445,6 +529,13 @@ private fun SidebarProfileSwitcherRow(
                     tokens.colors.overlaySelected
                 } else {
                     tokens.colors.surface.copy(alpha = 0f)
+                },
+            )
+            .then(
+                if (focused) {
+                    Modifier.border(2.dp, tokens.colors.accent, tokens.shapes.compactCard)
+                } else {
+                    Modifier
                 },
             )
             .clickable(onClick = onClick)
@@ -488,6 +579,7 @@ private fun SidebarProfileSwitcherRow(
 @Composable
 private fun SidebarAddProfileRow(
     onClick: () -> Unit,
+    focused: Boolean = false,
 ) {
     val tokens = MaterialTheme.nuvio
     Row(
@@ -495,6 +587,13 @@ private fun SidebarAddProfileRow(
             .fillMaxWidth()
             .height(40.dp)
             .clip(tokens.shapes.compactCard)
+            .then(
+                if (focused) {
+                    Modifier.border(2.dp, tokens.colors.accent, tokens.shapes.compactCard)
+                } else {
+                    Modifier
+                },
+            )
             .clickable(onClick = onClick)
             .padding(horizontal = 8.dp),
         verticalAlignment = Alignment.CenterVertically,

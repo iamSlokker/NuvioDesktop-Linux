@@ -57,8 +57,10 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.withFrameNanos
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -153,6 +155,33 @@ private data class IptvSidebarItem(
     val playlist: IptvPlaylist? = null,
     val section: String? = null,
 )
+
+/** The remote's Search key asking for the Live TV filter; every press bumps the counter. */
+internal object IptvSearchFocus {
+    internal var requests by androidx.compose.runtime.mutableIntStateOf(0)
+        private set
+
+    internal var pendingText by androidx.compose.runtime.mutableStateOf<String?>(null)
+
+    internal var active by androidx.compose.runtime.mutableStateOf(false)
+
+    fun requestFocus(): Boolean {
+        if (!active) return false
+        requests++
+        return true
+    }
+
+    /** A spoken search: the words filter the channels, not the video search. */
+    fun searchFor(query: String?) {
+        pendingText = query
+        requests++
+    }
+
+    fun deactivate() {
+        active = false
+        requests = 0
+    }
+}
 
 /**
  * The Live TV tab: a playlist's categories down the side, its channels with what is on now and
@@ -416,6 +445,22 @@ fun IptvScreen(
     LaunchedEffect(focusSearchRequests) {
         if (focusSearchRequests > 0) searchFocus.requestFocusLogged()
     }
+    // The remote's Search key, when Live TV is the active screen: open the filter and focus it.
+    DisposableEffect(Unit) {
+        IptvSearchFocus.active = true
+        onDispose { IptvSearchFocus.deactivate() }
+    }
+    val externalSearchRequests = IptvSearchFocus.requests
+    var handledExternalSearchRequests by remember { mutableIntStateOf(externalSearchRequests) }
+    LaunchedEffect(externalSearchRequests) {
+        if (externalSearchRequests == handledExternalSearchRequests) return@LaunchedEffect
+        handledExternalSearchRequests = externalSearchRequests
+        IptvSearchFocus.pendingText?.let { filter = it }
+        IptvSearchFocus.pendingText = null
+        searchOpen = true
+        withFrameNanos { }
+        focusSearchRequests++
+    }
 
     val sidebarState = rememberLazyListState()
     val channelState = rememberLazyListState()
@@ -678,8 +723,10 @@ fun IptvScreen(
                 }
             }
             Key.DirectionLeft -> when (zone) {
-                IptvZone.Header -> headerIndex = (headerIndex - 1).coerceAtLeast(0)
-                IptvZone.Regions -> regionIndex = (regionIndex - 1).coerceAtLeast(0)
+                // At the left edge there is nothing further left in the row, so the key goes on to
+                // the tab host's hand-off instead of being spent on a move that would not move.
+                IptvZone.Header -> if (headerIndex > 0) headerIndex-- else return false
+                IptvZone.Regions -> if (regionIndex > 0) regionIndex-- else return false
                 IptvZone.Sidebar -> return false
                 IptvZone.Channels -> when {
                     wallSection -> if (wallCol > 0) wallCol-- else zone = IptvZone.Sidebar
@@ -808,11 +855,22 @@ fun IptvScreen(
                     }
                 }
                 val navKey = event.navigationKey()
+                // The regions popup is a submenu and closes before the key means anything else.
+                if (navKey == Key.Escape && regionsOpen) {
+                    regionsOpen = false
+                    zone = IptvZone.Header
+                    return@onPreviewKeyEvent true
+                }
                 if (!keyboardActive && navKey in IptvNavigationKeys) {
                     // The first press only shows where the highlight is.
                     keyboardActive = true
                     return@onPreviewKeyEvent true
                 }
+                // Everything this screen can use, it uses; anything it cannot use is left unconsumed
+                // so the tab host's hand-off reaches the sidebar in its place. Escape is taken only
+                // while something is still open to close (above, and its own rules in handleKey), and
+                // Left only while there is somewhere further left to go. This used to take Left as
+                // well, so leaving the playlist column for the bar needed an extra press.
                 handleKey(navKey)
             },
     ) {

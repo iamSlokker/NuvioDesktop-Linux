@@ -75,6 +75,7 @@ private enum class PartyScreenMode {
 internal fun PartyPage(
     initialCode: String,
     onWatch: (PartyMedia) -> Unit,
+    onBack: () -> Unit,
 ) {
     val state by PartyRepository.state.collectAsStateWithLifecycle()
     val party = state.party
@@ -116,6 +117,7 @@ internal fun PartyPage(
                         joining = false
                         joined = newParty
                     },
+                    onBack = onBack,
                 )
                 PartyScreenMode.Joined -> (joined ?: party)?.let { JoinedContent(it) }
                 PartyScreenMode.Party -> party?.let { PartyContent(it, onWatch) }
@@ -128,6 +130,7 @@ internal fun PartyPage(
 private fun JoinContent(
     initialCode: String,
     onJoined: (ActiveParty) -> Unit,
+    onBack: () -> Unit,
 ) {
     val tokens = MaterialTheme.nuvio
     val state by PartyRepository.state.collectAsStateWithLifecycle()
@@ -275,6 +278,7 @@ private fun JoinContent(
             onDone = ::submit,
             focusRequester = focusRequester,
             enabled = blockedError == null,
+            onBack = onBack,
             modifier = Modifier
                 .padding(top = 8.dp)
                 .graphicsLayer { translationX = shake.value.dp.toPx() },

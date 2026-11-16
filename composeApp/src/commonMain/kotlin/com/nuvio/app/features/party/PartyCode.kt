@@ -51,6 +51,11 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.input.key.Key
+import androidx.compose.ui.input.key.KeyEventType
+import androidx.compose.ui.input.key.onPreviewKeyEvent
+import androidx.compose.ui.input.key.type
+import com.nuvio.app.core.ui.navigationKey
 import com.nuvio.app.core.ui.nuvio
 import com.nuvio.app.core.ui.trackTextInputFocus
 
@@ -61,6 +66,7 @@ internal fun CodeField(
     onDone: () -> Unit,
     focusRequester: FocusRequester,
     enabled: Boolean,
+    onBack: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     var focused by remember { mutableStateOf(false) }
@@ -85,6 +91,20 @@ internal fun CodeField(
             .fillMaxWidth()
             .focusRequester(focusRequester)
             .onFocusChanged { focused = it.isFocused }
+            // A party code is entered, not typed: Back with nothing left to delete belongs to the
+            // page, not the field, so the page can leave Watch Party instead of the field trapping
+            // the keys.
+            .onPreviewKeyEvent { event ->
+                if (event.type != KeyEventType.KeyDown) return@onPreviewKeyEvent false
+                if (code.isNotEmpty()) return@onPreviewKeyEvent false
+                val key = event.navigationKey()
+                if (key == Key.Backspace || key == Key.Escape) {
+                    onBack()
+                    true
+                } else {
+                    false
+                }
+            }
             // Desktop: keeps the app's single-key shortcuts (H, S, L...) from firing while typing.
             .trackTextInputFocus(),
         decorationBox = {

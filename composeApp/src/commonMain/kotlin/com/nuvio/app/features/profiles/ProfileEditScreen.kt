@@ -39,6 +39,16 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.FocusDirection
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.input.key.Key
+import androidx.compose.ui.input.key.KeyEventType
+import androidx.compose.ui.input.key.key
+import androidx.compose.ui.input.key.onPreviewKeyEvent
+import androidx.compose.ui.input.key.type
+import androidx.compose.ui.platform.LocalFocusManager
+import kotlinx.coroutines.delay
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
@@ -51,6 +61,8 @@ import com.nuvio.app.core.auth.AuthState
 import com.nuvio.app.core.ui.NuvioInputField
 import com.nuvio.app.core.ui.NuvioPrimaryButton
 import com.nuvio.app.core.ui.NuvioScreen
+import com.nuvio.app.core.ui.arrowKeyFocusNavigation
+import com.nuvio.app.core.ui.nuvio
 import com.nuvio.app.core.ui.NuvioScreenHeader
 import com.nuvio.app.core.ui.NuvioStatusModal
 import com.nuvio.app.core.ui.NuvioSurfaceCard
@@ -76,6 +88,15 @@ fun ProfileEditScreen(
         }
     }
     val fallbackColorHex = currentProfile?.avatarColorHex ?: PROFILE_COLORS.first()
+    val nameFocus = remember { FocusRequester() }
+    LaunchedEffect(Unit) {
+        // The screen has no other control that asks for focus, so without this the arrows and a
+        // pad's D-pad have no focus owner to move from.
+        repeat(20) {
+            runCatching { nameFocus.requestFocus() }
+            delay(50)
+        }
+    }
 
     var name by rememberSaveable { mutableStateOf(currentProfile?.name ?: "") }
     var selectedAvatarId by rememberSaveable { mutableStateOf(currentProfile?.avatarId) }
@@ -108,7 +129,9 @@ fun ProfileEditScreen(
         parseHexColor(visibleAvatarItem?.bgColor ?: fallbackColorHex)
     }
 
-    NuvioScreen(modifier = modifier) {
+    NuvioScreen(
+        modifier = modifier.arrowKeyFocusNavigation(releaseWhenStuck = true),
+    ) {
         stickyHeader {
             NuvioScreenHeader(
                 title = if (isNew) {
@@ -124,6 +147,7 @@ fun ProfileEditScreen(
             ProfileIdentityCard(
                 name = name,
                 isNew = isNew,
+                nameFocus = nameFocus,
                 profileIndex = currentProfile?.profileIndex,
                 usesPrimaryAddons = usesPrimaryAddons,
                 onNameChange = { name = it },
@@ -148,6 +172,7 @@ fun ProfileEditScreen(
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
+                    val focusManager = LocalFocusManager.current
                     NuvioInputField(
                         value = avatarUrl,
                         onValueChange = { value ->
@@ -157,7 +182,22 @@ fun ProfileEditScreen(
                             }
                         },
                         placeholder = stringResource(Res.string.profile_custom_avatar_url_placeholder),
-                        modifier = Modifier.trackTextInputFocus(),
+                        modifier = Modifier
+                            .trackTextInputFocus()
+                            .onPreviewKeyEvent { event ->
+                                if (event.type != KeyEventType.KeyDown) return@onPreviewKeyEvent false
+                                when (event.key) {
+                                    Key.DirectionDown -> {
+                                        focusManager.moveFocus(FocusDirection.Down)
+                                        true
+                                    }
+                                    Key.DirectionUp -> {
+                                        focusManager.moveFocus(FocusDirection.Up)
+                                        true
+                                    }
+                                    else -> false
+                                }
+                            },
                     )
                     if (avatarUrlIsInvalid) {
                         Text(
@@ -265,6 +305,7 @@ fun ProfileEditScreen(
                     stringResource(Res.string.collections_editor_save_changes)
                 },
                 enabled = name.isNotBlank() && !avatarUrlIsInvalid && !isSaving,
+                focusRing = true,
                 onClick = {
                     isSaving = true
                     scope.launch {
@@ -371,6 +412,7 @@ fun ProfileEditScreen(
 private fun ProfileIdentityCard(
     name: String,
     isNew: Boolean,
+    nameFocus: FocusRequester,
     profileIndex: Int?,
     usesPrimaryAddons: Boolean,
     onNameChange: (String) -> Unit,
@@ -486,11 +528,28 @@ private fun ProfileIdentityCard(
                 }
             }
 
+            val focusManager = LocalFocusManager.current
             NuvioInputField(
                 value = name,
                 onValueChange = onNameChange,
+                focusRequester = nameFocus,
+                modifier = Modifier
+                    .onPreviewKeyEvent { event ->
+                        if (event.type != KeyEventType.KeyDown) return@onPreviewKeyEvent false
+                        when (event.key) {
+                            Key.DirectionDown -> {
+                                focusManager.moveFocus(FocusDirection.Down)
+                                true
+                            }
+                            Key.DirectionUp -> {
+                                focusManager.moveFocus(FocusDirection.Up)
+                                true
+                            }
+                            else -> false
+                        }
+                    }
+                    .trackTextInputFocus(),
                 placeholder = stringResource(Res.string.profile_name_placeholder),
-                modifier = Modifier.trackTextInputFocus(),
             )
 
             ProfileOptionRow(
@@ -510,6 +569,8 @@ private fun AvatarChoiceItem(
     isSelected: Boolean,
     onClick: () -> Unit,
 ) {
+    var hasFocus by remember { mutableStateOf(false) }
+    val focusColor = MaterialTheme.nuvio.colors.borderFocus
     Box(
         modifier = Modifier
             .size(size)
@@ -518,9 +579,14 @@ private fun AvatarChoiceItem(
                 avatar.bgColor?.let(::parseHexColor)
                     ?: MaterialTheme.colorScheme.surfaceVariant,
             )
+            .onFocusChanged { hasFocus = it.isFocused }
             .border(
-                width = if (isSelected) 3.dp else 1.dp,
-                color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant,
+                width = if (hasFocus || isSelected) 3.dp else 1.dp,
+                color = when {
+                    hasFocus -> focusColor
+                    isSelected -> MaterialTheme.colorScheme.primary
+                    else -> MaterialTheme.colorScheme.outlineVariant
+                },
                 shape = CircleShape,
             )
             .clickable(onClick = onClick),

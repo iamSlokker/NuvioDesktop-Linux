@@ -115,6 +115,8 @@ fun TonightHost(
     onOpenDetails: (type: String, id: String) -> Unit,
     onClose: () -> Unit,
     modifier: Modifier = Modifier,
+    /** Room the always-on top navigation bar needs above the picker (0 when it is not pinned). */
+    contentTopInset: Dp = 0.dp,
 ) {
     remember { TonightSettingsRepository.ensureLoaded() }
     // Trending titles carry TMDB's own id ("tmdb:111803"), which most metadata addons cannot open, so the details
@@ -318,6 +320,9 @@ fun TonightHost(
                 ),
             )
     ) {
+        // The pinned top bar floats over the picker; its strip is reserved here so the heading and
+        // the tiles are not drawn underneath it. The wash behind stays full-height.
+        Box(modifier = Modifier.fillMaxSize().padding(top = contentTopInset)) {
         when (view) {
             TonightView.Launcher -> TonightLauncher(
                 clock = clock,
@@ -411,6 +416,7 @@ fun TonightHost(
                 onDetails = { card -> openDetails(card.title.type, card.title.id) },
                 onBack = { view = TonightView.Launcher },
             )
+        }
         }
     }
     // A hand dealt before the pool arrived is dealt again once it has.
