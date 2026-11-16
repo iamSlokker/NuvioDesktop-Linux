@@ -54,6 +54,20 @@ class FirstRunWizardDraftTest {
     }
 
     @Test
+    fun `app scale steps by five percent inside its range`() {
+        assertEquals("0%", uiScaleLabel(0))
+        assertEquals("+15%", uiScaleLabel(15))
+        assertEquals("-20%", uiScaleLabel(-20))
+        assertEquals(5, stepUiScalePercent(0, 1))
+        assertEquals(-5, stepUiScalePercent(0, -1))
+        assertEquals(50, stepUiScalePercent(50, 1))
+        assertEquals(-50, stepUiScalePercent(-50, -1))
+        // A value set elsewhere that sits between notches snaps onto the grid on its first step.
+        assertEquals(15, stepUiScalePercent(12, 1))
+        assertEquals(5, stepUiScalePercent(12, -1))
+    }
+
+    @Test
     fun `poster width steps from the nearest preset`() {
         assertEquals(0, nearestPosterPresetIndex(CompactPosterCardWidthDp))
         assertEquals(6, nearestPosterPresetIndex(ExtraLargePosterCardWidthDp))

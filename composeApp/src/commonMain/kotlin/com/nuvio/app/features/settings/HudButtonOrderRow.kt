@@ -152,10 +152,16 @@ private fun HudButtonOrderDialog(order: List<String>, hidden: Set<String>, onDis
                         color = if (isHidden) colors.textMuted else colors.textPrimary,
                         modifier = Modifier.weight(1f),
                     )
-                    IconButton(onClick = { move(index, -1) }, enabled = index > 0) {
+                    SettingsIconAction(
+                        onClick = { move(index, -1) },
+                        enabled = index > 0,
+                    ) {
                         Icon(Icons.Rounded.KeyboardArrowUp, contentDescription = stringResource(Res.string.settings_playback_hud_button_move_up))
                     }
-                    IconButton(onClick = { move(index, 1) }, enabled = index < current.lastIndex) {
+                    SettingsIconAction(
+                        onClick = { move(index, 1) },
+                        enabled = index < current.lastIndex,
+                    ) {
                         Icon(Icons.Rounded.KeyboardArrowDown, contentDescription = stringResource(Res.string.settings_playback_hud_button_move_down))
                     }
                 }

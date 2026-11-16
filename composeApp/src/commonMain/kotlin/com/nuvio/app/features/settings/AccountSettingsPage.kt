@@ -373,6 +373,8 @@ private fun AccountSettingsBody(
         }
 
         if (isDesktop) {
+            GoogleDriveBackupSection(isTablet = isTablet)
+
             SettingsSection(
                 title = stringResource(Res.string.settings_backup_section),
                 isTablet = isTablet,

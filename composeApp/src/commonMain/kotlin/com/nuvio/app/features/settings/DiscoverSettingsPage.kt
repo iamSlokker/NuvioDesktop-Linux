@@ -21,6 +21,8 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.KeyboardArrowDown
+import androidx.compose.material.icons.rounded.KeyboardArrowUp
 import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material.icons.rounded.Edit
 import androidx.compose.material3.ButtonDefaults
@@ -579,24 +581,32 @@ private fun DiscoverRowOrderList(
                             is DiscoverRowEntry.Family -> DiscoverFamilyRow(
                                 entry = entry,
                                 isTablet = isTablet,
+                                onMoveUp = if (index > 0) ({ HomeCatalogSettingsRepository.moveDiscoverRowByIndex(index, index - 1) }) else null,
+                                onMoveDown = if (index < entries.lastIndex) ({ HomeCatalogSettingsRepository.moveDiscoverRowByIndex(index, index + 1) }) else null,
                             )
 
                             is DiscoverRowEntry.Custom -> CustomDiscoverRowEntry(
                                 row = entry.row,
                                 isTablet = isTablet,
                                 onEdit = { onEditCustomRow(entry.row.id) },
+                                onMoveUp = if (index > 0) ({ HomeCatalogSettingsRepository.moveDiscoverRowByIndex(index, index - 1) }) else null,
+                                onMoveDown = if (index < entries.lastIndex) ({ HomeCatalogSettingsRepository.moveDiscoverRowByIndex(index, index + 1) }) else null,
                             )
 
                             is DiscoverRowEntry.Imported -> ImportedDiscoverRowEntry(
                                 row = entry.row,
                                 isTablet = isTablet,
                                 onEdit = { onEditImportedRow(entry.row.id) },
+                                onMoveUp = if (index > 0) ({ HomeCatalogSettingsRepository.moveDiscoverRowByIndex(index, index - 1) }) else null,
+                                onMoveDown = if (index < entries.lastIndex) ({ HomeCatalogSettingsRepository.moveDiscoverRowByIndex(index, index + 1) }) else null,
                             )
 
                             is DiscoverRowEntry.Ai -> AiDiscoverRowEntry(
                                 row = entry.row,
                                 isTablet = isTablet,
                                 onEdit = { onEditAiRow(entry.row.id) },
+                                onMoveUp = if (index > 0) ({ HomeCatalogSettingsRepository.moveDiscoverRowByIndex(index, index - 1) }) else null,
+                                onMoveDown = if (index < entries.lastIndex) ({ HomeCatalogSettingsRepository.moveDiscoverRowByIndex(index, index + 1) }) else null,
                             )
                         }
                     }
@@ -610,6 +620,8 @@ private fun DiscoverRowOrderList(
 private fun DiscoverFamilyRow(
     entry: DiscoverRowEntry.Family,
     isTablet: Boolean,
+    onMoveUp: (() -> Unit)?,
+    onMoveDown: (() -> Unit)?,
 ) {
     DiscoverRowShell(
         title = discoverFamilyTitle(entry.family),
@@ -621,6 +633,8 @@ private fun DiscoverFamilyRow(
         onEnabledChange = { enabled ->
             HomeCatalogSettingsRepository.setDiscoverRowFamilyEnabled(entry.family, enabled)
         },
+        onMoveUp = onMoveUp,
+        onMoveDown = onMoveDown,
     )
 }
 
@@ -646,13 +660,14 @@ private fun DiscoverRowShell(
     subtitle: String? = null,
     onClick: (() -> Unit)? = null,
     trailingContent: (@Composable () -> Unit)? = null,
+    onMoveUp: (() -> Unit)? = null,
+    onMoveDown: (() -> Unit)? = null,
 ) {
     val tokens = MaterialTheme.nuvio
-    Row(
-        modifier = modifier
-            .fillMaxWidth()
-            .then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier)
-            .padding(horizontal = if (isTablet) 20.dp else 16.dp, vertical = 10.dp),
+    SettingsSelectableRow(
+        onSelect = onClick,
+        modifier = modifier.fillMaxWidth(),
+        contentModifier = Modifier.padding(horizontal = if (isTablet) 20.dp else 16.dp, vertical = 10.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Column(
@@ -694,6 +709,20 @@ private fun DiscoverRowShell(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(4.dp),
         ) {
+            SettingsIconAction(onClick = { onMoveUp?.invoke() }, enabled = onMoveUp != null) {
+                Icon(
+                    imageVector = Icons.Rounded.KeyboardArrowUp,
+                    contentDescription = stringResource(Res.string.settings_playback_hud_button_move_up),
+                    tint = tokens.colors.textMuted,
+                )
+            }
+            SettingsIconAction(onClick = { onMoveDown?.invoke() }, enabled = onMoveDown != null) {
+                Icon(
+                    imageVector = Icons.Rounded.KeyboardArrowDown,
+                    contentDescription = stringResource(Res.string.settings_playback_hud_button_move_down),
+                    tint = tokens.colors.textMuted,
+                )
+            }
             trailingContent?.invoke()
             SettingsSquareSwitch(checked = enabled, onCheckedChange = onEnabledChange)
         }
@@ -705,6 +734,8 @@ private fun CustomDiscoverRowEntry(
     row: CustomDiscoverRow,
     isTablet: Boolean,
     onEdit: () -> Unit,
+    onMoveUp: (() -> Unit)?,
+    onMoveDown: (() -> Unit)?,
 ) {
     DiscoverRowShell(
         title = row.title.ifBlank { stringResource(Res.string.settings_discover_row_custom) },
@@ -725,6 +756,8 @@ private fun CustomDiscoverRowEntry(
                 )
             }
         },
+        onMoveUp = onMoveUp,
+        onMoveDown = onMoveDown,
     )
 }
 
@@ -741,6 +774,8 @@ private fun ImportedDiscoverRowEntry(
     row: ImportedDiscoverRow,
     isTablet: Boolean,
     onEdit: () -> Unit,
+    onMoveUp: (() -> Unit)?,
+    onMoveDown: (() -> Unit)?,
 ) {
     DiscoverRowShell(
         title = row.title.ifBlank { stringResource(Res.string.settings_discover_imported_row) },
@@ -760,6 +795,8 @@ private fun ImportedDiscoverRowEntry(
                 )
             }
         },
+        onMoveUp = onMoveUp,
+        onMoveDown = onMoveDown,
     )
 }
 

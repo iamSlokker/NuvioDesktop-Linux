@@ -5,6 +5,7 @@ import androidx.compose.material.icons.rounded.MusicNote
 import com.nuvio.app.core.i18n.platformString
 import com.nuvio.app.core.ui.ditheredBackground
 import com.nuvio.app.core.storage.PortableMode
+import com.nuvio.app.features.home.HomeDisplayMode
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.MutableTransitionState
 import androidx.compose.animation.core.tween
@@ -60,6 +61,8 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.withFrameNanos
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -78,6 +81,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.nuvio.app.core.ui.NuvioTokens
+import com.nuvio.app.core.ui.navigationKey
 import com.nuvio.app.core.ui.nuvio
 import com.nuvio.app.features.p2p.P2pSettingsRepository
 import com.nuvio.app.features.home.RandomPlayGenres
@@ -845,6 +849,15 @@ private fun settingsSearchEntries(
             key = "osk-mouse",
             title = resolve(Res.string.settings_search_on_screen_keyboard_for_mouse),
             description = resolve(Res.string.settings_search_click_letters_to_type_in_search),
+            pageLabel = resolve(Res.string.compose_settings_page_keyboard_shortcuts),
+            section = resolve(Res.string.settings_shortcuts_on_screen_keyboard),
+            icon = Icons.Rounded.Keyboard,
+        )
+        addRow(
+            page = SettingsPage.KeyboardShortcuts,
+            key = "osk-scale",
+            title = resolve(Res.string.settings_shortcuts_osk_scale),
+            description = resolve(Res.string.settings_shortcuts_osk_scale_description),
             pageLabel = resolve(Res.string.compose_settings_page_keyboard_shortcuts),
             section = resolve(Res.string.settings_shortcuts_on_screen_keyboard),
             icon = Icons.Rounded.Keyboard,
@@ -1756,6 +1769,14 @@ private fun settingsSearchEntries(
                 resolve(Res.string.settings_playback_desktop_hdr_mode),
                 anchor = SettingsScrollAnchor.HdrMode,
             ) else null,
+            // Player Volume Control: searchable by name and by "volume" without a value condition,
+            // so it stays discoverable whether the switch is on or off.
+            if (isDesktop) PlaybackSearchRow(
+                "desktop-volume-control",
+                resolve(Res.string.settings_playback_volume_control),
+                resolve(Res.string.settings_playback_volume_control_description),
+                anchor = SettingsScrollAnchor.searchKey("desktop-volume-control"),
+            ) else null,
             if (isDesktop && platformOffersInverseToneMapping) PlaybackSearchRow(
                 "desktop-inverse-tone-mapping",
                 resolve(Res.string.settings_playback_desktop_inverse_tone_mapping),
@@ -2301,7 +2322,13 @@ private fun settingsSearchEntries(
         )
     }
 
-    val homeLayoutSection = resolve(Res.string.settings_homescreen_section_hero)
+    // The page is two sections, not one: Display Mode holds the display choice, the mode-specific
+    // rows, the crossfade and the pointer preview/row options; Hero holds the hero itself. The
+    // result's context and its section fallback both have to name the section the row is drawn in.
+    val homeDisplayModeSection = resolve(Res.string.settings_home_display_mode)
+    val homeHeroSection = resolve(Res.string.settings_homescreen_section_hero)
+    val homeHeroSourcesSection = resolve(Res.string.settings_homescreen_section_hero_sources)
+    val homeCatalogsSection = resolve(Res.string.settings_homescreen_section_catalogs)
     listOf(
         PlaybackSearchRow("home-hero", resolve(Res.string.settings_homescreen_show_hero), resolve(Res.string.settings_homescreen_show_hero_description)),
         PlaybackSearchRow("home-hero-badge-count", resolve(Res.string.settings_home_hero_badge_count), resolve(Res.string.settings_search_choose_how_many_hero_badges_are), anchor = SettingsScrollAnchor.HeroBadgeCount),
@@ -2331,19 +2358,35 @@ private fun settingsSearchEntries(
         PlaybackSearchRow("hero-backdrop-crossfade", resolve(Res.string.settings_hero_backdrop_crossfade), resolve(Res.string.settings_search_how_long_the_hero_backdrop_takes)),
         PlaybackSearchRow("home-tv-row-transition", resolve(Res.string.settings_home_tv_row_transition), resolve(Res.string.settings_search_cut_cross_fade_or_cross_fade)),
         PlaybackSearchRow("home-tv-full-backdrop", resolve(Res.string.settings_home_tv_full_backdrop), resolve(Res.string.settings_search_extend_the_tv_mode_backdrop_to)),
-        PlaybackSearchRow("home-tv-ambient-background", resolve(Res.string.settings_home_tv_ambient_background), resolve(Res.string.settings_search_tint_the_tv_mode_screen_with)),
         PlaybackSearchRow("home-tv-row-dots", resolve(Res.string.settings_home_row_jump_dots), resolve(Res.string.settings_search_click_a_dot_beside_the_tv)),
         PlaybackSearchRow("home-tv-row-dots-anchor", resolve(Res.string.settings_home_row_jump_dot_position), resolve(Res.string.settings_search_put_the_tv_mode_jump_dots)),
         PlaybackSearchRow("home-hero-sources", resolve(Res.string.settings_homescreen_section_hero_sources)),
         PlaybackSearchRow("home-catalogs", resolve(Res.string.settings_homescreen_section_catalogs)),
     ).forEach { row ->
+        val section = when (row.key) {
+            "home-hero",
+            "home-hero-badge-count",
+            "home-hero-badge-position",
+            "home-hero-badge-size",
+            "home-hero-badge-priority",
+            "home-hero-release-status",
+            "home-hide-unreleased",
+            "home-hide-watched",
+            "home-hide-catalog-underline",
+            "home-row-shuffle",
+            -> homeHeroSection
+
+            "home-hero-sources" -> homeHeroSourcesSection
+            "home-catalogs" -> homeCatalogsSection
+            else -> homeDisplayModeSection
+        }
         addRow(
             page = SettingsPage.Homescreen,
             key = row.key,
             title = row.title,
             description = row.description,
             pageLabel = homeLayoutPage,
-            section = homeLayoutSection,
+            section = section,
             icon = Icons.Rounded.Home,
             anchor = row.anchor,
         )
@@ -3107,6 +3150,12 @@ internal fun LazyListScope.settingsSearchRootContent(
                     query = query,
                     onQueryChange = onQueryChange,
                     onFocusChange = onSearchFocusChange,
+                    onSubmit = {
+                        if (query.isNotBlank()) {
+                            SettingsSearchHistoryRepository.record(query, null)
+                            SettingsSearchResultFocus.request()
+                        }
+                    },
                 )
             }
         }
@@ -3142,6 +3191,13 @@ internal fun LazyListScope.settingsSearchResultsContent(
         if (results.isEmpty()) {
             SettingsSearchEmptyState(isTablet = isTablet)
         } else {
+            val firstResultFocus = androidx.compose.runtime.remember { androidx.compose.ui.focus.FocusRequester() }
+            val focusRequest = SettingsSearchResultFocus.requests.value
+            LaunchedEffect(focusRequest) {
+                if (focusRequest == 0) return@LaunchedEffect
+                withFrameNanos { }
+                runCatching { firstResultFocus.requestFocus() }
+            }
             SettingsSection(
                 title = stringResource(Res.string.settings_search_results_section),
                 isTablet = isTablet,
@@ -3156,6 +3212,7 @@ internal fun LazyListScope.settingsSearchResultsContent(
                             description = entry.resultDescription(),
                             icon = entry.icon,
                             isTablet = isTablet,
+                            modifier = if (index == 0) Modifier.focusRequester(firstResultFocus) else Modifier,
                             onClick = {
                                 SettingsScrollAnchor.highlightTitle(entry.title)
                                 onTargetClick(entry.target)
@@ -3199,17 +3256,41 @@ private fun SettingsSearchRevealItem(
     }
 }
 
+/** Asks the visible search results to put the keys on the first result (Enter in the field). */
+internal object SettingsSearchResultFocus {
+    val requests = androidx.compose.runtime.mutableStateOf(0)
+
+    fun request() {
+        requests.value++
+    }
+}
+
 @Composable
 internal fun SettingsSearchField(
     query: String,
     onQueryChange: (String) -> Unit,
     onFocusChange: (Boolean) -> Unit,
     modifier: Modifier = Modifier,
+    focusRequester: androidx.compose.ui.focus.FocusRequester? = null,
+    /** Enter: add the query to the recent searches and move the keys to the top result. */
+    onSubmit: (() -> Unit)? = null,
 ) {
     val tokens = MaterialTheme.nuvio
     val focused = remember { mutableStateOf(false) }
     val focusManager = LocalFocusManager.current
     val fieldFocus = remember { androidx.compose.ui.focus.FocusRequester() }
+    // Counts Escape presses that clear the box. The results view is torn down by that change, so
+    // the focus request waits for the recomposition instead of landing on a control that is about
+    // to disappear and leaving Settings with no focused control at all.
+    val returnFocusRequests = remember { mutableStateOf(0) }
+    LaunchedEffect(returnFocusRequests.value) {
+        if (returnFocusRequests.value == 0) return@LaunchedEffect
+        withFrameNanos { }
+        withFrameNanos { }
+        // The page's first control, or the sidebar when the page had no content entry point
+        // composed (an empty result set, a filtered page): Back then reaches the bar as it should.
+        requestSettingsContentOrSidebarEntry(focusManager)
+    }
     // Searches as it is typed in, so a spoken "search" is only taken off the end.
     com.nuvio.app.core.ui.VoiceSearchCommands(owner = "settings-search", text = query, onTextChange = onQueryChange)
     BasicTextField(
@@ -3218,7 +3299,7 @@ internal fun SettingsSearchField(
         modifier = modifier
             .fillMaxWidth()
             .height(38.dp)
-            .focusRequester(fieldFocus)
+            .focusRequester(focusRequester ?: fieldFocus)
             // The section cards' frosted glass, so the field belongs to the page under it.
             .ditheredBackground(SettingsSectionGlassFill, SettingsSectionGlassShape)
             .border(
@@ -3233,13 +3314,18 @@ internal fun SettingsSearchField(
                 onFocusChange(it.isFocused)
             }
             // Escape closes the search the way it closes the content search: the query goes and the
-            // field lets go of focus. Both halves of the key are eaten so the screen's own Escape
-            // (back) doesn't fire on the same press.
+            // field lets go of focus. Focus returns to the content the user came from rather than
+            // dropping entirely (a focusless Settings is a dead end for the arrow keys). Both halves
+            // of the key are eaten so the screen's own Escape (back) doesn't fire on the same press.
             .onPreviewKeyEvent { event ->
-                if (event.key != Key.Escape) return@onPreviewKeyEvent false
+                if ((event.key == Key.Enter || event.key == Key.NumPadEnter) && event.type == KeyEventType.KeyDown) {
+                    onSubmit?.invoke()
+                    return@onPreviewKeyEvent true
+                }
+                if (event.navigationKey() != Key.Escape) return@onPreviewKeyEvent false
                 if (event.type == KeyEventType.KeyUp) {
                     onQueryChange("")
-                    focusManager.clearFocus()
+                    returnFocusRequests.value++
                 }
                 true
             },
@@ -3319,6 +3405,50 @@ private fun SettingsSearchEmptyState(isTablet: Boolean) {
             }
         }
     }
+}
+
+/**
+ * Whether a search result's setting is on its page in the current Home display mode.
+ *
+ * Home Layout hides the other modes' rows rather than drawing them disabled, so a search result
+ * pointing at a hidden row would land on its section heading and never on the setting. Everything
+ * the index marks must be reachable: rows that are not drawn are not offered.
+ */
+internal fun settingsSearchEntryAvailable(
+    key: String,
+    homeDisplayMode: HomeDisplayMode,
+    adaptiveHeroAutoFraming: Boolean,
+    tvRowDotsEnabled: Boolean,
+): Boolean = when (key) {
+    "home-adaptive-hero-auto-framing" -> homeDisplayMode == HomeDisplayMode.Adaptive
+
+    // With automatic framing on, the manual position slider is not drawn either.
+    "home-adaptive-hero-position" ->
+        homeDisplayMode == HomeDisplayMode.Adaptive && !adaptiveHeroAutoFraming
+
+    "home-tv-row-transition",
+    "home-tv-full-backdrop",
+    "home-tv-row-dots",
+    -> homeDisplayMode == HomeDisplayMode.TvMode
+
+    // The dot position row only exists while the dots themselves are on.
+    "home-tv-row-dots-anchor" ->
+        homeDisplayMode == HomeDisplayMode.TvMode && tvRowDotsEnabled
+
+    // Basic has no area to play the hero trailer in, so it does not draw the choice.
+    "home-hero-trailer" -> homeDisplayMode != HomeDisplayMode.Basic
+
+    // TV and Adaptive draw the shared hero-height and ambient rows; Basic has its own fixed hero.
+    "home-adaptive-hero-height",
+    "home-adaptive-ambient-background",
+    -> homeDisplayMode != HomeDisplayMode.Basic
+
+    // TV Mode drives the shelf by focus, so it has neither pointer smooth scrolling nor a hover preview.
+    "home-smooth-scrolling",
+    "home-hover-preview",
+    -> homeDisplayMode != HomeDisplayMode.TvMode
+
+    else -> true
 }
 
 private fun settingsSearchResults(

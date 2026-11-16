@@ -17,6 +17,8 @@ import androidx.compose.material.icons.rounded.ContentPaste
 import androidx.compose.material.icons.rounded.Delete
 import androidx.compose.material.icons.rounded.Edit
 import androidx.compose.material.icons.rounded.Folder
+import androidx.compose.material.icons.rounded.KeyboardArrowDown
+import androidx.compose.material.icons.rounded.KeyboardArrowUp
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -31,6 +33,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.foundation.focusGroup
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalClipboardManager
@@ -60,6 +63,8 @@ import nuvio.composeapp.generated.resources.collections_header
 import nuvio.composeapp.generated.resources.collections_import
 import nuvio.composeapp.generated.resources.collections_new
 import nuvio.composeapp.generated.resources.collections_pinned
+import nuvio.composeapp.generated.resources.settings_playback_hud_button_move_down
+import nuvio.composeapp.generated.resources.settings_playback_hud_button_move_up
 import org.jetbrains.compose.resources.stringResource
 import sh.calvin.reorderable.ReorderableColumn
 
@@ -245,6 +250,8 @@ private fun CollectionSettingsList(
                             isTablet = isTablet,
                             onEdit = { onEdit(collection.id) },
                             onDelete = { onDelete(collection.id) },
+                            onMoveUp = if (index > 0) ({ CollectionRepository.moveByIndex(index, index - 1) }) else null,
+                            onMoveDown = if (index < collections.lastIndex) ({ CollectionRepository.moveByIndex(index, index + 1) }) else null,
                         )
                     }
                 }
@@ -254,12 +261,15 @@ private fun CollectionSettingsList(
 }
 
 /** Mirrors [HomescreenCatalogRow]: title over a muted summary, controls on the right. */
+/** Mirrors [HomescreenCatalogRow]: title over a muted summary, controls on the right. */
 @Composable
 private fun CollectionSettingsRow(
     collection: Collection,
     isTablet: Boolean,
     onEdit: () -> Unit,
     onDelete: () -> Unit,
+    onMoveUp: (() -> Unit)?,
+    onMoveDown: (() -> Unit)?,
 ) {
     val tokens = MaterialTheme.nuvio
     val summary = buildString {
@@ -269,49 +279,68 @@ private fun CollectionSettingsRow(
             append(stringResource(Res.string.collections_pinned))
         }
     }
+    // A focus group: the title area and each icon are separate focus stops, so the arrow keys
+    // can reach the edit and delete icons instead of stopping on the whole row.
     Row(
         modifier = Modifier
-            .fillMaxWidth()
-            .clickable(onClick = onEdit)
-            .padding(
-                horizontal = if (isTablet) 20.dp else 16.dp,
-                vertical = if (isTablet) 14.dp else 12.dp,
-            ),
+        .fillMaxWidth()
+        .focusGroup()
+        .padding(
+            horizontal = if (isTablet) 20.dp else 16.dp,
+                 vertical = if (isTablet) 14.dp else 12.dp,
+        ),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Column(
+        // Title area: the row's primary stop. Select opens the editor.
+        SettingsSelectableColumn(
+            onSelect = onEdit,
             modifier = Modifier
                 .weight(1f)
                 .padding(end = if (isTablet) SettingsRowTextGap else 12.dp),
-            verticalArrangement = Arrangement.spacedBy(4.dp),
         ) {
-            Text(
-                text = collection.title,
-                style = MaterialTheme.typography.bodyLarge,
-                color = tokens.colors.textPrimary,
-                fontWeight = FontWeight.SemiBold,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
-            Text(
-                text = summary,
-                style = MaterialTheme.typography.bodyMedium,
-                color = tokens.colors.textMuted,
-            )
+            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                Text(
+                    text = collection.title,
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = tokens.colors.textPrimary,
+                    fontWeight = FontWeight.SemiBold,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+                Text(
+                    text = summary,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = tokens.colors.textMuted,
+                )
+            }
         }
         Row(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(4.dp),
         ) {
-            IconButton(onClick = onEdit) {
+            SettingsIconAction(onClick = { onMoveUp?.invoke() }, enabled = onMoveUp != null) {
+                Icon(
+                    imageVector = Icons.Rounded.KeyboardArrowUp,
+                    contentDescription = stringResource(Res.string.settings_playback_hud_button_move_up),
+                    tint = if (onMoveUp != null) tokens.colors.textMuted else tokens.colors.textDisabled,
+                )
+            }
+            SettingsIconAction(onClick = { onMoveDown?.invoke() }, enabled = onMoveDown != null) {
+                Icon(
+                    imageVector = Icons.Rounded.KeyboardArrowDown,
+                    contentDescription = stringResource(Res.string.settings_playback_hud_button_move_down),
+                    tint = if (onMoveDown != null) tokens.colors.textMuted else tokens.colors.textDisabled,
+                )
+            }
+            SettingsIconAction(onClick = onEdit) {
                 Icon(
                     imageVector = Icons.Rounded.Edit,
                     contentDescription = stringResource(Res.string.action_edit),
                     tint = tokens.colors.textMuted,
                 )
             }
-            IconButton(onClick = onDelete) {
+            SettingsIconAction(onClick = onDelete) {
                 Icon(
                     imageVector = Icons.Rounded.Delete,
                     contentDescription = stringResource(Res.string.action_delete),

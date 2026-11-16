@@ -14,6 +14,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.layout.LayoutCoordinates
 import androidx.compose.ui.layout.onPlaced
@@ -280,6 +282,11 @@ internal fun rememberSettingsAnchorHighlight(
     alignToTop: Boolean = false,
 ): SettingsAnchorHighlight {
     val requester = remember { BringIntoViewRequester() }
+    // Focus the row a search result names, not just scroll to it. Applied before the row's focus
+    // target, so it binds to that target (the same rule settingsNavItem relies on); headings and
+    // other non-focusable anchors simply fail the request and keep the scroll-only behaviour.
+    val anchorRequester = remember { FocusRequester() }
+    val scope = androidx.compose.runtime.rememberCoroutineScope()
     val viewport = LocalSettingsAnchorViewport.current
     // Where this element sits, for the viewport's own scroll. Not state: read only when landing.
     val placement = remember { arrayOfNulls<LayoutCoordinates>(1) }
@@ -310,6 +317,14 @@ internal fun rememberSettingsAnchorHighlight(
             if (!onPage()) withFrameNanos {}
             if (!onPage()) return@LaunchedEffect
             if (!SettingsScrollAnchor.consume(anchor, request.sequence)) return@LaunchedEffect
+            // Consuming clears `requested`, which restarts this effect. The focus therefore runs in
+            // the remembered scope, which outlives that restart; two frames put it after the page's
+            // own first-control focus so the searched row wins.
+            scope.launch {
+                withFrameNanos { }
+                withFrameNanos { }
+                runCatching { anchorRequester.requestFocus() }
+            }
             highlightToken++
         } else if (request.fallbackAnchor == anchor) {
             // Give the exact destination a frame to mount and consume the request. If it is not
@@ -320,6 +335,11 @@ internal fun rememberSettingsAnchorHighlight(
             if (SettingsScrollAnchor.isMounted(request.anchor)) return@LaunchedEffect
             if (!SettingsScrollAnchor.consume(anchor, request.sequence, allowFallback = true)) {
                 return@LaunchedEffect
+            }
+            scope.launch {
+                withFrameNanos { }
+                withFrameNanos { }
+                runCatching { anchorRequester.requestFocus() }
             }
             request.fallbackTitle?.let(SettingsScrollAnchor::highlightTitle)
             highlightToken++
@@ -340,6 +360,7 @@ internal fun rememberSettingsAnchorHighlight(
     return SettingsAnchorHighlight(
         highlighted = highlighted,
         modifier = Modifier
+            .focusRequester(anchorRequester)
             .bringIntoViewRequester(requester)
             .onPlaced {
                 placement[0] = it

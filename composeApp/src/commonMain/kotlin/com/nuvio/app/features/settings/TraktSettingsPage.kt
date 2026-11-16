@@ -15,7 +15,6 @@ import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Check
-import androidx.compose.material3.BasicAlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -184,11 +183,10 @@ private fun TraktSettingsActionRow(
     val verticalPadding = if (isTablet) 16.dp else 14.dp
     val horizontalPadding = if (isTablet) 20.dp else 16.dp
 
-    Row(
-        modifier = modifier
-            .fillMaxWidth()
-            .clickable(onClick = onClick)
-            .padding(horizontal = horizontalPadding, vertical = verticalPadding),
+    SettingsSelectableRow(
+        onSelect = onClick,
+        modifier = modifier.fillMaxWidth(),
+        contentModifier = Modifier.padding(horizontal = horizontalPadding, vertical = verticalPadding),
         horizontalArrangement = Arrangement.Start,
         verticalAlignment = Alignment.CenterVertically,
     ) {
@@ -237,7 +235,7 @@ private fun WatchProgressSourceDialog(
     onSourceSelected: (WatchProgressSource) -> Unit,
     onDismiss: () -> Unit,
 ) {
-    BasicAlertDialog(onDismissRequest = onDismiss) {
+    SettingsBasicAlertDialog(onDismissRequest = onDismiss) {
         NuvioDialogSurface(modifier = Modifier.fillMaxWidth()) {
             Column(
                 modifier = Modifier.padding(start = 20.dp, end = 20.dp, top = 20.dp, bottom = 8.dp),
@@ -518,7 +516,7 @@ private fun TraktDeviceCodeDialog(
         }
     }
 
-    BasicAlertDialog(onDismissRequest = { TraktAuthRepository.onCancelDeviceFlow() }) {
+    SettingsBasicAlertDialog(onDismissRequest = { TraktAuthRepository.onCancelDeviceFlow() }) {
         NuvioDialogSurface {
             Column(
                 modifier = Modifier.padding(24.dp).widthIn(max = 360.dp),

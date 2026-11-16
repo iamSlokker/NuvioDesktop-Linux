@@ -18,7 +18,6 @@ import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Delete
-import androidx.compose.material3.BasicAlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -267,7 +266,7 @@ private fun BadgeUrlManagerDialog(
     var isImporting by rememberSaveable { mutableStateOf(false) }
     var previewImport by remember { mutableStateOf<StreamBadgeImport?>(null) }
 
-    BasicAlertDialog(onDismissRequest = onDismiss) {
+    SettingsBasicAlertDialog(onDismissRequest = onDismiss) {
         SettingsDialogSurface(title = stringResource(Res.string.settings_stream_badge_urls_title)) {
             Text(
                 text = stringResource(Res.string.settings_stream_badge_urls_description, STREAM_BADGE_IMPORT_LIMIT),
@@ -424,7 +423,7 @@ private fun BadgeUrlRow(
                 horizontalArrangement = Arrangement.spacedBy(tokens.spacing.controlGap),
             ) {
                 if (showActiveChoice) {
-                    RadioButton(
+                    SettingsRadio(
                         selected = import.isActive,
                         onClick = onActivate,
                         enabled = enabled,
@@ -496,7 +495,7 @@ private fun BadgePreviewDialog(
     val sections = badgePreviewSections(import)
     val badgeCount = sections.sumOf { it.filters.size }
 
-    BasicAlertDialog(onDismissRequest = onDismiss) {
+    SettingsBasicAlertDialog(onDismissRequest = onDismiss) {
         SettingsDialogSurface(title = stringResource(Res.string.settings_fusion_badge_preview_title)) {
             Text(
                 text = import.sourceUrl,

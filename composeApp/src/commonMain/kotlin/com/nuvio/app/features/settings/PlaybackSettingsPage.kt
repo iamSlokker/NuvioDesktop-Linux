@@ -6,6 +6,7 @@ import com.nuvio.app.core.ui.ditheredBackground
 import com.nuvio.app.core.build.AppFeaturePolicy
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.focusable
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -32,7 +33,6 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.KeyboardArrowDown
 import androidx.compose.material.icons.rounded.Check
-import androidx.compose.material3.BasicAlertDialog
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -297,179 +297,11 @@ fun calculateSteps(
     return (totalSteps - 1).coerceAtLeast(0)
 }
 
-@Composable
-internal fun SettingsSliderRow(
-    title: String,
-    value: Int,
-    valueText: String,
-    valueTextForValue: ((Int) -> String)? = null,
-    valueRange: IntRange,
-    step: Int,
-    isTablet: Boolean,
-    description: String? = null,
-    enabled: Boolean = true,
-    modifier: Modifier = Modifier,
-    onValueChange: (Int) -> Unit,
-) {
-    val horizontalPadding = 16.dp
-    var sliderValue by remember(value) { mutableFloatStateOf(value.toFloat()) }
-    val displayedValue = sliderValue.roundToInt().coerceIn(valueRange.first, valueRange.last)
-    val displayedValueText = valueTextForValue?.invoke(displayedValue)
-        ?: if (displayedValue == value) {
-            valueText
-        } else {
-            valueText.replaceFirst(value.toString(), displayedValue.toString())
-        }
-
-    Row(
-        modifier = modifier
-            .fillMaxWidth()
-            .padding(horizontal = horizontalPadding, vertical = if (isTablet) DesktopRowVerticalPadding else 8.dp)
-            .alpha(if (enabled) 1f else 0.55f),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        SettingsRowTextColumn(
-            title = title,
-            description = description,
-            isTablet = isTablet,
-            modifier = Modifier.weight(1f),
-        )
-        Row(
-            modifier = Modifier.width(if (isTablet) DesktopControlWidth else 220.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            SettingsModernSlider(
-                value = sliderValue.coerceIn(valueRange.first.toFloat(), valueRange.last.toFloat()),
-                onValueChange = { if (enabled) sliderValue = snapToStep(it, step.toFloat()) },
-                onValueChangeFinished = {
-                    if (enabled) onValueChange(sliderValue.roundToInt().coerceIn(valueRange.first, valueRange.last))
-                },
-                enabled = enabled,
-                valueRange = valueRange.first.toFloat()..valueRange.last.toFloat(),
-                steps = calculateSteps(valueRange.first.toFloat(), valueRange.last.toFloat(), step.toFloat()),
-                modifier = Modifier.weight(1f),
-                valueLabel = displayedValueText,
-            )
-        }
-    }
-}
-
 /**
  * Signed readout for the [DesktopColorProfile.Custom] offsets: mpv treats these as offsets from
  * neutral, so the sign carries the meaning and a bare "0" would read as "off" rather than "neutral".
  */
 private fun formatColorOffset(value: Int): String = if (value > 0) "+$value" else value.toString()
-
-/**
- * Title + optional description shared by slider rows. The value readout is stacked above the
- * slider itself, leaving this text in the same leading column as the other setting row types.
- */
-@Composable
-private fun SettingsRowTextColumn(
-    title: String,
-    description: String?,
-    isTablet: Boolean,
-    modifier: Modifier = Modifier,
-) {
-    Column(
-        modifier = modifier.padding(end = if (isTablet) SettingsRowTextGap else 12.dp),
-        verticalArrangement = Arrangement.spacedBy(4.dp),
-    ) {
-        Text(
-            text = title,
-            modifier = settingsRowTitleAccentMask(title),
-            style = if (isTablet) MaterialTheme.typography.bodyMedium else MaterialTheme.typography.bodyLarge,
-            color = settingsRowTitleColor(title),
-            fontWeight = FontWeight.Medium,
-        )
-        if (!description.isNullOrBlank()) {
-            SettingsSubtext(
-                text = description,
-                isTablet = isTablet,
-            )
-        }
-    }
-}
-
-/**
- * Range counterpart of [SettingsSliderRow]. The dragged thumb pushes the other one along rather
- * than crossing it, so the readout and the drawn band stay honest for the whole gesture — the
- * ordering is not deferred to whatever the caller does on release.
- */
-@Composable
-internal fun SettingsRangeSliderRow(
-    title: String,
-    lowValue: Int,
-    highValue: Int,
-    valueTextForRange: (low: Int, high: Int) -> String,
-    valueRange: IntRange,
-    step: Int,
-    isTablet: Boolean,
-    description: String? = null,
-    enabled: Boolean = true,
-    minGap: Int = 1,
-    modifier: Modifier = Modifier,
-    onValueChange: (low: Int, high: Int) -> Unit,
-) {
-    val horizontalPadding = 16.dp
-    var lowSliderValue by remember(lowValue) { mutableFloatStateOf(lowValue.toFloat()) }
-    var highSliderValue by remember(highValue) { mutableFloatStateOf(highValue.toFloat()) }
-    val displayedLow = lowSliderValue.roundToInt().coerceIn(valueRange.first, valueRange.last)
-    val displayedHigh = highSliderValue.roundToInt().coerceIn(valueRange.first, valueRange.last)
-
-    Row(
-        modifier = modifier
-            .fillMaxWidth()
-            .padding(horizontal = horizontalPadding, vertical = if (isTablet) DesktopRowVerticalPadding else 8.dp)
-            .alpha(if (enabled) 1f else 0.55f),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        SettingsRowTextColumn(
-            title = title,
-            description = description,
-            isTablet = isTablet,
-            modifier = Modifier.weight(1f),
-        )
-        Row(
-            modifier = Modifier.width(if (isTablet) DesktopControlWidth else 220.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            SettingsModernRangeSlider(
-                lowValue = lowSliderValue.coerceIn(valueRange.first.toFloat(), valueRange.last.toFloat()),
-                highValue = highSliderValue.coerceIn(valueRange.first.toFloat(), valueRange.last.toFloat()),
-                onValueChange = { low, high ->
-                    if (!enabled) return@SettingsModernRangeSlider
-                    val snappedLow = snapToStep(low, step.toFloat())
-                    val snappedHigh = snapToStep(high, step.toFloat())
-                    val gap = minGap.toFloat()
-                    // Whichever end moved is authoritative; the other is pushed out of its way and
-                    // clamped at the track edge, so a thumb dragged to the far end parks the pair
-                    // there instead of the gesture silently doing nothing.
-                    if (snappedLow != lowSliderValue) {
-                        lowSliderValue = snappedLow.coerceAtMost(valueRange.last - gap)
-                        highSliderValue = highSliderValue.coerceAtLeast(lowSliderValue + gap)
-                    } else {
-                        highSliderValue = snappedHigh.coerceAtLeast(valueRange.first + gap)
-                        lowSliderValue = lowSliderValue.coerceAtMost(highSliderValue - gap)
-                    }
-                },
-                onValueChangeFinished = {
-                    if (enabled) {
-                        onValueChange(
-                            lowSliderValue.roundToInt().coerceIn(valueRange.first, valueRange.last),
-                            highSliderValue.roundToInt().coerceIn(valueRange.first, valueRange.last),
-                        )
-                    }
-                },
-                enabled = enabled,
-                valueRange = valueRange.first.toFloat()..valueRange.last.toFloat(),
-                steps = calculateSteps(valueRange.first.toFloat(), valueRange.last.toFloat(), step.toFloat()),
-                modifier = Modifier.weight(1f),
-                valueLabel = valueTextForRange(displayedLow, displayedHigh),
-            )
-        }
-    }
-}
 
 @Composable
 private fun subtitleColorLabel(color: Color): String {
@@ -662,12 +494,13 @@ private fun SubtitleColorDropdownRow(
             modifier = Modifier.weight(1f).then(settingsRowTitleAccentMask(title)),
         )
         Box(modifier = Modifier.width(controlWidth)) {
-            Surface(
-                // The settings dropdown glass; see SettingsDropdownTrigger.
+            // The closed trigger is the row's keyboard stop: Select opens it.
+            SettingsSelectableSurface(
+                onSelect = { if (enabled) expanded = true },
+                enabled = enabled,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .ditheredBackground(SettingsSectionGlassFill, triggerShape)
-                    .clickable(enabled = enabled) { expanded = true },
+                    .ditheredBackground(SettingsSectionGlassFill, triggerShape),
                 shape = triggerShape,
                 color = Color.Transparent,
                 border = BorderStroke(1.dp, SettingsSectionGlassEdge),
@@ -772,7 +605,7 @@ private fun SubtitleCustomColorDialog(
     var showError by remember { mutableStateOf(false) }
     val parsedColor = subtitleColorFromInput(hexInput, initialColor)
 
-    BasicAlertDialog(onDismissRequest = onDismiss) {
+    SettingsBasicAlertDialog(onDismissRequest = onDismiss) {
         NuvioDialogSurface(modifier = Modifier.fillMaxWidth()) {
             Column(
                 modifier = Modifier.padding(start = 20.dp, end = 20.dp, top = 20.dp, bottom = 8.dp),
@@ -1363,6 +1196,7 @@ private fun PlaybackSettingsSection(
                             isTablet = isTablet,
                             onCheckedChange = PlayerSettingsRepository::setDesktopAlwaysShowClockEnabled,
                         )
+
                         SettingsGroupDivider(isTablet = isTablet)
                         SettingsSwitchRow(
                             title = stringResource(Res.string.settings_playback_info_panel),
@@ -1384,6 +1218,17 @@ private fun PlaybackSettingsSection(
                     isTablet = isTablet,
                 ) {
                     SettingsGroup(isTablet = isTablet) {
+                        SettingsSwitchRow(
+                            title = stringResource(Res.string.settings_playback_volume_control),
+                            description = stringResource(Res.string.settings_playback_volume_control_description),
+                            checked = autoPlayPlayerSettings.desktopVolumeControlEnabled,
+                            isTablet = isTablet,
+                            modifier = Modifier.settingsScrollAnchor(
+                                SettingsScrollAnchor.searchKey("desktop-volume-control"),
+                            ),
+                            onCheckedChange = PlayerSettingsRepository::setDesktopVolumeControlEnabled,
+                        )
+                        SettingsGroupDivider(isTablet = isTablet)
                         SettingsChoiceRow(
                             title = stringResource(Res.string.settings_playback_desktop_hdr_mode),
                             description = stringResource(autoPlayPlayerSettings.desktopHdrMode.descriptionRes),
@@ -3306,7 +3151,7 @@ private fun ExternalPlayerSelectionDialog(
     onPlayerConfigured: (ExternalPlayerApp) -> Unit,
     onDismiss: () -> Unit,
 ) {
-    BasicAlertDialog(
+    SettingsBasicAlertDialog(
         onDismissRequest = onDismiss,
     ) {
         NuvioDialogSurface(modifier = Modifier.fillMaxWidth()) {
@@ -3424,7 +3269,7 @@ private fun LanguageSelectionDialog(
     onSelect: (String?) -> Unit,
     onDismiss: () -> Unit,
 ) {
-    BasicAlertDialog(
+    SettingsBasicAlertDialog(
         onDismissRequest = onDismiss,
     ) {
         NuvioDialogSurface(modifier = Modifier
@@ -3516,7 +3361,7 @@ private fun ReuseCacheDurationDialog(
 ) {
     val options = listOf(1, 6, 12, 24, 48, 72, 168)
 
-    BasicAlertDialog(
+    SettingsBasicAlertDialog(
         onDismissRequest = onDismiss,
     ) {
         NuvioDialogSurface(modifier = Modifier.fillMaxWidth()) {
@@ -3603,7 +3448,7 @@ private fun DecoderPriorityDialog(
         2 to Res.string.settings_playback_decoder_prefer_app,
     )
 
-    BasicAlertDialog(
+    SettingsBasicAlertDialog(
         onDismissRequest = onDismiss,
     ) {
         NuvioDialogSurface(modifier = Modifier.fillMaxWidth()) {
@@ -3688,7 +3533,7 @@ private fun <T> IosEnumSelectionDialog(
     onSelect: (T) -> Unit,
     onDismiss: () -> Unit,
 ) {
-    BasicAlertDialog(
+    SettingsBasicAlertDialog(
         onDismissRequest = onDismiss,
     ) {
         NuvioDialogSurface(modifier = Modifier.fillMaxWidth()) {
@@ -3789,7 +3634,7 @@ private fun LibassRenderTypeDialog(
         "CUES" to Res.string.settings_playback_render_type_cues,
     )
 
-    BasicAlertDialog(
+    SettingsBasicAlertDialog(
         onDismissRequest = onDismiss,
     ) {
         NuvioDialogSurface(modifier = Modifier.fillMaxWidth()) {
@@ -3888,7 +3733,7 @@ private fun AddonSubtitleStartupModeDialog(
         ),
     )
 
-    BasicAlertDialog(
+    SettingsBasicAlertDialog(
         onDismissRequest = onDismiss,
     ) {
         NuvioDialogSurface(modifier = Modifier.fillMaxWidth()) {
@@ -3992,7 +3837,7 @@ private fun StreamAutoPlayModeDialog(
         ),
     )
 
-    BasicAlertDialog(
+    SettingsBasicAlertDialog(
         onDismissRequest = onDismiss,
     ) {
         NuvioDialogSurface(modifier = Modifier.fillMaxWidth()) {
@@ -4115,7 +3960,7 @@ private fun StreamAutoPlaySourceDialog(
         }
     }
 
-    BasicAlertDialog(
+    SettingsBasicAlertDialog(
         onDismissRequest = onDismiss,
     ) {
         NuvioDialogSurface(modifier = Modifier.fillMaxWidth()) {
@@ -4216,7 +4061,7 @@ private fun <T> TrackRejectKeywordDialog(
     onSelectionSaved: (Set<T>) -> Unit,
     onDismiss: () -> Unit,
 ) {
-    BasicAlertDialog(onDismissRequest = onDismiss) {
+    SettingsBasicAlertDialog(onDismissRequest = onDismiss) {
         NuvioDialogSurface(modifier = Modifier.fillMaxWidth()) {
             Column(
                 modifier = Modifier.padding(start = 20.dp, end = 20.dp, top = 20.dp, bottom = 8.dp),
@@ -4324,7 +4169,7 @@ private fun StreamAutoPlayProviderSelectionDialog(
         mutableStateOf(selectedItems.intersect(items.toSet()))
     }
 
-    BasicAlertDialog(
+    SettingsBasicAlertDialog(
         onDismissRequest = {
             onSelectionSaved(selected)
             onDismiss()
@@ -4473,7 +4318,7 @@ private fun StreamAutoPlayRegexDialog(
         stringResource(Res.string.settings_playback_regex_preset_no_remux_hdr) to "(?is)^(?!.*\\b(hdr|hdr10|dv|dolby|vision|hevc|remux|2160p)\\b).+$",
     )
 
-    BasicAlertDialog(
+    SettingsBasicAlertDialog(
         onDismissRequest = onDismiss,
     ) {
         NuvioDialogSurface(modifier = Modifier.fillMaxWidth()) {
@@ -4620,7 +4465,7 @@ private fun CustomMpvOptionsDialog(
 ) {
     var value by remember { mutableStateOf(initialValue) }
 
-    BasicAlertDialog(onDismissRequest = onDismiss) {
+    SettingsBasicAlertDialog(onDismissRequest = onDismiss) {
         NuvioDialogSurface(modifier = Modifier.fillMaxWidth()) {
             Column(
                 modifier = Modifier.padding(start = 20.dp, end = 20.dp, top = 20.dp, bottom = 8.dp),
@@ -4700,7 +4545,7 @@ private fun CustomShaderPathsDialog(
 ) {
     var value by remember { mutableStateOf(initialValue) }
 
-    BasicAlertDialog(onDismissRequest = onDismiss) {
+    SettingsBasicAlertDialog(onDismissRequest = onDismiss) {
         NuvioDialogSurface(modifier = Modifier.fillMaxWidth()) {
             Column(
                 modifier = Modifier.padding(start = 20.dp, end = 20.dp, top = 20.dp, bottom = 8.dp),
@@ -4787,7 +4632,7 @@ private fun AnimeSkipClientIdDialog(
 ) {
     var value by remember { mutableStateOf(initialValue) }
 
-    BasicAlertDialog(onDismissRequest = onDismiss) {
+    SettingsBasicAlertDialog(onDismissRequest = onDismiss) {
         NuvioDialogSurface(modifier = Modifier.fillMaxWidth()) {
             Column(
                 modifier = Modifier.padding(start = 20.dp, end = 20.dp, top = 20.dp, bottom = 8.dp),
@@ -4848,7 +4693,7 @@ private fun IntroDbApiKeyDialog(
     var errorMessage by remember { mutableStateOf<String?>(null) }
     val invalidKeyMessage = stringResource(Res.string.settings_playback_introdb_invalid_key)
 
-    BasicAlertDialog(onDismissRequest = { if (!isVerifying) onDismiss() }) {
+    SettingsBasicAlertDialog(onDismissRequest = { if (!isVerifying) onDismiss() }) {
         NuvioDialogSurface(modifier = Modifier.fillMaxWidth()) {
             Column(
                 modifier = Modifier.padding(start = 20.dp, end = 20.dp, top = 20.dp, bottom = 8.dp),
@@ -4946,7 +4791,7 @@ private fun SkipDbApiKeyDialog(
     var errorMessage by remember { mutableStateOf<String?>(null) }
     val createFailedMessage = stringResource(Res.string.settings_playback_skipdb_create_key_failed)
 
-    BasicAlertDialog(onDismissRequest = { if (!isCreatingKey) onDismiss() }) {
+    SettingsBasicAlertDialog(onDismissRequest = { if (!isCreatingKey) onDismiss() }) {
         NuvioDialogSurface(modifier = Modifier.fillMaxWidth()) {
             Column(
                 modifier = Modifier.padding(start = 20.dp, end = 20.dp, top = 20.dp, bottom = 8.dp),
@@ -5039,7 +4884,7 @@ private fun NextEpisodeThresholdModeDialog(
 ) {
     val options = com.nuvio.app.features.player.skip.NextEpisodeThresholdMode.entries
 
-    BasicAlertDialog(onDismissRequest = onDismiss) {
+    SettingsBasicAlertDialog(onDismissRequest = onDismiss) {
         NuvioDialogSurface(modifier = Modifier.fillMaxWidth()) {
             Column(
                 modifier = Modifier.padding(start = 20.dp, end = 20.dp, top = 20.dp, bottom = 8.dp),

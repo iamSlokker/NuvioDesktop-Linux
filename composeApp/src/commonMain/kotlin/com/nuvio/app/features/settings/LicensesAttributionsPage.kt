@@ -338,12 +338,12 @@ private fun LinkedPlainRow(
     val verticalPadding = if (isTablet) 18.dp else 16.dp
     val horizontalPadding = if (isTablet) 4.dp else 0.dp
 
-    Row(
+    SettingsSelectableRow(
+        onSelect = onOpen,
         modifier = Modifier
             .settingsScrollAnchor(SettingsScrollAnchor.searchKey(searchKey))
-            .fillMaxWidth()
-            .clickable(onClick = onOpen)
-            .padding(horizontal = horizontalPadding, vertical = verticalPadding),
+            .fillMaxWidth(),
+        contentModifier = Modifier.padding(horizontal = horizontalPadding, vertical = verticalPadding),
         verticalAlignment = Alignment.Top,
         horizontalArrangement = Arrangement.spacedBy(if (isTablet) 18.dp else 14.dp),
     ) {

@@ -45,6 +45,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.withFrameNanos
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -53,6 +54,13 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.input.key.Key
+import androidx.compose.ui.input.key.KeyEventType
+import androidx.compose.ui.input.key.key
+import androidx.compose.ui.input.key.onPreviewKeyEvent
+import androidx.compose.ui.input.key.type
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.text.buildAnnotatedString
@@ -497,6 +505,24 @@ private fun LocalLibraryCatalogsSection(isTablet: Boolean, titlesState: LocalLib
     var editName by remember { mutableStateOf("") }
     val focusManager = LocalFocusManager.current
     val tokens = MaterialTheme.nuvio
+    // After an inline rename closes, put the keys back on that catalog. Clearing the field without
+    // restoring a stop left the page with no focused control, so the arrows and Back did nothing.
+    val catalogFocusRequesters = remember { mutableMapOf<String, FocusRequester>() }
+    var restoreCatalogId by remember { mutableStateOf<String?>(null) }
+    LaunchedEffect(restoreCatalogId, editingId, state.sortedCatalogs) {
+        val id = restoreCatalogId ?: return@LaunchedEffect
+        if (editingId != null) return@LaunchedEffect
+        val requester = catalogFocusRequesters.getOrPut(id) { FocusRequester() }
+        repeat(4) {
+            withFrameNanos { }
+            if (runCatching { requester.requestFocus() }.getOrDefault(false)) {
+                restoreCatalogId = null
+                return@LaunchedEffect
+            }
+        }
+        SettingsContentFocus.requestEntry(focusManager)
+        restoreCatalogId = null
+    }
 
     // Clicking a catalog opens the library browser already scoped to it — the row is the shortcut
     // to that catalog's shelf, and the browser's own tabs take over from there.
@@ -555,10 +581,11 @@ private fun LocalLibraryCatalogsSection(isTablet: Boolean, titlesState: LocalLib
                             null
                         } else {
                             {
-                                LocalLibraryRepository.addCatalog(newName)
+                                restoreCatalogId = LocalLibraryRepository.addCatalog(newName)
                                 newName = ""
                                 showAddBox = false
-                                // Release focus so the input tracker drops the shortcut lock.
+                                // Release focus so the input tracker drops the shortcut lock; the
+                                // effect above then lands on the new catalog.
                                 focusManager.clearFocus()
                             }
                         },
@@ -591,10 +618,12 @@ private fun LocalLibraryCatalogsSection(isTablet: Boolean, titlesState: LocalLib
                         onEditNameChange = { editName = it },
                         onSave = {
                             LocalLibraryRepository.renameCatalog(catalog.id, editName)
+                            restoreCatalogId = catalog.id
                             editingId = null
                             focusManager.clearFocus()
                         },
                         onCancel = {
+                            restoreCatalogId = catalog.id
                             editingId = null
                             focusManager.clearFocus()
                         },
@@ -605,6 +634,11 @@ private fun LocalLibraryCatalogsSection(isTablet: Boolean, titlesState: LocalLib
                         name = catalog.name,
                         color = catalog.color,
                         itemCount = counts[catalog.id] ?: 0,
+                        modifier = if (restoreCatalogId == catalog.id) {
+                            Modifier.focusRequester(catalogFocusRequesters.getOrPut(catalog.id) { FocusRequester() })
+                        } else {
+                            Modifier
+                        },
                         onClick = { openBrowser(catalog.id) },
                         onStartEdit = { editingId = catalog.id; editName = catalog.name },
                         onRemove = if (catalog.defaultBucket == null) {
@@ -625,16 +659,16 @@ private fun LocalCatalogRow(
     name: String,
     color: Long?,
     itemCount: Int,
+    modifier: Modifier = Modifier,
     onClick: () -> Unit,
     onStartEdit: (() -> Unit)? = null,
     onRemove: (() -> Unit)? = null,
 ) {
     val tokens = MaterialTheme.nuvio
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(onClick = onClick)
-            .padding(start = 16.dp, end = 8.dp, top = 4.dp, bottom = 4.dp),
+    SettingsSelectableRow(
+        onSelect = onClick,
+        modifier = modifier.fillMaxWidth(),
+        contentModifier = Modifier.padding(start = 16.dp, end = 8.dp, top = 4.dp, bottom = 4.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Box(
@@ -667,7 +701,7 @@ private fun LocalCatalogRow(
         // the user-made catalogs offer, sits inside it so the column of pens stays flush at the
         // edge whether or not a row can be deleted. Unsorted has neither and keeps the pen's slot.
         if (onRemove != null) {
-            IconButton(onClick = onRemove) {
+            SettingsIconAction(onClick = onRemove) {
                 Icon(
                     Icons.Rounded.Close,
                     contentDescription = stringResource(Res.string.settings_local_library_remove),
@@ -677,7 +711,7 @@ private fun LocalCatalogRow(
             }
         }
         if (onStartEdit != null) {
-            IconButton(onClick = onStartEdit) {
+            SettingsIconAction(onClick = onStartEdit) {
                 Icon(
                     Icons.Rounded.Edit,
                     contentDescription = stringResource(Res.string.settings_local_library_rename),
@@ -703,9 +737,30 @@ private fun LocalCatalogEditRow(
     onPickColor: (Long?) -> Unit,
 ) {
     val tokens = MaterialTheme.nuvio
+    // Selecting a catalog opens this editor: the field must take the keys, or the row that held
+    // them is gone and Back has nothing to reach.
+    val fieldRequester = remember { FocusRequester() }
+    LaunchedEffect(Unit) {
+        withFrameNanos { }
+        runCatching { fieldRequester.requestFocus() }
+    }
     Column(
         modifier = Modifier
             .fillMaxWidth()
+            .onPreviewKeyEvent { event ->
+                if (event.type != KeyEventType.KeyDown) return@onPreviewKeyEvent false
+                when {
+                    event.key == Key.Escape || event.key == Key.Back -> {
+                        onCancel()
+                        true
+                    }
+                    event.key == Key.Enter || event.key == Key.NumPadEnter -> {
+                        if (editName.isNotBlank()) onSave()
+                        true
+                    }
+                    else -> false
+                }
+            }
             .padding(start = 16.dp, end = 8.dp, top = 8.dp, bottom = 10.dp),
         verticalArrangement = Arrangement.spacedBy(10.dp),
     ) {
@@ -724,6 +779,7 @@ private fun LocalCatalogEditRow(
                 value = editName,
                 onValueChange = onEditNameChange,
                 modifier = Modifier.weight(1f),
+                focusRequester = fieldRequester,
             )
             IconButton(onClick = onSave, enabled = editName.isNotBlank()) {
                 Icon(
@@ -756,7 +812,8 @@ private fun LocalCatalogEditRow(
 
 @Composable
 private fun ColorSwatch(color: Long, selected: Boolean, onClick: () -> Unit) {
-    Box(
+    SettingsSelectableBox(
+        onSelect = onClick,
         modifier = Modifier
             .size(22.dp)
             .clip(CircleShape)
@@ -765,8 +822,7 @@ private fun ColorSwatch(color: Long, selected: Boolean, onClick: () -> Unit) {
                 width = if (selected) 2.dp else 0.dp,
                 color = if (selected) MaterialTheme.colorScheme.onSurface else Color.Transparent,
                 shape = CircleShape,
-            )
-            .clickable(onClick = onClick),
+            ),
         contentAlignment = Alignment.Center,
     ) {
         if (selected) {
@@ -1223,8 +1279,10 @@ private fun LocalMatchDialog(item: LocalMediaItem, onDismiss: () -> Unit) {
 
 @Composable
 private fun LocalMatchCandidateRow(candidate: LocalMatchCandidate, onClick: () -> Unit) {
-    Row(
-        modifier = Modifier.fillMaxWidth().clickable(onClick = onClick).padding(vertical = 6.dp),
+    SettingsSelectableRow(
+        onSelect = onClick,
+        modifier = Modifier.fillMaxWidth(),
+        contentModifier = Modifier.padding(vertical = 6.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Box(modifier = Modifier.size(width = 34.dp, height = 50.dp).clip(RoundedCornerShape(4.dp))) {

@@ -19,12 +19,16 @@ internal expect object ThemeSettingsStorage {
     fun saveAccentGradientDirection(directionName: String)
     fun loadAmoledEnabled(): Boolean?
     fun saveAmoledEnabled(enabled: Boolean)
+    fun loadAmoledMode(): String?
+    fun saveAmoledMode(mode: String)
     fun loadLiquidGlassNativeTabBarEnabled(): Boolean?
     fun saveLiquidGlassNativeTabBarEnabled(enabled: Boolean)
     fun loadDesktopColumnGuidesVisible(): Boolean?
     fun saveDesktopColumnGuidesVisible(visible: Boolean)
     fun loadDesktopSettingsFullWidth(): Boolean?
     fun saveDesktopSettingsFullWidth(enabled: Boolean)
+    fun loadEscapeFailsafeEnabled(): Boolean?
+    fun saveEscapeFailsafeEnabled(enabled: Boolean)
     fun loadWasdNavigationEnabled(): Boolean?
     fun saveWasdNavigationEnabled(enabled: Boolean)
     fun loadHoldToSelectEnabled(): Boolean?
@@ -39,6 +43,8 @@ internal expect object ThemeSettingsStorage {
     fun saveDesktopSidebarItemsTop(top: Boolean)
     fun loadDesktopAppUiScalePercent(): Int?
     fun saveDesktopAppUiScalePercent(percent: Int)
+    fun loadDesktopOskScalePercent(): Int?
+    fun saveDesktopOskScalePercent(percent: Int)
     fun loadDesktopAppUiScaleAppliesToDetails(): Boolean?
     fun saveDesktopAppUiScaleAppliesToDetails(enabled: Boolean)
     fun loadAppFontFamily(): String?

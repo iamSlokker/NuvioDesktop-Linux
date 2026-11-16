@@ -2,6 +2,7 @@ package com.nuvio.app.features.settings
 
 import com.nuvio.app.core.ui.NuvioGlass
 import com.nuvio.app.core.ui.drawDitheredOutline
+import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawWithCache
 import androidx.compose.ui.geometry.Offset
@@ -18,10 +19,25 @@ import kotlin.math.max
  * over. Static and built once per size in [drawWithCache]; drawn dithered so the long, shallow
  * gradients over dark values do not band.
  */
+@Composable
 internal fun Modifier.settingsSkyBackground(
     background: Color,
     accent: Color,
+): Modifier {
+    // Only the explicit Black appearance removes the decorative wash and glows; the existing AMOLED
+    // appearance keeps them. Read here so every page (Settings, Calendar, Live TV, Music) agrees.
+    val pureBlack = com.nuvio.app.core.ui.LocalPureBlackBackground.current
+    return skyBackground(background, accent, pureBlack)
+}
+
+private fun Modifier.skyBackground(
+    background: Color,
+    accent: Color,
+    pureBlack: Boolean,
 ): Modifier = drawWithCache {
+    if (pureBlack) {
+        return@drawWithCache onDrawBehind { drawRect(Color.Black) }
+    }
     val w = size.width
     val h = size.height
     val night = NuvioGlass.night(background, accent)

@@ -280,6 +280,60 @@ private fun writeRestoredStore(target: Path, properties: Properties) {
     }
 }
 
+
+/**
+ * Builds the same archive [DesktopSettingsBackup.create] writes, in memory. The Google Drive
+ * backup uploads these bytes as its ordinary-settings companion file; keeping one builder means
+ * the two paths can never drift in which stores they carry or how credentials are filtered.
+ */
+internal fun buildSettingsBackupArchive(includeCredentials: Boolean): ByteArray {
+    DesktopStorage.flushAll()
+    return java.io.ByteArrayOutputStream().use { buffer ->
+        ZipOutputStream(buffer).use { zip ->
+            fun storesIn(directory: Path, keep: (String) -> Boolean) = Files.list(directory).use { paths ->
+                paths.filter { path ->
+                    path.isRegularFile() && path.extension == "properties" &&
+                        keep(path.fileName.toString().removeSuffix(".properties"))
+                }.toList()
+            }
+            val files = (
+                storesIn(DesktopStorage.rootDir) { it in MACHINE_STORE_NAMES } +
+                    storesIn(DesktopStorage.accountDir) { true }
+                ).sortedBy { it.fileName.toString() }
+            files.forEach { file ->
+                val properties = settingsPropertiesForBackup(file, includeCredentials) ?: return@forEach
+                zip.putNextEntry(ZipEntry("preferences/${file.fileName}"))
+                properties.store(zip, "Nuvio settings backup")
+                zip.closeEntry()
+            }
+            zip.putNextEntry(ZipEntry("backup-info.txt"))
+            zip.write(
+                buildString {
+                    appendLine("Nuvio settings backup")
+                    appendLine("Created: ${LocalDateTime.now()}")
+                    appendLine("Credentials included: $includeCredentials")
+                    appendLine("Contains desktop *.properties preference stores.")
+                }.encodeToByteArray(),
+            )
+            zip.closeEntry()
+        }
+        buffer.toByteArray()
+    }
+}
+
+/** Stages an archive for the next launch, exactly as the local Import flow does. */
+internal fun stageSettingsBackupArchive(bytes: ByteArray): Boolean {
+    DesktopStorage.flushAll()
+    Files.write(
+        DesktopStorage.rootDir.resolve(PendingImportName),
+        bytes,
+        java.nio.file.StandardOpenOption.CREATE,
+        java.nio.file.StandardOpenOption.TRUNCATE_EXISTING,
+        java.nio.file.StandardOpenOption.WRITE,
+    )
+    return true
+}
+
 private fun settingsPropertiesForBackup(file: Path, includeCredentials: Boolean): Properties? {
     if (!includeCredentials && file.name in CredentialStoreNames) return null
     val source = Properties()
@@ -331,39 +385,10 @@ internal actual object DesktopSettingsBackup {
             // The backup reads the files off disk; writes are otherwise coalesced for a second or two.
             DesktopStorage.flushAll()
             Files.createDirectories(destination.parent)
+            val bytes = buildSettingsBackupArchive(includeCredentials)
             val temporary = destination.resolveSibling("${destination.fileName}.tmp")
             try {
-                ZipOutputStream(Files.newOutputStream(temporary)).use { zip ->
-                    // This PC's shared stores plus the signed-in account's own; other accounts'
-                    // folders are theirs to back up.
-                    fun storesIn(directory: Path, keep: (String) -> Boolean) = Files.list(directory).use { paths ->
-                        paths.filter { path ->
-                            path.isRegularFile() && path.extension == "properties" &&
-                                keep(path.fileName.toString().removeSuffix(".properties"))
-                        }.toList()
-                    }
-                    val files = (
-                        storesIn(DesktopStorage.rootDir) { it in MACHINE_STORE_NAMES } +
-                            storesIn(DesktopStorage.accountDir) { true }
-                        ).sortedBy { it.fileName.toString() }
-                    files.forEach { file ->
-                        val properties = settingsPropertiesForBackup(file, includeCredentials)
-                            ?: return@forEach
-                        zip.putNextEntry(ZipEntry("preferences/${file.fileName}"))
-                        properties.store(zip, "Nuvio settings backup")
-                        zip.closeEntry()
-                    }
-                    zip.putNextEntry(ZipEntry("backup-info.txt"))
-                    zip.write(
-                        buildString {
-                            appendLine("Nuvio settings backup")
-                            appendLine("Created: ${LocalDateTime.now()}")
-                            appendLine("Credentials included: $includeCredentials")
-                            appendLine("Contains desktop *.properties preference stores.")
-                        }.encodeToByteArray(),
-                    )
-                    zip.closeEntry()
-                }
+                Files.write(temporary, bytes)
                 runCatching {
                     Files.move(
                         temporary,

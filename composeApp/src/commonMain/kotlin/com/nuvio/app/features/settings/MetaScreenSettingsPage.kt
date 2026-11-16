@@ -26,6 +26,8 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.KeyboardArrowDown
+import androidx.compose.material.icons.rounded.KeyboardArrowUp
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
@@ -62,6 +64,8 @@ import com.nuvio.app.features.details.MetaScreenSettingsUiState
 import com.nuvio.app.features.player.HERO_TV_TRAILER_DELAY_VALUES
 import nuvio.composeapp.generated.resources.Res
 import nuvio.composeapp.generated.resources.action_reset
+import nuvio.composeapp.generated.resources.settings_playback_hud_button_move_down
+import nuvio.composeapp.generated.resources.settings_playback_hud_button_move_up
 import nuvio.composeapp.generated.resources.settings_homescreen_hidden
 import nuvio.composeapp.generated.resources.settings_homescreen_visible
 import nuvio.composeapp.generated.resources.settings_meta_actions
@@ -385,7 +389,7 @@ private fun HeroTrailerPlaybackModeChip(
     label: String,
 ) {
     val selected = mode == selectedMode
-    FilterChip(
+    SettingsChoiceChip(
         selected = selected,
         onClick = { MetaScreenSettingsRepository.setHeroTrailerPlaybackMode(mode) },
         label = { Text(text = label) },
@@ -452,6 +456,8 @@ private fun MetaSectionReorderableList(
                             modifier = Modifier.settingsScrollAnchor(item.key.settingsSearchAnchor),
                             onEnabledChange = { MetaScreenSettingsRepository.setEnabled(item.key, it) },
                             onTabGroupChange = { MetaScreenSettingsRepository.setTabGroup(item.key, it) },
+                            onMoveUp = if (index > 0) ({ MetaScreenSettingsRepository.moveByIndex(index, index - 1) }) else null,
+                            onMoveDown = if (index < items.lastIndex) ({ MetaScreenSettingsRepository.moveByIndex(index, index + 1) }) else null,
                         )
                     }
                 }
@@ -470,6 +476,8 @@ private fun MetaSectionRow(
     modifier: Modifier = Modifier,
     onEnabledChange: (Boolean) -> Unit,
     onTabGroupChange: (Int?) -> Unit,
+    onMoveUp: (() -> Unit)?,
+    onMoveDown: (() -> Unit)?,
 ) {
     val horizontalPadding = if (isTablet) 20.dp else 16.dp
     val verticalPadding = if (isTablet) 18.dp else 16.dp
@@ -532,10 +540,29 @@ private fun MetaSectionRow(
                     }
                 }
             }
-            SettingsSquareSwitch(
-                checked = item.enabled,
-                onCheckedChange = onEnabledChange,
-            )
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(4.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                SettingsIconAction(onClick = { onMoveUp?.invoke() }, enabled = onMoveUp != null) {
+                    Icon(
+                        imageVector = Icons.Rounded.KeyboardArrowUp,
+                        contentDescription = stringResource(Res.string.settings_playback_hud_button_move_up),
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+                SettingsIconAction(onClick = { onMoveDown?.invoke() }, enabled = onMoveDown != null) {
+                    Icon(
+                        imageVector = Icons.Rounded.KeyboardArrowDown,
+                        contentDescription = stringResource(Res.string.settings_playback_hud_button_move_down),
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+                SettingsSquareSwitch(
+                    checked = item.enabled,
+                    onCheckedChange = onEnabledChange,
+                )
+            }
         }
 
         
@@ -577,7 +604,7 @@ private fun TabGroupChip(
     enabled: Boolean = true,
     onClick: () -> Unit,
 ) {
-    FilterChip(
+    SettingsChoiceChip(
         selected = selected,
         onClick = onClick,
         enabled = enabled,

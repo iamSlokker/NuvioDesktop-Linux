@@ -57,6 +57,7 @@ internal fun NavigationOrderDialog(onDismiss: () -> Unit) {
     val colors = MaterialTheme.nuvio.colors
     val hapticFeedback = LocalHapticFeedback.current
     val order by remember { NavBarLayoutRepository.order }.collectAsStateWithLifecycle()
+    val voiceInNav by remember { NavBarLayoutRepository.voiceInNav }.collectAsStateWithLifecycle()
     val switches = rememberNavEntrySwitches()
     val listState = rememberLazyListState()
     val reorderState = rememberReorderableLazyListState(listState) { from, to ->
@@ -118,10 +119,16 @@ internal fun NavigationOrderDialog(onDismiss: () -> Unit) {
                                         color = colors.textMuted,
                                     )
                                 }
-                                IconButton(onClick = { NavBarLayoutRepository.moveTo(entry, index) }, enabled = index > 0) {
+                                SettingsIconAction(
+                                    onClick = { NavBarLayoutRepository.moveTo(entry, index) },
+                                    enabled = index > 0,
+                                ) {
                                     Icon(Icons.Rounded.KeyboardArrowUp, contentDescription = stringResource(Res.string.settings_playback_hud_button_move_up))
                                 }
-                                IconButton(onClick = { NavBarLayoutRepository.moveTo(entry, index + 2) }, enabled = index < order.lastIndex) {
+                                SettingsIconAction(
+                                    onClick = { NavBarLayoutRepository.moveTo(entry, index + 2) },
+                                    enabled = index < order.lastIndex,
+                                ) {
                                     Icon(Icons.Rounded.KeyboardArrowDown, contentDescription = stringResource(Res.string.settings_playback_hud_button_move_down))
                                 }
                                 if (switch != null) {
@@ -137,6 +144,14 @@ internal fun NavigationOrderDialog(onDismiss: () -> Unit) {
                 }
             }
         }
+        SettingsGroupDivider(isTablet = false)
+        SettingsSwitchRow(
+            title = "Voice control",
+            description = "Show the microphone below Settings. The mic starts and stops listening; voice commands themselves are set up under Keyboard shortcuts.",
+            checked = voiceInNav,
+            isTablet = false,
+            onCheckedChange = NavBarLayoutRepository::setVoiceInNav,
+        )
     }
 }
 

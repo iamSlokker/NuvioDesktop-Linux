@@ -1,6 +1,7 @@
 package com.nuvio.app.features.settings
 
 import androidx.compose.foundation.border
+import androidx.compose.foundation.focusable
 import androidx.compose.foundation.layout.width
 import com.nuvio.app.core.ui.ditheredBackground
 import androidx.compose.foundation.background
@@ -126,6 +127,7 @@ import nuvio.composeapp.generated.resources.settings_stream_scoring_test_total
 import org.jetbrains.compose.resources.stringResource
 import com.nuvio.app.core.ui.NuvioTextField
 import com.nuvio.app.core.ui.NuvioNumberStepper
+import com.nuvio.app.core.ui.NuvioStepperEditHandle
 
 /**
  * The Stream scoring settings page.
@@ -478,11 +480,15 @@ private fun PointsStepper(
     onChange: (Int) -> Unit,
 ) {
     val tokens = MaterialTheme.nuvio
-    NuvioNumberStepper(
+    // Select opens the number for typing, as clicking it does; Left and Right step it instead.
+    val min = StreamScoreProfile.MIN_POINTS.toDouble()
+    val max = StreamScoreProfile.MAX_POINTS.toDouble()
+    val step = STEP.toDouble()
+    SettingsStepper(
         value = value.toDouble(),
-        step = STEP.toDouble(),
-        min = StreamScoreProfile.MIN_POINTS.toDouble(),
-        max = StreamScoreProfile.MAX_POINTS.toDouble(),
+        step = step,
+        min = min,
+        max = max,
         enabled = enabled,
         // Signed on display so the sign is obvious, but unsigned while editing — nobody wants to
         // type a leading "+".
@@ -839,7 +845,7 @@ private fun GigabyteStepper(
     fillWidth: Boolean = false,
     onChange: (Double) -> Unit,
 ) {
-    NuvioNumberStepper(
+    SettingsStepper(
         value = value,
         step = 1.0,
         min = 0.0,

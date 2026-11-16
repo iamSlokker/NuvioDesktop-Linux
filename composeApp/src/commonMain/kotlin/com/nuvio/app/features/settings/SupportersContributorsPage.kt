@@ -26,7 +26,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.OpenInNew
 import androidx.compose.material.icons.rounded.Favorite
-import androidx.compose.material3.BasicAlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -471,11 +470,11 @@ private fun CommunityTabRow(
     ) {
         CommunityTab.entries.forEach { tab ->
             val isSelected = tab == selectedTab
-            Surface(
+            SettingsSelectableSurface(
+                onSelect = { onSelectTab(tab) },
                 modifier = Modifier
                     .weight(1f)
-                    .clip(RoundedCornerShape(999.dp))
-                    .clickable { onSelectTab(tab) },
+                    .clip(RoundedCornerShape(999.dp)),
                 color = if (isSelected) {
                     MaterialTheme.colorScheme.primary.copy(alpha = 0.14f)
                 } else {
@@ -584,12 +583,12 @@ private fun ContributorRow(
     contributor: CommunityContributor,
     onClick: () -> Unit,
 ) {
-    Row(
+    SettingsSelectableRow(
+        onSelect = onClick,
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(18.dp))
-            .clickable(onClick = onClick)
-            .padding(vertical = 8.dp),
+            .clip(RoundedCornerShape(18.dp)),
+        contentModifier = Modifier.padding(vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(14.dp),
     ) {
@@ -631,12 +630,12 @@ private fun SupporterRow(
     supporter: SupporterDonation,
     onClick: () -> Unit,
 ) {
-    Row(
+    SettingsSelectableRow(
+        onSelect = onClick,
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(18.dp))
-            .clickable(onClick = onClick)
-            .padding(vertical = 8.dp),
+            .clip(RoundedCornerShape(18.dp)),
+        contentModifier = Modifier.padding(vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(14.dp),
     ) {
@@ -809,7 +808,7 @@ private fun CommunityDetailsDialog(
     onSecondaryAction: (() -> Unit)?,
     content: @Composable () -> Unit,
 ) {
-    BasicAlertDialog(onDismissRequest = onDismiss) {
+    SettingsBasicAlertDialog(onDismissRequest = onDismiss) {
         NuvioDialogSurface(modifier = Modifier.fillMaxWidth()) {
             Column(
                 modifier = Modifier.padding(start = 24.dp, end = 24.dp, top = 24.dp, bottom = 8.dp),

@@ -19,7 +19,6 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Check
-import androidx.compose.material3.BasicAlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CircularProgressIndicator
@@ -631,7 +630,7 @@ private fun DebridPrepareCountDialog(
 ) {
     val options = listOf(1, 2, 3, 5)
 
-    BasicAlertDialog(onDismissRequest = onDismiss) {
+    SettingsBasicAlertDialog(onDismissRequest = onDismiss) {
         NuvioDialogSurface(modifier = Modifier.fillMaxWidth()) {
             Column(
                 modifier = Modifier.padding(20.dp),
@@ -713,7 +712,7 @@ private fun DebridTemplateDialog(
 ) {
     var draft by rememberSaveable(currentValue) { mutableStateOf(currentValue) }
 
-    BasicAlertDialog(onDismissRequest = onDismiss) {
+    SettingsBasicAlertDialog(onDismissRequest = onDismiss) {
         DebridDialogSurface(title = title) {
             Text(
                 text = description,
@@ -1082,7 +1081,7 @@ private fun <T> DebridSingleChoiceDialog(
     onSelected: (T) -> Unit,
     onDismiss: () -> Unit,
 ) {
-    BasicAlertDialog(onDismissRequest = onDismiss) {
+    SettingsBasicAlertDialog(onDismissRequest = onDismiss) {
         DebridDialogSurface(title = title) {
             LazyColumn(
                 modifier = Modifier
@@ -1116,7 +1115,7 @@ private fun <T> DebridMultiChoiceDialog(
     onDismiss: () -> Unit,
 ) {
     var draft by remember(selectedValues) { mutableStateOf(selectedValues) }
-    BasicAlertDialog(onDismissRequest = onDismiss) {
+    SettingsBasicAlertDialog(onDismissRequest = onDismiss) {
         DebridDialogSurface(title = title) {
             LazyColumn(
                 modifier = Modifier
@@ -1169,7 +1168,7 @@ private fun DebridTextListDialog(
     onDismiss: () -> Unit,
 ) {
     var value by remember(selectedValues) { mutableStateOf(selectedValues.joinToString("\n")) }
-    BasicAlertDialog(onDismissRequest = onDismiss) {
+    SettingsBasicAlertDialog(onDismissRequest = onDismiss) {
         DebridDialogSurface(title = title) {
             Text(
                 text = stringResource(Res.string.settings_debrid_release_groups_hint),
@@ -1257,9 +1256,9 @@ private fun DebridDialogOptionRow(
                 modifier = Modifier.weight(1f),
             )
             if (showCheckbox) {
-                Checkbox(
+                SettingsCheckbox(
                     checked = selected,
-                    onCheckedChange = { onClick() },
+                    onClick = onClick,
                 )
             } else {
                 Box(
@@ -1554,7 +1553,7 @@ private fun DebridDeviceAuthDialog(
         }
     }
 
-    BasicAlertDialog(onDismissRequest = onDismiss) {
+    SettingsBasicAlertDialog(onDismissRequest = onDismiss) {
         DebridDialogSurface(
             title = stringResource(
                 if (isConnected) Res.string.settings_debrid_disconnect_provider else Res.string.settings_debrid_connect_provider,
@@ -1764,7 +1763,7 @@ private fun DebridApiKeyDialog(
         }
     }
 
-    BasicAlertDialog(onDismissRequest = onDismiss) {
+    SettingsBasicAlertDialog(onDismissRequest = onDismiss) {
         DebridDialogSurface(title = title) {
             Text(
                 text = subtitle,

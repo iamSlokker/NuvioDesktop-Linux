@@ -47,6 +47,8 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import com.nuvio.app.core.ui.DialogBackRegistration
+import com.nuvio.app.core.ui.dismissOnBackKey
 import com.nuvio.app.core.ui.NuvioDesktopVerticalScrollbar
 import com.nuvio.app.core.ui.NuvioDialogSurface
 import com.nuvio.app.core.ui.NuvioTextField
@@ -145,6 +147,7 @@ internal fun LocalLibraryBrowserDialog(
         }
     }
 
+    DialogBackRegistration(onDismiss = onDismiss)
     Dialog(
         onDismissRequest = onDismiss,
         // Full-screen is the whole point — the platform default would clamp this back to a column.
@@ -156,7 +159,7 @@ internal fun LocalLibraryBrowserDialog(
             modifier = Modifier.fillMaxSize().padding(12.dp),
             shape = RoundedCornerShape(16.dp),
         ) {
-            Column(modifier = Modifier.fillMaxSize()) {
+            Column(modifier = Modifier.fillMaxSize().dismissOnBackKey(onDismiss)) {
                 LocalLibraryBrowserHeader(total = state.items.size, onDismiss = onDismiss)
                 // Search shares the tab row rather than sitting above it: both are ways of
                 // narrowing the same grid, and stacking them cost a band of header height that

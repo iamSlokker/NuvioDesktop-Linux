@@ -27,6 +27,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -94,6 +95,9 @@ import nuvio.composeapp.generated.resources.settings_appearance_app_font_sheet_t
 import nuvio.composeapp.generated.resources.settings_appearance_app_language
 import nuvio.composeapp.generated.resources.settings_appearance_app_language_sheet_title
 import nuvio.composeapp.generated.resources.settings_appearance_amoled_black
+import nuvio.composeapp.generated.resources.settings_appearance_amoled_mode_amoled
+import nuvio.composeapp.generated.resources.settings_appearance_amoled_mode_black
+import nuvio.composeapp.generated.resources.settings_appearance_amoled_off
 import nuvio.composeapp.generated.resources.settings_appearance_amoled_description
 import nuvio.composeapp.generated.resources.settings_appearance_app_ui_scale
 import nuvio.composeapp.generated.resources.settings_appearance_app_ui_scale_details
@@ -122,8 +126,6 @@ internal fun LazyListScope.appearanceSettingsContent(
     selectedTheme: AppTheme,
     onThemeSelected: (AppTheme) -> Unit,
     customTheme: CustomThemeSettings,
-    amoledEnabled: Boolean,
-    onAmoledToggle: (Boolean) -> Unit,
     liquidGlassNativeTabBarSupported: Boolean,
     liquidGlassNativeTabBarEnabled: Boolean,
     onLiquidGlassNativeTabBarToggle: (Boolean) -> Unit,
@@ -315,13 +317,19 @@ internal fun LazyListScope.appearanceSettingsContent(
                     }
                     SettingsGroupDivider(isTablet = isTablet)
                 }
-                SettingsSwitchRow(
+                val amoledMode by ThemeSettingsRepository.amoledMode.collectAsStateWithLifecycle()
+                SettingsChoiceRow(
                     title = stringResource(Res.string.settings_appearance_amoled_black),
                     description = stringResource(Res.string.settings_appearance_amoled_description),
-                    checked = amoledEnabled,
+                    options = listOf(
+                        SettingsChoiceOption(AmoledAppearance.Off, stringResource(Res.string.settings_appearance_amoled_off)),
+                        SettingsChoiceOption(AmoledAppearance.Amoled, stringResource(Res.string.settings_appearance_amoled_mode_amoled)),
+                        SettingsChoiceOption(AmoledAppearance.Black, stringResource(Res.string.settings_appearance_amoled_mode_black)),
+                    ),
+                    selectedValue = amoledMode,
                     isTablet = isTablet,
                     modifier = Modifier.settingsScrollAnchor(SettingsScrollAnchor.searchKey("amoled")),
-                    onCheckedChange = onAmoledToggle,
+                    onSelected = ThemeSettingsRepository::setAmoledMode,
                 )
                 if (liquidGlassNativeTabBarSupported) {
                     SettingsGroupDivider(isTablet = isTablet)
@@ -810,11 +818,10 @@ private fun ThemeChip(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    Column(
-        modifier = modifier
-            .clip(RoundedCornerShape(12.dp))
-            .clickable(onClick = onClick)
-            .padding(horizontal = 4.dp, vertical = 8.dp),
+    SettingsSelectableColumn(
+        onSelect = onClick,
+        modifier = modifier.clip(RoundedCornerShape(12.dp)),
+        contentModifier = Modifier.padding(horizontal = 4.dp, vertical = 8.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Box(

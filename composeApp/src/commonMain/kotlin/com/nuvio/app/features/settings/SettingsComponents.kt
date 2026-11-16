@@ -19,6 +19,10 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.focusable
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.FocusDirection
+import androidx.compose.ui.focus.focusProperties
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.hoverable
 import androidx.compose.foundation.gestures.awaitFirstDown
@@ -26,6 +30,7 @@ import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
@@ -50,8 +55,13 @@ import androidx.compose.material.icons.rounded.ArrowUpward
 import androidx.compose.material.icons.rounded.Check
 import androidx.compose.material.icons.rounded.KeyboardArrowDown
 import androidx.compose.material.icons.rounded.Lock
+import androidx.compose.material3.Checkbox
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.RadioButton
+import androidx.compose.material3.SelectableChipColors
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SliderDefaults
@@ -60,8 +70,10 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.contentColorFor
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
@@ -87,6 +99,9 @@ import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.input.key.KeyEventType
+import androidx.compose.ui.input.key.onPreviewKeyEvent
+import androidx.compose.ui.input.key.type
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.geometry.Size
@@ -96,6 +111,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.selected
@@ -117,6 +133,8 @@ import com.nuvio.app.core.ui.nuvio
 import com.nuvio.app.core.ui.selectionTextColor
 import com.nuvio.app.core.ui.selectionTextBrush
 import com.nuvio.app.core.ui.nuvioConsumePointerEvents
+import com.nuvio.app.core.ui.navigationKey
+import com.nuvio.app.core.ui.TextInputFocusTracker
 import com.nuvio.app.core.ui.nuvioTypeScale
 import com.nuvio.app.core.ui.secondaryClick
 import com.nuvio.app.features.home.HomeCatalogSettingsItem
@@ -143,6 +161,8 @@ import org.jetbrains.compose.resources.stringResource
 import kotlin.math.abs
 import kotlin.math.roundToInt
 import com.nuvio.app.core.ui.NuvioTextField
+import com.nuvio.app.core.ui.NuvioNumberStepper
+import com.nuvio.app.core.ui.NuvioStepperEditHandle
 import androidx.compose.animation.core.MutableTransitionState
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
@@ -251,6 +271,36 @@ internal fun settingsSliderColors() = SliderDefaults.colors(
 /** Thumb radius shared by the settings sliders. The track is inset by it at both ends. */
 private val SettingsSliderThumbRadius = 9.dp
 
+/** How long a settings slider keeps its readout up after the value changes. */
+private const val SettingsSliderValuePeekMs = 1_200L
+
+/**
+ * fork:slider-peek - true for a moment after [key] changes.
+ *
+ * A slider showed its readout only while hovered, held or dragged, so changing it with the
+ * keyboard or a controller moved the setting with no feedback at all. This holds the same readout
+ * up for a beat after any change, whatever caused it. The first composition is skipped: every
+ * slider on a page would otherwise pop a bubble the moment the page opens.
+ */
+@Composable
+private fun settingsSliderValuePeek(key: Any?): Boolean {
+    var peeking by remember { mutableStateOf(false) }
+    var firstRun by remember { mutableStateOf(true) }
+    LaunchedEffect(key) {
+        if (firstRun) {
+            firstRun = false
+            return@LaunchedEffect
+        }
+        peeking = true
+        try {
+            kotlinx.coroutines.delay(SettingsSliderValuePeekMs)
+        } finally {
+            peeking = false
+        }
+    }
+    return peeking
+}
+
 /**
  * The value under [x] on a track inset by [thumbRadiusPx] at each end.
  *
@@ -305,6 +355,10 @@ internal fun SettingsModernRangeSlider(
     onValueChangeFinished: () -> Unit = {},
     /** Shown in a bubble while the slider is hovered, held or dragged; see [SettingsSliderValueBubble]. */
     valueLabel: String? = null,
+    /**
+     * False when a wrapping row (a [SettingsRangeSliderRow]) provides the keyboard stop itself.
+     */
+    keyboardStop: Boolean = true,
 ) {
     val tokens = MaterialTheme.nuvio
     val currentOnValueChange by rememberUpdatedState(onValueChange)
@@ -340,6 +394,9 @@ internal fun SettingsModernRangeSlider(
     val span = (valueRange.endInclusive - valueRange.start).takeIf { it != 0f } ?: 1f
     val lowProgress = ((lowValue - valueRange.start) / span).coerceIn(0f, 1f)
     val highProgress = ((highValue - valueRange.start) / span).coerceIn(0f, 1f)
+    // fork:slider-peek - same momentary readout as the single slider, keyed on both ends so moving
+    // either thumb from the keyboard pops the value up.
+    val peeking = settingsSliderValuePeek(lowValue to highValue)
     val activeBrush = tokens.colors.accentFill
     val inactiveColor = tokens.colors.borderDefault.copy(alpha = 0.72f)
 
@@ -347,6 +404,33 @@ internal fun SettingsModernRangeSlider(
         modifier = modifier
             .height(28.dp)
             .alpha(if (enabled) 1f else tokens.opacity.medium)
+            // One keyboard stop: Left and Right slide the whole band, Select nudges it one step the
+            // same way as Right, and Up and Down leave the row. The caller's
+            // onValueChangeFinished runs on release rather than on every repeat.
+            .then(
+                if (keyboardStop) {
+                    Modifier
+                        .settingsNavItem(
+                            onActivate = {
+                                val (low, high) = settingsRangeShifted(currentLow, currentHigh, valueRange, steps, 1)
+                                if (low != currentLow || high != currentHigh) {
+                                    currentOnValueChange(low, high)
+                                    currentOnValueChangeFinished()
+                                }
+                            },
+                            onHorizontal = { step ->
+                                val (low, high) = settingsRangeShifted(currentLow, currentHigh, valueRange, steps, step)
+                                val moved = low != currentLow || high != currentHigh
+                                if (moved) currentOnValueChange(low, high)
+                                moved
+                            },
+                            onHorizontalReleased = { currentOnValueChangeFinished() },
+                        )
+                        .focusable(enabled = enabled)
+                } else {
+                    Modifier
+                },
+            )
             .onGloballyPositioned { size = it.size }
             // Same caveat as SettingsModernSlider: keying this to the measured size would cancel an
             // in-flight mouse gesture on recomposition and freeze the thumb until release.
@@ -386,7 +470,7 @@ internal fun SettingsModernRangeSlider(
             drawGlassSliderThumb(activeBrush, Offset(lowX, centerY), thumbRadius)
             drawGlassSliderThumb(activeBrush, Offset(highX, centerY), thumbRadius)
         }
-        if (valueLabel != null && (drag.active || drag.pressed || hovered)) {
+        if (valueLabel != null && (drag.active || drag.pressed || hovered || peeking)) {
             // Hovering reads the range itself, so the bubble sits over the middle of the band.
             val bandMidX = thumbRadiusPx +
                 (size.width - 2f * thumbRadiusPx).coerceAtLeast(0f) * (lowProgress + highProgress) / 2f
@@ -411,6 +495,11 @@ internal fun SettingsModernSlider(
     onValueChangeFinished: () -> Unit = {},
     /** Shown in a bubble while the slider is hovered, held or dragged; see [SettingsSliderValueBubble]. */
     valueLabel: String? = null,
+    /**
+     * False when a wrapping row (a [SettingsSliderRow]) provides the keyboard stop itself, so the
+     * narrow slider is not the stop spatial focus traversal keeps skipping.
+     */
+    keyboardStop: Boolean = true,
 ) {
     val tokens = MaterialTheme.nuvio
     val currentOnValueChange by rememberUpdatedState(onValueChange)
@@ -430,6 +519,12 @@ internal fun SettingsModernSlider(
     )
 
     val coercedValue = value.coerceIn(valueRange.start, valueRange.endInclusive)
+    // fork:slider-peek - the readout pops up for a moment whenever the value changes, not only
+    // while the pointer is on the slider: arrowing the value with a controller or the keyboard
+    // used to change the setting with no feedback at all.
+    val peeking = settingsSliderValuePeek(coercedValue)
+    // Read by the key handler, which outlives the frame it was built in while a key repeats.
+    val currentValue by rememberUpdatedState(coercedValue)
     val progress = if (valueRange.endInclusive == valueRange.start) {
         0f
     } else {
@@ -442,6 +537,33 @@ internal fun SettingsModernSlider(
         modifier = modifier
             .height(28.dp)
             .alpha(if (enabled) 1f else tokens.opacity.medium)
+            // One keyboard stop: Left and Right step the value, Select nudges it one step the same
+            // way as Right, and Up and Down leave the row. The caller's onValueChangeFinished runs
+            // on release rather than on every repeat.
+            .then(
+                if (keyboardStop) {
+                    Modifier
+                        .settingsNavItem(
+                            onActivate = {
+                                val next = settingsSliderAdjustedValue(currentValue, valueRange, steps, 1)
+                                if (next != currentValue) {
+                                    currentOnValueChange(next)
+                                    currentOnValueChangeFinished()
+                                }
+                            },
+                            onHorizontal = { step ->
+                                val next = settingsSliderAdjustedValue(currentValue, valueRange, steps, step)
+                                val moved = next != currentValue
+                                if (moved) currentOnValueChange(next)
+                                moved
+                            },
+                            onHorizontalReleased = { currentOnValueChangeFinished() },
+                        )
+                        .focusable(enabled = enabled)
+                } else {
+                    Modifier
+                },
+            )
             .onGloballyPositioned { size = it.size }
             // Keep the gesture coroutine alive while dragging. Keying pointerInput to the measured
             // size (or a freshly-created range object) can cancel an active mouse gesture during
@@ -476,8 +598,10 @@ internal fun SettingsModernSlider(
             drawGlassSliderFill(activeBrush, trackStart, thumbX, centerY)
             drawGlassSliderThumb(activeBrush, Offset(thumbX, centerY), thumbRadius)
         }
-        if (valueLabel != null && (drag.active || drag.pressed || hovered)) {
+        if (valueLabel != null && (drag.active || drag.pressed || hovered || peeking)) {
             // A press without a drag, or a hover, points at the thumb, where the value it reads is.
+            // The peeking readout does the same, so a keyboard or controller change looks exactly
+            // like hovering the slider with the pointer.
             val thumbX = thumbRadiusPx + (size.width - 2f * thumbRadiusPx).coerceAtLeast(0f) * progress
             SettingsSliderValueBubble(valueLabel, if (drag.active) drag.x else thumbX)
         }
@@ -909,6 +1033,7 @@ internal fun SettingsSection(
     content: @Composable ColumnScope.() -> Unit,
 ) {
     val tokens = MaterialTheme.nuvio
+    val sectionFocusManager = LocalFocusManager.current
     val displayTitle = settingsTitleCase(title)
     // Both anchors land the heading at the top of the page so the rows it names are in view.
     val sectionHighlight = rememberSettingsAnchorHighlight(
@@ -959,6 +1084,17 @@ internal fun SettingsSection(
             targetValue = if (expanded) 0f else -90f,
             animationSpec = tween(durationMillis = 160),
         )
+        // Read fresh on each activation: the item modifier caches its onActivate, so capturing the
+        // plain `expanded` value would collapse with a stale state after a recomposition.
+        val expandedNow = rememberUpdatedState(expanded)
+        val toggleCollapse = {
+            if (expandedNow.value) {
+                revealed = false
+                SettingsCollapsedSectionsRepository.setCollapsed(anchor, true)
+            } else {
+                SettingsCollapsedSectionsRepository.setCollapsed(anchor, false)
+            }
+        }
         Column {
             // Card layout, after Windows Settings: a plain heading on the page, the rows in cards
             // under it.
@@ -980,19 +1116,30 @@ internal fun SettingsSection(
                     .fillMaxWidth()
                     .then(
                         if (collapsible) {
-                            // Header actions are their own clickables and consume their presses
-                            // first, so only clicks on the band itself toggle.
-                            Modifier.clickable(
-                                interactionSource = remember { MutableInteractionSource() },
-                                indication = null,
-                            ) {
-                                if (expanded) {
-                                    revealed = false
-                                    SettingsCollapsedSectionsRepository.setCollapsed(anchor, true)
-                                } else {
-                                    SettingsCollapsedSectionsRepository.setCollapsed(anchor, false)
-                                }
-                            }
+                            // A section heading is a keyboard stop too: Select collapses/expands it
+                            // and the arrows walk on, but it does not register as the page's first
+                            // control (the rows beneath it are). Header actions are their own
+                            // clickables and consume their presses first, so only Select/click on
+                            // the band itself toggles.
+                            //
+                            // Right descends into the heading's own action ("Reset", "Refresh")
+                            // instead of leaving for the panel beside the page: the action lives
+                            // inside this item, where the spatial moveFocus(Right) cannot see it,
+                            // so without this the only way to reach it was the pointer.
+                            Modifier
+                                .settingsNavItem(
+                                    onActivate = toggleCollapse,
+                                    registerAsEntry = false,
+                                    onHorizontal = { direction ->
+                                        direction > 0 &&
+                                            sectionFocusManager.moveFocus(FocusDirection.Enter)
+                                    },
+                                )
+                                .clickable(
+                                    interactionSource = remember { MutableInteractionSource() },
+                                    indication = null,
+                                    onClick = toggleCollapse,
+                                )
                         } else {
                             Modifier
                         },
@@ -1206,6 +1353,15 @@ internal fun SettingsTextRow(
     minLines: Int = 1,
     onValueChange: (String) -> Unit,
 ) {
+    // The field is its own row's control and the page's entry point when it comes first, exactly
+    // like a switch or choice row: without this, a page that opens on a text field (the Collection
+    // editor's Name) focuses the first *registered* row below it instead.
+    val focusManager = LocalFocusManager.current
+    val fieldRequester = remember { FocusRequester() }
+    DisposableEffect(fieldRequester, focusManager) {
+        SettingsContentFocus.register(fieldRequester, focusManager)
+        onDispose { SettingsContentFocus.unregister(fieldRequester) }
+    }
     Column(
         modifier = modifier
             .fillMaxWidth()
@@ -1233,11 +1389,16 @@ internal fun SettingsTextRow(
         NuvioTextField(
             value = value,
             onValueChange = onValueChange,
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier
+                .fillMaxWidth()
+                // Single-line fields keep Up/Down for focus and Escape for the row, never clearing
+                // focus to nothing; multi-line fields keep the caret keys and their own editing.
+                .then(if (singleLine) Modifier.settingsTextFieldKeys() else Modifier),
             placeholder = placeholder,
             secret = secret,
             singleLine = singleLine,
             minLines = minLines,
+            focusRequester = fieldRequester,
         )
     }
 }
@@ -1268,6 +1429,7 @@ internal fun SettingsNavigationRow(
     Row(
         modifier = modifier
             .fillMaxWidth()
+            .settingsNavItem(onActivate = onClick)
             .clickable(enabled = enabled, onClick = onClick)
             .padding(horizontal = horizontalPadding, vertical = verticalPadding)
             .alpha(if (enabled) NuvioTokens.Opacity.visible else tokens.opacity.medium),
@@ -1382,6 +1544,7 @@ internal fun SettingsGlassButton(
             )
             // Clipped after the edge: a clip is not anti-aliased here and stair-steps an edge drawn inside it.
             .clip(shape)
+            .settingsNavItem(onActivate = { if (enabled && !loading) onClick() })
             .clickable(enabled = enabled && !loading, onClick = onClick)
             .padding(horizontal = 10.dp, vertical = 6.dp),
         contentAlignment = Alignment.Center,
@@ -1523,6 +1686,10 @@ internal fun SettingsSquareSwitch(
             .alpha(if (enabled) NuvioTokens.Opacity.visible else tokens.opacity.medium)
             .clip(trackShape)
             .background(trackBrush)
+            // The switch is the stop, not the row around it: Select flips it and the arrows step
+            // to the next row. Rows that put a switch beside a label (catalogs, categories, the
+            // order lists) therefore read as two stops, the label and the switch.
+            .settingsNavItem(onActivate = { if (enabled) onCheckedChange(!checked) })
             .toggleable(
                 value = checked,
                 onValueChange = onCheckedChange,
@@ -1574,6 +1741,7 @@ internal fun SettingsSwitchRow(
     Row(
         modifier = modifier
             .fillMaxWidth()
+            .settingsNavItem(onActivate = { if (enabled) onCheckedChange(!checked) })
             .then(
                 // Desktop, as Windows Settings: the whole card flips the toggle, not only the
                 // switch. Not for a row whose title is an editable field.
@@ -1585,8 +1753,9 @@ internal fun SettingsSwitchRow(
                         role = Role.Switch,
                     )
                 } else {
-                    Modifier
-                },
+                    // Not clickable here, so it takes focus itself for the keyboard.
+                    Modifier.focusable(enabled = enabled)
+                }
             )
             .padding(horizontal = horizontalPadding, vertical = verticalPadding),
         horizontalArrangement = Arrangement.Start,
@@ -1653,6 +1822,7 @@ internal fun SettingsSwitchRow(
             isTablet = isTablet,
             modifier = controlWidthModifier
                 .alpha(if (enabled) NuvioTokens.Opacity.visible else tokens.opacity.medium),
+            keyboardStop = false,
             onSelected = onCheckedChange,
         )
     }
@@ -1726,10 +1896,18 @@ internal fun <T> SettingsSegmentedChoiceRow(
     } else {
         Modifier.widthIn(min = 220.dp)
     }
-
+    // The row is one keyboard stop. A two-option row is a toggle, so Select flips it as the switch
+    // row does; Left and Right are left to focus traversal, so the row never traps focus between
+    // two alternatives and Left at the page's edge still reaches the categories.
     Row(
         modifier = modifier
             .fillMaxWidth()
+            .settingsNavItem(
+                onActivate = {
+                    if (enabled) settingsNextChoiceOption(options, selectedValue)?.let(onSelected)
+                },
+            )
+            .focusable(enabled = enabled)
             .padding(horizontal = horizontalPadding, vertical = verticalPadding)
             .alpha(if (enabled) NuvioTokens.Opacity.visible else tokens.opacity.medium),
         verticalAlignment = Alignment.CenterVertically,
@@ -1750,6 +1928,7 @@ internal fun <T> SettingsSegmentedChoiceRow(
             enabled = enabled,
             isTablet = isTablet,
             modifier = controlWidthModifier,
+            keyboardStop = false,
             onSelected = onSelected,
         )
     }
@@ -1765,6 +1944,8 @@ internal fun <T> SettingsSegmentedControl(
     enabled: Boolean,
     isTablet: Boolean,
     modifier: Modifier = Modifier,
+    /** True when the control stands alone; false when a row around it is already the keyboard stop. */
+    keyboardStop: Boolean = true,
     onSelected: (T) -> Unit,
 ) {
     val tokens = MaterialTheme.nuvio
@@ -1772,10 +1953,42 @@ internal fun <T> SettingsSegmentedControl(
     // accent, inset by the track padding so its corners follow the track's.
     val controlShape = SettingsSectionGlassShape
     val segmentShape = RoundedCornerShape(SettingsGlassRadius - SegmentedTrackPadding)
+    val selectedIndex = options.indexOfFirst { it.value == selectedValue }
     Row(
         modifier = modifier
             .ditheredBackground(SettingsSectionGlassFill, controlShape)
             .border(tokens.borders.thin, SettingsSectionGlassEdge, controlShape)
+            // One keyboard stop. With three or more options, Left and Right step the selection and
+            // Select takes the next option; a two-option control is a toggle, so only Select flips
+            // it and Left/Right are left to focus traversal (so it never traps focus between two
+            // alternatives). The segments themselves are pointer targets only; making them focus
+            // stops too would put invisible extra stops inside a row that already handles the keys.
+            .then(
+                if (keyboardStop) {
+                    Modifier
+                        .settingsNavItem(
+                            onActivate = {
+                                if (enabled) settingsNextChoiceOption(options, selectedValue)?.let(onSelected)
+                            },
+                            onHorizontal = if (options.size > 2) {
+                                { direction ->
+                                    val next = if (enabled) {
+                                        settingsChoiceStepIndex(selectedIndex, options.size, direction > 0)
+                                    } else {
+                                        null
+                                    }
+                                    if (next != null) onSelected(options[next].value)
+                                    next != null
+                                }
+                            } else {
+                                null
+                            },
+                        )
+                        .focusable(enabled = enabled)
+                } else {
+                    Modifier
+                },
+            )
             .padding(SegmentedTrackPadding),
         verticalAlignment = Alignment.CenterVertically,
     ) {
@@ -1805,6 +2018,7 @@ internal fun <T> SettingsSegmentedControl(
                     // here, and drawn inside one the accent edge came out stair-stepped. The clip
                     // is only there to keep the hover/press feedback inside the rounded corners.
                     .clip(segmentShape)
+                    .focusProperties { canFocus = false }
                     .clickable(enabled = enabled) { onSelected(option.value) }
                     .padding(horizontal = if (isTablet) SegmentHorizontalPadding else 12.dp, vertical = if (isTablet) 6.dp else 9.dp),
                 contentAlignment = Alignment.Center,
@@ -1915,7 +2129,7 @@ private val MenuWindowMargin = 12.dp
 
 /** Which side of its trigger a menu opened on, and how much room it was given. */
 @Immutable
-private data class MenuPlacement(val openUp: Boolean, val maxHeight: Dp) {
+internal data class MenuPlacement(val openUp: Boolean, val maxHeight: Dp) {
     /** The trigger's shape: square on the edge the menu is joined to, rounded elsewhere. */
     fun triggerShape(expanded: Boolean): Shape = joinedShape(expanded, squareOnTop = openUp)
 
@@ -1944,7 +2158,7 @@ private data class MenuPlacement(val openUp: Boolean, val maxHeight: Dp) {
  * or two out only costs a little slack or a little scrolling.
  */
 @Composable
-private fun rememberMenuPlacement(anchorBounds: Rect?, optionCount: Int): MenuPlacement {
+internal fun rememberMenuPlacement(anchorBounds: Rect?, optionCount: Int): MenuPlacement {
     val windowHeight = LocalWindowInfo.current.containerSize.height
     val density = LocalDensity.current
     return remember(anchorBounds, optionCount, windowHeight, density) {
@@ -1993,18 +2207,31 @@ private class AnchoredMenuPosition(private val placement: MenuPlacement) : Popup
  * from the first frame and only the far edge moves.
  */
 @Composable
-private fun SettingsMenuPanel(
+internal fun SettingsMenuPanel(
     expanded: Boolean,
     placement: MenuPlacement,
     widthModifier: Modifier,
     isTablet: Boolean,
+    itemCount: Int,
+    initialIndex: Int,
+    multiSelect: Boolean,
+    onCommit: (Int) -> Unit,
     onDismissRequest: () -> Unit,
-    content: @Composable ColumnScope.() -> Unit,
+    content: @Composable ColumnScope.(activeIndex: Int) -> Unit,
 ) {
     val tokens = MaterialTheme.nuvio
     val transition = remember { MutableTransitionState(false) }
     transition.targetState = expanded
     if (!transition.currentState && !transition.targetState) return
+
+    // Which item the keys are on. A desktop Popup is composed in its own scene layer with its own
+    // focus owner (it does not share the page's), so focus cannot be followed into the menu and
+    // geometry cannot move it here. The arrows walk this explicit index instead, clamped at both
+    // ends. Each opening starts again from [initialIndex].
+    var activeIndex by remember { mutableStateOf(initialIndex) }
+    LaunchedEffect(expanded) {
+        if (expanded) activeIndex = initialIndex
+    }
 
     val grownFrom = if (placement.openUp) Alignment.Bottom else Alignment.Top
     Popup(
@@ -2016,7 +2243,40 @@ private fun SettingsMenuPanel(
         // swallowing clicks after the menu is logically closed, including the click on the trigger
         // that was meant to reopen it. Dropping focus the moment it starts closing hands the
         // trigger back immediately, so a reopen never has to wait for the animation to finish.
-        properties = PopupProperties(focusable = expanded),
+        //
+        // Back is off: the preview handler below closes the menu and consumes the press, so the
+        // platform's own back dispatch cannot fire the same press again at the page behind.
+        properties = PopupProperties(focusable = expanded, dismissOnBackPress = false),
+        // The popup's own key listeners rather than a focus target inside it: they run for the
+        // whole layer, so the arrows keep working even where nothing inside holds focus.
+        onPreviewKeyEvent = { event ->
+            if (!settingsNavKeysActive(TextInputFocusTracker.active.value)) return@Popup false
+            val action = settingsMenuKeyAction(
+                settingsNavKeyAction(event.navigationKey()),
+                multiSelect = multiSelect,
+            ) ?: return@Popup false
+            // Consume the key-up too: Select's release must not reach anything and act twice.
+            if (event.type != KeyEventType.KeyDown) return@Popup true
+            val result = settingsMenuReduce(
+                state = SettingsMenuState(index = activeIndex, expanded = true),
+                action = action,
+                count = itemCount,
+                multiSelect = multiSelect,
+            )
+            activeIndex = result.index
+            when (action) {
+                // Commit chooses, Toggle ticks: both hand the option to the page, and only a
+                // single-select menu closes here. A multi-select one stays up (see
+                // [settingsMenuReduce]) so several options can be ticked in one visit.
+                SettingsMenuKeyAction.Commit, SettingsMenuKeyAction.Toggle -> {
+                    onCommit(result.index)
+                    if (!result.expanded) onDismissRequest()
+                }
+                SettingsMenuKeyAction.Close -> onDismissRequest()
+                else -> Unit
+            }
+            true
+        },
     ) {
         com.nuvio.app.core.ui.KeyRouteLayer("settings menu") // the focus router leaves an open menu alone
         AnimatedVisibility(
@@ -2044,7 +2304,7 @@ private fun SettingsMenuPanel(
                         top = if (placement.openUp) MenuEdgePadding else menuSeamPadding(isTablet),
                         bottom = if (placement.openUp) menuSeamPadding(isTablet) else MenuEdgePadding,
                     ),
-                content = content,
+                content = { content(activeIndex) },
             )
         }
     }
@@ -2078,6 +2338,12 @@ internal fun <T> SettingsDropdownChoiceRow(
     Row(
         modifier = modifier
             .fillMaxWidth()
+            // The whole row is the stop, not the small trigger on the right. Spatial Up/Down from a
+            // full-width row above used to choose the next full-width row over a narrow trigger
+            // tucked at the right edge, so an enabled dropdown (Display Mode, Player Controls
+            // Layout, Row change, …) was walked straight past.
+            .settingsNavItem(onActivate = { if (enabled) expanded = true })
+            .focusable(enabled = enabled)
             .padding(horizontal = horizontalPadding, vertical = verticalPadding)
             .alpha(if (enabled) NuvioTokens.Opacity.visible else tokens.opacity.medium),
         verticalAlignment = Alignment.CenterVertically,
@@ -2108,14 +2374,19 @@ internal fun <T> SettingsDropdownChoiceRow(
                 enabled = enabled,
                 isTablet = isTablet,
                 onClick = { expanded = true },
+                keyboardStop = false,
             )
             SettingsMenuPanel(
                 expanded = expanded,
                 placement = placement,
                 widthModifier = controlWidthModifier,
                 isTablet = isTablet,
+                itemCount = options.size,
+                initialIndex = settingsMenuInitialIndex(options.indexOfFirst { it.value == selectedValue }, options.size),
+                multiSelect = false,
+                onCommit = { index -> options.getOrNull(index)?.let { onSelected(it.value) } },
                 onDismissRequest = { expanded = false },
-            ) {
+            ) { activeIndex ->
                 // Rolled by hand rather than using DropdownMenuItem. Both the selection and the
                 // hover are colour on the label here, and DropdownMenuItem paints a state layer
                 // behind the row on hover that no styling of its slot can reach — that plate is
@@ -2132,27 +2403,31 @@ internal fun <T> SettingsDropdownChoiceRow(
                 val markBrush = tokens.colors.selectionTextBrush()
                 val labelStyle = MaterialTheme.typography.bodyMedium
                 val markStyle = markBrush?.let { labelStyle.copy(brush = it) } ?: labelStyle
-                options.forEach { option ->
+                options.forEachIndexed { index, option ->
                     val selected = option.value == selectedValue
                     val interactionSource = remember { MutableInteractionSource() }
                     val hovered by interactionSource.collectIsHoveredAsState()
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .clickable(
+                            .settingsMenuItem(
+                                active = index == activeIndex,
                                 interactionSource = interactionSource,
-                                indication = null,
-                            ) {
-                                expanded = false
-                                onSelected(option.value)
-                            }
+                                onClick = {
+                                    expanded = false
+                                    onSelected(option.value)
+                                },
+                            )
                             .padding(
                                 horizontal = menuHorizontalPadding(isTablet),
                                 vertical = MenuRowVerticalPadding,
                             ),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
-                        val marked = selected || hovered
+                        // The row the keys are on marks the same way a hovered one does: the
+                        // pointer and the keyboard then share one visual language, and the
+                        // setting's actual value still reads from the weight alone.
+                        val marked = selected || hovered || index == activeIndex
                         Text(
                             text = option.label,
                             // Centred on desktop, under the centred value in the trigger.
@@ -2185,6 +2460,8 @@ private fun SettingsDropdownTrigger(
     enabled: Boolean,
     isTablet: Boolean,
     onClick: () -> Unit,
+    /** False when an enclosing row already owns the keyboard stop (the single-select choice row). */
+    keyboardStop: Boolean = true,
 ) {
     val tokens = MaterialTheme.nuvio
     val shape = placement.triggerShape(expanded)
@@ -2199,6 +2476,16 @@ private fun SettingsDropdownTrigger(
             .border(tokens.borders.thin, SettingsSectionGlassEdge, shape)
             // Clipped after the edge: a clip is not anti-aliased here and stair-steps an edge drawn inside it.
             .clip(shape)
+            // A single-select row owns the stop now and passes keyboardStop=false here, so the
+            // trigger is a pointer target only; a multi-select has no enclosing stop and keeps
+            // the trigger as its keyboard stop.
+            .then(
+                if (keyboardStop) {
+                    Modifier.settingsNavItem(onActivate = { if (enabled) onClick() })
+                } else {
+                    Modifier.focusProperties { canFocus = false }
+                },
+            )
             .clickable(enabled = enabled, onClick = onClick)
             .padding(
                 horizontal = menuHorizontalPadding(isTablet),
@@ -2365,30 +2652,42 @@ internal fun <T> SettingsMultiSelectRow(
                 placement = placement,
                 widthModifier = controlWidthModifier,
                 isTablet = isTablet,
+                itemCount = options.size,
+                initialIndex = settingsMenuInitialIndex(
+                    selected = options.indexOfFirst { it.value in selectedValues },
+                    count = options.size,
+                ),
+                multiSelect = true,
+                onCommit = { index -> options.getOrNull(index)?.let { onToggle(it.value) } },
                 onDismissRequest = { expanded = false },
-            ) {
+            ) { activeIndex ->
                 val markColor = tokens.colors.selectionTextColor()
                 val markBrush = tokens.colors.selectionTextBrush()
                 val labelStyle = MaterialTheme.typography.bodyMedium
                 val markStyle = markBrush?.let { labelStyle.copy(brush = it) } ?: labelStyle
-                options.forEach { option ->
+                options.forEachIndexed { index, option ->
                     val selected = option.value in selectedValues
                     val interactionSource = remember { MutableInteractionSource() }
                     val hovered by interactionSource.collectIsHoveredAsState()
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            // No `expanded = false` here — see the note above.
-                            .clickable(interactionSource = interactionSource, indication = null) {
-                                onToggle(option.value)
-                            }
+                            // No `expanded = false` here — see the note above. Select and a click
+                            // toggle the same way, and the menu stays open for both.
+                            .settingsMenuItem(
+                                active = index == activeIndex,
+                                interactionSource = interactionSource,
+                                onClick = { onToggle(option.value) },
+                            )
                             .padding(
                                 horizontal = menuHorizontalPadding(isTablet),
                                 vertical = MenuRowVerticalPadding,
                             ),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
-                        val marked = selected || hovered
+                        // Same mark as the single-select menu: hover and the row the keys are on
+                        // look alike, while the tick (not the mark) is what says "selected".
+                        val marked = selected || hovered || index == activeIndex
                         Text(
                             text = option.label,
                             modifier = Modifier.weight(1f),
@@ -2480,6 +2779,10 @@ internal fun HomescreenCatalogRow(
     Column(
         modifier = Modifier
             .fillMaxWidth()
+            // The card is one keyboard stop in addition to its switch: Select expands it, and the
+            // arrows move on. The item modifier stands aside while the inner switch holds the keys,
+            // so the switch's Select still flips it rather than expanding the card.
+            .settingsNavItem(onActivate = { onExpandedChange(!expanded) })
             .clickable { onExpandedChange(!expanded) }
             .padding(horizontal = horizontalPadding, vertical = verticalPadding),
         verticalArrangement = Arrangement.spacedBy(12.dp),
@@ -2691,6 +2994,458 @@ private fun CatalogMarkerColorOption(
                     },
                 )
             }
+        }
+    }
+}
+
+// ==== Shared keyboard-navigation stops ====
+//
+// These own the keyboard stop (Select, arrows, Back) so settings pages never call the navigation
+// primitives (`settingsNavItem`, `settingsNavIconButton`, …) directly. A page declares what its row
+// does with callbacks ([onSelect], [onClick], …) and these components wire the navigation up.
+
+/** An icon-only action as its own keyboard stop; Select activates it, the arrows walk off it. */
+@Composable
+internal fun SettingsIconAction(
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true,
+    content: @Composable () -> Unit,
+) {
+    IconButton(
+        onClick = onClick,
+        enabled = enabled,
+        modifier = modifier.settingsNavIconButton(onClick = onClick),
+        content = content,
+    )
+}
+
+/**
+ * A full-width selectable row. [onSelect] null renders the row as a plain, non-stop container (for
+ * a row whose only stop is a switch or other control inside it). [modifier] is applied before the
+ * stop; [contentModifier] after it, where the row's padding sits.
+ */
+@Composable
+internal fun SettingsSelectableRow(
+    onSelect: (() -> Unit)?,
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true,
+    contentModifier: Modifier = Modifier,
+    horizontalArrangement: Arrangement.Horizontal = Arrangement.Start,
+    verticalAlignment: Alignment.Vertical = Alignment.Top,
+    content: @Composable RowScope.() -> Unit,
+) {
+    Row(
+        modifier = modifier
+            .then(
+                if (onSelect != null) {
+                    Modifier
+                        .settingsNavItem(onActivate = { if (enabled) onSelect() })
+                        .clickable(enabled = enabled, onClick = onSelect)
+                } else {
+                    Modifier
+                },
+            )
+            .then(contentModifier),
+        horizontalArrangement = horizontalArrangement,
+        verticalAlignment = verticalAlignment,
+        content = content,
+    )
+}
+
+/** Column counterpart of [SettingsSelectableRow]. */
+@Composable
+internal fun SettingsSelectableColumn(
+    onSelect: (() -> Unit)?,
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true,
+    contentModifier: Modifier = Modifier,
+    verticalArrangement: Arrangement.Vertical = Arrangement.Top,
+    horizontalAlignment: Alignment.Horizontal = Alignment.Start,
+    content: @Composable ColumnScope.() -> Unit,
+) {
+    Column(
+        modifier = modifier
+            .then(
+                if (onSelect != null) {
+                    Modifier
+                        .settingsNavItem(onActivate = { if (enabled) onSelect() })
+                        .clickable(enabled = enabled, onClick = onSelect)
+                } else {
+                    Modifier
+                },
+            )
+            .then(contentModifier),
+        verticalArrangement = verticalArrangement,
+        horizontalAlignment = horizontalAlignment,
+        content = content,
+    )
+}
+
+/** A [Box] that is its own keyboard stop (a colour swatch or similar small selectable). */
+@Composable
+internal fun SettingsSelectableBox(
+    onSelect: () -> Unit,
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true,
+    contentAlignment: Alignment = Alignment.TopStart,
+    content: @Composable BoxScope.() -> Unit,
+) {
+    Box(
+        modifier = modifier
+            .settingsNavItem(onActivate = { if (enabled) onSelect() })
+            .clickable(enabled = enabled, onClick = onSelect),
+        contentAlignment = contentAlignment,
+        content = content,
+    )
+}
+
+/** A [Surface] that is its own keyboard stop (a tile, tab or custom dropdown trigger). */
+@Composable
+internal fun SettingsSelectableSurface(
+    onSelect: () -> Unit,
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true,
+    shape: Shape = RoundedCornerShape(0.dp),
+    color: Color = Color.Transparent,
+    border: BorderStroke? = null,
+    content: @Composable () -> Unit,
+) {
+    Surface(
+        modifier = modifier
+            .settingsNavItem(onActivate = { if (enabled) onSelect() })
+            .clickable(enabled = enabled, onClick = onSelect),
+        shape = shape,
+        color = color,
+        border = border,
+        content = content,
+    )
+}
+
+/** A [FilterChip] that is its own keyboard stop in a row of choices. */
+@Composable
+internal fun SettingsChoiceChip(
+    selected: Boolean,
+    onClick: () -> Unit,
+    label: @Composable () -> Unit,
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true,
+    colors: SelectableChipColors = FilterChipDefaults.filterChipColors(),
+) {
+    FilterChip(
+        selected = selected,
+        onClick = onClick,
+        label = label,
+        enabled = enabled,
+        modifier = modifier.settingsNavItem(onActivate = { if (enabled) onClick() }),
+        colors = colors,
+    )
+}
+
+/** A [Checkbox] that is its own keyboard stop. */
+@Composable
+internal fun SettingsCheckbox(
+    checked: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true,
+) {
+    Checkbox(
+        checked = checked,
+        onCheckedChange = { onClick() },
+        enabled = enabled,
+        modifier = modifier.settingsNavItem(onActivate = { if (enabled) onClick() }),
+    )
+}
+
+/** A [RadioButton] that is its own keyboard stop. */
+@Composable
+internal fun SettingsRadio(
+    selected: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true,
+) {
+    RadioButton(
+        selected = selected,
+        onClick = onClick,
+        enabled = enabled,
+        modifier = modifier.settingsNavItem(onActivate = { if (enabled) onClick() }),
+    )
+}
+
+/**
+ * A [NuvioNumberStepper] that is its own keyboard stop: Select opens the number for typing (as
+ * clicking it does) and Left/Right step it, so the row above and below stay reachable with the
+ * arrows.
+ */
+@Composable
+internal fun SettingsStepper(
+    value: Double,
+    step: Double,
+    min: Double,
+    max: Double,
+    enabled: Boolean = true,
+    modifier: Modifier = Modifier,
+    format: (Double) -> String = { it.toInt().toString() },
+    editFormat: (Double) -> String = format,
+    valueColor: Color? = null,
+    fieldWidth: Dp = 62.dp,
+    fillWidth: Boolean = false,
+    onChange: (Double) -> Unit,
+) {
+    val editHandle = remember { NuvioStepperEditHandle() }
+    NuvioNumberStepper(
+        value = value,
+        step = step,
+        min = min,
+        max = max,
+        enabled = enabled,
+        format = format,
+        editFormat = editFormat,
+        valueColor = valueColor,
+        modifier = modifier
+            .settingsNavItem(
+                onActivate = { editHandle.start?.invoke() },
+                onHorizontal = { direction ->
+                    val next = stepperStep(value, step, min, max, direction)
+                    val moved = next != value
+                    if (moved) onChange(next)
+                    moved
+                },
+            )
+            .focusable(enabled = enabled),
+        fieldWidth = fieldWidth,
+        fillWidth = fillWidth,
+        onChange = onChange,
+        editHandle = editHandle,
+    )
+}
+
+/** Title + optional description shared by slider rows; see [SettingsSliderRow]. */
+@Composable
+internal fun SettingsRowTextColumn(
+    title: String,
+    description: String?,
+    isTablet: Boolean,
+    modifier: Modifier = Modifier,
+) {
+    Column(
+        modifier = modifier.padding(end = if (isTablet) SettingsRowTextGap else 12.dp),
+        verticalArrangement = Arrangement.spacedBy(4.dp),
+    ) {
+        Text(
+            text = title,
+            modifier = settingsRowTitleAccentMask(title),
+            style = if (isTablet) MaterialTheme.typography.bodyMedium else MaterialTheme.typography.bodyLarge,
+            color = settingsRowTitleColor(title),
+            fontWeight = FontWeight.Medium,
+        )
+        if (!description.isNullOrBlank()) {
+            SettingsSubtext(
+                text = description,
+                isTablet = isTablet,
+            )
+        }
+    }
+}
+
+/**
+ * A full-width slider row whose keyboard stop is the whole row rather than the narrow slider in its
+ * control column. Left and Right step the value, Select nudges it the same way as Right, and Up and
+ * Down leave the row. The inner [SettingsModernSlider] uses `keyboardStop = false`.
+ */
+@Composable
+internal fun SettingsSliderRow(
+    title: String,
+    value: Int,
+    valueText: String,
+    valueTextForValue: ((Int) -> String)? = null,
+    valueRange: IntRange,
+    step: Int,
+    isTablet: Boolean,
+    description: String? = null,
+    enabled: Boolean = true,
+    modifier: Modifier = Modifier,
+    onValueChange: (Int) -> Unit,
+) {
+    val horizontalPadding = 16.dp
+    var sliderValue by remember(value) { mutableFloatStateOf(value.toFloat()) }
+    val displayedValue = sliderValue.roundToInt().coerceIn(valueRange.first, valueRange.last)
+    val displayedValueText = valueTextForValue?.invoke(displayedValue)
+        ?: if (displayedValue == value) {
+            valueText
+        } else {
+            valueText.replaceFirst(value.toString(), displayedValue.toString())
+        }
+    val sliderRange = valueRange.first.toFloat()..valueRange.last.toFloat()
+    val sliderSteps = calculateSteps(valueRange.first.toFloat(), valueRange.last.toFloat(), step.toFloat())
+
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .settingsNavItem(
+                onActivate = {
+                    if (!enabled) return@settingsNavItem
+                    val next = settingsSliderAdjustedValue(sliderValue, sliderRange, sliderSteps, 1)
+                    if (next != sliderValue) {
+                        sliderValue = next
+                        onValueChange(sliderValue.roundToInt().coerceIn(valueRange.first, valueRange.last))
+                    }
+                },
+                onHorizontal = { direction ->
+                    if (!enabled) return@settingsNavItem false
+                    val next = settingsSliderAdjustedValue(sliderValue, sliderRange, sliderSteps, direction)
+                    val moved = next != sliderValue
+                    if (moved) sliderValue = next
+                    moved
+                },
+                onHorizontalReleased = {
+                    if (enabled) {
+                        onValueChange(sliderValue.roundToInt().coerceIn(valueRange.first, valueRange.last))
+                    }
+                },
+            )
+            .focusable(enabled = enabled)
+            .padding(horizontal = horizontalPadding, vertical = if (isTablet) DesktopRowVerticalPadding else 8.dp)
+            .alpha(if (enabled) 1f else 0.55f),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        SettingsRowTextColumn(
+            title = title,
+            description = description,
+            isTablet = isTablet,
+            modifier = Modifier.weight(1f),
+        )
+        Row(
+            modifier = Modifier.width(if (isTablet) DesktopControlWidth else 220.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            SettingsModernSlider(
+                value = sliderValue.coerceIn(valueRange.first.toFloat(), valueRange.last.toFloat()),
+                onValueChange = { if (enabled) sliderValue = snapToStep(it, step.toFloat()) },
+                onValueChangeFinished = {
+                    if (enabled) onValueChange(sliderValue.roundToInt().coerceIn(valueRange.first, valueRange.last))
+                },
+                enabled = enabled,
+                valueRange = sliderRange,
+                steps = sliderSteps,
+                modifier = Modifier.weight(1f),
+                valueLabel = displayedValueText,
+                keyboardStop = false,
+            )
+        }
+    }
+}
+
+/**
+ * Range counterpart of [SettingsSliderRow]. The dragged thumb pushes the other one along rather than
+ * crossing it, so the readout and the drawn band stay honest for the whole gesture.
+ */
+@Composable
+internal fun SettingsRangeSliderRow(
+    title: String,
+    lowValue: Int,
+    highValue: Int,
+    valueTextForRange: (low: Int, high: Int) -> String,
+    valueRange: IntRange,
+    step: Int,
+    isTablet: Boolean,
+    description: String? = null,
+    enabled: Boolean = true,
+    minGap: Int = 1,
+    modifier: Modifier = Modifier,
+    onValueChange: (low: Int, high: Int) -> Unit,
+) {
+    val horizontalPadding = 16.dp
+    var lowSliderValue by remember(lowValue) { mutableFloatStateOf(lowValue.toFloat()) }
+    var highSliderValue by remember(highValue) { mutableFloatStateOf(highValue.toFloat()) }
+    val displayedLow = lowSliderValue.roundToInt().coerceIn(valueRange.first, valueRange.last)
+    val displayedHigh = highSliderValue.roundToInt().coerceIn(valueRange.first, valueRange.last)
+    val sliderRange = valueRange.first.toFloat()..valueRange.last.toFloat()
+    val sliderSteps = calculateSteps(valueRange.first.toFloat(), valueRange.last.toFloat(), step.toFloat())
+
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .settingsNavItem(
+                onActivate = {
+                    if (!enabled) return@settingsNavItem
+                    val (low, high) = settingsRangeShifted(lowSliderValue, highSliderValue, sliderRange, sliderSteps, 1)
+                    if (low != lowSliderValue || high != highSliderValue) {
+                        lowSliderValue = low
+                        highSliderValue = high
+                        onValueChange(
+                            lowSliderValue.roundToInt().coerceIn(valueRange.first, valueRange.last),
+                            highSliderValue.roundToInt().coerceIn(valueRange.first, valueRange.last),
+                        )
+                    }
+                },
+                onHorizontal = { direction ->
+                    if (!enabled) return@settingsNavItem false
+                    val (low, high) = settingsRangeShifted(lowSliderValue, highSliderValue, sliderRange, sliderSteps, direction)
+                    val moved = low != lowSliderValue || high != highSliderValue
+                    if (moved) {
+                        lowSliderValue = low
+                        highSliderValue = high
+                    }
+                    moved
+                },
+                onHorizontalReleased = {
+                    if (enabled) {
+                        onValueChange(
+                            lowSliderValue.roundToInt().coerceIn(valueRange.first, valueRange.last),
+                            highSliderValue.roundToInt().coerceIn(valueRange.first, valueRange.last),
+                        )
+                    }
+                },
+            )
+            .focusable(enabled = enabled)
+            .padding(horizontal = horizontalPadding, vertical = if (isTablet) DesktopRowVerticalPadding else 8.dp)
+            .alpha(if (enabled) 1f else 0.55f),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        SettingsRowTextColumn(
+            title = title,
+            description = description,
+            isTablet = isTablet,
+            modifier = Modifier.weight(1f),
+        )
+        Row(
+            modifier = Modifier.width(if (isTablet) DesktopControlWidth else 220.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            SettingsModernRangeSlider(
+                lowValue = lowSliderValue.coerceIn(valueRange.first.toFloat(), valueRange.last.toFloat()),
+                highValue = highSliderValue.coerceIn(valueRange.first.toFloat(), valueRange.last.toFloat()),
+                onValueChange = { low, high ->
+                    if (!enabled) return@SettingsModernRangeSlider
+                    val snappedLow = snapToStep(low, step.toFloat())
+                    val snappedHigh = snapToStep(high, step.toFloat())
+                    val gap = minGap.toFloat()
+                    if (snappedLow != lowSliderValue) {
+                        lowSliderValue = snappedLow.coerceAtMost(valueRange.last - gap)
+                        highSliderValue = highSliderValue.coerceAtLeast(lowSliderValue + gap)
+                    } else {
+                        highSliderValue = snappedHigh.coerceAtLeast(valueRange.first + gap)
+                        lowSliderValue = lowSliderValue.coerceAtMost(highSliderValue - gap)
+                    }
+                },
+                onValueChangeFinished = {
+                    if (enabled) {
+                        onValueChange(
+                            lowSliderValue.roundToInt().coerceIn(valueRange.first, valueRange.last),
+                            highSliderValue.roundToInt().coerceIn(valueRange.first, valueRange.last),
+                        )
+                    }
+                },
+                enabled = enabled,
+                valueRange = sliderRange,
+                steps = sliderSteps,
+                modifier = Modifier.weight(1f),
+                valueLabel = valueTextForRange(displayedLow, displayedHigh),
+                keyboardStop = false,
+            )
         }
     }
 }

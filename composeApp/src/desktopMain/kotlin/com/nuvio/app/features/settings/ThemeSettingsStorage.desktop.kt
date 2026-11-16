@@ -20,9 +20,11 @@ internal actual object ThemeSettingsStorage {
     private const val customThemeCardKey = "custom_theme_card"
     private const val accentGradientDirectionKey = "accent_gradient_direction"
     private const val amoledEnabledKey = "amoled_enabled"
+    private const val amoledModeKey = "amoled_mode"
     private const val liquidGlassNativeTabBarEnabledKey = "liquid_glass_native_tab_bar_enabled"
     private const val desktopColumnGuidesVisibleKey = "desktop_column_guides_visible"
     private const val desktopSettingsFullWidthKey = "desktop_settings_full_width"
+    private const val escapeFailsafeEnabledKey = "escape_failsafe_enabled"
     private const val wasdNavigationEnabledKey = "wasd_navigation_enabled"
     private const val holdToSelectEnabledKey = "hold_to_select_enabled"
     private const val desktopNavigationLayoutKey = "desktop_navigation_layout"
@@ -32,6 +34,7 @@ internal actual object ThemeSettingsStorage {
     private const val desktopDiscoverTabVisibleKey = "desktop_discover_tab_visible"
     private const val desktopSidebarItemsTopKey = "desktop_sidebar_items_top"
     private const val desktopAppUiScalePercentKey = "desktop_app_ui_scale_percent"
+    private const val desktopOskScalePercentKey = "desktop_osk_scale_percent"
     private const val desktopAppUiScaleAppliesToDetailsKey = "desktop_app_ui_scale_applies_to_details"
     private const val appFontFamilyKey = "app_font_family"
     private const val appFontScalePercentKey = "app_font_scale_percent"
@@ -111,6 +114,13 @@ internal actual object ThemeSettingsStorage {
         store.putBoolean(ProfileScopedKey.of(amoledEnabledKey), enabled)
     }
 
+    actual fun loadAmoledMode(): String? =
+        store.getString(ProfileScopedKey.of(amoledModeKey))
+
+    actual fun saveAmoledMode(mode: String) {
+        store.putString(ProfileScopedKey.of(amoledModeKey), mode)
+    }
+
     actual fun loadLiquidGlassNativeTabBarEnabled(): Boolean? =
         store.getBoolean(ProfileScopedKey.of(liquidGlassNativeTabBarEnabledKey))
 
@@ -130,6 +140,13 @@ internal actual object ThemeSettingsStorage {
 
     actual fun saveDesktopSettingsFullWidth(enabled: Boolean) {
         store.putBoolean(ProfileScopedKey.of(desktopSettingsFullWidthKey), enabled)
+    }
+
+    actual fun loadEscapeFailsafeEnabled(): Boolean? =
+        store.getBoolean(ProfileScopedKey.of(escapeFailsafeEnabledKey))
+
+    actual fun saveEscapeFailsafeEnabled(enabled: Boolean) {
+        store.putBoolean(ProfileScopedKey.of(escapeFailsafeEnabledKey), enabled)
     }
 
     actual fun loadWasdNavigationEnabled(): Boolean? =
@@ -196,6 +213,13 @@ internal actual object ThemeSettingsStorage {
 
     actual fun saveDesktopAppUiScalePercent(percent: Int) {
         store.putInt(ProfileScopedKey.of(desktopAppUiScalePercentKey), percent)
+    }
+
+    actual fun loadDesktopOskScalePercent(): Int? =
+        store.getInt(ProfileScopedKey.of(desktopOskScalePercentKey))
+
+    actual fun saveDesktopOskScalePercent(percent: Int) {
+        store.putInt(ProfileScopedKey.of(desktopOskScalePercentKey), percent)
     }
 
     actual fun loadDesktopAppUiScaleAppliesToDetails(): Boolean? =

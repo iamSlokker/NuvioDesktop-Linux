@@ -232,6 +232,15 @@ internal fun LazyListScope.keyboardShortcutsContent(isTablet: Boolean) {
                     },
                 )
                 SettingsGroupDivider(isTablet = isTablet)
+                val escapeFailsafe by ThemeSettingsRepository.escapeFailsafeEnabled.collectAsState()
+                SettingsSwitchRow(
+                    title = stringResource(Res.string.settings_shortcuts_escape_failsafe),
+                    description = stringResource(Res.string.settings_shortcuts_escape_failsafe_description),
+                    checked = escapeFailsafe,
+                    isTablet = isTablet,
+                    onCheckedChange = ThemeSettingsRepository::setEscapeFailsafeEnabled,
+                )
+                SettingsGroupDivider(isTablet = isTablet)
                 SettingsSwitchRow(
                     title = stringResource(Res.string.settings_shortcuts_hold_to_select),
                     description = stringResource(Res.string.settings_shortcuts_hold_to_select_description),
@@ -320,14 +329,13 @@ private fun ShortcutRow(
     description: String? = null,
 ) {
     val tokens = MaterialTheme.nuvio
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .then(if (onRebind != null) Modifier.clickable(onClick = onRebind) else Modifier)
-            .padding(
-                horizontal = ShortcutRowHorizontalPadding(isTablet),
-                vertical = NuvioTokens.Space.s10,
-            ),
+    SettingsSelectableRow(
+        onSelect = onRebind,
+        modifier = Modifier.fillMaxWidth(),
+        contentModifier = Modifier.padding(
+            horizontal = ShortcutRowHorizontalPadding(isTablet),
+            vertical = NuvioTokens.Space.s10,
+        ),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(NuvioTokens.Space.s12),
     ) {
@@ -391,6 +399,7 @@ private fun GamepadSection(isTablet: Boolean) {
     val deadZone by gamepadDeadZoneState().collectAsState()
     val repeatInterval by gamepadRepeatIntervalState().collectAsState()
     val mouseKeyboard by mouseKeyboardState().collectAsState()
+    val oskScalePercent by ThemeSettingsRepository.desktopOskScalePercent.collectAsState()
     val bindingsVersion by gamepadBindingsVersion().collectAsState()
     val rows = remember(bindingsVersion) { gamepadMappingRows() }
     var rebindingButton by remember { mutableStateOf<GamepadButton?>(null) }
@@ -406,6 +415,21 @@ private fun GamepadSection(isTablet: Boolean) {
                     checked = mouseKeyboard,
                     isTablet = isTablet,
                     onCheckedChange = { setMouseKeyboard(it) },
+                )
+                SettingsGroupDivider(isTablet = isTablet)
+                // Its own size, not a multiplier on App UI Scale: a couch user may want a big
+                // keyboard while the rest of the UI stays compact.
+                SettingsSliderRow(
+                    title = stringResource(Res.string.settings_shortcuts_osk_scale),
+                    description = stringResource(Res.string.settings_shortcuts_osk_scale_description),
+                    value = oskScalePercent,
+                    valueText = "${if (oskScalePercent > 0) "+" else ""}$oskScalePercent%",
+                    valueTextForValue = { "${if (it > 0) "+" else ""}$it%" },
+                    valueRange = DESKTOP_OSK_SCALE_PERCENT_RANGE,
+                    step = 5,
+                    isTablet = isTablet,
+                    modifier = Modifier.settingsScrollAnchor(SettingsScrollAnchor.searchKey("osk-scale")),
+                    onValueChange = ThemeSettingsRepository::setDesktopOskScalePercent,
                 )
             }
         }

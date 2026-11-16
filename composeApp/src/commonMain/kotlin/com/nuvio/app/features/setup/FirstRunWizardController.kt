@@ -170,6 +170,8 @@ internal object FirstRunWizardController {
         changed(FirstRunWizardDraft::separateUpcomingRow, ContinueWatchingPreferencesRepository::setSeparateUpcomingRow)
 
         changed(FirstRunWizardDraft::theme, ThemeSettingsRepository::setTheme)
+        changed(FirstRunWizardDraft::amoledMode, ThemeSettingsRepository::setAmoledMode)
+        changed(FirstRunWizardDraft::uiScalePercent, ThemeSettingsRepository::setDesktopAppUiScalePercent)
         changed(FirstRunWizardDraft::navigationLayout, ThemeSettingsRepository::setDesktopNavigationLayout)
         changed(FirstRunWizardDraft::topBarAlwaysVisible, ThemeSettingsRepository::setDesktopTopBarAlwaysVisible)
 
@@ -228,6 +230,8 @@ internal object FirstRunWizardController {
             separateNextUpRow = continueWatching.separateNextUpRow,
             separateUpcomingRow = continueWatching.separateUpcomingRow,
             theme = ThemeSettingsRepository.selectedTheme.value,
+            amoledMode = ThemeSettingsRepository.amoledMode.value,
+            uiScalePercent = ThemeSettingsRepository.desktopAppUiScalePercent.value,
             navigationLayout = ThemeSettingsRepository.desktopNavigationLayout.value,
             topBarAlwaysVisible = ThemeSettingsRepository.desktopTopBarAlwaysVisible.value,
             tmdbApiKey = TmdbSettingsRepository.snapshot().apiKey,

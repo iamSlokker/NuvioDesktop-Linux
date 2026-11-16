@@ -13,6 +13,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.nuvio.app.features.settings.platformOffersInterfaceRenderer
 import com.nuvio.app.core.ui.AppTheme
+import com.nuvio.app.features.settings.AmoledAppearance
 import com.nuvio.app.core.ui.BalancedPosterCardWidthDp
 import com.nuvio.app.core.ui.ComfortPosterCardWidthDp
 import com.nuvio.app.core.ui.CompactPosterCardWidthDp
@@ -34,6 +35,12 @@ import com.nuvio.app.features.watchprogress.ContinueWatchingSectionStyle
 import kotlin.math.abs
 import kotlin.math.roundToInt
 import nuvio.composeapp.generated.resources.Res
+import nuvio.composeapp.generated.resources.settings_appearance_amoled_black
+import nuvio.composeapp.generated.resources.settings_appearance_amoled_description
+import nuvio.composeapp.generated.resources.settings_appearance_amoled_mode_amoled
+import nuvio.composeapp.generated.resources.settings_appearance_amoled_mode_black
+import nuvio.composeapp.generated.resources.settings_appearance_amoled_off
+import nuvio.composeapp.generated.resources.settings_appearance_app_ui_scale
 import nuvio.composeapp.generated.resources.settings_appearance_desktop_navigation
 import nuvio.composeapp.generated.resources.settings_appearance_desktop_top_bar_always_visible
 import nuvio.composeapp.generated.resources.settings_appearance_desktop_top_bar_always_visible_description
@@ -84,6 +91,7 @@ import nuvio.composeapp.generated.resources.settings_poster_card_width
 import nuvio.composeapp.generated.resources.settings_poster_hide_labels
 import nuvio.composeapp.generated.resources.settings_poster_highlight
 import nuvio.composeapp.generated.resources.settings_poster_highlight_accent
+import nuvio.composeapp.generated.resources.settings_poster_highlight_border
 import nuvio.composeapp.generated.resources.settings_poster_highlight_description
 import nuvio.composeapp.generated.resources.settings_poster_highlight_off
 import nuvio.composeapp.generated.resources.settings_poster_highlight_shine
@@ -100,6 +108,8 @@ import nuvio.composeapp.generated.resources.settings_poster_width_large
 import nuvio.composeapp.generated.resources.settings_poster_width_standard
 import nuvio.composeapp.generated.resources.setup_wizard_cw_subtitle
 import nuvio.composeapp.generated.resources.setup_wizard_cw_title
+import nuvio.composeapp.generated.resources.setup_wizard_display
+import nuvio.composeapp.generated.resources.setup_wizard_display_scale_description
 import nuvio.composeapp.generated.resources.setup_wizard_experience_subtitle
 import nuvio.composeapp.generated.resources.setup_wizard_experience_title
 import nuvio.composeapp.generated.resources.setup_wizard_experience_tv_badge
@@ -313,6 +323,18 @@ internal fun stepHeight(current: Float, direction: Int): Float =
     ((current / HeroHeightStep).roundToInt() + direction).times(HeroHeightStep)
         .coerceIn(HeroHeightRange.start, HeroHeightRange.endInclusive)
 
+// The whole app's scale, the range and notch Settings > Appearance uses for App UI Scale.
+private val UiScaleStep = 5
+private val UiScaleRange = -50..50
+
+/** The scale as Settings writes it: a signed percentage, so 0% reads as the default. */
+internal fun uiScaleLabel(percent: Int): String = "${if (percent > 0) "+" else ""}$percent%"
+
+/** One notch from [current], snapped to the notch grid and held inside the range Settings allows. */
+internal fun stepUiScalePercent(current: Int, direction: Int): Int =
+    (((current.toFloat() / UiScaleStep).roundToInt() + direction) * UiScaleStep)
+        .coerceIn(UiScaleRange.first, UiScaleRange.last)
+
 // ---------------------------------------------------------------------------------------------
 // Posters
 // ---------------------------------------------------------------------------------------------
@@ -363,6 +385,7 @@ internal fun nearestPosterPresetIndex(widthDp: Int): Int =
 private val PosterHighlightMode.labelRes: StringResource
     get() = when (this) {
         PosterHighlightMode.Off -> Res.string.settings_poster_highlight_off
+        PosterHighlightMode.Border -> Res.string.settings_poster_highlight_border
         PosterHighlightMode.White -> Res.string.settings_poster_highlight_white
         PosterHighlightMode.Accent -> Res.string.settings_poster_highlight_accent
         PosterHighlightMode.Shine -> Res.string.settings_poster_highlight_shine
@@ -454,6 +477,40 @@ private fun ThemeStep(draft: FirstRunWizardDraft, onDraftChange: DraftChange, fi
         color = tokens.colors.textSecondary,
         fontWeight = FontWeight.Medium,
         modifier = Modifier.padding(horizontal = NuvioTokens.Space.s12),
+    )
+
+    // The same three choices Settings > Appearance offers, applied live: a pure-black background is
+    // what an OLED panel wants, and it is worth choosing before the first screen rather than hunting
+    // for it afterwards.
+    WizardSectionLabel(stringResource(Res.string.settings_appearance_amoled_black))
+    AmoledAppearance.entries.forEach { mode ->
+        WizardOptionRow(
+            label = when (mode) {
+                AmoledAppearance.Off -> stringResource(Res.string.settings_appearance_amoled_off)
+                AmoledAppearance.Amoled -> stringResource(Res.string.settings_appearance_amoled_mode_amoled)
+                AmoledAppearance.Black -> stringResource(Res.string.settings_appearance_amoled_mode_black)
+            },
+            description = if (mode == AmoledAppearance.Black) {
+                stringResource(Res.string.settings_appearance_amoled_description)
+            } else {
+                null
+            },
+            selected = draft.amoledMode == mode,
+            onClick = { onDraftChange { it.copy(amoledMode = mode) } },
+        )
+    }
+
+    // The whole app's scale, the control Settings > Appearance leads with: a small display or a
+    // couch distance is worth fixing here rather than after the first screen.
+    WizardSectionLabel(stringResource(Res.string.setup_wizard_display))
+    WizardStepperRow(
+        title = stringResource(Res.string.settings_appearance_app_ui_scale),
+        description = stringResource(Res.string.setup_wizard_display_scale_description),
+        valueLabel = uiScaleLabel(draft.uiScalePercent),
+        canDecrease = draft.uiScalePercent > UiScaleRange.first,
+        canIncrease = draft.uiScalePercent < UiScaleRange.last,
+        onDecrease = { onDraftChange { it.copy(uiScalePercent = stepUiScalePercent(it.uiScalePercent, -1)) } },
+        onIncrease = { onDraftChange { it.copy(uiScalePercent = stepUiScalePercent(it.uiScalePercent, 1)) } },
     )
 
     WizardSectionLabel(stringResource(Res.string.settings_appearance_desktop_navigation))

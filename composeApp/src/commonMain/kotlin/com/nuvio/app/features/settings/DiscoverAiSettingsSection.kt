@@ -14,7 +14,11 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.KeyboardArrowDown
+import androidx.compose.material.icons.rounded.KeyboardArrowUp
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -51,6 +55,8 @@ import com.nuvio.app.features.watched.WatchedRepository
 import kotlinx.coroutines.launch
 import nuvio.composeapp.generated.resources.Res
 import nuvio.composeapp.generated.resources.action_done
+import nuvio.composeapp.generated.resources.settings_playback_hud_button_move_down
+import nuvio.composeapp.generated.resources.settings_playback_hud_button_move_up
 import nuvio.composeapp.generated.resources.settings_ai_recap_enabled
 import nuvio.composeapp.generated.resources.settings_ai_recap_enabled_description
 import nuvio.composeapp.generated.resources.settings_ai_recap_model_knowledge
@@ -136,6 +142,8 @@ internal fun AiDiscoverRowEntry(
     row: AiDiscoverRow,
     isTablet: Boolean,
     onEdit: () -> Unit,
+    onMoveUp: (() -> Unit)? = null,
+    onMoveDown: (() -> Unit)? = null,
 ) {
     val untitled = stringResource(Res.string.settings_discover_ai_row_untitled)
     val neverGenerated = stringResource(Res.string.settings_discover_ai_never_generated)
@@ -152,6 +160,8 @@ internal fun AiDiscoverRowEntry(
             HomeCatalogSettingsRepository.updateDiscoverAiRow(row.copy(enabled = it))
         },
         onClick = onEdit,
+        onMoveUp = onMoveUp,
+        onMoveDown = onMoveDown,
     )
 }
 
@@ -709,13 +719,14 @@ private fun DiscoverAiRowShell(
     isTablet: Boolean,
     onEnabledChange: (Boolean) -> Unit,
     onClick: () -> Unit,
+    onMoveUp: (() -> Unit)? = null,
+    onMoveDown: (() -> Unit)? = null,
 ) {
     val tokens = MaterialTheme.nuvio
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(onClick = onClick)
-            .padding(horizontal = if (isTablet) 20.dp else 16.dp, vertical = 10.dp),
+    SettingsSelectableRow(
+        onSelect = onClick,
+        modifier = Modifier.fillMaxWidth(),
+        contentModifier = Modifier.padding(horizontal = if (isTablet) 20.dp else 16.dp, vertical = 10.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Column(
@@ -739,7 +750,26 @@ private fun DiscoverAiRowShell(
                 overflow = TextOverflow.Ellipsis,
             )
         }
-        SettingsSquareSwitch(checked = enabled, onCheckedChange = onEnabledChange)
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(4.dp),
+        ) {
+            SettingsIconAction(onClick = { onMoveUp?.invoke() }, enabled = onMoveUp != null) {
+                Icon(
+                    imageVector = Icons.Rounded.KeyboardArrowUp,
+                    contentDescription = stringResource(Res.string.settings_playback_hud_button_move_up),
+                    tint = tokens.colors.textMuted,
+                )
+            }
+            SettingsIconAction(onClick = { onMoveDown?.invoke() }, enabled = onMoveDown != null) {
+                Icon(
+                    imageVector = Icons.Rounded.KeyboardArrowDown,
+                    contentDescription = stringResource(Res.string.settings_playback_hud_button_move_down),
+                    tint = tokens.colors.textMuted,
+                )
+            }
+            SettingsSquareSwitch(checked = enabled, onCheckedChange = onEnabledChange)
+        }
     }
 }
 

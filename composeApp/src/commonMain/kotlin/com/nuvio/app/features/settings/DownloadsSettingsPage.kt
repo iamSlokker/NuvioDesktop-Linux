@@ -332,11 +332,10 @@ private fun DownloadShowSettingsRow(
     onOpen: () -> Unit,
     onDelete: () -> Unit,
 ) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(onClick = onOpen)
-            .padding(horizontal = 16.dp, vertical = if (isTablet) 10.dp else 14.dp),
+    SettingsSelectableRow(
+        onSelect = onOpen,
+        modifier = Modifier.fillMaxWidth(),
+        contentModifier = Modifier.padding(horizontal = 16.dp, vertical = if (isTablet) 10.dp else 14.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Column(modifier = Modifier.weight(1f).padding(end = 12.dp)) {
@@ -353,14 +352,14 @@ private fun DownloadShowSettingsRow(
                 color = MaterialTheme.nuvio.colors.textMuted,
             )
         }
-        IconButton(onClick = onOpen) {
+        SettingsIconAction(onClick = onOpen) {
             Icon(
                 Icons.Rounded.PlayArrow,
                 contentDescription = stringResource(Res.string.downloads_show_downloads),
                 tint = MaterialTheme.nuvio.colors.textPrimary,
             )
         }
-        IconButton(onClick = onDelete) {
+        SettingsIconAction(onClick = onDelete) {
             Icon(
                 Icons.Rounded.Delete,
                 contentDescription = stringResource(Res.string.downloads_delete_show),
@@ -377,11 +376,11 @@ private fun DownloadSettingsRow(
     onOpen: () -> Unit,
 ) {
     val displayTitle = item.downloadDisplayTitle()
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(enabled = item.isPlayable, onClick = onOpen)
-            .padding(horizontal = 16.dp, vertical = if (isTablet) 10.dp else 14.dp),
+    SettingsSelectableColumn(
+        onSelect = onOpen,
+        modifier = Modifier.fillMaxWidth(),
+        enabled = item.isPlayable,
+        contentModifier = Modifier.padding(horizontal = 16.dp, vertical = if (isTablet) 10.dp else 14.dp),
         verticalArrangement = Arrangement.spacedBy(7.dp),
     ) {
         Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
@@ -439,7 +438,7 @@ private fun DownloadAction(
     description: StringResource,
     onClick: () -> Unit,
 ) {
-    IconButton(onClick = onClick) {
+    SettingsIconAction(onClick = onClick) {
         Icon(icon, contentDescription = stringResource(description), tint = MaterialTheme.nuvio.colors.textPrimary)
     }
 }

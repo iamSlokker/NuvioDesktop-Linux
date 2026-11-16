@@ -1,6 +1,7 @@
 package com.nuvio.app.features.setup
 
 import com.nuvio.app.core.ui.AppTheme
+import com.nuvio.app.features.settings.AmoledAppearance
 import com.nuvio.app.core.ui.DefaultPosterCardWidthDp
 import com.nuvio.app.core.ui.PosterHighlightMode
 import com.nuvio.app.features.home.HomeCatalogSettingsUiState
@@ -53,13 +54,17 @@ internal data class FirstRunWizardDraft(
     val tvRowDotsAnchor: HomeTvRowDotsAnchor = HomeTvRowDotsAnchor.RowTitle,
     val posterWidthDp: Int = DefaultPosterCardWidthDp,
     val landscapePostersEnabled: Boolean = false,
-    val posterHighlightMode: PosterHighlightMode = PosterHighlightMode.Shine,
+    val posterHighlightMode: PosterHighlightMode = PosterHighlightMode.Border,
     val hidePosterLabelsEnabled: Boolean = false,
     val continueWatchingVisible: Boolean = true,
     val continueWatchingStyle: ContinueWatchingSectionStyle = ContinueWatchingSectionStyle.Card,
     val separateNextUpRow: Boolean = true,
     val separateUpcomingRow: Boolean = true,
     val theme: AppTheme = AppTheme.OCEAN,
+    /** Light, the existing AMOLED look, or complete black; the same choice Settings > Appearance offers. */
+    val amoledMode: AmoledAppearance = AmoledAppearance.Off,
+    /** How much the whole app is scaled, in percent: Settings > Appearance's App UI Scale. */
+    val uiScalePercent: Int = 0,
     val navigationLayout: DesktopNavigationLayout = DesktopNavigationLayout.Default,
     val topBarAlwaysVisible: Boolean = false,
     val tmdbApiKey: String = "",

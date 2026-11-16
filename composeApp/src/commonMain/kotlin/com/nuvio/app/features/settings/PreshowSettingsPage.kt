@@ -432,10 +432,16 @@ private fun PreshowRunningOrderDialog(
                                         color = colors.textMuted,
                                     )
                                 }
-                                IconButton(onClick = { PreshowSettings.moveTo(slot, index) }, enabled = index > 0) {
+                                SettingsIconAction(
+                                    onClick = { PreshowSettings.moveTo(slot, index) },
+                                    enabled = index > 0,
+                                ) {
                                     Icon(Icons.Rounded.KeyboardArrowUp, contentDescription = stringResource(Res.string.settings_playback_hud_button_move_up))
                                 }
-                                IconButton(onClick = { PreshowSettings.moveTo(slot, index + 2) }, enabled = index < order.lastIndex) {
+                                SettingsIconAction(
+                                    onClick = { PreshowSettings.moveTo(slot, index + 2) },
+                                    enabled = index < order.lastIndex,
+                                ) {
                                     Icon(Icons.Rounded.KeyboardArrowDown, contentDescription = stringResource(Res.string.settings_playback_hud_button_move_down))
                                 }
                                 SettingsSquareSwitch(

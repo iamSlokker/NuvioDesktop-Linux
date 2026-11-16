@@ -164,8 +164,11 @@ internal fun LazyListScope.homescreenSettingsContent(
                         modifier = Modifier.settingsScrollAnchor(SettingsScrollAnchor.DisplayMode),
                         onSelected = HomeCatalogSettingsRepository::setDisplayMode,
                     )
-                    // Keep mode-specific controls out of the page entirely. A disabled Adaptive
-                    // position slider in Basic/TV mode looks like a setting that failed to load.
+                    // The hero's own controls. Auto-framing and its manual position only apply to
+                    // the Adaptive hero, so they stay out of the other modes. Hero height and the
+                    // single Ambient background row are shared: the latter drives the current
+                    // mode's flag (Adaptive/Basic wash or TV's), which is why there is no second
+                    // Ambient row further down the page.
                     if (currentMode == HomeDisplayMode.Adaptive) {
                         SettingsGroupDivider(isTablet = isTablet)
                         SettingsSwitchRow(
@@ -192,27 +195,50 @@ internal fun LazyListScope.homescreenSettingsContent(
                                 modifier = Modifier.settingsScrollAnchor(SettingsScrollAnchor.AdaptiveHeroPosition),
                             )
                         }
+                    }
+                    // Hero height and the ambient wash are implemented by the TV and Adaptive
+                    // layouts. Basic has its own fixed hero, so showing them there would be a
+                    // control with no effect.
+                    if (currentMode != HomeDisplayMode.Basic) {
                         SettingsGroupDivider(isTablet = isTablet)
                         AdaptiveHeroHeightRow(
                             enabled = heroEnabled,
                             isTablet = isTablet,
                             modifier = Modifier.settingsScrollAnchor(SettingsScrollAnchor.AdaptiveHeroHeight),
                         )
-                        // Adaptive's own ambient toggle, as TV Mode has one: it used to be a fourth
-                        // display mode, which made two near-identical layouts look like a big choice.
                         SettingsGroupDivider(isTablet = isTablet)
                         SettingsSwitchRow(
-                            title = stringResource(Res.string.settings_home_adaptive_ambient_background),
-                            description = stringResource(
-                                Res.string.settings_home_adaptive_ambient_background_description,
+                            title = stringResource(
+                                if (currentMode == HomeDisplayMode.TvMode) {
+                                    Res.string.settings_home_tv_ambient_background
+                                } else {
+                                    Res.string.settings_home_adaptive_ambient_background
+                                },
                             ),
-                            checked = heroAmbientBackgroundEnabled,
+                            description = stringResource(
+                                if (currentMode == HomeDisplayMode.TvMode) {
+                                    Res.string.settings_home_tv_ambient_background_description
+                                } else {
+                                    Res.string.settings_home_adaptive_ambient_background_description
+                                },
+                            ),
+                            checked = if (currentMode == HomeDisplayMode.TvMode) {
+                                homeSettings.tvAmbientBackgroundEnabled
+                            } else {
+                                heroAmbientBackgroundEnabled
+                            },
                             enabled = heroEnabled,
                             isTablet = isTablet,
                             modifier = Modifier.settingsScrollAnchor(
                                 SettingsScrollAnchor.searchKey("home-adaptive-ambient-background"),
                             ),
-                            onCheckedChange = HomeCatalogSettingsRepository::setHeroAmbientBackgroundEnabled,
+                            onCheckedChange = { enabled ->
+                                if (currentMode == HomeDisplayMode.TvMode) {
+                                    HomeCatalogSettingsRepository.setTvAmbientBackgroundEnabled(enabled)
+                                } else {
+                                    HomeCatalogSettingsRepository.setHeroAmbientBackgroundEnabled(enabled)
+                                }
+                            },
                         )
                     }
                     val crossfadeOffLabel = stringResource(Res.string.settings_hero_backdrop_crossfade_off)
@@ -264,19 +290,6 @@ internal fun LazyListScope.homescreenSettingsContent(
                                 SettingsScrollAnchor.searchKey("home-tv-full-backdrop"),
                             ),
                             onCheckedChange = HomeCatalogSettingsRepository::setTvFullBackdropEnabled,
-                        )
-                        SettingsGroupDivider(isTablet = isTablet)
-                        SettingsSwitchRow(
-                            title = stringResource(Res.string.settings_home_tv_ambient_background),
-                            description = stringResource(
-                                Res.string.settings_home_tv_ambient_background_description,
-                            ),
-                            checked = homeSettings.tvAmbientBackgroundEnabled,
-                            isTablet = isTablet,
-                            modifier = Modifier.settingsScrollAnchor(
-                                SettingsScrollAnchor.searchKey("home-tv-ambient-background"),
-                            ),
-                            onCheckedChange = HomeCatalogSettingsRepository::setTvAmbientBackgroundEnabled,
                         )
                         SettingsGroupDivider(isTablet = isTablet)
                         SettingsSwitchRow(
@@ -792,49 +805,22 @@ private fun AdaptiveHeroHeightRow(
     modifier: Modifier = Modifier,
 ) {
     val settings by HomeCatalogSettingsRepository.uiState.collectAsStateWithLifecycle()
-    var sliderValue by remember(settings.adaptiveHeroHeightMultiplier) {
-        mutableFloatStateOf(settings.adaptiveHeroHeightMultiplier)
-    }
-
-    Row(
-        modifier = modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = if (isTablet) DesktopRowVerticalPadding else 8.dp)
-            .alpha(if (enabled) 1f else 0.55f),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Column(
-            modifier = Modifier.weight(1f).padding(end = 12.dp),
-            verticalArrangement = Arrangement.spacedBy(2.dp),
-        ) {
-            Text(
-                text = stringResource(Res.string.settings_home_hero_height),
-                style = if (isTablet) MaterialTheme.typography.bodyMedium else MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.onSurface,
-                fontWeight = FontWeight.Medium,
-            )
-            SettingsSubtext(
-                text = stringResource(Res.string.settings_home_hero_height_description),
-                isTablet = isTablet,
-            )
-        }
-        Row(
-            modifier = Modifier.width(if (isTablet) DesktopControlWidth else 220.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            SettingsModernSlider(
-                value = sliderValue,
-                onValueChange = { if (enabled) sliderValue = it },
-                onValueChangeFinished = {
-                    if (enabled) HomeCatalogSettingsRepository.setAdaptiveHeroHeightMultiplier(sliderValue)
-                },
-                enabled = enabled,
-                valueRange = 0.5f..1.75f,
-                modifier = Modifier.weight(1f),
-                valueLabel = sliderValue.formatAdaptiveHeroHeight(),
-            )
-        }
-    }
+    val percent = (settings.adaptiveHeroHeightMultiplier * 100).roundToInt().coerceIn(50, 175)
+    // The standard slider row, so the arrow keys land on it and the horizontal keys adjust it;
+    // the old custom row was not a navigation stop at all.
+    SettingsSliderRow(
+        title = stringResource(Res.string.settings_home_hero_height),
+        description = stringResource(Res.string.settings_home_hero_height_description),
+        value = percent,
+        valueText = "$percent%",
+        valueTextForValue = { "$it%" },
+        valueRange = 50..175,
+        step = 5,
+        isTablet = isTablet,
+        enabled = enabled,
+        modifier = modifier,
+        onValueChange = { HomeCatalogSettingsRepository.setAdaptiveHeroHeightMultiplier(it / 100f) },
+    )
 }
 
 private fun Float.formatAdaptiveHeroHeight(): String =
@@ -1036,6 +1022,16 @@ private fun HeroInfoPriorityList(
     val selectedKeys = fields.filter { it.selected }.map { it.key }
     val hapticFeedback = LocalHapticFeedback.current
     val lazyListState = rememberLazyListState()
+    fun moveSelected(fieldKey: String, dir: Int) {
+        val from = selectedKeys.indexOf(fieldKey)
+        if (from < 0) return
+        val to = from + dir
+        if (to !in selectedKeys.indices) return
+        val reordered = selectedKeys.toMutableList()
+        reordered.add(to, reordered.removeAt(from))
+        HomeCatalogSettingsRepository.setHeroInfoPriority(reordered.joinToString(","))
+        hapticFeedback.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+    }
     val reorderableLazyListState = rememberReorderableLazyListState(lazyListState) { from, to ->
         val fromField = fields.getOrNull(from.index) ?: return@rememberReorderableLazyListState
         val toField = fields.getOrNull(to.index) ?: return@rememberReorderableLazyListState
@@ -1118,6 +1114,26 @@ private fun HeroInfoPriorityList(
                                         modifier = Modifier.padding(end = if (isTablet) 24.dp else 18.dp),
                                         style = MaterialTheme.typography.bodySmall,
                                         color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    )
+                                }
+                                SettingsIconAction(
+                                    onClick = { moveSelected(field.key, -1) },
+                                    enabled = enabled && field.selected && selectedKeys.indexOf(field.key) > 0,
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Rounded.KeyboardArrowUp,
+                                        contentDescription = stringResource(Res.string.settings_playback_hud_button_move_up),
+                                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    )
+                                }
+                                SettingsIconAction(
+                                    onClick = { moveSelected(field.key, 1) },
+                                    enabled = enabled && field.selected && selectedKeys.indexOf(field.key) < selectedKeys.lastIndex,
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Rounded.KeyboardArrowDown,
+                                        contentDescription = stringResource(Res.string.settings_playback_hud_button_move_down),
+                                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
                                     )
                                 }
                                 SettingsSquareSwitch(

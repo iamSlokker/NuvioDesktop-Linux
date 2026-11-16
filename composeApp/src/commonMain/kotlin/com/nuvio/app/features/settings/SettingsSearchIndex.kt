@@ -6,6 +6,8 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.nuvio.app.core.ui.isLiquidGlassNativeTabBarSupported
+import com.nuvio.app.features.home.HomeCatalogSettingsRepository
+import com.nuvio.app.features.home.homeDisplayModeOf
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -141,5 +143,17 @@ internal fun rememberSettingsSearchEntries(
         )
     }
     val entries by SettingsSearchIndex.entries.collectAsStateWithLifecycle()
-    return entries
+    // The Home Layout page keeps a mode's controls out of the page in the other modes, so the
+    // search must keep them out too: a result that lands on nothing is worse than no result. Read
+    // here rather than at the call sites so every caller gets the same, current answer.
+    val homeSettings by HomeCatalogSettingsRepository.uiState.collectAsStateWithLifecycle()
+    val homeDisplayMode = homeDisplayModeOf(homeSettings)
+    return entries.filter { entry ->
+        settingsSearchEntryAvailable(
+            key = entry.key,
+            homeDisplayMode = homeDisplayMode,
+            adaptiveHeroAutoFraming = homeSettings.adaptiveHeroAutoFraming,
+            tvRowDotsEnabled = homeSettings.tvRowDotsEnabled,
+        )
+    }
 }

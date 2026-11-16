@@ -75,7 +75,7 @@ internal object NewInstallDefaults {
 
         // Posters
         PosterCardStyleRepository.setWidthDp(LargePosterCardWidthDp)
-        PosterCardStyleRepository.setPosterHighlightMode(PosterHighlightMode.Shine)
+        PosterCardStyleRepository.setPosterHighlightMode(PosterHighlightMode.Border)
 
         // Playback
         PlayerSettingsRepository.setDesktopPlaybackInfoPanelEnabled(true)

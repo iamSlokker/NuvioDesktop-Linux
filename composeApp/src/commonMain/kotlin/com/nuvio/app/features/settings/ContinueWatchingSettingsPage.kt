@@ -50,7 +50,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Check
 import androidx.compose.material.icons.rounded.CheckCircle
-import androidx.compose.material3.BasicAlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -426,10 +425,9 @@ private fun ContinueWatchingStyleOption(
     shape: Shape,
     onClick: () -> Unit,
 ) {
-    Surface(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(onClick = onClick),
+    SettingsSelectableSurface(
+        onSelect = onClick,
+        modifier = Modifier.fillMaxWidth(),
         // On desktop the tiles sit inside the glass section card, so an unselected tile is clear and
         // lets the card's glass show; an opaque surface here read as an older, solid panel.
         color = when {
@@ -529,7 +527,7 @@ private fun ContinueWatchingSortModeDialog(
         ),
     )
 
-    BasicAlertDialog(
+    SettingsBasicAlertDialog(
         onDismissRequest = onDismiss,
     ) {
         NuvioDialogSurface(modifier = Modifier.fillMaxWidth()) {
