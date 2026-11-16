@@ -32,10 +32,12 @@ python3 tools/linux/packaging/nuvio_engine/build.py /output
 python3 tools/linux/packaging/whisper/build.py /output
 # The second stream resolver for music, as upstream's CI builds it; its GPL source goes with the release.
 python3 tools/linux/packaging/innertubex_source.py /output
+# The Kotlin compiler runs inside Gradle's heap: the desktop sources need about 4.5 GB
+# live (4 GB ran out with Umbra 43492138c), so the heap of gradle.properties.
 gradle_flags=(-Pnuvio.desktop.channel="$NUVIO_BUILD_CHANNEL" -Pnuvio.innertubex=true
   --no-daemon --no-configuration-cache --no-build-cache --max-workers=2
   -Pkotlin.compiler.execution.strategy=in-process
-  '-Dorg.gradle.jvmargs=-Xmx4g -XX:MaxMetaspaceSize=1g -Dfile.encoding=UTF-8' "${offline[@]}")
+  '-Dorg.gradle.jvmargs=-Xmx8g -XX:MaxMetaspaceSize=1g -Dfile.encoding=UTF-8' "${offline[@]}")
 # Explicit channel avoids resolveDesktopChannel's local-user preference fallback.
 ./gradlew :composeApp:createDistributable :composeApp:generateNativeMetadata :composeApp:compileKotlinDesktop \
   :composeApp:compileTestKotlinDesktop :composeApp:desktopTest \
