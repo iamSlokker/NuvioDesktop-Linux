@@ -43,11 +43,13 @@ enum class PosterRatingBadgeScale {
 
 /**
  * How the poster a row is currently highlighting is marked, on top of the magnification every
- * highlighted card already gets. [White] and [Accent] ring the card; [Shine] instead lifts the
- * artwork's own brightness. [Off] leaves the magnification alone.
+ * highlighted card already gets. [Border] draws a clean rounded outline just inside the poster's
+ * own edge; [White] and [Accent] ring the card; [Shine] instead lifts the artwork's own brightness.
+ * [Off] leaves the magnification alone.
  */
 enum class PosterHighlightMode {
     Off,
+    Border,
     White,
     Accent,
     Shine,
@@ -79,7 +81,9 @@ private data class StoredPosterCardStylePreferences(
     val landscapeTextTitlesEnabled: Boolean = false,
     val landscapeRatingBadgeScale: String = "OutOfTen",
     val portraitRatingBadgeScale: String = "Off",
-    val posterHighlightMode: String = "Shine",
+    val posterHighlightMode: String = "Border",
+    /** False on payloads written before Border became the default focus treatment. */
+    val focusBorderDefaultMigrated: Boolean = false,
     val hideLabelsEnabled: Boolean = false,
     val depthEnabled: Boolean = true,
     val depthEdgeStrength: Int = 42,
@@ -106,8 +110,8 @@ data class PosterCardStyleUiState(
     val landscapeRatingBadgeScale: PosterRatingBadgeScale = PosterRatingBadgeScale.OutOfTen,
     /** The same badge on portrait posters. Off by default: posters often carry their own art text. */
     val portraitRatingBadgeScale: PosterRatingBadgeScale = PosterRatingBadgeScale.Off,
-    /** Ring drawn around the highlighted poster in addition to its magnification. */
-    val posterHighlightMode: PosterHighlightMode = PosterHighlightMode.Shine,
+    /** Focus treatment drawn around the highlighted poster in addition to its magnification. */
+    val posterHighlightMode: PosterHighlightMode = PosterHighlightMode.Border,
     val hideLabelsEnabled: Boolean = false,
     val depthEnabled: Boolean = true,
     val depthEdgeStrength: Int = 42,
@@ -325,6 +329,17 @@ object PosterCardStyleRepository {
             } else {
                 stored.heightDp.takeIf { it > 0 } ?: ((widthDp * 3) / 2)
             }
+            val storedHighlight = PosterHighlightMode.fromStoredName(stored.posterHighlightMode)
+            // Shine was this setting's old default, so a saved Shine is far more likely to be that
+            // default than a deliberate choice. Move it to the new focus outline once; after this
+            // marker is written, picking Shine again sticks.
+            val posterHighlightMode = if (
+                !stored.focusBorderDefaultMigrated && storedHighlight == PosterHighlightMode.Shine
+            ) {
+                PosterHighlightMode.Border
+            } else {
+                storedHighlight
+            }
             val cornerRadiusDp = stored.cornerRadiusDp.coerceAtLeast(0)
             PosterCardStyleUiState(
                 widthDp = widthDp,
@@ -340,7 +355,7 @@ object PosterCardStyleRepository {
                 portraitRatingBadgeScale = PosterRatingBadgeScale.entries
                     .firstOrNull { it.name == stored.portraitRatingBadgeScale }
                     ?: PosterRatingBadgeScale.Off,
-                posterHighlightMode = PosterHighlightMode.fromStoredName(stored.posterHighlightMode),
+                posterHighlightMode = posterHighlightMode,
                 hideLabelsEnabled = stored.hideLabelsEnabled,
                 depthEnabled = stored.depthEnabled,
                 depthEdgeStrength = stored.depthEdgeStrength.coerceIn(0, 100),
@@ -357,6 +372,8 @@ object PosterCardStyleRepository {
         } else {
             PosterCardStyleUiState()
         }
+        // Writes the migration marker so the Shine -> Border move above happens only once.
+        if (stored != null && !stored.focusBorderDefaultMigrated) persist()
     }
 
     private fun persist() {
@@ -372,6 +389,7 @@ object PosterCardStyleRepository {
                     landscapeRatingBadgeScale = _uiState.value.landscapeRatingBadgeScale.name,
                     portraitRatingBadgeScale = _uiState.value.portraitRatingBadgeScale.name,
                     posterHighlightMode = _uiState.value.posterHighlightMode.name,
+                    focusBorderDefaultMigrated = true,
                     hideLabelsEnabled = _uiState.value.hideLabelsEnabled,
                     depthEnabled = _uiState.value.depthEnabled,
                     depthEdgeStrength = _uiState.value.depthEdgeStrength,

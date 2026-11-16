@@ -74,6 +74,13 @@ private val PosterHighlightFeatherWidth = 1.dp
 private const val PosterHighlightFeatherAlpha = 0.5f
 
 /**
+ * The focused-poster outline's width. Unlike the ring modes this is stroked wholly inside the card,
+ * so it needs no surrounding gap: adjacent posters can sit flush without the outline overhanging
+ * either tile or being mistaken for a gap between them. 2dp matches the app's control focus rings.
+ */
+private val PosterHighlightBorderWidth = 2.dp
+
+/**
  * How much brightness [PosterHighlightMode.Shine] adds to the highlighted card: the artwork is
  * composited over itself at this strength through an additive layer, so every pixel ends up at
  * 1.25x its own value.
@@ -112,9 +119,9 @@ private const val PosterHighlightSweepBandFraction = 1f
 private const val PosterHighlightSweepDurationMillis = 650
 
 /**
- * Draws the configured highlight ring around a poster while its row is highlighting it, on top of
- * the magnification that highlight already applies. Off by default; [PosterHighlightMode] is a
- * global poster preference, so this reads the saved style directly instead of taking a parameter.
+ * Draws the configured highlight around a poster while its row is highlighting it, on top of the
+ * magnification that highlight already applies. [PosterHighlightMode] is a global poster
+ * preference, so this reads the saved style directly instead of taking a parameter.
  *
  * **Apply this before the card's `Modifier.clip`, not after.** Drawn after the clip, the ring is
  * inside the clip layer and its outer edge is cut by the layer's own rounded rect, thinning the
@@ -146,6 +153,15 @@ internal fun Modifier.nuvioPosterHighlight(cornerRadius: Dp, artworkUrl: String?
         label = "posterHighlightRing",
     )
     if (ringAlpha <= 0f) return this
+    if (mode == PosterHighlightMode.Border) {
+        return drawWithContent {
+            drawContent()
+            drawNuvioPosterBorder(
+                color = colors.borderFocus.copy(alpha = colors.borderFocus.alpha * ringAlpha),
+                cornerRadius = cornerRadius,
+            )
+        }
+    }
     // Accent mode follows the theme's accent fill, so a gradient accent sweeps across the ring.
     val ringStops = when (mode) {
         PosterHighlightMode.Accent -> listOfNotNull(colors.accent, colors.accentGradientEnd)
@@ -371,6 +387,30 @@ private fun ContentDrawScope.drawSweepMaskedGain(
         )
         canvas.restore()
     }
+}
+
+/**
+ * A clean rounded outline hugging the inside of the card's own edge. Unlike [drawNuvioPosterRing]
+ * there is no feather and no outer overhang: the stroke is inset by half its width, so the whole
+ * outline stays within the poster and adjacent cards need no extra spacing to keep their outlines
+ * from touching.
+ */
+internal fun ContentDrawScope.drawNuvioPosterBorder(
+    color: Color,
+    cornerRadius: Dp,
+) {
+    val strokePx = PosterHighlightBorderWidth.toPx()
+    val inset = strokePx / 2f
+    drawRoundRect(
+        color = color,
+        topLeft = Offset(inset, inset),
+        size = Size(
+            (size.width - strokePx).coerceAtLeast(0f),
+            (size.height - strokePx).coerceAtLeast(0f),
+        ),
+        cornerRadius = CornerRadius((cornerRadius.toPx() - inset).coerceAtLeast(0f)),
+        style = Stroke(width = strokePx),
+    )
 }
 
 /** The ring treatment shared by [PosterHighlightMode.White] and [PosterHighlightMode.Accent]. */

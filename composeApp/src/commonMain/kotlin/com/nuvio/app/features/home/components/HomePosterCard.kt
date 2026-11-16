@@ -27,6 +27,8 @@ fun HomePosterCard(
     val posterCardStyle = rememberHomePosterCardStyleUiState()
     val watchlist = rememberPosterWatchlistMembership()
     val isLandscapeMode = useLandscapeBackdropMode || posterCardStyle.catalogLandscapeModeEnabled
+    // Linux TV Mode stacked rows only: the Continue Watching card width. Null everywhere else.
+    val tvStackedLandscapeCardWidth = LocalHomeTvStackedContinueWatchingCardWidth.current
     val titleOverlay = landscapeCardTitleOverlay(
         isLandscapeMode = isLandscapeMode,
         useTextTitle = posterCardStyle.landscapeTextTitlesEnabled,
@@ -80,6 +82,7 @@ fun HomePosterCard(
                 modifier = modifier.then(hoverModifier),
                 shape = if (isLandscapeMode) NuvioPosterShape.Landscape else item.posterShape.toNuvioPosterShape(),
                 basePosterWidthDpOverride = basePosterWidthDpOverride,
+                landscapeCardWidthOverride = tvStackedLandscapeCardWidth,
                 detailLine = if (isLandscapeMode || posterCardStyle.hideLabelsEnabled) null else item.releaseInfo?.let { formatReleaseDateForDisplay(it) },
                 showTitleBelow = !posterCardStyle.hideLabelsEnabled,
                 bottomLeftLogoUrl = titleOverlay.logoUrl,

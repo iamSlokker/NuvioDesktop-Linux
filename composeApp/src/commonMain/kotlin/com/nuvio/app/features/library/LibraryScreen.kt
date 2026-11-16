@@ -10,7 +10,6 @@ import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.focusable
 import androidx.compose.foundation.horizontalScroll
@@ -95,6 +94,8 @@ import com.nuvio.app.core.ui.NuvioScreen
 import com.nuvio.app.core.ui.NuvioNetworkOfflineCard
 import com.nuvio.app.core.ui.NuvioScreenHeader
 import com.nuvio.app.core.ui.NuvioViewAllPillSize
+import com.nuvio.app.core.ui.RootNavFocus
+import com.nuvio.app.core.ui.NuvioShelfItemSlot
 import com.nuvio.app.core.ui.NuvioShelfSection
 import com.nuvio.app.core.ui.nuvio
 import com.nuvio.app.core.ui.nuvioConsumePointerEvents
@@ -308,6 +309,12 @@ fun LibraryScreen(
                                 true
                             }
                             Key.DirectionUp -> {
+                                // fork:linux-keyboard-nav - nothing above the first row: the bar
+                                // across the top of the screen is, as the sidebar is left of the
+                                // first card.
+                                if (focusedRowIndex <= 0 && RootNavFocus.enterTopBar()) {
+                                    return@onPreviewKeyEvent true
+                                }
                                 focusedRowIndex = (focusedRowIndex - 1).coerceAtLeast(0)
                                 if (displaySettings.layoutMode != LibraryLayoutMode.GRID) focusedItemIndex = 0
                                 coroutineScope.launch {
@@ -548,20 +555,18 @@ private fun LazyListScope.libraryGridContent(
             verticalAlignment = Alignment.Top,
         ) {
             row.forEachIndexed { itemIndex, entry ->
-                val focused = isDesktop && rowIndex == focusedRowIndex && itemIndex == focusedItemIndex
-                HomePosterCard(
-                    item = entry.item.toMetaPreview(),
-                    modifier = Modifier.weight(1f).then(
-                        if (focused) Modifier.border(
-                            width = 2.dp,
-                            color = MaterialTheme.colorScheme.primary,
-                            shape = RoundedCornerShape(14.dp),
-                        ) else Modifier,
-                    ),
-                    isWatched = WatchingState.isPosterWatched(watchedKeys, entry.item.toMetaPreview()),
-                    onClick = onPosterClick?.let { { it(entry.item) } },
-                    onLongClick = onPosterLongClick?.let { { it(entry.item, entry.section) } },
-                )
+                NuvioShelfItemSlot(
+                    focused = isDesktop && rowIndex == focusedRowIndex && itemIndex == focusedItemIndex,
+                    modifier = Modifier.weight(1f),
+                ) {
+                    HomePosterCard(
+                        item = entry.item.toMetaPreview(),
+                        modifier = Modifier.fillMaxWidth(),
+                        isWatched = WatchingState.isPosterWatched(watchedKeys, entry.item.toMetaPreview()),
+                        onClick = onPosterClick?.let { { it(entry.item) } },
+                        onLongClick = onPosterLongClick?.let { { it(entry.item, entry.section) } },
+                    )
+                }
             }
             repeat(columns - row.size) { Spacer(Modifier.weight(1f)) }
         }

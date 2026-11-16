@@ -20,6 +20,7 @@ import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -92,11 +93,16 @@ import com.nuvio.app.core.network.NetworkStatusRepository
 import com.nuvio.app.core.ui.HeroAmbientBackdrop
 import com.nuvio.app.core.ui.LocalNuvioBottomNavigationOverlayPadding
 import com.nuvio.app.core.ui.NuvioAsyncImage
+import com.nuvio.app.core.ui.NuvioTokens
 import com.nuvio.app.core.ui.NuvioInputField
+import com.nuvio.app.core.ui.LocalNuvioViewportDensity
 import com.nuvio.app.core.ui.NuvioScreen
 import com.nuvio.app.core.ui.NuvioDesktopVerticalScrollbar
 import com.nuvio.app.core.ui.NuvioNetworkOfflineCard
 import com.nuvio.app.core.ui.RecompositionProbe
+import com.nuvio.app.core.ui.RootNavFocus
+import com.nuvio.app.core.ui.shouldEnterSidebarOnDismiss
+import com.nuvio.app.core.ui.leftLeavesRowForSidebar
 import com.nuvio.app.core.ui.frameBudgetProbe
 import com.nuvio.app.core.ui.frameBudgetProbesEnabled
 import com.nuvio.app.core.ui.frameBudgetSetContext
@@ -154,6 +160,14 @@ import com.nuvio.app.features.details.seriesPrimaryAction
 import com.nuvio.app.features.streams.CwStreamCache
 import com.nuvio.app.features.streams.StreamPrefetchService
 import com.nuvio.app.features.home.components.ImmersiveRowDirection
+import com.nuvio.app.features.home.components.HomeTvStackedMetrics
+import com.nuvio.app.features.home.components.stackedRowListFrame
+import com.nuvio.app.features.home.components.continueWatchingHeroFollowsFocus
+import com.nuvio.app.features.home.components.escapeClosesContinueWatchingHero
+import com.nuvio.app.features.home.components.homeTvStackedMetrics
+import com.nuvio.app.features.home.components.homeTvStackedNextRow
+import com.nuvio.app.features.home.components.LocalHomeTvStackedContinueWatchingCardWidth
+import com.nuvio.app.features.home.components.homeTvStackedContinueWatchingCardWidth
 import com.nuvio.app.features.home.components.immersiveRowBodyEnter
 import com.nuvio.app.features.home.components.immersiveRowBodyExit
 import com.nuvio.app.features.home.components.immersiveRowFadeBounds
@@ -173,6 +187,7 @@ import com.nuvio.app.features.home.components.HomeHeroPeoplePanelToggleTrigger
 import com.nuvio.app.features.player.PlayerSettingsRepository
 import com.nuvio.app.features.player.AppShortcutAction
 import com.nuvio.app.features.player.appShortcutMatches
+import com.nuvio.app.features.player.playerEscWindowedFirstState
 import com.nuvio.app.features.home.components.HomeHeroTrailerManualTrigger
 import com.nuvio.app.features.home.components.HomeTvKey
 import com.nuvio.app.features.home.components.HomeTvKeyboardBridge
@@ -256,6 +271,8 @@ import com.nuvio.app.features.trakt.TraktEpisodeMappingService
 import com.nuvio.app.features.home.components.ContinueWatchingLayout
 import com.nuvio.app.features.home.components.continueWatchingLandscapeCardHeight
 import com.nuvio.app.features.home.components.homeSectionHorizontalPaddingForWidth
+import com.nuvio.app.features.settings.DesktopNavigationLayout
+import com.nuvio.app.features.settings.ThemeSettingsRepository
 import com.nuvio.app.features.home.components.rememberContinueWatchingLayout
 import kotlinx.coroutines.CancellationException
 import nuvio.composeapp.generated.resources.*
@@ -2241,7 +2258,20 @@ fun HomeScreen(
     // into it and the shelf scrim easing off instead of ending on black.
     val tvAmbientBackgroundEnabled =
         tvModeEnabled && homeSettingsUiState.tvAmbientBackgroundEnabled
+    // Either mode's wash is the surface behind the hero and rows: the page layer must not paint
+    // the opaque background over it.
+    val ambientBackgroundEnabled = heroAmbientBackgroundEnabled || tvAmbientBackgroundEnabled
     val heroFocusable = showHeroSlot
+    // The floating top bar leaves the page edge flush with the window. A small left cushion keeps
+    // the hero text and the rows from touching it, without the old sidebar-sized inset.
+    val desktopNavigationLayout by remember {
+        com.nuvio.app.features.settings.ThemeSettingsRepository.desktopNavigationLayout
+    }.collectAsStateWithLifecycle()
+    // Linux TV Mode: hero on top with the catalog rows stacked below, instead of one shelf.
+    // Home, Discover and Library share this geometry so their media rows stay the same size and
+    // position; Search and catalog screens keep their immersive shelf.
+    val tvStackedRowsEnabled = tvModeEnabled && platformOffersStackedTvRows &&
+        displayMode.usesTvStackedRows()
     // Frame-budget reporting. The label carries both axes that change what a browsing frame costs:
     // the tab (Home/Search/Library/Discover render different row sets) and the display mode, which
     // is the thing under investigation. Reporting is gated on scrolling — an idle home screen is
@@ -2403,11 +2433,18 @@ fun HomeScreen(
     // two-catalog hero. The dismissal is session-scoped state owned by the app root (so it survives
     // leaving Home) and is only cleared when playback starts or the session ends. Adaptive modes
     // need no dismiss: moving the mouse off the card reverts the hero on its own.
-    val continueWatchingHeroFollowActive = !(tvModeEnabled && continueWatchingHeroDismissed)
+    val continueWatchingHeroFollowActive = continueWatchingHeroFollowsFocus(
+        tvModeEnabled = tvModeEnabled,
+        stackedRowsEnabled = tvStackedRowsEnabled,
+        dismissed = continueWatchingHeroDismissed,
+    )
     // Mirrors "a CW resume hero is currently focused" for the keyboard Dismiss/Escape handler, which
     // is declared before the focus is resolved. Written from a SideEffect so it always reflects the
     // latest composition without triggering one.
     val continueWatchingHeroFocused = remember { mutableStateOf(false) }
+    // The CW item behind that hero, for the same reason: the Select handler is declared above where
+    // the focused item is resolved, so it reads this, written from the SideEffect below.
+    val continueWatchingHeroItem = remember { mutableStateOf<ContinueWatchingItem?>(null) }
     // The poster the pointer (or TV focus) is on, for the same reason and by the same trick: the
     // T handler is declared above where the focused item is resolved. Only Basic reads it — the
     // other modes' heroes already show the focused item, so their trailer needs no target.
@@ -2729,9 +2766,10 @@ fun HomeScreen(
             // rowSections; if it drops out here, tvRows goes empty and TV mode falls back to the
             // plain list, which is how switching to TV mode on an empty catalog blanked the tab.
             if (displayMode !is HomeContentMode.Normal) {
+                // Placeholder rows are drawn as skeletons but are not focusable TV rows: including
+                // them here would shift every later row index and desynchronise the dot strip.
                 effectiveSections.filter {
-                    it.items.isNotEmpty() || it.key == DISCOVER_BROWSER_ROW_KEY || it.key == LIBRARY_FILTER_EMPTY_ROW_KEY ||
-                        it.key.startsWith(DISCOVER_PLACEHOLDER_KEY_PREFIX)
+                    it.items.isNotEmpty() || it.key == DISCOVER_BROWSER_ROW_KEY || it.key == LIBRARY_FILTER_EMPTY_ROW_KEY
                 }.forEach { section ->
                     val usesInfiniteScroll = section.usesInfiniteHomeRow(catalogSeeMoreEnabled)
                     val entries = if (usesInfiniteScroll) {
@@ -2894,6 +2932,9 @@ fun HomeScreen(
         tvFocus.sectionIndex = target + if (heroFocusable) 1 else 0
         tvFocus.itemIndex = tvFocus.itemIndex
             .coerceIn(0, (tvItemCountForSection(tvFocus.sectionIndex) - 1).coerceAtLeast(0))
+        // The stacked rows are one scrolling list, unlike the immersive shelf: a dot jump must
+        // bring the destination row into view as well as move focus to it.
+        if (tvStackedRowsEnabled) scrollToFocusedTvSection()
     }
 
     /**
@@ -2915,6 +2956,27 @@ fun HomeScreen(
             .coerceIn(0, (tvItemCountForSection(tvFocus.sectionIndex) - 1).coerceAtLeast(0))
     }
 
+    /** Stacked TV rows: steps to the next non-empty row and writes it back to both focus stores. */
+    fun stepStackedTvRow(delta: Int) {
+        val next = homeTvStackedNextRow(getImmersiveRowIndex(), delta, tvRows.map { it.itemCount })
+        setImmersiveRowIndex(next)
+        tvFocus.sectionIndex = next + if (heroFocusable) 1 else 0
+    }
+
+    // fork:linux-keyboard-nav - true when Up cannot take the focus any higher. The bar across the top
+    // of the screen sits above the first row the way the sidebar sits left of the first card, so such
+    // a key belongs to that bar rather than to a page that clamps it.
+    fun homeTvUpMovesNowhere(): Boolean = when {
+        tvStackedRowsEnabled ->
+            homeTvStackedNextRow(getImmersiveRowIndex(), -1, tvRows.map { it.itemCount }) ==
+                getImmersiveRowIndex()
+        tvModeEnabled -> getImmersiveRowIndex() <= 0
+        else -> tvFocus.sectionIndex <= 0
+    }
+
+    /** fork:linux-keyboard-nav - hands Up at the top row to the bar above the page; false when none is drawn. */
+    fun homeTvUpEntersTopBar(): Boolean = homeTvUpMovesNowhere() && RootNavFocus.enterTopBar()
+
     fun handleHomeTvKey(key: HomeTvKey): Boolean {
         // Snapshotted before syncImmersiveTvFocusSection() below so navigation keys pick up
         // wherever the row shelf/mouse actually left focus (including mouse-wheel or hover
@@ -2926,7 +2988,9 @@ fun HomeScreen(
         HomeTvKey.Down -> {
             mouseActivity.onKeyboardNavigation(ignoreNextMouseMove = leavingNativeTrailer)
             withCarriedTvItemIndex {
-                if (tvModeEnabled) {
+                if (tvStackedRowsEnabled) {
+                    stepStackedTvRow(1)
+                } else if (tvModeEnabled) {
                     setImmersiveRowIndex((getImmersiveRowIndex() + 1)
                         .coerceAtMost((tvRows.size - 1).coerceAtLeast(0)))
                     tvFocus.sectionIndex = getImmersiveRowIndex() + if (heroFocusable) 1 else 0
@@ -2934,20 +2998,22 @@ fun HomeScreen(
                     tvFocus.moveSection(1, tvSectionCount)
                 }
             }
-            if (!tvModeEnabled) scrollToFocusedTvSection()
+            if (!tvModeEnabled || tvStackedRowsEnabled) scrollToFocusedTvSection()
             true
         }
         HomeTvKey.Up -> {
             mouseActivity.onKeyboardNavigation(ignoreNextMouseMove = leavingNativeTrailer)
             withCarriedTvItemIndex {
-                if (tvModeEnabled) {
+                if (tvStackedRowsEnabled) {
+                    stepStackedTvRow(-1)
+                } else if (tvModeEnabled) {
                     setImmersiveRowIndex((getImmersiveRowIndex() - 1).coerceAtLeast(0))
                     tvFocus.sectionIndex = getImmersiveRowIndex() + if (heroFocusable) 1 else 0
                 } else {
                     tvFocus.moveSection(-1, tvSectionCount)
                 }
             }
-            if (!tvModeEnabled) scrollToFocusedTvSection()
+            if (!tvModeEnabled || tvStackedRowsEnabled) scrollToFocusedTvSection()
             true
         }
         HomeTvKey.PageDown, HomeTvKey.PageUp -> {
@@ -2988,7 +3054,7 @@ fun HomeScreen(
             // Both ends land on the first item of the row: carrying a deep column position into
             // a jump to the top reads as landing somewhere arbitrary.
             tvFocus.itemIndex = 0
-            if (!tvModeEnabled) scrollToFocusedTvSection()
+            if (!tvModeEnabled || tvStackedRowsEnabled) scrollToFocusedTvSection()
             true
         }
         HomeTvKey.Right -> {
@@ -3009,16 +3075,30 @@ fun HomeScreen(
         }
         HomeTvKey.Left -> {
             mouseActivity.onKeyboardNavigation(ignoreNextMouseMove = leavingNativeTrailer)
+            // At the first card Left hands focus to the sidebar, as the keyboard path below does.
+            // moveItem alone clamps at zero, so the key would be swallowed and the sidebar never
+            // reached. A no-op wherever no desktop sidebar is shown: enterSidebar() is refused while
+            // RootNavFocus.sidebarAvailable is false.
+            if (leftLeavesRowForSidebar(tvFocus.itemIndex) && RootNavFocus.enterSidebar()) return true
             tvFocus.moveItem(-1, tvItemCountForSection(tvFocus.sectionIndex))
             true
         }
         HomeTvKey.Select -> {
-            if (resumeHeroPreview != null && onResumePromptAction != null) {
-                onResumePromptAction()
-            } else if (heroFocusable && tvFocus.sectionIndex == 0) {
-                effectiveHeroItems.getOrNull(tvFocus.itemIndex)?.let { posterClickHandler?.invoke(it) }
-            } else {
-                tvRows.getOrNull(tvRowIndexForSection(tvFocus.sectionIndex))
+            when (
+                homeTvSelectTarget(
+                    resumePromptOpen = resumeHeroPreview != null && onResumePromptAction != null,
+                    continueWatchingHeroFocused = tvModeEnabled && continueWatchingHeroFocused.value,
+                    heroFocusable = heroFocusable,
+                    onHeroSection = tvFocus.sectionIndex == 0,
+                )
+            ) {
+                HomeTvSelectTarget.ResumePrompt -> onResumePromptAction?.invoke()
+                HomeTvSelectTarget.ContinueWatchingHero -> continueWatchingHeroItem.value?.let {
+                    (onContinueWatchingPlay ?: onContinueWatchingClick)?.invoke(it)
+                }
+                HomeTvSelectTarget.CatalogHero ->
+                    effectiveHeroItems.getOrNull(tvFocus.itemIndex)?.let { posterClickHandler?.invoke(it) }
+                HomeTvSelectTarget.Row -> tvRows.getOrNull(tvRowIndexForSection(tvFocus.sectionIndex))
                     ?.onEnter
                     ?.invoke(tvFocus.itemIndex)
             }
@@ -3078,7 +3158,12 @@ fun HomeScreen(
             } else if (heroTrailerShowing) {
                 HomeHeroTrailerManualTrigger.trigger()
                 true
-            } else if (tvModeEnabled && continueWatchingHeroFocused.value) {
+            } else if (escapeClosesContinueWatchingHero(
+                    tvModeEnabled = tvModeEnabled,
+                    stackedRowsEnabled = tvStackedRowsEnabled,
+                    heroFocused = continueWatchingHeroFocused.value,
+                )
+            ) {
                 // Escape closes the continue-watching resume hero (its only keyboard exit) and
                 // reverts to the catalog hero for the rest of the session.
                 onContinueWatchingHeroDismiss()
@@ -3089,7 +3174,19 @@ fun HomeScreen(
             } else if (contentMode is HomeContentMode.Catalogs && onBack != null) {
                 onBack()
                 true
-            } else false
+            } else {
+                // Nothing left to close on Home: hand focus to the sidebar, like Left at item 0.
+                // fork:linux-keyboard-nav - with the sidebar off, the bar drawn across the top is the
+                // page's edge instead. The sidebar still wins wherever it is drawn.
+                shouldEnterSidebarOnDismiss(
+                    isHomeSelected = contentMode is HomeContentMode.Normal,
+                    dismissHandled = false,
+                    // Either bar counts as somewhere to go: with the sidebar off, the gate must not
+                    // short-circuit the floating top bar it was meant to reach.
+                    sidebarAvailable = RootNavFocus.sidebarAvailable || RootNavFocus.topBarAvailable,
+                    escWindowedFirst = playerEscWindowedFirstState().value,
+                ) && (RootNavFocus.enterSidebar() || RootNavFocus.enterFloatingTopBar())
+            }
         }
         HomeTvKey.Search -> {
             onNavigateToSearch?.invoke()
@@ -3171,9 +3268,9 @@ fun HomeScreen(
                 // Search / Library / Discover: one immersive row per effective section. Same
                 // empty-row exemption as tvRows — these two lists are index-aligned, so a section
                 // present in one and absent from the other desynchronises the row-jump dots.
+                // Skeleton placeholders are excluded for the same reason.
                 effectiveSections.filter {
-                    it.items.isNotEmpty() || it.key == DISCOVER_BROWSER_ROW_KEY || it.key == LIBRARY_FILTER_EMPTY_ROW_KEY ||
-                        it.key.startsWith(DISCOVER_PLACEHOLDER_KEY_PREFIX)
+                    it.items.isNotEmpty() || it.key == DISCOVER_BROWSER_ROW_KEY || it.key == LIBRARY_FILTER_EMPTY_ROW_KEY
                 }.forEach { section ->
                     add(HomeCatalogSettingsItem(
                         key = section.key,
@@ -3602,6 +3699,7 @@ fun HomeScreen(
     // currently the focused hero — only then should Escape close it (TV Mode only).
     SideEffect {
         continueWatchingHeroFocused.value = focusedContinueWatchingItem != null
+        continueWatchingHeroItem.value = focusedContinueWatchingItem
     }
 
     // Search ahead for the focused Continue Watching / Up Next card, so pressing play on it skips
@@ -3830,7 +3928,7 @@ fun HomeScreen(
                             mouseActivity.onMouseMoved(event.changes.first().position)
                         }
                         .then(
-                            if (tvModeEnabled) {
+                            if (tvModeEnabled && !tvStackedRowsEnabled) {
                                 Modifier.onPointerEvent(PointerEventType.Scroll) { event ->
                                     // An open filter menu owns the wheel: without this the shelf
                                     // jumps to another row under the menu.
@@ -3920,6 +4018,11 @@ fun HomeScreen(
                                     }
                                     Key.DirectionUp -> {
                                         mouseActivity.onKeyboardNavigation()
+                                        // The strip sits above its row's cards, so Up from it
+                                        // normally steps to the row above. At the first row there
+                                        // is nothing above but the bar across the top of the
+                                        // screen, which this used to clamp against silently.
+                                        if (homeTvUpEntersTopBar()) return@onPreviewKeyEvent true
                                         requestHomeFocus()
                                         withCarriedTvItemIndex {
                                             if (tvModeEnabled) {
@@ -3981,7 +4084,9 @@ fun HomeScreen(
                                 Key.DirectionDown -> {
                                     mouseActivity.onKeyboardNavigation()
                                     withCarriedTvItemIndex {
-                                        if (tvModeEnabled) {
+                                        if (tvStackedRowsEnabled) {
+                                            stepStackedTvRow(1)
+                                        } else if (tvModeEnabled) {
                                             setImmersiveRowIndex((getImmersiveRowIndex() + 1)
                                                 .coerceAtMost((tvRows.size - 1).coerceAtLeast(0)))
                                             tvFocus.sectionIndex = getImmersiveRowIndex() + if (heroFocusable) 1 else 0
@@ -3989,26 +4094,31 @@ fun HomeScreen(
                                             tvFocus.moveSection(1, tvSectionCount)
                                         }
                                     }
-                                    if (!tvModeEnabled) scrollToFocusedTvSection()
+                                    if (!tvModeEnabled || tvStackedRowsEnabled) scrollToFocusedTvSection()
                                     true
                                 }
                                 Key.DirectionUp -> {
-                                    mouseActivity.onKeyboardNavigation()
                                     val onFilteredRow = tvRows.getOrNull(tvRowIndexForSection(tvFocus.sectionIndex))?.hasFilterStrip == true &&
                                         !(heroFocusable && tvFocus.sectionIndex == 0)
                                     if (onFilteredRow) {
                                         filterStripFocusRequester.requestFocusLogged()
                                         if (filterStripHasFocus) return@onPreviewKeyEvent true
                                     }
+                                    // Nothing above the top row: the bar across the top of the screen
+                                    // is, as the sidebar is left of the first card.
+                                    if (homeTvUpEntersTopBar()) return@onPreviewKeyEvent true
+                                    mouseActivity.onKeyboardNavigation()
                                     withCarriedTvItemIndex {
-                                        if (tvModeEnabled) {
+                                        if (tvStackedRowsEnabled) {
+                                            stepStackedTvRow(-1)
+                                        } else if (tvModeEnabled) {
                                             setImmersiveRowIndex((getImmersiveRowIndex() - 1).coerceAtLeast(0))
                                             tvFocus.sectionIndex = getImmersiveRowIndex() + if (heroFocusable) 1 else 0
                                         } else {
                                             tvFocus.moveSection(-1, tvSectionCount)
                                         }
                                     }
-                                    if (!tvModeEnabled) scrollToFocusedTvSection()
+                                    if (!tvModeEnabled || tvStackedRowsEnabled) scrollToFocusedTvSection()
                                     true
                                 }
                                 Key.PageDown -> handleHomeTvKey(HomeTvKey.PageDown)
@@ -4018,6 +4128,9 @@ fun HomeScreen(
                                 Key.DirectionRight -> handleHomeTvKey(HomeTvKey.Right)
                                 Key.DirectionLeft -> {
                                     mouseActivity.onKeyboardNavigation()
+                                    if (leftLeavesRowForSidebar(tvFocus.itemIndex) && RootNavFocus.enterSidebar()) {
+                                        return@onPreviewKeyEvent true
+                                    }
                                     tvFocus.moveItem(-1, tvItemCountForSection(tvFocus.sectionIndex))
                                     true
                                 }
@@ -4055,7 +4168,36 @@ fun HomeScreen(
             }
         }
 
-        val homeSectionPadding = homeSectionHorizontalPaddingForWidth(maxWidth.value)
+        val tvStackedMetrics: HomeTvStackedMetrics? = if (tvStackedRowsEnabled) {
+            homeTvStackedMetrics(
+                widthDp = maxWidth.value,
+                heightDp = maxHeight.value,
+                heroHeightMultiplier =
+                    com.nuvio.app.features.home.components.tvStackedHeroHeightMultiplier(
+                        homeSettingsUiState.adaptiveHeroHeightMultiplier,
+                    ),
+                // The user's GUI scale, read from the same density pair the viewport scaler sets.
+                guiScale = (LocalDensity.current.density / LocalNuvioViewportDensity.current.density)
+                    .takeIf { it.isFinite() && it > 0f } ?: 1f,
+            )
+        } else {
+            null
+        }
+        val stackedRowModifier = tvStackedMetrics?.let { Modifier.heightIn(min = it.rowPitchDp.dp) } ?: Modifier
+        // fork:linux-rows - the row band has to start at the same place on Home, Discover and
+        // Library. Their headers differ (a title with the larger view-all pill here, a filter bar
+        // there), so give every stacked row's header band the same height: the height the plain
+        // title header already takes, because of its pill.
+        val stackedShelfHeaderMinHeight = if (tvStackedRowsEnabled) {
+            NuvioTokens.Space.s40
+        } else {
+            null
+        }
+        val baseSectionPadding = tvStackedMetrics?.sidePaddingDp?.dp
+            ?: homeSectionHorizontalPaddingForWidth(maxWidth.value)
+        val topBarContentInset =
+            if (isDesktop && desktopNavigationLayout == DesktopNavigationLayout.TopBar) 16.dp else 0.dp
+        val homeSectionPadding = baseSectionPadding + topBarContentInset
         val discoverRowEmptyText = stringResource(Res.string.discover_row_empty)
         val discoverRowLoadingText = stringResource(Res.string.discover_row_loading)
         // Defined once and handed to both the plain list and the TV immersive shelf, which render
@@ -4158,7 +4300,7 @@ fun HomeScreen(
             immersiveCatalogPosterBaseWidthDp(
                 maxWidthDp = maxWidth.value,
                 shelfHeightDp = immersiveShelfHeight.value,
-                sectionPaddingDp = homeSectionPadding.value,
+                sectionPaddingDp = tvStackedMetrics?.cardInsetDp ?: homeSectionPadding.value,
                 hideLabels = true,
                 landscapeMode = immersiveLandscapeMode,
             )
@@ -4182,14 +4324,20 @@ fun HomeScreen(
         } else {
             null
         }
+        // Stacked TV rows reserve the same overlay space as the adaptive hero, at their own height.
+        val tvStackedHeroHeight: Dp? = tvStackedMetrics?.backdropHeightDp?.dp
+        val overlayHeroHeight: Dp? = adaptiveHeroLayout?.heroHeight ?: tvStackedHeroHeight
         val density = LocalDensity.current
-        val adaptiveHeroHeightPx = adaptiveHeroLayout?.let { layout ->
-            with(density) { layout.heroHeight.roundToPx() }
+        // Stacked TV rows: the rows layer starts one fade height above the row band, so the spacer and
+        // scroll clearance are measured from that line.
+        val tvStackedRowListOffset: Dp? = tvStackedMetrics?.rowBandFadeDp?.dp
+        val adaptiveHeroHeightPx = (tvStackedRowListOffset ?: overlayHeroHeight)?.let { height ->
+            with(density) { height.roundToPx() }
         } ?: 0
         SideEffect {
             adaptiveHeroScrollClearancePx = adaptiveHeroHeightPx
         }
-        val leadingOverlaySpacerHeight = adaptiveHeroLayout?.heroHeight ?: defaultChromeSpacerHeight
+        val leadingOverlaySpacerHeight = tvStackedRowListOffset ?: overlayHeroHeight ?: defaultChromeSpacerHeight
         // Basic (desktop): the hero pages on its own and never follows focus, so it takes
         // upstream's taller hero.
         val pagedHomeHero = isDesktop && !heroFollowsFocusedItem
@@ -4210,7 +4358,11 @@ fun HomeScreen(
                     modifier = Modifier.frameBudgetProbe("hero"),
                     viewportHeight = maxHeight,
                     mobileBelowSectionHeightHint = mobileHeroBelowSectionHeightHint,
-                    sectionPadding = if (isDesktop && !tvModeEnabled) homeSectionPadding else null,
+                    sectionPadding = if (isDesktop && !tvModeEnabled) {
+                        homeSectionPadding
+                    } else {
+                        (tvStackedMetrics?.heroTextLeftDp?.dp ?: baseSectionPadding) + topBarContentInset
+                    },
                     listState = heroListState,
                     // A launch-time resume prompt owns the hero until it is resumed or dismissed;
                     // don't let TV/adaptive row focus immediately replace it with another title.
@@ -4219,8 +4371,8 @@ fun HomeScreen(
                     // Fill the viewport for a full-screen trailer (TV Mode already does this);
                     // pairs with the expanded hero container in the Adaptive Hero branch.
                     heightOverride = when {
-                        tvModeEnabled || heroTrailerFullscreenActive -> maxHeight
-                        adaptiveHeroLayout != null -> adaptiveHeroLayout.heroHeight
+                        (tvModeEnabled && !tvStackedRowsEnabled) || heroTrailerFullscreenActive -> maxHeight
+                        overlayHeroHeight != null -> overlayHeroHeight
                         else -> basicHeroHeight
                     },
                     roundedBottomCorners =
@@ -4234,7 +4386,9 @@ fun HomeScreen(
                     // Adaptive's hero overlays the scrolling rows, so it can't be see-through: it
                     // carries its own copy of the wash instead. Basic's hero scrolls with the
                     // rows, with only the wash behind it.
-                    ambientUnderlay = if (heroAmbientBackgroundEnabled && adaptiveHeroLayout != null) {
+                    ambientUnderlay = if (
+                        (heroAmbientBackgroundEnabled && !tvModeEnabled) || tvAmbientBackgroundEnabled
+                    ) {
                         {
                             HeroAmbientBackdrop(
                                 backdrop = activeHeroBackdrop,
@@ -4256,7 +4410,9 @@ fun HomeScreen(
                     heroBadgePlacement = homeSettingsUiState.heroBadgePlacement,
                     heroReleaseStatusUnavailableOnly = homeSettingsUiState.heroReleaseStatusUnavailableOnly,
                     trailersEnabledInCurrentMode = trailersEnabledForCurrentMode,
-                    immersiveContentBottomPadding = immersiveShelfHeight - 20.dp,
+                    immersiveContentBottomPadding = tvStackedMetrics?.contentBottomPaddingDp?.dp
+                        ?: (immersiveShelfHeight - 20.dp),
+                    tvStackedMetrics = tvStackedMetrics,
                     resumePromptItemKey = effectiveResumeItemKey,
                     resumePromptLabel = resumePromptLabel,
                     onResumePromptAction = effectiveOnResumeAction,
@@ -4314,11 +4470,13 @@ fun HomeScreen(
                     if (isShowingHomeContent && continueWatchingPreferences.isVisible && continueWatchingRowItems.isNotEmpty()) {
                         item(key = HOME_CONTINUE_WATCHING_SECTION_KEY) {
                             HomeContinueWatchingSection(
+                                headerTrailingContent = tvRowDotsContent,
+                                headerMinHeight = stackedShelfHeaderMinHeight,
                                 items = continueWatchingRowItems,
                                 style = continueWatchingPreferences.style,
                                 useEpisodeThumbnails = continueWatchingPreferences.useEpisodeThumbnails,
                                 blurNextUp = continueWatchingPreferences.blurNextUp,
-                                modifier = Modifier.padding(bottom = 12.dp),
+                                modifier = stackedRowModifier,
                                 sectionPadding = homeSectionPadding,
                                 layout = continueWatchingLayout,
                                 rowState = continueWatchingRowState,
@@ -4331,12 +4489,14 @@ fun HomeScreen(
                     if (isShowingHomeContent && continueWatchingPreferences.isVisible && nextUpRowItems.isNotEmpty()) {
                         item(key = HOME_NEXT_UP_SECTION_KEY) {
                             HomeContinueWatchingSection(
+                                headerTrailingContent = tvRowDotsContent,
+                                headerMinHeight = stackedShelfHeaderMinHeight,
                                 items = nextUpRowItems,
                                 title = nextUpRowTitle,
                                 style = continueWatchingPreferences.style,
                                 useEpisodeThumbnails = continueWatchingPreferences.useEpisodeThumbnails,
                                 blurNextUp = continueWatchingPreferences.blurNextUp,
-                                modifier = Modifier.padding(bottom = 12.dp),
+                                modifier = stackedRowModifier,
                                 sectionPadding = homeSectionPadding,
                                 layout = continueWatchingLayout,
                                 rowState = nextUpRowState,
@@ -4349,12 +4509,14 @@ fun HomeScreen(
                     if (isShowingHomeContent && continueWatchingPreferences.isVisible && upcomingRowItems.isNotEmpty()) {
                         item(key = HOME_UPCOMING_SECTION_KEY) {
                             HomeContinueWatchingSection(
+                                headerTrailingContent = tvRowDotsContent,
+                                headerMinHeight = stackedShelfHeaderMinHeight,
                                 items = upcomingRowItems,
                                 title = upcomingRowTitle,
                                 style = continueWatchingPreferences.style,
                                 useEpisodeThumbnails = continueWatchingPreferences.useEpisodeThumbnails,
                                 blurNextUp = continueWatchingPreferences.blurNextUp,
-                                modifier = Modifier.padding(bottom = 12.dp),
+                                modifier = stackedRowModifier,
                                 sectionPadding = homeSectionPadding,
                                 layout = continueWatchingLayout,
                                 rowState = upcomingRowState,
@@ -4377,11 +4539,13 @@ fun HomeScreen(
                     if (isShowingHomeContent && continueWatchingPreferences.isVisible && continueWatchingRowItems.isNotEmpty()) {
                         item(key = HOME_CONTINUE_WATCHING_SECTION_KEY) {
                             HomeContinueWatchingSection(
+                                headerTrailingContent = tvRowDotsContent,
+                                headerMinHeight = stackedShelfHeaderMinHeight,
                                 items = continueWatchingRowItems,
                                 style = continueWatchingPreferences.style,
                                 useEpisodeThumbnails = continueWatchingPreferences.useEpisodeThumbnails,
                                 blurNextUp = continueWatchingPreferences.blurNextUp,
-                                modifier = Modifier.padding(bottom = 12.dp),
+                                modifier = stackedRowModifier,
                                 sectionPadding = homeSectionPadding,
                                 layout = continueWatchingLayout,
                                 rowState = continueWatchingRowState,
@@ -4394,12 +4558,14 @@ fun HomeScreen(
                     if (isShowingHomeContent && continueWatchingPreferences.isVisible && nextUpRowItems.isNotEmpty()) {
                         item(key = HOME_NEXT_UP_SECTION_KEY) {
                             HomeContinueWatchingSection(
+                                headerTrailingContent = tvRowDotsContent,
+                                headerMinHeight = stackedShelfHeaderMinHeight,
                                 items = nextUpRowItems,
                                 title = nextUpRowTitle,
                                 style = continueWatchingPreferences.style,
                                 useEpisodeThumbnails = continueWatchingPreferences.useEpisodeThumbnails,
                                 blurNextUp = continueWatchingPreferences.blurNextUp,
-                                modifier = Modifier.padding(bottom = 12.dp),
+                                modifier = stackedRowModifier,
                                 sectionPadding = homeSectionPadding,
                                 layout = continueWatchingLayout,
                                 rowState = nextUpRowState,
@@ -4412,12 +4578,14 @@ fun HomeScreen(
                     if (isShowingHomeContent && continueWatchingPreferences.isVisible && upcomingRowItems.isNotEmpty()) {
                         item(key = HOME_UPCOMING_SECTION_KEY) {
                             HomeContinueWatchingSection(
+                                headerTrailingContent = tvRowDotsContent,
+                                headerMinHeight = stackedShelfHeaderMinHeight,
                                 items = upcomingRowItems,
                                 title = upcomingRowTitle,
                                 style = continueWatchingPreferences.style,
                                 useEpisodeThumbnails = continueWatchingPreferences.useEpisodeThumbnails,
                                 blurNextUp = continueWatchingPreferences.blurNextUp,
-                                modifier = Modifier.padding(bottom = 12.dp),
+                                modifier = stackedRowModifier,
                                 sectionPadding = homeSectionPadding,
                                 layout = continueWatchingLayout,
                                 rowState = upcomingRowState,
@@ -4511,15 +4679,17 @@ fun HomeScreen(
                         val sectionIndex = if (heroFocusable) rowIndex + 1 else rowIndex
                         item(key = HOME_CONTINUE_WATCHING_SECTION_KEY) {
                             HomeContinueWatchingSection(
+                                headerTrailingContent = tvRowDotsContent,
+                                headerMinHeight = stackedShelfHeaderMinHeight,
                                 items = continueWatchingRowItems,
                                 style = continueWatchingPreferences.style,
                                 useEpisodeThumbnails = continueWatchingPreferences.useEpisodeThumbnails,
                                 blurNextUp = continueWatchingPreferences.blurNextUp,
-                                modifier = Modifier.padding(bottom = 12.dp),
+                                modifier = stackedRowModifier,
                                 sectionPadding = homeSectionPadding,
                                 layout = continueWatchingLayout,
                                 rowState = continueWatchingRowState,
-                                focusedItemIndex = if (tvFocusedRowIndex == rowIndex) tvFocus.itemIndex else null,
+                                focusedItemIndex = if (homeRootHasFocus && tvFocusedRowIndex == rowIndex) tvFocus.itemIndex else null,
                                 isKeyboardNavigation = !mouseActivity.isMouseActive,
                                 onHoverItem = if (isDesktop) {
                                     { itemIndex ->
@@ -4543,16 +4713,18 @@ fun HomeScreen(
                         val sectionIndex = if (heroFocusable) rowIndex + 1 else rowIndex
                         item(key = HOME_NEXT_UP_SECTION_KEY) {
                             HomeContinueWatchingSection(
+                                headerTrailingContent = tvRowDotsContent,
+                                headerMinHeight = stackedShelfHeaderMinHeight,
                                 items = nextUpRowItems,
                                 title = nextUpRowTitle,
                                 style = continueWatchingPreferences.style,
                                 useEpisodeThumbnails = continueWatchingPreferences.useEpisodeThumbnails,
                                 blurNextUp = continueWatchingPreferences.blurNextUp,
-                                modifier = Modifier.padding(bottom = 12.dp),
+                                modifier = stackedRowModifier,
                                 sectionPadding = homeSectionPadding,
                                 layout = continueWatchingLayout,
                                 rowState = nextUpRowState,
-                                focusedItemIndex = if (tvFocusedRowIndex == rowIndex) tvFocus.itemIndex else null,
+                                focusedItemIndex = if (homeRootHasFocus && tvFocusedRowIndex == rowIndex) tvFocus.itemIndex else null,
                                 isKeyboardNavigation = !mouseActivity.isMouseActive,
                                 onHoverItem = if (isDesktop) {
                                     { itemIndex ->
@@ -4576,16 +4748,18 @@ fun HomeScreen(
                         val sectionIndex = if (heroFocusable) rowIndex + 1 else rowIndex
                         item(key = HOME_UPCOMING_SECTION_KEY) {
                             HomeContinueWatchingSection(
+                                headerTrailingContent = tvRowDotsContent,
+                                headerMinHeight = stackedShelfHeaderMinHeight,
                                 items = upcomingRowItems,
                                 title = upcomingRowTitle,
                                 style = continueWatchingPreferences.style,
                                 useEpisodeThumbnails = continueWatchingPreferences.useEpisodeThumbnails,
                                 blurNextUp = continueWatchingPreferences.blurNextUp,
-                                modifier = Modifier.padding(bottom = 12.dp),
+                                modifier = stackedRowModifier,
                                 sectionPadding = homeSectionPadding,
                                 layout = continueWatchingLayout,
                                 rowState = upcomingRowState,
-                                focusedItemIndex = if (tvFocusedRowIndex == rowIndex) tvFocus.itemIndex else null,
+                                focusedItemIndex = if (homeRootHasFocus && tvFocusedRowIndex == rowIndex) tvFocus.itemIndex else null,
                                 isKeyboardNavigation = !mouseActivity.isMouseActive,
                                 onHoverItem = if (isDesktop) {
                                     { itemIndex ->
@@ -4630,11 +4804,13 @@ fun HomeScreen(
                                 val sectionIndex = if (heroFocusable) rowIndex + 1 else rowIndex
                                 item(key = settingsItem.key) {
                                     HomeCollectionRowSection(
+                                        headerTrailingContent = tvRowDotsContent,
+                                        headerMinHeight = stackedShelfHeaderMinHeight,
                                         collection = collection,
-                                        modifier = Modifier.padding(bottom = 12.dp),
+                                        modifier = stackedRowModifier,
                                         sectionPadding = homeSectionPadding,
                                         animateGifs = animateCollectionGifs,
-                                        focusedItemIndex = if (tvFocusedRowIndex == rowIndex) tvFocus.itemIndex else null,
+                                        focusedItemIndex = if (homeRootHasFocus && tvFocusedRowIndex == rowIndex) tvFocus.itemIndex else null,
                                         isKeyboardNavigation = !mouseActivity.isMouseActive,
                                         rowNumber = catalogRowNumbers[settingsItem.key],
                                         onHoverItem = if (isDesktop) {
@@ -4666,6 +4842,8 @@ fun HomeScreen(
                                 val shuffledItems = section.shuffled(shuffleOrder)
                                 item(key = settingsItem.key) {
                                     HomeCatalogRowSection(
+                                        headerTrailingContent = tvRowDotsContent,
+                                        headerMinHeight = stackedShelfHeaderMinHeight,
                                         section = section,
                                         entries = if (usesInfiniteScroll) {
                                             shuffledItems
@@ -4676,9 +4854,9 @@ fun HomeScreen(
                                         isShuffling = section.key in rowShufflingKeys,
                                         shuffleGeneration = shuffleOrder?.generation ?: 0,
                                         resetScrollKey = rowResetScrollKey,
-                                        modifier = Modifier.padding(bottom = 12.dp),
+                                        modifier = stackedRowModifier,
                                         sectionPadding = homeSectionPadding,
-                                        focusedItemIndex = if (tvFocusedRowIndex == rowIndex) tvFocus.itemIndex else null,
+                                        focusedItemIndex = if (homeRootHasFocus && tvFocusedRowIndex == rowIndex) tvFocus.itemIndex else null,
                                         isKeyboardNavigation = !mouseActivity.isMouseActive,
                                         onHoverItem = if (isDesktop) {
                                             { itemIndex ->
@@ -4725,7 +4903,7 @@ fun HomeScreen(
                             if (section.key.startsWith(DISCOVER_PLACEHOLDER_KEY_PREFIX)) {
                                 item(key = section.key) {
                                     HomeSkeletonRow(
-                                        modifier = Modifier.padding(bottom = 12.dp),
+                                        modifier = stackedRowModifier,
                                     )
                                 }
                                 return@forEach
@@ -4736,6 +4914,8 @@ fun HomeScreen(
                             val isDiscoverBrowserRow = section.key == DISCOVER_BROWSER_ROW_KEY
                             item(key = section.key) {
                                 HomeCatalogRowSection(
+                                    headerTrailingContent = tvRowDotsContent,
+                                    headerMinHeight = stackedShelfHeaderMinHeight,
                                     section = section,
                                     entries = if (usesInfiniteScroll) {
                                         section.items
@@ -4746,9 +4926,9 @@ fun HomeScreen(
                                             pendingEnrichmentKeys = landscapePendingEnrichmentKeys,
                                         )
                                     },
-                                    modifier = Modifier.padding(bottom = 12.dp),
+                                    modifier = stackedRowModifier,
                                     sectionPadding = homeSectionPadding,
-                                    focusedItemIndex = if (tvFocusedRowIndex == rowIndex) tvFocus.itemIndex else null,
+                                    focusedItemIndex = if (homeRootHasFocus && tvFocusedRowIndex == rowIndex) tvFocus.itemIndex else null,
                                     isKeyboardNavigation = !mouseActivity.isMouseActive,
                                     onHoverItem = if (isDesktop) {
                                         { itemIndex ->
@@ -4783,6 +4963,7 @@ fun HomeScreen(
                                     onPosterClick = posterClickHandler,
                                     onPosterLongClick = onPosterLongClick,
                                     titleContent = discoverRowTitleContentFor(section),
+                                    // fork:linux-rows - same header band as Home's plain title.
                                     bodyOverlay = when {
                                         isDiscoverBrowserRow -> {
                                             { DiscoverRowBodySlot(section) }
@@ -4800,7 +4981,7 @@ fun HomeScreen(
             }
         }
 
-        if (tvModeEnabled && tvRows.isNotEmpty()) {
+        if (tvModeEnabled && tvRows.isNotEmpty() && !tvStackedRowsEnabled) {
             // Corrected for Windows HDR as one picture: the shelf scrim lies translucent over the
             // hero's own fades, and the correction has to see the composite to get their tail
             // right. Black, not the theme background, so it is exact; the screen is all in here.
@@ -4834,7 +5015,9 @@ fun HomeScreen(
                                     // TV ambient keeps the theme colour the ambient scrim was
                                     // tuned against, as Collections' folder view does.
                                     backgroundColor = if (tvAmbientBackgroundEnabled) {
-                                        MaterialTheme.colorScheme.background
+                                        // The wash's primary colour is what the gradient goes
+                                        // into, as on Discover: not the near-black page background.
+                                        activeHeroAccent ?: MaterialTheme.colorScheme.primary
                                     } else {
                                         Color.Black
                                     },
@@ -4904,12 +5087,13 @@ fun HomeScreen(
                                     basePosterWidthDpOverride = immersivePosterBaseWidthDp.takeIf {
                                         immersiveLandscapeMode
                                     },
-                                    maxCardHeight = immersiveContinueWatchingCardHeight,
-                                    focusedItemIndex = tvFocus.itemIndex,
+                                    maxCardHeight = immersiveShelfCardHeightDp(immersiveShelfHeight.value).dp,
+                                    focusedItemIndex = if (homeRootHasFocus) tvFocus.itemIndex else null,
                                     rowState = continueWatchingRowState,
                                     onHoverItem = ::selectHoveredImmersiveItem,
                                     isKeyboardNavigation = !mouseActivity.isMouseActive,
                                     headerTrailingContent = tvRowDotsContent,
+                                    headerMinHeight = stackedShelfHeaderMinHeight,
                                     bodyModifier = rowBodyModifier,
                                     onItemClick = onContinueWatchingClick,
                                     onItemSourceShortcut = onContinueWatchingSourceShortcut,
@@ -4928,12 +5112,13 @@ fun HomeScreen(
                                         basePosterWidthDpOverride = immersivePosterBaseWidthDp.takeIf {
                                             immersiveLandscapeMode
                                         },
-                                        maxCardHeight = immersiveContinueWatchingCardHeight,
-                                        focusedItemIndex = tvFocus.itemIndex,
+                                        maxCardHeight = immersiveShelfCardHeightDp(immersiveShelfHeight.value).dp,
+                                        focusedItemIndex = if (homeRootHasFocus) tvFocus.itemIndex else null,
                                         rowState = nextUpRowState,
                                         onHoverItem = ::selectHoveredImmersiveItem,
                                         isKeyboardNavigation = !mouseActivity.isMouseActive,
                                         headerTrailingContent = tvRowDotsContent,
+                                        headerMinHeight = stackedShelfHeaderMinHeight,
                                         bodyModifier = rowBodyModifier,
                                         onItemClick = onContinueWatchingClick,
                                         onItemSourceShortcut = onContinueWatchingSourceShortcut,
@@ -4952,12 +5137,13 @@ fun HomeScreen(
                                         basePosterWidthDpOverride = immersivePosterBaseWidthDp.takeIf {
                                             immersiveLandscapeMode
                                         },
-                                        maxCardHeight = immersiveContinueWatchingCardHeight,
-                                        focusedItemIndex = tvFocus.itemIndex,
+                                        maxCardHeight = immersiveShelfCardHeightDp(immersiveShelfHeight.value).dp,
+                                        focusedItemIndex = if (homeRootHasFocus) tvFocus.itemIndex else null,
                                         rowState = upcomingRowState,
                                         onHoverItem = ::selectHoveredImmersiveItem,
                                         isKeyboardNavigation = !mouseActivity.isMouseActive,
                                         headerTrailingContent = tvRowDotsContent,
+                                        headerMinHeight = stackedShelfHeaderMinHeight,
                                         bodyModifier = rowBodyModifier,
                                         onItemClick = onContinueWatchingClick,
                                         onItemSourceShortcut = onContinueWatchingSourceShortcut,
@@ -4971,11 +5157,12 @@ fun HomeScreen(
                                             sectionPadding = homeSectionPadding,
                                             basePosterWidthDpOverride = immersivePosterBaseWidthDp,
                                             animateGifs = animateCollectionGifs,
-                                            focusedItemIndex = tvFocus.itemIndex,
+                                            focusedItemIndex = if (homeRootHasFocus) tvFocus.itemIndex else null,
                                             rowState = rememberRememberedRowState("collection:${collection.id}"),
                                             isKeyboardNavigation = !mouseActivity.isMouseActive,
                                             rowNumber = catalogRowNumbers[activeSettingsItem?.key],
                                             headerTrailingContent = tvRowDotsContent,
+                                            headerMinHeight = stackedShelfHeaderMinHeight,
                                             bodyModifier = rowBodyModifier,
                                             onHoverItem = ::selectHoveredImmersiveItem,
                                             onFolderClick = onFolderClick,
@@ -5014,7 +5201,7 @@ fun HomeScreen(
                                                     resetScrollKey = rowResetScrollKey,
                                                     sectionPadding = homeSectionPadding,
                                                     basePosterWidthDpOverride = immersivePosterBaseWidthDp,
-                                                    focusedItemIndex = tvFocus.itemIndex,
+                                                    focusedItemIndex = if (homeRootHasFocus) tvFocus.itemIndex else null,
                                                     rowState = rememberRememberedRowState("catalog:${section.key}"),
                                                     isKeyboardNavigation = !mouseActivity.isMouseActive,
                                                     onHoverItem = ::selectHoveredImmersiveItem,
@@ -5035,8 +5222,10 @@ fun HomeScreen(
                                                     rowNumber = catalogRowNumbers[section.key],
                                                     providerTag = section.addonName.takeIf { isShowingHomeContent },
                                                     headerTrailingContent = tvRowDotsContent,
+                                                    headerMinHeight = stackedShelfHeaderMinHeight,
                                                     bodyModifier = rowBodyModifier,
                                                     titleContent = discoverRowTitleContentFor(section),
+                                                    // fork:linux-rows - same header band as Home's plain title.
                                                     bodyOverlay = when (section.key) {
                                                         DISCOVER_BROWSER_ROW_KEY -> {
                                                             { DiscoverRowBodySlot(section = section) }
@@ -5065,39 +5254,83 @@ fun HomeScreen(
                     }
                 }
             }
-        } else if (adaptiveHeroLayout != null) {
-            val heroLayout = adaptiveHeroLayout
+        } else if (overlayHeroHeight != null) {
             Box(modifier = Modifier.fillMaxSize()) {
-                NuvioScreen(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .smoothVerticalWheelScroll(
-                            state = currentListState,
-                            // Same stand-down as the standard layout below: an open filter
-                            // menu owns the wheel, or its list can never scroll.
-                            enabled = isDesktop &&
-                                homeSettingsUiState.smoothScrollingEnabled &&
-                                !snapScrollActive &&
-                                !browseFilterMenuOpen,
-                        ),
-                    horizontalPadding = 0.dp,
-                    topPadding = 0.dp,
-                    backgroundColor = if (heroAmbientBackgroundEnabled) Color.Transparent else null,
-                    listState = currentListState,
-                    showDesktopScrollbar = false,
-                    content = rowsContent,
-                )
+                // Linux TV Mode stacked rows: the hero is drawn first, beneath the rows, so the black
+                // backdrop fade runs under the cards. The rows layer clips to the band, so the hero text
+                // above it stays reachable.
                 Box(
                     modifier = if (heroTrailerFullscreenActive) {
                         Modifier.fillMaxSize()
                     } else {
                         Modifier
                             .fillMaxWidth()
-                            .height(heroLayout.heroHeight)
+                            .height(overlayHeroHeight)
                             .align(Alignment.TopStart)
                     },
                 ) {
                     renderHero(null)
+                }
+                // Revert the stacked-rows hero-background override from 65ee7539/1185ed39:
+                // upstream's Full backdrop lets the artwork continue behind the rows and uses this
+                // shelf scrim to reach black at the bottom edge. Stacked row geometry is unchanged.
+                val stackedFullBackdrop = tvStackedMetrics != null &&
+                    homeSettingsUiState.tvFullBackdropEnabled
+                if (stackedFullBackdrop) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(top = tvStackedMetrics!!.rowBandTopDp.dp)
+                            .background(
+                                nuvioDitheredVerticalGradient(
+                                    immersiveShelfScrimStops(
+                                        backgroundColor = if (tvAmbientBackgroundEnabled) {
+                                            activeHeroAccent ?: MaterialTheme.colorScheme.primary
+                                        } else {
+                                            Color.Black
+                                        },
+                                        fullBackdrop = true,
+                                        ambientBackgroundEnabled = tvAmbientBackgroundEnabled,
+                                    ),
+                                ),
+                            ),
+                    )
+                }
+                CompositionLocalProvider(
+                    LocalHomeTvStackedContinueWatchingCardWidth provides
+                        homeTvStackedContinueWatchingCardWidth(tvStackedRowsEnabled),
+                    // Discover/Library replace their title with a filter bar; cap it at the
+                    // row-jump strip just as the immersive shelf does.
+                    LocalNuvioShelfTitleContentMaxWidth provides tvRowDotsTitleCap,
+                ) {
+                    Box(
+                        modifier = (tvStackedMetrics?.let {
+                            Modifier.stackedRowListFrame(it.rowListTopDp, it.rowBandFadeDp)
+                        } ?: Modifier).fillMaxSize(),
+                    ) {
+                    NuvioScreen(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .smoothVerticalWheelScroll(
+                                state = currentListState,
+                                // Same stand-down as the standard layout below: an open filter
+                                // menu owns the wheel, or its list can never scroll.
+                                enabled = isDesktop &&
+                                    homeSettingsUiState.smoothScrollingEnabled &&
+                                    !snapScrollActive &&
+                                    !browseFilterMenuOpen,
+                            ),
+                        horizontalPadding = 0.dp,
+                        topPadding = 0.dp,
+                        backgroundColor = if (
+                            ambientBackgroundEnabled ||
+                            (tvStackedRowsEnabled && stackedFullBackdrop)
+                        ) Color.Transparent else null,
+                        listState = currentListState,
+                        showDesktopScrollbar = false,
+                        content = rowsContent,
+                    )
+                    }
                 }
             }
         } else {
@@ -5122,7 +5355,7 @@ fun HomeScreen(
                     isDesktop && !isShowingHomeContent -> topChromePadding ?: 72.dp
                     else -> null
                 },
-                backgroundColor = if (heroAmbientBackgroundEnabled) Color.Transparent else null,
+                backgroundColor = if (ambientBackgroundEnabled) Color.Transparent else null,
                 listState = currentListState,
                 showDesktopScrollbar = false,
             ) {

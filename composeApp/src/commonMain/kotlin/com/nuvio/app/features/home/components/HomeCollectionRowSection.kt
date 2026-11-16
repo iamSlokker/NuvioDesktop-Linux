@@ -59,6 +59,8 @@ fun HomeCollectionRowSection(
     rowNumber: Int? = null,
     // TV Mode's row-jump dots, rendered on the header line next to the title. Null everywhere else.
     headerTrailingContent: (@Composable () -> Unit)? = null,
+    /** fork:linux-rows - see [NuvioShelfSection.headerMinHeight]. */
+    headerMinHeight: Dp? = null,
     bodyModifier: Modifier = Modifier,
     onFolderClick: ((collectionId: String, folderId: String) -> Unit)? = null,
 ) {
@@ -79,6 +81,7 @@ fun HomeCollectionRowSection(
             isKeyboardNavigation = isKeyboardNavigation,
             rowNumber = rowNumber,
             headerTrailingContent = headerTrailingContent,
+            headerMinHeight = headerMinHeight,
             bodyModifier = bodyModifier,
             onFolderClick = onFolderClick,
         )
@@ -96,6 +99,7 @@ fun HomeCollectionRowSection(
                 isKeyboardNavigation = isKeyboardNavigation,
                 rowNumber = rowNumber,
                 headerTrailingContent = headerTrailingContent,
+                headerMinHeight = headerMinHeight,
                 bodyModifier = bodyModifier,
                 onFolderClick = onFolderClick,
             )
@@ -116,6 +120,7 @@ private fun HomeCollectionRowSectionContent(
     isKeyboardNavigation: Boolean,
     rowNumber: Int?,
     headerTrailingContent: (@Composable () -> Unit)?,
+    headerMinHeight: Dp?,
     bodyModifier: Modifier,
     onFolderClick: ((collectionId: String, folderId: String) -> Unit)?,
 ) {
@@ -142,6 +147,7 @@ private fun HomeCollectionRowSectionContent(
         onHoverItem = onHoverItem,
         isKeyboardNavigation = isKeyboardNavigation,
         headerTrailingContent = headerTrailingContent,
+        headerMinHeight = headerMinHeight,
         bodyModifier = bodyModifier,
         key = { folder -> "collection_${collection.id}_folder_${folder.id}" },
         rowState = rowState,
@@ -171,6 +177,8 @@ private fun CollectionFolderCard(
     val basePosterWidthDp = basePosterWidthDpOverride ?: posterCardStyle.widthDp
     val isLandscapeMode = posterCardStyle.catalogLandscapeModeEnabled
     val shape = if (isLandscapeMode) PosterShape.Landscape else folder.posterShape
+    // Linux TV Mode stacked rows only: the Continue Watching card width. Null everywhere else.
+    val tvStackedLandscapeCardWidth = LocalHomeTvStackedContinueWatchingCardWidth.current
     val cardWidth: Dp
     val aspectRatio: Float
 
@@ -180,7 +188,10 @@ private fun CollectionFolderCard(
             aspectRatio = 0.675f
         }
         PosterShape.Landscape -> {
-            cardWidth = landscapePosterWidth(basePosterWidthDp)
+            cardWidth = homeTvStackedLandscapeRowWidth(
+                stackedWidth = tvStackedLandscapeCardWidth,
+                derivedWidth = landscapePosterWidth(basePosterWidthDp),
+            )
             aspectRatio = PosterLandscapeAspectRatio
         }
         PosterShape.Square -> {

@@ -47,8 +47,8 @@ import com.nuvio.app.core.ui.NuvioActionLabel
 import com.nuvio.app.core.ui.NuvioPrimaryButton
 import com.nuvio.app.core.ui.NuvioScreen
 import com.nuvio.app.core.ui.NuvioScreenHeader
-import com.nuvio.app.core.ui.PlatformBackHandler
 import com.nuvio.app.core.ui.accentFill
+import com.nuvio.app.core.ui.arrowKeyFocusNavigation
 import com.nuvio.app.core.ui.nuvio
 import com.nuvio.app.features.home.PosterShape
 import com.nuvio.app.features.settings.LocalSettingsSectionCards
@@ -60,6 +60,9 @@ import com.nuvio.app.features.settings.SettingsSection
 import com.nuvio.app.features.settings.SettingsSectionNote
 import com.nuvio.app.features.settings.SettingsSwitchRow
 import com.nuvio.app.features.settings.SettingsTextRow
+import com.nuvio.app.features.settings.rememberSettingsKeyboardReorderState
+import com.nuvio.app.features.settings.settingsKeyboardReorder
+import com.nuvio.app.features.settings.settingsSubScreen
 import com.nuvio.app.features.trakt.TraktPublicListSearchResult
 import nuvio.composeapp.generated.resources.*
 import org.jetbrains.compose.resources.stringResource
@@ -84,148 +87,158 @@ fun CollectionEditorScreen(
 
     // The pickers sit above the folder editor, which sits above the collection page.
     if (state.showCatalogPicker) {
-        CatalogPickerScreen(
-            availableCatalogs = state.availableCatalogs,
-            selectedSources = state.editingFolder?.resolvedCatalogSources.orEmpty(),
-            onToggle = { CollectionEditorRepository.toggleCatalogSource(it) },
-            onBack = { CollectionEditorRepository.hideCatalogPicker() },
-        )
+        settingsSubScreen(onClose = { CollectionEditorRepository.hideCatalogPicker() }) {
+            CatalogPickerScreen(
+                availableCatalogs = state.availableCatalogs,
+                selectedSources = state.editingFolder?.resolvedCatalogSources.orEmpty(),
+                onToggle = { CollectionEditorRepository.toggleCatalogSource(it) },
+                onBack = { CollectionEditorRepository.hideCatalogPicker() },
+            )
+        }
         return
     }
     if (state.showTmdbSourcePicker) {
-        TmdbSourcePickerScreen(
-            state = state,
-            onBack = { CollectionEditorRepository.hideTmdbSourcePicker() },
-        )
+        settingsSubScreen(onClose = { CollectionEditorRepository.hideTmdbSourcePicker() }) {
+            TmdbSourcePickerScreen(
+                state = state,
+                onBack = { CollectionEditorRepository.hideTmdbSourcePicker() },
+            )
+        }
         return
     }
     if (state.showTraktSourcePicker) {
-        TraktSourcePickerScreen(
-            state = state,
-            onBack = { CollectionEditorRepository.hideTraktSourcePicker() },
-        )
+        settingsSubScreen(onClose = { CollectionEditorRepository.hideTraktSourcePicker() }) {
+            TraktSourcePickerScreen(
+                state = state,
+                onBack = { CollectionEditorRepository.hideTraktSourcePicker() },
+            )
+        }
         return
     }
     if (state.showFolderEditor && state.editingFolder != null) {
-        FolderEditorPage(
-            state = state,
-            onBack = { CollectionEditorRepository.cancelFolderEdit() },
-        )
+        settingsSubScreen(onClose = { CollectionEditorRepository.cancelFolderEdit() }) {
+            FolderEditorPage(
+                state = state,
+                onBack = { CollectionEditorRepository.cancelFolderEdit() },
+            )
+        }
         return
     }
 
-    EditorScaffold(
-        title = if (state.isNew) {
-            stringResource(Res.string.collections_new)
-        } else {
-            stringResource(Res.string.collections_editor_edit_collection)
-        },
-        onBack = onBack,
-        actions = {
-            EditorPrimaryAction(
-                text = if (state.isNew) {
-                    stringResource(Res.string.collections_editor_create_collection)
-                } else {
-                    stringResource(Res.string.collections_editor_save_changes)
-                },
-                enabled = state.title.isNotBlank(),
-                onClick = {
-                    if (CollectionEditorRepository.save()) {
-                        onBack()
+    settingsSubScreen(onClose = onBack) {
+        EditorScaffold(
+            title = if (state.isNew) {
+                stringResource(Res.string.collections_new)
+            } else {
+                stringResource(Res.string.collections_editor_edit_collection)
+            },
+            onBack = onBack,
+            actions = {
+                EditorPrimaryAction(
+                    text = if (state.isNew) {
+                        stringResource(Res.string.collections_editor_create_collection)
+                    } else {
+                        stringResource(Res.string.collections_editor_save_changes)
+                    },
+                    enabled = state.title.isNotBlank(),
+                    onClick = {
+                        if (CollectionEditorRepository.save()) {
+                            onBack()
+                        }
+                    },
+                )
+            },
+        ) {
+            item {
+                SettingsSection(
+                    title = stringResource(Res.string.collections_editor_section_collection),
+                    isTablet = true,
+                ) {
+                    SettingsGroup(isTablet = true) {
+                        SettingsTextRow(
+                            title = stringResource(Res.string.collections_editor_name),
+                            description = stringResource(Res.string.collections_editor_name_desc),
+                            value = state.title,
+                            placeholder = stringResource(Res.string.collections_editor_placeholder_name),
+                            isTablet = true,
+                            onValueChange = { CollectionEditorRepository.setTitle(it) },
+                        )
+                        SettingsGroupDivider(isTablet = true)
+                        SettingsTextRow(
+                            title = stringResource(Res.string.collections_editor_backdrop),
+                            description = stringResource(Res.string.collections_editor_backdrop_desc),
+                            value = state.backdropImageUrl,
+                            placeholder = stringResource(Res.string.collections_editor_placeholder_backdrop),
+                            isTablet = true,
+                            onValueChange = { CollectionEditorRepository.setBackdropImageUrl(it) },
+                        )
+                        SettingsGroupDivider(isTablet = true)
+                        SettingsSwitchRow(
+                            title = stringResource(Res.string.collections_editor_pin_above),
+                            description = stringResource(Res.string.collections_editor_pin_above_desc),
+                            checked = state.pinToTop,
+                            isTablet = true,
+                            onCheckedChange = { CollectionEditorRepository.setPinToTop(it) },
+                        )
+                        SettingsGroupDivider(isTablet = true)
+                        SettingsChoiceRow(
+                            title = stringResource(Res.string.collections_editor_view_mode),
+                            description = stringResource(Res.string.collections_editor_view_mode_desc),
+                            options = listOf(
+                                SettingsChoiceOption(
+                                    FolderViewMode.TABBED_GRID,
+                                    stringResource(Res.string.collections_editor_view_mode_tabs),
+                                ),
+                                SettingsChoiceOption(
+                                    FolderViewMode.ROWS,
+                                    stringResource(Res.string.collections_editor_view_mode_rows),
+                                ),
+                            ),
+                            // FOLLOW_LAYOUT is a legacy value that renders as rows; it is never offered.
+                            selectedValue = if (state.viewMode == FolderViewMode.TABBED_GRID) {
+                                FolderViewMode.TABBED_GRID
+                            } else {
+                                FolderViewMode.ROWS
+                            },
+                            isTablet = true,
+                            onSelected = { CollectionEditorRepository.setViewMode(it) },
+                        )
+                        SettingsGroupDivider(isTablet = true)
+                        SettingsSwitchRow(
+                            title = stringResource(Res.string.collections_editor_show_all_tab),
+                            description = stringResource(Res.string.collections_editor_show_all_tab_desc),
+                            checked = state.showAllTab,
+                            isTablet = true,
+                            onCheckedChange = { CollectionEditorRepository.setShowAllTab(it) },
+                        )
                     }
-                },
-            )
-        },
-    ) {
-        item {
-            SettingsSection(
-                title = stringResource(Res.string.collections_editor_section_collection),
-                isTablet = true,
-            ) {
-                SettingsGroup(isTablet = true) {
-                    SettingsTextRow(
-                        title = stringResource(Res.string.collections_editor_name),
-                        description = stringResource(Res.string.collections_editor_name_desc),
-                        value = state.title,
-                        placeholder = stringResource(Res.string.collections_editor_placeholder_name),
-                        isTablet = true,
-                        onValueChange = { CollectionEditorRepository.setTitle(it) },
-                    )
-                    SettingsGroupDivider(isTablet = true)
-                    SettingsTextRow(
-                        title = stringResource(Res.string.collections_editor_backdrop),
-                        description = stringResource(Res.string.collections_editor_backdrop_desc),
-                        value = state.backdropImageUrl,
-                        placeholder = stringResource(Res.string.collections_editor_placeholder_backdrop),
-                        isTablet = true,
-                        onValueChange = { CollectionEditorRepository.setBackdropImageUrl(it) },
-                    )
-                    SettingsGroupDivider(isTablet = true)
-                    SettingsSwitchRow(
-                        title = stringResource(Res.string.collections_editor_pin_above),
-                        description = stringResource(Res.string.collections_editor_pin_above_desc),
-                        checked = state.pinToTop,
-                        isTablet = true,
-                        onCheckedChange = { CollectionEditorRepository.setPinToTop(it) },
-                    )
-                    SettingsGroupDivider(isTablet = true)
-                    SettingsChoiceRow(
-                        title = stringResource(Res.string.collections_editor_view_mode),
-                        description = stringResource(Res.string.collections_editor_view_mode_desc),
-                        options = listOf(
-                            SettingsChoiceOption(
-                                FolderViewMode.TABBED_GRID,
-                                stringResource(Res.string.collections_editor_view_mode_tabs),
-                            ),
-                            SettingsChoiceOption(
-                                FolderViewMode.ROWS,
-                                stringResource(Res.string.collections_editor_view_mode_rows),
-                            ),
-                        ),
-                        // FOLLOW_LAYOUT is a legacy value that renders as rows; it is never offered.
-                        selectedValue = if (state.viewMode == FolderViewMode.TABBED_GRID) {
-                            FolderViewMode.TABBED_GRID
-                        } else {
-                            FolderViewMode.ROWS
-                        },
-                        isTablet = true,
-                        onSelected = { CollectionEditorRepository.setViewMode(it) },
-                    )
-                    SettingsGroupDivider(isTablet = true)
-                    SettingsSwitchRow(
-                        title = stringResource(Res.string.collections_editor_show_all_tab),
-                        description = stringResource(Res.string.collections_editor_show_all_tab_desc),
-                        checked = state.showAllTab,
-                        isTablet = true,
-                        onCheckedChange = { CollectionEditorRepository.setShowAllTab(it) },
-                    )
                 }
             }
-        }
 
-        item {
-            val newFolderTitle = stringResource(Res.string.collections_editor_new_folder)
-            SettingsSection(
-                title = stringResource(Res.string.collections_editor_folders),
-                isTablet = true,
-                actions = {
-                    NuvioActionLabel(
-                        text = stringResource(Res.string.collections_editor_add_folder),
-                        onClick = { CollectionEditorRepository.addFolder(newFolderTitle) },
-                    )
-                },
-            ) {
-                if (state.folders.isEmpty()) {
-                    EditorEmptyState(
-                        title = stringResource(Res.string.collections_editor_folder_empty_title),
-                        subtitle = stringResource(Res.string.collections_editor_folder_empty_subtitle),
-                    )
-                } else {
-                    FolderReorderableList(
-                        folders = state.folders,
-                        onEdit = { CollectionEditorRepository.editFolder(it) },
-                        onDelete = { CollectionEditorRepository.removeFolder(it) },
-                    )
+            item {
+                val newFolderTitle = stringResource(Res.string.collections_editor_new_folder)
+                SettingsSection(
+                    title = stringResource(Res.string.collections_editor_folders),
+                    isTablet = true,
+                    actions = {
+                        NuvioActionLabel(
+                            text = stringResource(Res.string.collections_editor_add_folder),
+                            onClick = { CollectionEditorRepository.addFolder(newFolderTitle) },
+                        )
+                    },
+                ) {
+                    if (state.folders.isEmpty()) {
+                        EditorEmptyState(
+                            title = stringResource(Res.string.collections_editor_folder_empty_title),
+                            subtitle = stringResource(Res.string.collections_editor_folder_empty_subtitle),
+                        )
+                    } else {
+                        FolderReorderableList(
+                            folders = state.folders,
+                            onEdit = { CollectionEditorRepository.editFolder(it) },
+                            onDelete = { CollectionEditorRepository.removeFolder(it) },
+                        )
+                    }
                 }
             }
         }
@@ -239,6 +252,7 @@ fun CollectionEditorScreen(
 /** Same column width as the desktop settings page, so the editor reads as one of its pages. */
 private val EditorColumnMaxWidth = 930.dp
 private val EditorPrimaryActionWidth = 200.dp
+
 
 @Composable
 private fun EditorScaffold(
@@ -254,7 +268,11 @@ private fun EditorScaffold(
             .coerceAtLeast(tokens.spacing.screenHorizontal)
         CompositionLocalProvider(LocalSettingsSectionCards provides true) {
             NuvioScreen(
-                modifier = Modifier.fillMaxSize(),
+                modifier = Modifier
+                    .fillMaxSize()
+                    // Same fallback the Settings content list uses: an arrow a control (a text
+                    // field) leaves alone still moves focus, so the editor's rows are walkable.
+                    .arrowKeyFocusNavigation(releaseWhenStuck = false),
                 horizontalPadding = sidePadding,
             ) {
                 stickyHeader {
@@ -341,6 +359,7 @@ private fun EditorOptionRow(
 private fun EditorEntryRow(
     title: String,
     subtitle: String?,
+    modifier: Modifier = Modifier,
     meta: String? = null,
     leading: (@Composable () -> Unit)? = null,
     onClick: (() -> Unit)? = null,
@@ -350,6 +369,9 @@ private fun EditorEntryRow(
     Row(
         modifier = Modifier
             .fillMaxWidth()
+            // Reorder keys run before the clickable, so Select can pick up a row instead of editing
+            // it while a drag-list row holds the keys.
+            .then(modifier)
             .then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier)
             .padding(start = 16.dp, end = 8.dp, top = 6.dp, bottom = 6.dp),
         verticalAlignment = Alignment.CenterVertically,
@@ -529,6 +551,12 @@ private fun FolderReorderableList(
     onDelete: (String) -> Unit,
 ) {
     val hapticFeedback = LocalHapticFeedback.current
+    // Keyboard reorder: Select picks the focused folder up, Up/Down move it, Select drops it and
+    // calls the same move callback the drag uses, Escape cancels. It rides on the rows themselves,
+    // so the drag handle stays the only pointer gesture.
+    val reorderState = rememberSettingsKeyboardReorderState(folders.size) { from, to ->
+        CollectionEditorRepository.moveFolderByIndex(from, to)
+    }
     // A plain reorderable Column inside the page's LazyColumn, as on the Collections settings
     // page: a nested reorderable LazyColumn would add a second edge auto-scroller.
     ReorderableColumn(
@@ -562,6 +590,7 @@ private fun FolderReorderableList(
                             folder = folder,
                             onEdit = { onEdit(folder.id) },
                             onDelete = { onDelete(folder.id) },
+                            modifier = Modifier.settingsKeyboardReorder(reorderState, index),
                         )
                     }
                 }
@@ -575,6 +604,7 @@ private fun FolderListRow(
     folder: CollectionFolder,
     onEdit: () -> Unit,
     onDelete: () -> Unit,
+    modifier: Modifier = Modifier,
 ) {
     val tokens = MaterialTheme.nuvio
     EditorEntryRow(
@@ -596,6 +626,7 @@ private fun FolderListRow(
                 }
             }
         },
+        modifier = modifier,
         onClick = onEdit,
     ) {
         EditIconButton(onClick = onEdit)
@@ -622,10 +653,6 @@ private fun FolderEditorPage(
 ) {
     val folder = state.editingFolder ?: return
     val isExisting = state.folders.any { it.id == folder.id }
-
-    PlatformBackHandler(enabled = true) {
-        onBack()
-    }
 
     EditorScaffold(
         title = if (isExisting) {
@@ -871,10 +898,6 @@ private fun CatalogPickerScreen(
     onToggle: (AvailableCatalog) -> Unit,
     onBack: () -> Unit,
 ) {
-    PlatformBackHandler(enabled = true) {
-        onBack()
-    }
-
     fun isSelected(catalog: AvailableCatalog): Boolean = selectedSources.any {
         it.addonId == catalog.addonId && it.type == catalog.type && it.catalogId == catalog.catalogId
     }
@@ -970,10 +993,6 @@ private fun TmdbSourcePickerScreen(
         mode == TmdbBuilderMode.DISCOVER
     val showFilterControls = mode == TmdbBuilderMode.DISCOVER
     val isPresets = mode == TmdbBuilderMode.PRESETS
-
-    PlatformBackHandler(enabled = true) {
-        onBack()
-    }
 
     EditorScaffold(
         title = stringResource(Res.string.collections_editor_tmdb_sources),
@@ -1090,6 +1109,8 @@ private fun TmdbSourcePickerScreen(
                         if (state.tmdbSearchError != null) {
                             SettingsGroupDivider(isTablet = true)
                             EditorErrorNote(state.tmdbSearchError)
+                        } else {
+                            SettingsGroupDivider(isTablet = true)
                         }
                     }
                 }
@@ -1421,10 +1442,6 @@ private fun TraktSourcePickerScreen(
 ) {
     val isEditing = state.editingTraktSourceIndex != null
 
-    PlatformBackHandler(enabled = true) {
-        onBack()
-    }
-
     EditorScaffold(
         title = if (isEditing) {
             stringResource(Res.string.collections_editor_edit_trakt_source)
@@ -1515,6 +1532,8 @@ private fun TraktSourcePickerScreen(
                     if (state.traktSearchError != null) {
                         SettingsGroupDivider(isTablet = true)
                         EditorErrorNote(state.traktSearchError)
+                    } else {
+                        SettingsGroupDivider(isTablet = true)
                     }
                 }
             }

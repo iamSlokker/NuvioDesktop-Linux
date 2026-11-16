@@ -48,4 +48,13 @@ class HomeDisplayModeTest {
         assertFalse(ambientOn.copy(tvModeEnabled = true).adaptiveAmbientActive, "TV Mode has its own toggle")
         assertFalse(HomeCatalogSettingsUiState(adaptiveHeroEnabled = true).adaptiveAmbientActive)
     }
+
+    @Test
+    fun `home discover and library share the stacked tv rows`() {
+        assertTrue(HomeContentMode.Normal.usesTvStackedRows())
+        assertTrue(HomeContentMode.Discover.usesTvStackedRows())
+        assertTrue(HomeContentMode.Library.usesTvStackedRows())
+        assertFalse(HomeContentMode.Search().usesTvStackedRows())
+        assertFalse(HomeContentMode.Catalogs("catalog", emptyList()).usesTvStackedRows())
+    }
 }

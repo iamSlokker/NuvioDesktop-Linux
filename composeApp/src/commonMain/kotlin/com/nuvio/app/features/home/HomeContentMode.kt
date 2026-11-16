@@ -40,3 +40,18 @@ internal fun HomeContentMode.heroHoldKey(): String = when (this) {
     is HomeContentMode.Catalogs -> "catalog:$key"
     else -> telemetryName()
 }
+
+/**
+ * Browse pages that keep Home's TV Mode stacked rows.
+ *
+ * Search and catalog screens keep the one-row-at-a-time immersive shelf: their result sets and
+ * filter headers are different enough that stacking them would be a separate layout change.
+ * Home, Discover and Library share the same catalog geometry and row-jump dots.
+ */
+internal fun HomeContentMode.usesTvStackedRows(): Boolean = when (this) {
+    is HomeContentMode.Normal,
+    is HomeContentMode.Discover,
+    is HomeContentMode.Library,
+    -> true
+    else -> false
+}

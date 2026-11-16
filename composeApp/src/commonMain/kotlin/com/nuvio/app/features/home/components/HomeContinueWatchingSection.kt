@@ -342,6 +342,8 @@ internal fun HomeContinueWatchingSection(
     isKeyboardNavigation: Boolean = false,
     // TV Mode's row-jump dots, rendered on the header line next to the title. Null everywhere else.
     headerTrailingContent: (@Composable () -> Unit)? = null,
+    /** fork:linux-rows - see [NuvioShelfSection.headerMinHeight]. */
+    headerMinHeight: Dp? = null,
     bodyModifier: Modifier = Modifier,
     onItemClick: ((ContinueWatchingItem) -> Unit)? = null,
     onItemLongPress: ((ContinueWatchingItem) -> Unit)? = null,
@@ -367,6 +369,7 @@ internal fun HomeContinueWatchingSection(
             onHoverItem = onHoverItem,
             isKeyboardNavigation = isKeyboardNavigation,
             headerTrailingContent = headerTrailingContent,
+            headerMinHeight = headerMinHeight,
             bodyModifier = bodyModifier,
             onItemClick = onItemClick,
             onItemLongPress = onItemLongPress,
@@ -390,6 +393,7 @@ internal fun HomeContinueWatchingSection(
                 onHoverItem = onHoverItem,
                 isKeyboardNavigation = isKeyboardNavigation,
                 headerTrailingContent = headerTrailingContent,
+                headerMinHeight = headerMinHeight,
                 bodyModifier = bodyModifier,
                 onItemClick = onItemClick,
                 onItemLongPress = onItemLongPress,
@@ -416,6 +420,7 @@ private fun HomeContinueWatchingSectionContent(
     onHoverItem: ((Int) -> Unit)?,
     isKeyboardNavigation: Boolean,
     headerTrailingContent: (@Composable () -> Unit)?,
+    headerMinHeight: Dp?,
     bodyModifier: Modifier,
     onItemClick: ((ContinueWatchingItem) -> Unit)?,
     onItemLongPress: ((ContinueWatchingItem) -> Unit)?,
@@ -456,6 +461,7 @@ private fun HomeContinueWatchingSectionContent(
             onHoverItem = onHoverItem,
             isKeyboardNavigation = isKeyboardNavigation,
             headerTrailingContent = headerTrailingContent,
+            headerMinHeight = headerMinHeight,
             bodyModifier = bodyModifier,
             key = { item -> item.videoId },
             rowState = rowState,
@@ -1082,9 +1088,9 @@ private fun continueWatchingLandscapeCardMetrics(
             progressHorizontalPadding = 0.dp,
             progressBottomPadding = 0.dp,
             progressHeight = 4.dp,
-            titleTextSize = 12.sp,
-            metaTextSize = 9.sp,
-            badgeTextSize = 8.sp,
+            titleTextSize = 13.sp,
+            metaTextSize = 10.sp,
+            badgeTextSize = 9.sp,
         )
         basePosterWidthDp <= 120 -> ContinueWatchingLandscapeCardMetrics(
             width = width,
@@ -1097,9 +1103,9 @@ private fun continueWatchingLandscapeCardMetrics(
             progressHorizontalPadding = 0.dp,
             progressBottomPadding = 0.dp,
             progressHeight = 4.dp,
-            titleTextSize = 13.sp,
-            metaTextSize = 10.sp,
-            badgeTextSize = 9.sp,
+            titleTextSize = 14.sp,
+            metaTextSize = 11.sp,
+            badgeTextSize = 10.sp,
         )
         else -> ContinueWatchingLandscapeCardMetrics(
             width = width,
@@ -1112,9 +1118,9 @@ private fun continueWatchingLandscapeCardMetrics(
             progressHorizontalPadding = 0.dp,
             progressBottomPadding = 0.dp,
             progressHeight = ContinueWatchingEdgeBarHeight,
-            titleTextSize = 14.sp,
-            metaTextSize = 10.sp,
-            badgeTextSize = 10.sp,
+            titleTextSize = 15.sp,
+            metaTextSize = 11.sp,
+            badgeTextSize = 11.sp,
         )
     }
 }
@@ -1140,7 +1146,8 @@ private fun ContinueWatchingCard(
         savedPosterWidthDp = posterCardStyle.widthDp,
         tvModeEnabled = homeCatalogSettings.tvModeEnabled,
     )
-    val cardWidthOverride = basePosterWidthDpOverride?.let(::landscapePosterWidth)
+    val cardWidthOverride = LocalHomeTvStackedContinueWatchingCardWidth.current
+        ?: basePosterWidthDpOverride?.let(::landscapePosterWidth)
     val cardMetrics = remember(effectiveWidthDp, posterCardStyle.cornerRadiusDp, cardWidthOverride) {
         continueWatchingLandscapeCardMetrics(
             basePosterWidthDp = effectiveWidthDp,
@@ -1692,7 +1699,9 @@ internal data class ContinueWatchingLayout(
 internal fun rememberContinueWatchingLayout(maxWidthDp: Float): ContinueWatchingLayout =
     when {
         maxWidthDp >= 1440f -> ContinueWatchingLayout(
-            itemGap = 20.dp,
+            // The same card gap as NuvioShelfSection's Library/Discover rows: Home must not read
+            // as a different page because its Continue Watching row is spaced wider.
+            itemGap = 10.dp,
             wideCardWidth = 400.dp,
             wideCardHeight = 160.dp,
             widePosterStripWidth = 100.dp,
@@ -1711,7 +1720,7 @@ internal fun rememberContinueWatchingLayout(maxWidthDp: Float): ContinueWatching
             posterBadgeTextSize = 12.sp,
         )
         maxWidthDp >= 1024f -> ContinueWatchingLayout(
-            itemGap = 18.dp,
+            itemGap = 10.dp,
             wideCardWidth = 350.dp,
             wideCardHeight = 140.dp,
             widePosterStripWidth = 90.dp,
@@ -1730,7 +1739,7 @@ internal fun rememberContinueWatchingLayout(maxWidthDp: Float): ContinueWatching
             posterBadgeTextSize = 10.sp,
         )
         maxWidthDp >= 768f -> ContinueWatchingLayout(
-            itemGap = 16.dp,
+            itemGap = 10.dp,
             wideCardWidth = 320.dp,
             wideCardHeight = 130.dp,
             widePosterStripWidth = 85.dp,
@@ -1749,7 +1758,7 @@ internal fun rememberContinueWatchingLayout(maxWidthDp: Float): ContinueWatching
             posterBadgeTextSize = 10.sp,
         )
         else -> ContinueWatchingLayout(
-            itemGap = 16.dp,
+            itemGap = 10.dp,
             wideCardWidth = 280.dp,
             wideCardHeight = 120.dp,
             widePosterStripWidth = 80.dp,

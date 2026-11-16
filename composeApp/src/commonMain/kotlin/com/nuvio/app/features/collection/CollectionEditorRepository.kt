@@ -235,6 +235,14 @@ object CollectionEditorRepository {
         )
     }
 
+    fun clearTmdbSearchError() {
+        _uiState.value = _uiState.value.copy(tmdbSearchError = null)
+    }
+
+    fun clearTraktSearchError() {
+        _uiState.value = _uiState.value.copy(traktSearchError = null)
+    }
+
     fun updateFolderTileShape(shape: PosterShape) {
         val folder = _uiState.value.editingFolder ?: return
         _uiState.value = _uiState.value.copy(

@@ -58,6 +58,8 @@ fun HomeCatalogRowSection(
     // Discover's clickable catalog/genre segments replace the header title, and its picker panel
     // draws over the faded posters. Null on every ordinary catalog row.
     titleContent: (@Composable () -> Unit)? = null,
+    // fork:linux-rows - see NuvioShelfSection.headerMinHeight.
+    headerMinHeight: Dp? = null,
     bodyAlpha: Float = 1f,
     bodyOverlay: (@Composable BoxScope.() -> Unit)? = null,
 ) {
@@ -88,6 +90,7 @@ fun HomeCatalogRowSection(
             headerTrailingContent = headerTrailingContent,
             bodyModifier = bodyModifier,
             titleContent = titleContent,
+            headerMinHeight = headerMinHeight,
             bodyAlpha = bodyAlpha,
             bodyOverlay = bodyOverlay,
         )
@@ -118,6 +121,7 @@ fun HomeCatalogRowSection(
                 headerTrailingContent = headerTrailingContent,
                 bodyModifier = bodyModifier,
                 titleContent = titleContent,
+                headerMinHeight = headerMinHeight,
                 bodyAlpha = bodyAlpha,
                 bodyOverlay = bodyOverlay,
             )
@@ -151,6 +155,7 @@ private fun HomeCatalogRowSectionContent(
     headerTrailingContent: (@Composable () -> Unit)?,
     bodyModifier: Modifier,
     titleContent: (@Composable () -> Unit)?,
+    headerMinHeight: Dp?,
     bodyAlpha: Float,
     bodyOverlay: (@Composable BoxScope.() -> Unit)?,
 ) {
@@ -189,6 +194,7 @@ private fun HomeCatalogRowSectionContent(
         headerTrailingContent = headerTrailingContent,
         bodyModifier = bodyModifier,
         titleContent = titleContent,
+        headerMinHeight = headerMinHeight,
         bodyAlpha = bodyAlpha,
         bodyOverlay = bodyOverlay,
         key = { item -> item.stableKey() },
