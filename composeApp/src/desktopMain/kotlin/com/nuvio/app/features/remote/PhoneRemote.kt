@@ -60,6 +60,8 @@ internal object PhoneRemote {
     private val random = SecureRandom()
 
     private const val KEY_ENABLED = "enabled"
+    private const val KEY_AIM_ASSIST = "aim_assist"
+    private const val KEY_AIM_STRENGTH = "aim_strength"
     private const val KEY_PIN = "pin"
     private const val KEY_DEVICES = "paired_devices"
 
@@ -76,6 +78,8 @@ internal object PhoneRemote {
     private var themeWatch: Job? = null
     private var sourcesWatch: Job? = null
     private var tonightWatch: Job? = null // fork:phone-remote tonight
+    private var liveTvWatch: Job? = null // fork:phone-remote live-tv
+    private var scoreWatch: Job? = null // fork:live-scores
 
     @Synchronized
     fun ensureLoaded() {
@@ -84,6 +88,9 @@ internal object PhoneRemote {
         _state.update {
             it.copy(
                 enabled = store.getBoolean(KEY_ENABLED) ?: false,
+                // The first version's on/off switch: off stays off.
+                aimStrength = store.getString(KEY_AIM_STRENGTH)?.let { name -> AimStrength.entries.firstOrNull { it.name == name } }
+                    ?: if (store.getBoolean(KEY_AIM_ASSIST) == false) AimStrength.Off else AimStrength.Medium,
                 pin = store.getString(KEY_PIN).orEmpty(),
                 pairedDevices = pairedEntries().map { entry -> entry.second }.sorted(),
                 pcName = computerName(),
@@ -114,6 +121,14 @@ internal object PhoneRemote {
         if (value && started) openServer() else if (!value) closeServer()
     }
 
+    /** fork:phone-remote pointer - aim assist's strength, Off to Strong (PhoneRemoteAim.kt). */
+    fun setAimStrength(value: AimStrength) {
+        ensureLoaded()
+        store.putString(KEY_AIM_STRENGTH, value.name)
+        _state.update { it.copy(aimStrength = value) }
+        if (value == AimStrength.Off) AimTargets.clear()
+    }
+
     /** A new PIN, and every phone has to pair again. */
     @Synchronized
     fun resetPairing() {
@@ -140,6 +155,8 @@ internal object PhoneRemote {
         watchTheme(created)
         watchSources(created)
         watchTonight(created)
+        watchLiveTv(created)
+        watchScores(created)
         _state.update { it.copy(listening = created.port != null, port = created.port, addresses = localAddresses()) }
     }
 
@@ -152,6 +169,10 @@ internal object PhoneRemote {
         sourcesWatch = null
         tonightWatch?.cancel()
         tonightWatch = null
+        liveTvWatch?.cancel()
+        liveTvWatch = null
+        scoreWatch?.cancel()
+        scoreWatch = null
         server?.stop()
         server = null
         _state.update { it.copy(listening = false, port = null, connectedDevices = emptyList()) }
@@ -189,6 +210,15 @@ internal object PhoneRemote {
 
     private val listener = object : PhoneRemoteListener {
         override fun onKey(key: RemoteKey) = dispatch(key)
+
+        override fun onPoint(dx: Int, dy: Int) = PhoneRemotePointer.move(dx, dy)
+        override fun onPointCentre() = PhoneRemotePointer.centre()
+        override fun onClick(button: PointerButton) = PhoneRemotePointer.click(button)
+        override fun onScroll(notches: Int) = PhoneRemotePointer.scroll(notches)
+        override fun onScrollSideways(notches: Int) = PhoneRemotePointer.scrollSideways(notches)
+        override fun onPress(button: PointerButton) = PhoneRemotePointer.press(button)
+        override fun onRelease(button: PointerButton) = PhoneRemotePointer.release(button)
+        override fun onPhoneGone() = PhoneRemotePointer.releaseAll()
 
         override fun onText(text: String) {
             text.forEach { char ->
@@ -252,6 +282,9 @@ internal object PhoneRemote {
             PhoneRemoteActions.act(target, code, args, reply)
         override fun onAlbumTracks(browseId: String, reply: (String) -> Unit) = PhoneRemoteMusic.albumTracks(browseId, reply)
         override fun onPlayTrack(browseId: String, index: Int): String? = PhoneRemoteMusic.playTrack(browseId, index)
+        override fun onLiveTv(action: com.nuvio.app.features.remote.RemoteLiveTvDo) {
+            mainScope.launch { com.nuvio.app.features.remote.RemoteLiveTv.act(action) }
+        }
         override fun onTonight(action: RemoteTonightAction, number: Int) {
             mainScope.launch {
                 // "What to watch?" on the phone: the same as the button beside Search on the TV.
@@ -371,6 +404,29 @@ internal object PhoneRemote {
                     background = palette.background.toArgb(),
                 )
             }.distinctUntilChanged().collect(target::publishTheme)
+        }
+    }
+
+    /** fork:live-scores - a favourite team's goal, card or whistle as a notification on the phone. */
+    private fun watchScores(target: PhoneRemoteServer) {
+        scoreWatch?.cancel()
+        scoreWatch = CoroutineScope(SupervisorJob() + Dispatchers.Default).launch {
+            com.nuvio.app.features.livescores.LiveScoreEngine.events.collect { event ->
+                val settings = com.nuvio.app.features.livescores.LiveScoreSettingsRepository.state.value
+                if (!settings.enabled || !settings.phoneNotifications || !event.favourite) return@collect
+                target.publishScore(com.nuvio.app.features.livescores.phoneScoreLine(event))
+            }
+        }
+    }
+
+    /** fork:phone-remote live-tv: the Live TV stage as the phone mirrors it, whenever it changes. */
+    private fun watchLiveTv(target: PhoneRemoteServer) {
+        liveTvWatch?.cancel()
+        liveTvWatch = CoroutineScope(SupervisorJob() + Dispatchers.Default).launch {
+            com.nuvio.app.features.remote.RemoteLiveTv.current
+                .map(PhoneRemoteLibraryLines::liveTvLine)
+                .distinctUntilChanged()
+                .collect(target::publishLiveTv)
         }
     }
 

@@ -74,10 +74,22 @@ internal interface PhoneRemoteListener {
     fun onPlayTrack(browseId: String, index: Int): String? = null
     /** fork:phone-remote tonight: a tap on the phone's Tonight mirror. */
     fun onTonight(action: com.nuvio.app.features.remote.RemoteTonightAction, number: Int) = Unit
+    /** fork:phone-remote live-tv: a tap on the phone's mirror of a Live TV stage. */
+    fun onLiveTv(action: com.nuvio.app.features.remote.RemoteLiveTvDo) = Unit
     /** A long press on the phone: answer with a MENU line (PhoneRemoteActions). */
     fun onMenu(target: RemoteMenuTarget, reply: (String) -> Unit) = Unit
     /** A row of that menu: answer with DONE, PLAYLISTS or RECAP lines. */
     fun onMenuAction(target: RemoteMenuTarget, code: String, args: List<String>, reply: (String) -> Unit) = Unit
+    /** fork:phone-remote pointer: move the mouse by ten-thousandths of the screen's width. */
+    fun onPoint(dx: Int, dy: Int) = Unit
+    fun onPointCentre() = Unit
+    fun onClick(button: PointerButton) = Unit
+    fun onScroll(notches: Int) = Unit
+    fun onScrollSideways(notches: Int) = Unit
+    fun onPress(button: PointerButton) = Unit
+    fun onRelease(button: PointerButton) = Unit
+    /** A phone went away: let go of anything it was holding down. */
+    fun onPhoneGone() = Unit
 }
 
 /**
@@ -168,6 +180,15 @@ internal class PhoneRemoteServer(
     @Volatile
     private var lastTonight: String? = null
 
+    @Volatile
+    private var lastLiveTv: String? = null
+
+    /** fork:phone-remote live-tv: the Live TV stage as the phone mirrors it (PhoneRemoteLibraryLines.liveTvLine). */
+    fun publishLiveTv(line: String) {
+        lastLiveTv = line
+        clients.forEach { session -> if (session.subscribed) session.trySend(line) }
+    }
+
     /** The Tonight picker as the phone mirrors it (see PhoneRemoteLibraryLines.tonightLine), for every subscribed phone. */
     fun publishTonight(line: String) {
         lastTonight = line
@@ -177,6 +198,11 @@ internal class PhoneRemoteServer(
     /** The source list on screen (see PhoneRemoteLibraryLines.sourcesLine), for every subscribed phone. */
     fun publishSources(line: String) {
         lastSources = line
+        clients.forEach { session -> if (session.subscribed) session.trySend(line) }
+    }
+
+    /** fork:live-scores - a favourite's match event (PhoneRemoteProtocol.scoreLine) for every subscribed phone; not replayed. */
+    fun publishScore(line: String) {
         clients.forEach { session -> if (session.subscribed) session.trySend(line) }
     }
 
@@ -311,6 +337,7 @@ internal class PhoneRemoteServer(
                                 lastTheme?.let(::send)
                                 lastSources?.let(::send)
                                 lastTonight?.let(::send)
+                                lastLiveTv?.let(::send)
                                 wakeLine?.let(::send)
                             }
                             is RemoteMessage.Seek -> listener.onSeek(message.positionMs)
@@ -337,8 +364,16 @@ internal class PhoneRemoteServer(
                             is RemoteMessage.AlbumTracks -> listener.onAlbumTracks(message.browseId, ::trySend)
                             is RemoteMessage.PlayTrack -> sendOpening(listener.onPlayTrack(message.browseId, message.index))
                             is RemoteMessage.TonightDo -> listener.onTonight(message.action, message.number)
+                            is RemoteMessage.LiveTvDo -> listener.onLiveTv(message.action)
                             is RemoteMessage.Menu -> listener.onMenu(message.target, ::trySend)
                             is RemoteMessage.Do -> listener.onMenuAction(message.target, message.code, message.args, ::trySend)
+                            is RemoteMessage.Point -> listener.onPoint(message.dx, message.dy)
+                            RemoteMessage.PointCentre -> listener.onPointCentre()
+                            is RemoteMessage.Click -> listener.onClick(message.button)
+                            is RemoteMessage.Scroll -> listener.onScroll(message.notches)
+                            is RemoteMessage.ScrollSideways -> listener.onScrollSideways(message.notches)
+                            is RemoteMessage.Press -> listener.onPress(message.button)
+                            is RemoteMessage.Release -> listener.onRelease(message.button)
                             else -> Unit
                         }
                     }
@@ -346,6 +381,8 @@ internal class PhoneRemoteServer(
             } catch (_: IOException) {
                 // The phone went away: screen off, Wi-Fi dropped, app closed.
             } finally {
+                // A drag cut short by the Wi-Fi must not leave the PC's mouse button down.
+                runCatching { listener.onPhoneGone() }
                 if (clients.remove(this)) {
                     publishClients()
                     log("Phone remote disconnected: $deviceName")

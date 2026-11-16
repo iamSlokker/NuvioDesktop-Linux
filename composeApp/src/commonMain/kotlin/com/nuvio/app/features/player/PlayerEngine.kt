@@ -47,6 +47,13 @@ interface PlayerEngineController {
     /** Whether [decodeSpeechSpot] can work for the current source. */
     val supportsSpeechSpots: Boolean get() = false
 
+    /**
+     * fork:live-tv-subtitles - [startSeconds] to [endSeconds] of what has already played, copied out of the player's
+     * own cache (no second connection, no seek) and decoded to 16 kHz mono PCM. Blocking. Null when unsupported or not
+     * in the cache any more.
+     */
+    fun decodeCachedAudio(startSeconds: Double, endSeconds: Double): FloatArray? = null
+
     /** Average bytes per second of the playing source, when known. */
     fun sourceBytesPerSecond(): Double? = null
     fun configureIosVideoOutput(settings: PlayerSettingsUiState) {}
@@ -286,6 +293,8 @@ data class PlayerPauseOverlayState(
     val pauseOverlayDescription: String = "",
     // Opt-in: adds the playing source as the overlay's bottom row, reusing streamTitle/providerName.
     val pauseOverlaySourceEnabled: Boolean = false,
+    // Off (Settings, or the right-click menu's Quick actions): the card never appears.
+    val pauseOverlayEnabled: Boolean = true,
     // Top-billed cast for the pause overlay's top-left block; empty hides it.
     val pauseOverlayCast: List<PlayerControlCastItem> = emptyList(),
 )

@@ -475,12 +475,26 @@ internal class NativePlayerController(
             },
             tracePlaybackStart = tracePlaybackStart,
             restoreVolume = restoreVolume,
+            fastStreamEligible = enableUserMpvOptions,
         )
         if (DesktopHostOs.current == DesktopHostOs.LINUX && restoreVolume && linuxMpris == null) {
             linuxMpris = LinuxMprisPlayer(this, linuxMprisOwner()) { !disposed && handle != 0L }
         }
         linuxMpris?.sourceChanging(handle)
         linuxHdr?.onAttach()
+        if (pending.fastStreamEligible) {
+            // fork:faststream-optin - FastStream stays on while the same streams re-attach (settings,
+            // surface rebuilds) and ends with the next video.
+            com.nuvio.app.features.youtube.YouTubeFastStream.retainOnly(pending.streamUrls)
+            val available = pending.streamUrls.all(com.nuvio.app.features.youtube.YouTubeFastStream::eligible)
+            // Automatic: a video opened at a fast speed, or as heavy as 4K, starts on FastStream's window.
+            if (available && !pending.streamUrls.all(com.nuvio.app.features.youtube.YouTubeFastStream::isEnabled) &&
+                com.nuvio.app.features.youtube.YouTubeFastStream.autoWanted(pending.sourceUrl, initialPlaybackSpeed)
+            ) {
+                com.nuvio.app.features.youtube.YouTubeFastStream.enable(pending.streamUrls, pending.headerLines.toHeaderMap(), window = true)
+            }
+            com.nuvio.app.features.youtube.YouTubeFastStreamState.update { it.copy(available = available, failed = it.failed && it.active) }
+        }
         pendingSource = pending
         svpInChain = pending.animeSvpFilter != null
         lastSeekFailureTargetMs = null
@@ -593,8 +607,10 @@ internal class NativePlayerController(
                 val mpvSourceUrl = if (com.nuvio.app.features.iptv.IptvPlaybackSession.isIptvUrl(pending.sourceUrl)) {
                     com.nuvio.app.features.iptv.IptvHlsSubtitleServer.playbackUrlFor(pending.sourceUrl, pending.headerLines)
                 } else {
-                    pending.sourceUrl
+                    // fork:faststream-optin - the loopback copy while FastStream is on for this stream.
+                    com.nuvio.app.features.youtube.YouTubeFastStream.playbackUrl(pending.sourceUrl)
                 }
+                val mpvAudioUrl = com.nuvio.app.features.youtube.YouTubeFastStream.playbackAudio(pending.sourceAudioUrl)
                 synchronized(nativeProcessLifecycleLock) {
                     if (linux) {
                         val claimed = runCatching {
@@ -674,7 +690,7 @@ internal class NativePlayerController(
                         newHandle = NativePlayerBridge.create(
                             hostViewPtr = hostViewPtr,
                             sourceUrl = withMpvFilenameHint(mpvSourceUrl, pending.mediaTitle),
-                            sourceAudioUrl = pending.sourceAudioUrl,
+                            sourceAudioUrl = mpvAudioUrl,
                             headerLines = pending.headerLines.toTypedArray(),
                             playWhenReady = pending.playWhenReady,
                             initialPositionMs = pending.initialPositionMs,
@@ -2209,6 +2225,47 @@ internal class NativePlayerController(
         }.getOrDefault(PlayerPlaybackSnapshot(isLoading = true))
     }
 
+    /**
+     * fork:faststream-optin - turns FastStream on or off for the playing source and reopens it where
+     * it is (a fresh player, as a surface rebuild does), reading from the download or from YouTube.
+     */
+    fun setFastStream(on: Boolean, window: Boolean = false, speed: Float? = null) {
+        if (disposed) return
+        val pending = pendingSource?.takeIf { it.fastStreamEligible } ?: return
+        val fastStream = com.nuvio.app.features.youtube.YouTubeFastStream
+        if (!pending.streamUrls.all(fastStream::eligible)) return
+        // The button over automatic mode: the whole video as a download, without a reopen.
+        if (on && !window && pending.streamUrls.all(fastStream::isEnabled) && pending.streamUrls.any(fastStream::isWindowed)) {
+            fastStream.downloadWhole(pending.streamUrls)
+            return
+        }
+        if (on == pending.streamUrls.all(fastStream::isEnabled)) return
+        val current = synchronized(handleLock) { handle }.takeIf { it != 0L }
+        val positionMs = current?.let { runCatching { NativePlayerBridge.positionMs(it) }.getOrNull() }
+            ?.takeIf { it > 0L } ?: pending.initialPositionMs
+        val paused = current?.let { runCatching { NativePlayerBridge.isPaused(it) }.getOrNull() } ?: !pending.playWhenReady
+        // The reopened player starts at the speed it was playing at, not the one the video opened with.
+        val playingSpeed = speed ?: current?.let { runCatching { NativePlayerBridge.speed(it) }.getOrNull() }
+        if (on) {
+            val headers = pending.headerLines.toHeaderMap()
+            fastStream.enable(pending.streamUrls, headers, window = window)
+        } else {
+            fastStream.release(pending.streamUrls)
+        }
+        Logger.withTag("FastStream").i { "${if (on) "on" else "off"}${if (window) " (automatic)" else ""}: reopening at ${positionMs}ms" }
+        val options = playingSpeed?.let { value ->
+            pending.extraMpvOptions.map { if (it.startsWith("speed=")) "speed=${value.coerceIn(0.25f, 4f)}" else it }
+        } ?: pending.extraMpvOptions
+        pendingSource = pending.copy(
+            initialPositionMs = positionMs,
+            initialProgressFraction = 0f,
+            playWhenReady = !paused,
+            extraMpvOptions = options,
+        )
+        lastSeekFailureTargetMs = null
+        attachPending()
+    }
+
     fun dispose() {
         disposed = true
         linuxHdr?.dispose()
@@ -2221,7 +2278,12 @@ internal class NativePlayerController(
         linuxPiPInput?.close()
         linuxWindowFocus?.close()
         linuxHeroGeometry?.close()
+        autoFastStreamTimer.stop()
         attachGeneration.incrementAndGet()
+        pendingSource?.takeIf { it.fastStreamEligible }?.let { closing ->
+            com.nuvio.app.features.youtube.YouTubeFastStream.release(closing.streamUrls)
+            com.nuvio.app.features.youtube.YouTubeFastStreamState.update { it.copy(available = false) }
+        }
         pendingSource = null
         host.onPeerReady = null
         onAction = { false }
@@ -2451,7 +2513,27 @@ internal class NativePlayerController(
     override fun setPlaybackSpeed(speed: Float) {
         handle.takeIf { it != 0L }?.let { NativePlayerBridge.setSpeed(it, speed) }
         applyDesktopBufferPreset(PlayerSettingsRepository.uiState.value.desktopBufferPreset, speed)
+        // fork:faststream-optin - automatic: past 1.25x googlevideo's pacing cannot keep up, so the YouTube
+        // stream moves to FastStream's window (one reopen at the same place and speed, then never again
+        // for this video).
+        // Waits until the speed has stopped changing: the HUD steps 1.1, 1.2, 1.3... and a reopen in the
+        // middle would start the new player at a speed the user has already gone past.
+        requestedSpeed = speed
+        autoFastStreamTimer.restart()
     }
+
+    @Volatile
+    private var requestedSpeed = 1f
+
+    private val autoFastStreamTimer = javax.swing.Timer(AUTO_FASTSTREAM_SETTLE_MS) {
+        val speed = requestedSpeed
+        if (disposed || speed < com.nuvio.app.features.youtube.YouTubeFastStream.AUTO_SPEED) return@Timer
+        val pending = pendingSource?.takeIf { it.fastStreamEligible } ?: return@Timer
+        val fastStream = com.nuvio.app.features.youtube.YouTubeFastStream
+        if (pending.streamUrls.all(fastStream::eligible) && !pending.streamUrls.all(fastStream::isEnabled)) {
+            setFastStream(on = true, window = true, speed = speed)
+        }
+    }.apply { isRepeats = false }
 
     override fun setMuted(muted: Boolean) {
         handle.takeIf { it != 0L }?.let { NativePlayerBridge.setMute(it, muted) }
@@ -2618,6 +2700,43 @@ internal class NativePlayerController(
             FloatArray(samples.remaining()).also(samples::get)
         } finally {
             file.delete()
+        }
+    }
+
+    /**
+     * fork:live-tv-subtitles - what already played from [startSeconds] to [endSeconds], copied out of mpv's own cache
+     * (dump-cache: the live rewind buffer, so no second connection to the provider and no seek on the live stream), then
+     * decoded from that local copy to 16 kHz mono float PCM. Sample 0 is [startSeconds] (mpv starts a file at its first
+     * timestamp). Null when the range has left the cache, or on a bridge without the command (macOS).
+     */
+    override fun decodeCachedAudio(startSeconds: Double, endSeconds: Double): FloatArray? {
+        val current = handle.takeIf { it != 0L } ?: return null
+        if (endSeconds - startSeconds < 1.0) return null
+        val directory = File(System.getProperty("java.io.tmpdir"), "nuvio-autosync").apply { mkdirs() }
+        val dump = File.createTempFile("live-", ".ts", directory)
+        val pcm = File.createTempFile("live-", ".f32", directory)
+        return try {
+            val dumped = try {
+                NativePlayerBridge.mpvCommand(
+                    current,
+                    arrayOf("dump-cache", "%.3f".format(java.util.Locale.ROOT, startSeconds), "%.3f".format(java.util.Locale.ROOT, endSeconds), dump.absolutePath),
+                )
+            } catch (_: UnsatisfiedLinkError) {
+                -1
+            }
+            if (dumped < 0 || dump.length() < 4_096) return null
+            val decoded = try {
+                NativePlayerBridge.decodeAudioUrl(dump.absolutePath, emptyArray(), 0.0, endSeconds - startSeconds, 16_000, 1, pcm.absolutePath)
+            } catch (_: UnsatisfiedLinkError) {
+                -2
+            }
+            // -1 is the native time limit: what was written by then is real audio.
+            if ((decoded != 0 && decoded != -1) || pcm.length() < 4) return null
+            val samples = ByteBuffer.wrap(pcm.readBytes()).order(ByteOrder.LITTLE_ENDIAN).asFloatBuffer()
+            FloatArray(samples.remaining()).also(samples::get)
+        } finally {
+            dump.delete()
+            pcm.delete()
         }
     }
 
@@ -3086,6 +3205,9 @@ private const val METERED_PAUSED_PREFETCH_SECS = "1"
 /** Minimum buffer ahead of the playhead before pausing is allowed to freeze prefetch. */
 private const val METERED_FREEZE_MIN_BUFFER_MS = 3_000L
 
+/** fork:faststream-optin - how long the speed must stay put before automatic FastStream reopens the player. */
+private const val AUTO_FASTSTREAM_SETTLE_MS = 700
+
 private data class DesktopBufferLimits(
     val readaheadSeconds: Int,
     val cacheSeconds: Int,
@@ -3242,7 +3364,13 @@ private data class PendingSource(
     val controlsPageUrl: String,
     val tracePlaybackStart: Boolean = false,
     val restoreVolume: Boolean = false,
-)
+    /** fork:faststream-optin - the main player (never a trailer): its YouTube streams may use FastStream. */
+    val fastStreamEligible: Boolean = false,
+) {
+    /** fork:faststream-optin - every stream URL mpv opens for this source: the video, then each audio track. */
+    val streamUrls: List<String>
+        get() = listOf(sourceUrl) + sourceAudioUrl?.lines()?.filter { it.isNotBlank() }?.map { it.substringAfterLast('\t') }.orEmpty()
+}
 
 // Standard bitstream formats to hand untouched to a receiver when passthrough is on. dts-hd
 // covers DTS-HD High Resolution; dts-hd-ma covers DTS-HD Master Audio.
@@ -3579,6 +3707,8 @@ internal fun PlayerControlsState.toControlsJson(
         appendJsonField("pauseOverlayDescription", pauseOverlay.pauseOverlayDescription)
         append(',')
         appendJsonField("pauseOverlaySourceEnabled", pauseOverlay.pauseOverlaySourceEnabled)
+        append(',')
+        appendJsonField("pauseOverlayEnabled", pauseOverlay.pauseOverlayEnabled)
         append(',')
         appendJsonArrayField("pauseOverlayCast", pauseOverlay.pauseOverlayCast) { appendCastItemJson(it) }
         append(',')

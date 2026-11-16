@@ -16,6 +16,8 @@ BRIDGE = 'composeApp/src/desktopMain/kotlin/com/nuvio/app/features/player/deskto
 SHARED = 'composeApp/src/desktopMain/kotlin/com/nuvio/app/Shared.kt'
 LINUX_BRIDGE = 'composeApp/src/desktopMain/native/linux/player_bridge.cpp'
 WINDOWS_BRIDGE = 'composeApp/src/desktopMain/native/windows/player_bridge.cpp'
+WHISPER_JNI = 'composeApp/src/desktopMain/native/whisper-jni/whisper_jni.cpp'
+WHISPER = 'composeApp/src/desktopMain/kotlin/com/nuvio/app/features/voice/WhisperNative.kt'
 CONTROLS_JS = 'composeApp/src/desktopMain/resources/player-ui/controls.js'
 CONTROLS_HTML = 'composeApp/src/desktopMain/resources/player-ui/controls.html'
 
@@ -85,6 +87,15 @@ class ChecklistTest(unittest.TestCase):
         self.git('merge', '-q', 'windows-symbol')
         result = self.upstream_change({BRIDGE: 'object NativePlayerBridge {\n    external fun neverPorted()\n}\n'})
         self.assertEqual(['neverPorted'], self.names(result['external fun'], False))
+
+    def test_the_shared_whisper_jni_is_built_for_linux(self):
+        # The checkout already has upstream's shared JNI, which the Linux whisper build compiles.
+        self.write({WHISPER_JNI: 'JNIEXPORT jstring JNICALL Java_x_WhisperNative_nativeTranscribeWords() {}\n'})
+        self.commit('integrated')
+        result = self.upstream_change({
+            WHISPER: 'object WhisperNative {\n    external fun nativeTranscribeWords(handle: Long): String?\n}\n',
+        })
+        self.assertEqual(['nativeTranscribeWords'], self.names(result['external fun'], True))
 
     def test_an_os_branch_needs_a_linux_case_nearby(self):
         padding = '// padding\n' * 20

@@ -522,3 +522,17 @@ cmake --build composeApp/build/native/linux --target linux_file_chooser_portal_p
 python3 composeApp/src/desktopMain/native/linux/tests/file_chooser_portal_test.py \
   composeApp/build/native/linux/linux_file_chooser_portal_probe
 ```
+
+The phone remote's Pointer and the controller cursor (upstream's `PhoneRemotePointer`, a `java.awt.Robot`) move the
+real cursor. On Wayland, XTest only moves Xwayland's own pointer, so `remote_pointer_portal.cpp`
+(`org.freedesktop.portal.RemoteDesktop`; JNI in `remote_pointer_portal_jni.cpp`, Kotlin in `LinuxRemotePointer.kt`)
+runs one pointer-and-keyboard session for the app's life: the desktop asks once, and the portal's restore token
+(kept in the app data folder as `remote-desktop-portal.token`) spares later runs the question. Input is sent without
+replies; a refused or missing portal falls back to XTest. Its private-bus suite replays first grants, restores,
+version 1 portals, refusals, errors, an unanswered dialog, the portal ending the session and a missing portal or bus:
+
+```sh
+cmake --build composeApp/build/native/linux --target linux_remote_pointer_portal_probe
+python3 composeApp/src/desktopMain/native/linux/tests/remote_pointer_portal_test.py \
+  composeApp/build/native/linux/linux_remote_pointer_portal_probe
+```

@@ -1421,6 +1421,29 @@ JNI_METHOD(jdouble, speechSourceBytesPerSecond)(JNIEnv *env, jobject, jlong hand
     });
 }
 
+// One mpv command, synchronously (dump-cache for the live subtitle sync), as the Windows bridge runs it; mpv's result.
+JNI_METHOD(jint, mpvCommand)(JNIEnv *env, jobject, jlong handle, jobjectArray args) {
+    return guarded(env, [&]() -> jint {
+        auto player = playerFromHandle(handle);
+        if (!player || !args) return -1;
+        std::vector<std::string> parts;
+        const jsize count = env->GetArrayLength(args);
+        for (jsize i = 0; i < count; ++i) {
+            auto item = static_cast<jstring>(env->GetObjectArrayElement(args, i));
+            parts.push_back(text(env, item));
+            env->DeleteLocalRef(item);
+        }
+        if (parts.empty()) return -1;
+        std::vector<const char *> argv;
+        argv.reserve(parts.size() + 1);
+        for (const auto &part : parts) argv.push_back(part.c_str());
+        argv.push_back(nullptr);
+        std::lock_guard<std::mutex> lock(player->operations);
+        if (!player->mpv || player->stopping) return -1;
+        return mpv_command(player->mpv, argv.data());
+    });
+}
+
 static jint decodeAudioSpot(JNIEnv *env, jlong handle, jdouble startSeconds, jdouble durationSeconds,
                             jint sampleRate, jint channelCount, jstring outputPath) {
     return guarded(env, [&]() -> jint {
