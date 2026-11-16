@@ -6,7 +6,7 @@ name: Android remote
 on:
   workflow_dispatch:
   push:
-    branches: [Spyder, windows-tv-adaptive, linux]
+    branches: [Spyder, windows-tv-adaptive]
     paths:
       - 'remote-android/**'
       - '.github/workflows/android-remote.yml'
@@ -57,7 +57,7 @@ jobs:
       # A prerelease under its own tag: the desktop updater reads /releases/latest (never a
       # prerelease) and the "Nightly" tag, so this release can never be mistaken for a desktop build.
       - name: Publish NuvioRemote release
-        if: github.ref == 'refs/heads/Spyder' || github.ref == 'refs/heads/windows-tv-adaptive' || github.ref == 'refs/heads/linux'
+        if: github.ref == 'refs/heads/Spyder' || github.ref == 'refs/heads/windows-tv-adaptive'
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
