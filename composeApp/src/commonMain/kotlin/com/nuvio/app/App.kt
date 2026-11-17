@@ -445,6 +445,9 @@ import com.nuvio.app.features.watched.WatchedRepository
 import com.nuvio.app.features.watchprogress.ContinueWatchingItem
 import com.nuvio.app.features.watchprogress.ContinueWatchingPreferencesRepository
 import com.nuvio.app.features.watchprogress.ResumePromptRepository
+import com.nuvio.app.features.watchprogress.isUpcoming
+import com.nuvio.app.features.servers.serverPlaybackMessage
+import com.nuvio.app.features.servers.serverResumePositionMs
 import com.nuvio.app.features.watchprogress.WatchProgressPlaybackSession
 import com.nuvio.app.features.watchprogress.WatchProgressRepository
 import com.nuvio.app.features.watchprogress.nextUpDismissKey
@@ -584,6 +587,9 @@ data class CatalogRoute(
     val folderId: String? = null,
     val sourceKey: String? = null,
     val discoverRowKey: String? = null,
+    val serverConnectionId: String? = null,
+    val serverLibraryId: String? = null,
+    val serverCollectionId: String? = null,
 ) {
     constructor(
         title: String,
@@ -597,6 +603,7 @@ data class CatalogRoute(
             is CatalogTarget.Library -> CatalogTargetKind.LIBRARY
             is CatalogTarget.CollectionSource -> CatalogTargetKind.COLLECTION_SOURCE
             is CatalogTarget.DiscoverRow -> CatalogTargetKind.DISCOVER_ROW
+            is CatalogTarget.Server -> CatalogTargetKind.SERVER
         }.name,
         contentType = target.contentType,
         supportsPagination = target.supportsPagination,
@@ -609,6 +616,9 @@ data class CatalogRoute(
         folderId = (target as? CatalogTarget.CollectionSource)?.folderId,
         sourceKey = (target as? CatalogTarget.CollectionSource)?.sourceKey,
         discoverRowKey = (target as? CatalogTarget.DiscoverRow)?.rowKey,
+        serverConnectionId = (target as? CatalogTarget.Server)?.connectionId,
+        serverLibraryId = (target as? CatalogTarget.Server)?.libraryId,
+        serverCollectionId = (target as? CatalogTarget.Server)?.collectionId,
     )
 
     fun toCatalogTarget(): CatalogTarget =
@@ -638,6 +648,13 @@ data class CatalogRoute(
             CatalogTargetKind.DISCOVER_ROW -> CatalogTarget.DiscoverRow(
                 rowKey = requireNotNull(discoverRowKey),
                 contentType = contentType,
+            )
+
+            CatalogTargetKind.SERVER -> CatalogTarget.Server(
+                connectionId = requireNotNull(serverConnectionId),
+                libraryId = serverLibraryId,
+                contentType = contentType,
+                collectionId = serverCollectionId,
             )
         }
 }
@@ -2380,6 +2397,17 @@ private fun MainAppContent(
                         lastStreamTitle = playerLaunch.streamTitle,
                         lastSourceUrl = playerLaunch.sourceUrl,
                     )
+                    if (durationMs != null && durationMs > 0L) {
+                        com.nuvio.app.features.addons.AddonEventDispatcher.player(
+                            target = com.nuvio.app.features.addons.AddonPlayerEventTarget(
+                                type = session.contentType,
+                                videoId = session.videoId,
+                            ),
+                            action = com.nuvio.app.features.addons.AddonPlayerAction.STOP,
+                            currentTimeMs = if (result.endedByUser) result.positionMs else durationMs,
+                            durationMs = durationMs,
+                        )
+                    }
                     val snapshot = PlayerPlaybackSnapshot(
                         isLoading = false,
                         isPlaying = false,
@@ -3355,6 +3383,7 @@ private fun MainAppContent(
             if (
                 continueWatchingPreferencesUiState.clickAction.opensDetails(
                     canOpenDetails = !item.isCloudLibraryContinueWatchingItem(),
+                    isUpcoming = item.isUpcoming(),
                 )
             ) {
                 resumePromptItem = null
@@ -4010,6 +4039,7 @@ private fun MainAppContent(
                         },
                         onOpenPartyMedia = ::openPartyMedia,
                         stream = launch.stream,
+                        sourceFromLinkCache = launch.sourceFromLinkCache,
                         // fork:pip-browse - from the corner box there is no route to pop: the player just ends.
                         onBack = if (hosted == null) {
                             onBackFromPlayer
@@ -5085,6 +5115,7 @@ private fun MainAppContent(
             val continueWatchingUsesDetailsByDefault = selectedContinueWatching?.let { item ->
                 continueWatchingPreferencesUiState.clickAction.opensDetails(
                     canOpenDetails = !item.isCloudLibraryContinueWatchingItem(),
+                    isUpcoming = item.isUpcoming(),
                 )
             } == true
 
@@ -5634,6 +5665,7 @@ private fun MainAppContent(
                                 disableProgressTracking = launch.disableProgressTracking,
                                 autoPlayMode = launch.autoPlayMode,
                                 stream = cachedDirectStream,
+                                sourceFromLinkCache = true,
                             )
                         if (playerSettings.externalPlayerEnabled) {
                             openExternalPlayback(playerLaunch)
@@ -5673,7 +5705,27 @@ private fun MainAppContent(
                     if (streamsUiState.requestToken != expectedStreamsRequestToken) return@LaunchedEffect
                     val selectedStream = streamsUiState.autoPlayStream ?: return@LaunchedEffect
                     val selectedSourceIdentityKey = selectedStream.playerSourceIdentityKey()
-                    val stream = if (DirectDebridPlaybackResolver.shouldResolveToPlayableStream(selectedStream)) {
+                    val stream = if (selectedStream.needsUsenetPreparation) {
+                        runCatching {
+                            com.nuvio.app.features.usenet.UsenetEngine.resolve(selectedStream, streamLookupSeasonNumber, streamLookupEpisodeNumber)
+                        }
+                            .onFailure { if (it is CancellationException) throw it }
+                            .getOrElse { error ->
+                                if (!StreamsRepository.skipAutoPlayStream(selectedStream)) {
+                                    NuvioToastController.show(error.message ?: "This Usenet release could not be opened")
+                                }
+                                return@LaunchedEffect
+                            }
+                    } else if (selectedStream.needsServerPreparation) {
+                        runCatching { com.nuvio.app.features.servers.ServerPlayback.prepare(selectedStream) }
+                            .onFailure { if (it is CancellationException) throw it }
+                            .getOrElse { error ->
+                                if (!StreamsRepository.skipAutoPlayStream(selectedStream)) {
+                                    NuvioToastController.show(error.serverPlaybackMessage())
+                                }
+                                return@LaunchedEffect
+                            }
+                    } else if (DirectDebridPlaybackResolver.shouldResolveToPlayableStream(selectedStream)) {
                         when (
                             val resolved = DirectDebridPlaybackResolver.resolveToPlayableStream(
                                 stream = selectedStream,
@@ -5848,6 +5900,68 @@ private fun MainAppContent(
                     // "Play on device…": resolve as usual, then hand the stream to the cast picker.
                     castToDevice: Boolean = false,
                 ) {
+                    if (stream.needsUsenetPreparation) {
+                        if (castToDevice) {
+                            NuvioToastController.show("Usenet sources can't be played on another device yet")
+                            return
+                        }
+                        if (resolvingDebridStream) return
+                        streamRouteScope.launch {
+                            resolvingDebridStream = true
+                            val opened = runCatching {
+                                com.nuvio.app.features.usenet.UsenetEngine.resolve(stream, streamLookupSeasonNumber, streamLookupEpisodeNumber)
+                            }
+                                .onFailure { if (it is CancellationException) throw it }
+                                .getOrElse { error ->
+                                    resolvingDebridStream = false
+                                    NuvioToastController.show(error.message ?: "This Usenet release could not be opened")
+                                    return@launch
+                                }
+                            resolvingDebridStream = false
+                            openSelectedStream(
+                                stream = opened,
+                                resolvedResumePositionMs = resolvedResumePositionMs,
+                                resolvedResumeProgressFraction = resolvedResumeProgressFraction,
+                                forceExternal = false,
+                                forceInternal = true,
+                                sourceIdentityKey = sourceIdentityKey,
+                                // The engine's link lives only as long as its session.
+                                saveForReuse = false,
+                            )
+                        }
+                        return
+                    }
+                    if (stream.needsServerPreparation) {
+                        if (resolvingDebridStream) return
+                        streamRouteScope.launch {
+                            resolvingDebridStream = true
+                            val prepared = runCatching { com.nuvio.app.features.servers.ServerPlayback.prepare(stream) }
+                                .onFailure { if (it is CancellationException) throw it }
+                                .getOrElse { error ->
+                                    resolvingDebridStream = false
+                                    NuvioToastController.show(error.serverPlaybackMessage())
+                                    return@launch
+                                }
+                            val serverResumeMs = if (resolvedResumePositionMs == 0L) {
+                                null // Start from the beginning was asked for.
+                            } else {
+                                serverResumePositionMs(prepared, effectiveVideoId)
+                            }
+                            resolvingDebridStream = false
+                            openSelectedStream(
+                                stream = prepared,
+                                resolvedResumePositionMs = serverResumeMs ?: resolvedResumePositionMs,
+                                resolvedResumeProgressFraction = resolvedResumeProgressFraction.takeIf { serverResumeMs == null },
+                                forceExternal = false,
+                                forceInternal = true,
+                                sourceIdentityKey = sourceIdentityKey,
+                                // A server's playback URL carries its access token and a session id.
+                                saveForReuse = false,
+                                castToDevice = castToDevice,
+                            )
+                        }
+                        return
+                    }
                     if (stream.youTubeIdToResolve != null) {
                         if (resolvingDebridStream) return
                         streamRouteScope.launch {

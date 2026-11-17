@@ -20,6 +20,9 @@ import com.nuvio.app.features.watchprogress.WatchProgressCompletionPercentThresh
 import com.nuvio.app.features.watchprogress.WatchProgressPlaybackSession
 import com.nuvio.app.features.watchprogress.WatchProgressRepository
 import com.nuvio.app.features.watchprogress.buildPlaybackVideoId
+import com.nuvio.app.features.addons.AddonEventDispatcher
+import com.nuvio.app.features.addons.AddonPlayerAction
+import com.nuvio.app.features.addons.AddonPlayerEventTarget
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -113,7 +116,10 @@ internal val PlayerScreenRuntime.playbackSession: WatchProgressPlaybackSession
         lastStreamTitle = activeStreamTitle,
         lastStreamSubtitle = activeStreamSubtitle,
         pauseDescription = activePauseDescription,
-        lastSourceUrl = activeSourceUrl,
+        // A media server's URL carries its access token and a session that ends with this playback.
+        lastSourceUrl = activeSourceUrl.takeUnless {
+            isServerSourcePlaying() || com.nuvio.app.features.usenet.UsenetEngine.isSessionUrl(it)
+        },
     )
 
 internal fun PlayerScreenRuntime.resetIdentityStateIfNeeded() {
@@ -502,8 +508,43 @@ internal suspend fun PlayerScreenRuntime.resolveParentalGuideImdbId(): String? {
     )
 }
 
+/**
+ * Stremio player events for tracking addons (upstream 964ecfd8d): start on play/resume, pause on
+ * pause, stop once on exit, video change or end, and the current state again after a seek.
+ */
+internal fun PlayerScreenRuntime.emitAddonPlayerEvent(action: AddonPlayerAction) {
+    val durationMs = playbackSnapshot.durationMs
+    if (isShortPlaceholderDuration(durationMs)) return
+    val positionMs = playbackSnapshot.positionMs
+    val active = activeAddonPlayerEventTarget
+    if (action == AddonPlayerAction.STOP) {
+        if (active == null) return
+        activeAddonPlayerEventTarget = null
+        lastAddonPlayerAction = null
+        AddonEventDispatcher.player(active, AddonPlayerAction.STOP, positionMs, durationMs)
+        return
+    }
+    val session = playbackSession
+    val target = AddonPlayerEventTarget(type = session.contentType, videoId = session.videoId)
+    if (active != null && active != target) {
+        AddonEventDispatcher.player(active, AddonPlayerAction.STOP, positionMs, durationMs)
+        activeAddonPlayerEventTarget = null
+        lastAddonPlayerAction = null
+    }
+    if (action == AddonPlayerAction.PAUSE && activeAddonPlayerEventTarget == null) return
+    activeAddonPlayerEventTarget = target
+    lastAddonPlayerAction = action
+    AddonEventDispatcher.player(target, action, positionMs, durationMs)
+}
+
+internal fun PlayerScreenRuntime.resendAddonPlayerStateAfterSeek() {
+    val action = lastAddonPlayerAction ?: return
+    emitAddonPlayerEvent(action)
+}
+
 internal fun PlayerScreenRuntime.flushWatchProgress(paused: Boolean = false) {
     if (progressTrackingDisabled) return
+    emitAddonPlayerEvent(if (paused) AddonPlayerAction.PAUSE else AddonPlayerAction.STOP)
     // Teardown can zero the live snapshot before the flush runs; fall back to the last meaningful
     // sample of the current video so the final position (and its completion) is not dropped.
     val snapshot = playbackSnapshot.progressSnapshotForFlush(
@@ -626,6 +667,7 @@ internal fun PlayerScreenRuntime.scheduleProgressSyncAfterSeek() {
             session = playbackSession,
             snapshot = playbackSnapshot,
         )
+        resendAddonPlayerStateAfterSeek()
 
         val progressPercent = currentPlaybackProgressPercent()
         // No upper bound. This used to stop at 80% so that seeking near the end could not mark an
