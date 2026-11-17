@@ -28,6 +28,11 @@ import com.nuvio.app.features.tracking.resolveContinueWatchingSource
 import com.nuvio.app.features.tracking.resolveLibrarySource
 import com.nuvio.app.features.tracking.trackingProvider
 import com.nuvio.app.features.watching.sync.WatchedSyncAdapter
+import com.nuvio.app.features.addons.ADDON_LIBRARY_RESOURCE
+import com.nuvio.app.features.addons.AddonEventDispatcher
+import com.nuvio.app.features.addons.AddonLibraryAction
+import com.nuvio.app.features.servers.ServerWatched
+import com.nuvio.app.features.watchprogress.buildPlaybackVideoId
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -668,7 +673,45 @@ object WatchedRepository {
         items.filter { it.isEpisode }.map { it.id }.distinct().forEach {
             ContinueWatchingPreferencesRepository.removeDismissedNextUpKeysForContent(it)
         }
+        val changedItems = if (AddonEventDispatcher.hasEnabledAddonFor(ADDON_LIBRARY_RESOURCE)) {
+            items.filterNot { isWatched(it.id, it.type, it.season, it.episode) }
+        } else {
+            emptyList()
+        }
         markWatched(items = items, remoteSync = WatchedRemoteSync.Manual)
+        emitAddonWatchedEvents(changedItems, AddonLibraryAction.WATCHED)
+    }
+
+    /** Stremio `library` watched/unwatched events for tracking addons (upstream 964ecfd8d). */
+    private fun emitAddonWatchedEvents(items: Collection<WatchedItem>, action: AddonLibraryAction) {
+        items.groupBy { it.type to it.id }.forEach { (key, groupItems) ->
+            val (type, id) = key
+            if (groupItems.any { !it.isEpisode }) {
+                AddonEventDispatcher.library(type = type, id = id, action = action)
+            } else {
+                AddonEventDispatcher.libraryVideos(
+                    type = type,
+                    id = id,
+                    action = action,
+                    videoIds = groupItems.map { item ->
+                        buildPlaybackVideoId(
+                            parentMetaId = item.id,
+                            seasonNumber = item.season,
+                            episodeNumber = item.episode,
+                        )
+                    },
+                )
+            }
+        }
+    }
+
+    /** Watched state read from a media server: kept here only, sent nowhere. */
+    internal fun markWatchedLocally(items: Collection<WatchedItem>) {
+        markWatched(items = items, remoteSync = WatchedRemoteSync.Skip, syncRemote = false)
+    }
+
+    internal fun unmarkWatchedLocally(items: Collection<WatchedItem>) {
+        unmarkWatched(items = items, syncRemote = false)
     }
 
     internal fun markWatchedFromPlaybackCompletion(item: WatchedItem, syncRemote: Boolean = true) {
@@ -724,7 +767,13 @@ object WatchedRepository {
     }
 
     fun unmarkWatched(items: Collection<WatchedItem>) {
+        val changedItems = if (AddonEventDispatcher.hasEnabledAddonFor(ADDON_LIBRARY_RESOURCE)) {
+            items.filter { isWatched(it.id, it.type, it.season, it.episode) }
+        } else {
+            emptyList()
+        }
         unmarkWatched(items = items, syncRemote = true)
+        emitAddonWatchedEvents(changedItems, AddonLibraryAction.UNWATCHED)
     }
 
     private fun unmarkWatched(
@@ -835,9 +884,16 @@ object WatchedRepository {
     }
 
     private fun pushMarksToServer(
-        items: Collection<WatchedItem>,
+        allItems: Collection<WatchedItem>,
         remoteSync: WatchedRemoteSync,
     ) {
+        // Media servers: a server's own title is marked on that server and nowhere else; a manual
+        // mark on a catalog title is mirrored to the servers that have it (upstream ServerWatched).
+        val (serverItems, items) = allItems.partition(ServerWatched::isServerItem)
+        if (remoteSync == WatchedRemoteSync.Manual) {
+            if (serverItems.isNotEmpty()) syncScope.launch { ServerWatched.apply(serverItems, played = true) }
+            ServerWatched.mirror(items, played = true)
+        }
         syncScope.launch {
             runCatching {
                 if (items.isEmpty()) return@runCatching
@@ -864,7 +920,10 @@ object WatchedRepository {
         }
     }
 
-    private fun pushDeleteToServer(items: Collection<WatchedItem>) {
+    private fun pushDeleteToServer(allItems: Collection<WatchedItem>) {
+        val (serverItems, items) = allItems.partition(ServerWatched::isServerItem)
+        if (serverItems.isNotEmpty()) syncScope.launch { ServerWatched.apply(serverItems, played = false) }
+        ServerWatched.mirror(items, played = false)
         syncScope.launch {
             runCatching {
                 if (items.isEmpty()) return@runCatching

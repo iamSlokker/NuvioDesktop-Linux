@@ -66,6 +66,8 @@ internal object LocalAccountDataCleaner {
         com.nuvio.app.features.streams.CwStreamCache.clear()
         StreamPrefetchService.reset()
         MetaDetailsRepository.clear()
+        com.nuvio.app.features.servers.ServerRepository.clearLocalState()
+        com.nuvio.app.features.usenet.UsenetSettingsRepository.clearLocalState()
         SearchRepository.reset()
         // Reloads from the store the platform wipe just emptied.
         com.nuvio.app.features.search.SearchHistoryRepository.onProfileChanged()

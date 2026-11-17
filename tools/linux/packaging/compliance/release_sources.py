@@ -178,8 +178,11 @@ def build(work, media_cache, ubuntu_cache, offline=False):
     whisper = sorted(artifacts.glob('Nuvio-Whisper-source-*.tar.gz'))
     if len(whisper) != 1:
         raise ValueError('Expected exactly one Nuvio-Whisper-source archive')
+    usenet = sorted(artifacts.glob('Nuvio-Usenet-source-*.tar.gz'))
+    if len(usenet) != 1:
+        raise ValueError('Expected exactly one Nuvio-Usenet-source archive')
     common = [application, produced['media'], *produced['graalvm'], native_inputs[0], torrserver[0], innertubex[0],
-              engine[0], whisper[0]]
+              engine[0], whisper[0], usenet[0]]
     packages = {}
     for pattern, kind in (('*.deb', 'deb'), ('*.flatpak', 'flatpak'), ('*.AppImage', 'appimage')):
         for package in sorted(artifacts.glob(pattern)):

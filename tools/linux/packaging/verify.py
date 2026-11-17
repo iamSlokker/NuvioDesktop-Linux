@@ -20,7 +20,7 @@ from artwork_contract import release_rules, verify_packaged_artwork
 from notice_contract import TARGET as NOTICE_TARGET, expected as notice_files, verify_packaged_notices
 from flatpak_bundle import check_unpublished_bundle
 import native_evidence
-from stage import TORRSERVER
+from stage import TORRSERVER, USENET_ENGINE
 from torrserver.build import check_static as check_static_torrserver
 
 FORBIDDEN = [b'/home/hmacedo', b'/var/home/hmacedo', b'/home/linuxbrew', b'/opt/homebrew',
@@ -215,6 +215,7 @@ REQUIRED = ['bin/nuvio', 'bin/nuvio-desktop', 'lib/nuvio', 'lib/runtime/lib/libj
             TORRSERVER, 'share/licenses/TorrServer/LICENSE', 'share/licenses/TorrServer/NOTICE.txt',
             'lib/native/libnuvio_engine.so', 'share/licenses/NuvioEngine/LICENSE', 'share/licenses/NuvioEngine/NOTICE.txt',
             'lib/native/libnuvio_whisper.so', 'share/licenses/whisper.cpp/LICENSE', 'share/licenses/whisper.cpp/NOTICE.txt',
+            USENET_ENGINE, 'share/licenses/NuvioUsenet/LICENSE', 'share/licenses/NuvioUsenet/NOTICE.txt',
             str(native_evidence.GRAALVM_NOTICES / 'LICENSE.txt')]
 
 SCHEME_HANDLER = 'x-scheme-handler/nuvio'
@@ -278,7 +279,7 @@ def check_image(root, evidence, require_smoke=False, smoke_identity=False):
     for rel in REQUIRED:
         if not (root / rel).is_file() or (root / rel).stat().st_size == 0:
             raise ValueError('Missing/empty required artifact: ' + rel)
-    for rel in ['bin/nuvio', 'bin/nuvio-desktop', 'lib/nuvio', TORRSERVER]:
+    for rel in ['bin/nuvio', 'bin/nuvio-desktop', 'lib/nuvio', TORRSERVER, USENET_ENGINE]:
         if not os.access(root / rel, os.X_OK):
             raise ValueError('Non-executable launcher: ' + rel)
     native = native_evidence.verify(root, evidence)
@@ -437,6 +438,10 @@ def artifacts(work, formats):
     innertubex_sources = sorted(dest.glob('Nuvio-InnerTubeX-source-*.tar.gz'))
     if len(innertubex_sources) != 1 or innertubex_sources[0].stat().st_size < 4096:
         raise ValueError('Missing/ambiguous InnerTubeX source archive in artifacts')
+    # Corresponding source of the bundled Usenet engine (GPL-3.0), from usenet/build.py.
+    usenet_sources = sorted(dest.glob('Nuvio-Usenet-source-*.tar.gz'))
+    if len(usenet_sources) != 1 or usenet_sources[0].stat().st_size < 4096:
+        raise ValueError('Missing/ambiguous Usenet engine source archive in artifacts')
     for suffix in wanted:
         files = list(dest.glob('*.' + suffix))
         if len(files) != 1 or files[0].stat().st_size < 4096:
@@ -493,6 +498,7 @@ def artifacts(work, formats):
                     ['ostree', '--repo=' + tmp, 'cat', ref, exported]).decode(), 'Flatpak ' + exported)
                 hdr_probe = flatpak_hdr_probe(tmp, ref)
                 torrserver = flatpak_executable(tmp, ref, TORRSERVER, 'TorrServer')
+                usenet_engine = flatpak_executable(tmp, ref, USENET_ENGINE, 'Usenet engine')
                 # Inspect the exported bytes, not just the canonical input or release
                 # stamp: no JAR or JVM may ship, and the exported executable, manifest
                 # and notices must be the ones bound to the retained native-image inputs.
@@ -513,7 +519,7 @@ def artifacts(work, formats):
                 notices = verify_packaged_notices(image)
                 (dest / 'flatpak-audit.json').write_text(json.dumps(
                     dict(source=info, ref=ref, metadata=metadata.decode(), onnx=onnx, artwork=artwork,
-                         notices=notices, hdr_probe=hdr_probe, torrserver=torrserver, bundle=bundle, backend=backend,
+                         notices=notices, hdr_probe=hdr_probe, torrserver=torrserver, usenet_engine=usenet_engine, bundle=bundle, backend=backend,
                          native_image=native_summary(native, module_resources), native_payloads=payloads,
                          smoke=smoke, native_image_evidence=evidence_archive, desktop_entry=desktop_entry), indent=2) + '\n')
             if not (work / 'flatpak-build/metadata').is_file():

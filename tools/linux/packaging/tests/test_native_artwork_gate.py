@@ -46,11 +46,12 @@ class NativeArtworkGateTest(unittest.TestCase):
                      'share/licenses/mpv/LICENSE.GPL', verify.TORRSERVER, 'share/licenses/TorrServer/LICENSE',
                      'share/licenses/TorrServer/NOTICE.txt', 'lib/native/libnuvio_engine.so',
                      'share/licenses/NuvioEngine/LICENSE', 'share/licenses/NuvioEngine/NOTICE.txt',
-                     'lib/native/libnuvio_whisper.so', 'share/licenses/whisper.cpp/LICENSE', 'share/licenses/whisper.cpp/NOTICE.txt']:
+                     'lib/native/libnuvio_whisper.so', 'share/licenses/whisper.cpp/LICENSE', 'share/licenses/whisper.cpp/NOTICE.txt',
+                     verify.USENET_ENGINE, 'share/licenses/NuvioUsenet/LICENSE', 'share/licenses/NuvioUsenet/NOTICE.txt']:
             path = image / name
             path.parent.mkdir(parents=True, exist_ok=True)
             path.write_bytes(b'fixture, not a native binary')
-            if name.startswith('bin/') or name == verify.TORRSERVER:
+            if name.startswith('bin/') or name in (verify.TORRSERVER, verify.USENET_ENGINE):
                 path.chmod(0o755)
         shutil.copyfile(Path(verify.__file__).parent / 'com.nuvio.media.desktop.desktop',
                         image / 'share/applications/com.nuvio.media.desktop.desktop')
@@ -67,6 +68,7 @@ class NativeArtworkGateTest(unittest.TestCase):
         (work / 'artifacts/Nuvio-InnerTubeX-source-aaaaaaaaaaaa.tar.gz').write_bytes(b'i' * 4096)
         (work / 'artifacts/Nuvio-Engine-source-aaaaaaaaaaaa.tar.gz').write_bytes(b'e' * 4096)
         (work / 'artifacts/Nuvio-Whisper-source-aaaaaaaaaaaa.tar.gz').write_bytes(b'w' * 4096)
+        (work / 'artifacts/Nuvio-Usenet-source-aaaaaaaaaaaa.tar.gz').write_bytes(b'u' * 4096)
         return work, image
 
     def audit(self, kind, embed_all=True, mutate=None):

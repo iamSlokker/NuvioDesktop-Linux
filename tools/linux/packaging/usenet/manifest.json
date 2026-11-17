@@ -1,0 +1,20 @@
+{
+  "schema_version": 1,
+  "version": "e4b0717ae5bfe44e76ca8c7662022bff326f3806",
+  "license": "GPL-3.0",
+  "homepage": "https://github.com/NuvioMedia/nuvio-usenet-engine",
+  "source": {
+    "url": "https://codeload.github.com/NuvioMedia/nuvio-usenet-engine/tar.gz/e4b0717ae5bfe44e76ca8c7662022bff326f3806",
+    "sha256": "d2723e4800efeb42bf8dfc9cf4b3f353bf786121a449e25dae02ac32b3ab526d",
+    "top": "nuvio-usenet-engine-e4b0717ae5bfe44e76ca8c7662022bff326f3806"
+  },
+  "go": {
+    "version": "go1.27.4",
+    "url": "https://go.dev/dl/go1.27.4.linux-amd64.tar.gz",
+    "sha256": "7226736c2339719cda28fbf3a54d71aa63bcefe376e98cef00034268dab24840"
+  },
+  "build": {
+    "package": "./cmd/nuvio-usenet",
+    "ldflags": "-s -w -buildid= '-extldflags=-static-libstdc++ -static-libgcc'"
+  }
+}

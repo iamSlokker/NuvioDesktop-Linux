@@ -113,6 +113,11 @@ For a modified whisper.cpp (MIT, the speech engine of voice control):
 `lib/native/libnuvio_whisper.so` can be replaced in an installed DEB, as above; Flatpak and AppImage need
 a rebuilt package, by changing `tools/linux/packaging/whisper/`.
 
+For a modified Usenet engine (GPL-3.0, NuvioMedia/nuvio-usenet-engine, built-in Usenet):
+`NuvioDesktop-Linux-<version>-source-usenet.tar.gz` carries the commit archive, the vendored Go modules
+and the build steps (`BUILD.txt`). `lib/native/nuvio-usenet` can be replaced in an installed DEB, as
+above; Flatpak and AppImage need a rebuilt package, by changing `tools/linux/packaging/usenet/`.
+
 For a modified InnerTubeX (GPL-3.0, the second stream resolver for music):
 `NuvioDesktop-Linux-<version>-source-innertubex.tar.gz` is the tag archive of the JAR compiled
 into the executable. Point the dependency in `composeApp/build.gradle.kts` at your build, update

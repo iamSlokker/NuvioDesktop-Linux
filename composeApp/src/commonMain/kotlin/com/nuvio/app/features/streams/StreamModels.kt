@@ -2,6 +2,15 @@ package com.nuvio.app.features.streams
 
 import com.nuvio.app.core.build.AppFeaturePolicy
 
+/** A subtitle that comes with a stream, e.g. a media server's external subtitle file (upstream). */
+@kotlinx.serialization.Serializable
+data class StreamSubtitle(
+    val url: String,
+    val language: String,
+    val name: String? = null,
+    val headers: Map<String, String>? = null,
+)
+
 @kotlinx.serialization.Serializable
 data class StreamItem(
     val name: String? = null,
@@ -60,6 +69,23 @@ data class StreamItem(
      * unless a debrid resolve will prove the link first (see `CwStreamCache`).
      */
     val cachedAtMs: Long? = null,
+    /** True when [url] was produced by Nuvio's own debrid resolver, not returned by the add-on. */
+    val debridResolved: Boolean = false,
+    /** Subtitle files that come with this stream (a media server's external subtitles). */
+    val externalSubtitles: List<StreamSubtitle> = emptyList(),
+    /** Set for a media-server file: which server item to play and report progress for. */
+    @kotlinx.serialization.Transient
+    val serverTarget: com.nuvio.app.features.servers.ServerPlaybackTarget? = null,
+    /** A Usenet release: its NZB, played through the built-in Usenet engine. */
+    val nzbUrl: String? = null,
+    /**
+     * The NNTP servers to read [nzbUrl] from, as `nntps://user:pass@host:port/connections`; null
+     * means the user's own providers (Settings > Usenet). Carries credentials: never logged.
+     */
+    @kotlinx.serialization.Transient
+    val usenetServers: List<String>? = null,
+    /** Text the played file's name must contain, for an NZB holding several videos. */
+    val fileMustInclude: String? = null,
 ) {
     val streamLabel: String
         // Read from composition for every row of a stream list, so it must not block: the resource
@@ -184,7 +210,16 @@ data class StreamItem(
         get() = isInstalledAddonStream && (needsLocalDebridResolve || isDirectDebridStream)
 
     val hasPlayableSource: Boolean
-        get() = url != null || infoHash != null || externalUrl != null || clientResolve != null || ytId != null
+        get() = url != null || infoHash != null || externalUrl != null || clientResolve != null || ytId != null ||
+            serverTarget != null || nzbUrl != null
+
+    /** A Usenet release with no engine session yet: the engine opens one when it is picked. */
+    val needsUsenetPreparation: Boolean
+        get() = nzbUrl != null && playableDirectUrl == null
+
+    /** A media-server file whose playback URL is only asked for when it is picked. */
+    val needsServerPreparation: Boolean
+        get() = serverTarget != null && playableDirectUrl == null
 }
 
 // Serializable for watch parties, which send the host's stream (badges included) to members.
@@ -323,6 +358,8 @@ private fun String?.extractBtihInfoHash(): String? {
 val StreamItem.isScorableStream: Boolean
     get() = url != null ||
         !infoHash.isNullOrBlank() ||
+        // fork:usenet - a Usenet release carries only its NZB until the engine prepares it.
+        !nzbUrl.isNullOrBlank() ||
         clientResolve != null ||
         externalUrl.isMagnetLink() ||
         externalUrl.isTorrentSchemeUrl()
@@ -337,6 +374,8 @@ val StreamItem.mediaFilename: String?
 
 fun StreamItem.isSelectableForPlayback(debridEnabled: Boolean): Boolean =
     playableDirectUrl != null ||
+        serverTarget != null ||
+        nzbUrl != null ||
         youTubeIdToResolve != null ||
         (AppFeaturePolicy.p2pEnabled && needsLocalDebridResolve && p2pInfoHash != null) ||
         (debridEnabled && isAddonDebridCandidate)

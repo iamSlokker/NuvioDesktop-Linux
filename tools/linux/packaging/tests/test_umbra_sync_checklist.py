@@ -132,6 +132,18 @@ class ChecklistTest(unittest.TestCase):
         # One line per command, though newCommand was added to the menu and to the page.
         self.assertCountEqual(['newCommand', 'otherCommand'], self.names(result['HUD entry'], False))
 
+    def test_a_windows_binary_needs_a_linux_build(self):
+        self.write({'tools/linux/packaging/helper/build.py': "OUT = 'nuvio-helper'\nLIB = 'libnuvio_codec.so'\n"})
+        self.commit('linux packaging')
+        self.since = self.git('rev-parse', 'HEAD')
+        result = self.upstream_change({
+            SHARED: ('fun old() = 1\nval a = "nuvio-helper.exe"\nval b = "nuvio_codec.dll"\n'
+                     'val c = "nuvio-new.exe"\n// "commented.exe"\n'),
+            'composeApp/src/desktopMain/kotlin/com/nuvio/app/WindowsThing.kt': 'val d = "windows-only.exe"\n',
+        })
+        self.assertCountEqual(['nuvio-helper.exe', 'nuvio_codec.dll'], self.names(result['Windows binary'], True))
+        self.assertEqual(['nuvio-new.exe'], self.names(result['Windows binary'], False))
+
     def test_output_and_strict_exit(self):
         self.git('checkout', '-q', '-b', 'upstream')
         self.write({BRIDGE: 'object NativePlayerBridge {\n    external fun play()\n    external fun neverPorted()\n}\n'})

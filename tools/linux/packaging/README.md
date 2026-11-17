@@ -185,6 +185,16 @@ with the JNI bridge, CPU only, AVX2 as on Windows. The models are not bundled: t
 one from Settings > Voice control. The source is `Nuvio-Whisper-source-<commit12>.tar.gz`, listed for
 every package. The microphone is Java Sound's ALSA line, so nothing new is asked of Flatpak.
 
+**The Usenet engine (built-in Usenet).** `usenet/build.py` runs in the build phase: it verifies the
+pinned commit of NuvioMedia/nuvio-usenet-engine (`usenet/manifest.json`, the commit Windows pins) and
+Go, compiles RapidYenc from the checkout's own `third_party/rapidyenc-native` in place of its prebuilt
+Linux archive, vendors and verifies the Go modules, and builds `lib/native/nuvio-usenet` from the
+vendor tree with libstdc++ and libgcc linked in, so it needs only the C library. Before it ships it
+must start as the app starts it, refuse a request without the token and stop when its stdin closes;
+the native smoke runs the same start as "linux usenet engine". The source is
+`Nuvio-Usenet-source-<commit12>.tar.gz`, listed for every package. The engine binds 127.0.0.1 only
+and Go reads the system's CA store, so nothing new is asked of Flatpak.
+
 **InnerTubeX (music, age-gated YouTube videos).** The second stream resolver is compiled in with
 `-Pnuvio.innertubex=true`, as upstream's CI does, so the build phase needs JitPack. It and its
 QuackJS are GPL-3.0: `innertubex_source.py` keeps both pinned tag archives in

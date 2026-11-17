@@ -98,8 +98,9 @@ unset DISPLAY WAYLAND_DISPLAY NUVIO_RUN_LIVE_DISPLAY_TESTS LD_PRELOAD
 # lib/ last: libjawt.so finds libawt.so there only because the executable already loaded it.
 export LD_LIBRARY_PATH=/app/lib/nuvio-desktop/lib/native:/app/lib/nuvio-desktop/lib/runtime/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}:/app/lib/nuvio-desktop/lib
 test -x /app/lib/nuvio-desktop/lib/native/nuvio-hdr-probe
+test -x /app/lib/nuvio-desktop/lib/native/nuvio-usenet
 test -x /app/lib/nuvio-desktop/lib/nuvio
-{ find /app/lib/nuvio-desktop/lib/native /app/lib/nuvio-desktop/lib/runtime -type f \\( -name '*.so*' -o -name nuvio-hdr-probe \\)
+{ find /app/lib/nuvio-desktop/lib/native /app/lib/nuvio-desktop/lib/runtime -type f \\( -name '*.so*' -o -name nuvio-hdr-probe -o -name nuvio-usenet \\)
   find /app/lib/nuvio-desktop/lib -maxdepth 1 -type f \\( -name '*.so' -o -name nuvio \\); } | xargs sh -c '
  for f do
    result=$(ldd "$f") || exit 1

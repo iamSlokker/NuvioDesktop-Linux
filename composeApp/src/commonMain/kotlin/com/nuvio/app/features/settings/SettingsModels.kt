@@ -26,6 +26,9 @@ import nuvio.composeapp.generated.resources.compose_settings_page_homescreen
 import nuvio.composeapp.generated.resources.compose_settings_page_integrations
 import nuvio.composeapp.generated.resources.compose_settings_page_keyboard_shortcuts
 import nuvio.composeapp.generated.resources.compose_settings_page_local_library
+import nuvio.composeapp.generated.resources.compose_settings_page_media_server
+import nuvio.composeapp.generated.resources.compose_settings_page_media_servers
+import nuvio.composeapp.generated.resources.compose_settings_page_usenet
 import nuvio.composeapp.generated.resources.compose_settings_root_downloads_title
 import nuvio.composeapp.generated.resources.compose_settings_page_licenses_attributions
 import nuvio.composeapp.generated.resources.compose_settings_page_mdblist_ratings
@@ -125,6 +128,23 @@ internal enum class SettingsPage(
     ),
     LocalLibrary(
         titleRes = Res.string.compose_settings_page_local_library,
+        category = SettingsCategory.General,
+        parentPage = Root,
+    ),
+    /** Jellyfin, Emby, Plex and Silo connections (upstream's servers feature). */
+    MediaServers(
+        titleRes = Res.string.compose_settings_page_media_servers,
+        category = SettingsCategory.General,
+        parentPage = Root,
+    ),
+    MediaServer(
+        titleRes = Res.string.compose_settings_page_media_server,
+        category = SettingsCategory.General,
+        parentPage = MediaServers,
+    ),
+    /** Built-in Usenet: providers, indexers and the engine (NuvioTV PR 4679). */
+    Usenet(
+        titleRes = Res.string.compose_settings_page_usenet,
         category = SettingsCategory.General,
         parentPage = Root,
     ),

@@ -265,6 +265,16 @@ object PlayerStreamsRepository {
                 isLoading = false,
             )
         }
+        // Media servers: one group per connection that can serve this episode, beside the addons.
+        val serverSources = com.nuvio.app.features.servers.ServerStreams.sources(
+            type = type,
+            videoId = effectiveVideoId,
+            season = effectiveSeason,
+            episode = effectiveEpisode,
+            forceRefresh = forceRefresh,
+        )
+        val preferredGroupIds = serverSources.filter { it.preferred }.mapTo(mutableSetOf()) { it.addonId }
+        val searchUsenet = com.nuvio.app.features.usenet.BuiltInUsenet.canSearch(type, effectiveVideoId)
         // A local-library playback session (opened via the library) stays local across episode
         // switches and next-episode auto-play — mirror StreamsRepository's local-first behaviour
         // instead of scraping addons for a file that is already on disk.
@@ -293,7 +303,7 @@ object PlayerStreamsRepository {
             groupByRepository = pluginUiState.groupStreamsByRepository,
         )
 
-        if (installedAddons.isEmpty() && pluginProviderGroups.isEmpty()) {
+        if (installedAddons.isEmpty() && pluginProviderGroups.isEmpty() && serverSources.isEmpty() && !searchUsenet) {
             // No scrapers at all — a local file is still a valid (and the only) source.
             if (localGroup != null) {
                 stateFlow.value = singleGroupState(localGroup)
@@ -324,7 +334,7 @@ object PlayerStreamsRepository {
                 )
             }
 
-        if (streamAddons.isEmpty() && pluginProviderGroups.isEmpty()) {
+        if (streamAddons.isEmpty() && pluginProviderGroups.isEmpty() && serverSources.isEmpty() && !searchUsenet) {
             if (localGroup != null) {
                 stateFlow.value = singleGroupState(localGroup)
             } else {
@@ -353,7 +363,9 @@ object PlayerStreamsRepository {
                 streams = emptyList(),
                 isLoading = true,
             )
-        }, installedAddonOrder)
+        } + serverSources.map { it.loadingGroup() } +
+            listOfNotNull(com.nuvio.app.features.usenet.BuiltInUsenet.loadingGroup().takeIf { searchUsenet }),
+            installedAddonOrder, preferredGroupIds)
         val isInitiallyLoading = initialGroups.any { it.isLoading }
         stateFlow.value = StreamsUiState(
             groups = initialGroups,
@@ -423,6 +435,7 @@ object PlayerStreamsRepository {
                             if (currentGroup.addonId == group.addonId) group else currentGroup
                         },
                         installedOrder = installedAddonOrder,
+                        preferredGroupIds = preferredGroupIds,
                     )
                     val anyLoading = updated.any { it.isLoading }
                     current.copy(
@@ -462,6 +475,19 @@ object PlayerStreamsRepository {
                     publishStreamGroup(presentStreamGroup(availabilityGroup))
                 }
                 debridAvailabilityJobs += availabilityJob
+            }
+
+            serverSources.forEach { source ->
+                launch { publishStreamGroup(presentStreamGroup(source.load())) }
+            }
+            if (searchUsenet) {
+                launch {
+                    publishStreamGroup(
+                        presentStreamGroup(
+                            com.nuvio.app.features.usenet.BuiltInUsenet.group(type, effectiveVideoId, effectiveSeason, effectiveEpisode),
+                        ),
+                    )
+                }
             }
 
             streamAddons.forEach { addon ->
@@ -686,6 +712,7 @@ object PlayerStreamsRepository {
                                     }
                                 },
                                 installedOrder = installedAddonOrder,
+                                preferredGroupIds = preferredGroupIds,
                             )
                             val anyLoading = updated.any { it.isLoading }
                             current.copy(
