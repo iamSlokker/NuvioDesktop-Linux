@@ -13,6 +13,7 @@ from notice_contract import stage_notices
 import native_evidence
 
 TORRSERVER = 'lib/resources/torrserver/linux-amd64/TorrServer'
+USENET_ENGINE = 'lib/native/nuvio-usenet'
 
 
 def remove_build_data(destination, contract):
@@ -61,6 +62,9 @@ def stage(work, source=pathlib.Path('/source'), media=pathlib.Path('/media'),
     shutil.copy2(work / 'nuvio-engine/libnuvio_engine.so', native / 'libnuvio_engine.so')
     # whisper.cpp (whisper/build.py): the same; the models are downloaded from Settings > Voice control.
     shutil.copy2(work / 'whisper/libnuvio_whisper.so', native / 'libnuvio_whisper.so')
+    # The Usenet engine (usenet/build.py): UsenetEngine starts it from lib/native for a Usenet release.
+    shutil.copy2(work / 'usenet/nuvio-usenet', destination / USENET_ENGINE)
+    (destination / USENET_ENGINE).chmod(0o755)
     # TorrServer (torrserver/build.py): PackagedResources reads lib/resources/ beside lib/nuvio,
     # and the P2P backend starts it from there when it is the chosen engine.
     torrserver = destination / TORRSERVER
@@ -84,6 +88,7 @@ def stage(work, source=pathlib.Path('/source'), media=pathlib.Path('/media'),
     shutil.copytree(work / 'torrserver/licenses', share / 'licenses/TorrServer')
     shutil.copytree(work / 'nuvio-engine/licenses', share / 'licenses/NuvioEngine')
     shutil.copytree(work / 'whisper/licenses', share / 'licenses/whisper.cpp')
+    shutil.copytree(work / 'usenet/licenses', share / 'licenses/NuvioUsenet')
     shutil.copytree(source / 'composeApp/src/desktopMain/resources/player-shaders',
                     licenses / 'player-shaders', ignore=shutil.ignore_patterns('*.glsl'))
     # The texts Settings > Licenses & Attributions points at; on Windows they sit loose in resources/licenses.

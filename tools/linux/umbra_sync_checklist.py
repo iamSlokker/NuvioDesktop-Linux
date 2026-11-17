@@ -8,6 +8,8 @@ Reads the added lines of `git diff <commit> <to>` and lists:
   external fun     a new JNI method; NO LINUX when nothing under native/linux names it
   OS branch        a new Windows or macOS branch with no Linux case near it, here or upstream
   HUD entry        a new menu action or HUD command; NO LINUX when no Linux source handles it
+  Windows binary   a new "<name>.exe" or "<name>.dll" the app runs or loads; NO LINUX when nothing
+                   under tools/linux/packaging builds <name>
 
 These are text searches over this checkout, so a listed line is a lead to read and a clean list is
 no proof. NO LINUX lines also appear when the port simply has not been applied yet: run it before
@@ -38,6 +40,9 @@ OS_BRANCH = re.compile(r'DesktopHostOs\.(WINDOWS|MACOS)|\bisWindows(Host)?\b|\bi
                        r'|os\.name|#\s*if(def)?\b.*(_WIN32|_WIN64|__APPLE__)')
 LINUX_CASE = re.compile(r'LINUX|[Ll]inux|__linux__|\belse\s*->')
 HUD_ENTRY = re.compile(r'action:\s*"send:(\w+)"|data-command="(\w+)"')
+WINDOWS_BINARY = re.compile(r'"([A-Za-z0-9_.-]+)\.(?:exe|dll)"')
+# Where the Linux packages build a helper or library; its name there means Linux has its own copy.
+LINUX_PACKAGING = 'tools/linux/packaging/'
 NEARBY_LINES = 6
 
 
@@ -137,13 +142,26 @@ def hud_entries(repo, since, to, handler_texts):
             yield Item('HUD entry', path, number, name, word_in(handler_texts, name, ignore))
 
 
+def windows_binaries(repo, since, to, packaging_texts):
+    for path, number, text in added_lines(repo, since, to, KOTLIN_ROOTS):
+        if OTHER_OS_PATH.search(path) or text.lstrip().startswith(('//', '*')):
+            continue
+        for match in WINDOWS_BINARY.finditer(text):
+            name = match.group(1)
+            # A DLL's Linux copy is lib<name>.so.
+            linux = word_in(packaging_texts, name) or word_in(packaging_texts, 'lib' + name)
+            yield Item('Windows binary', path, number, match.group(0).strip('"'), linux)
+
+
 def checklist(repo, since, to):
     native = tree_text(repo, LINUX_BUILT_NATIVE)
     handlers = tree_text(repo, LINUX_HANDLERS)
+    packaging = tree_text(repo, (LINUX_PACKAGING,), suffixes=('.py', '.sh', '.json'))
     return {
         'external fun': list(external_funs(repo, since, to, native)),
         'OS branch': list(os_branches(repo, since, to)),
         'HUD entry': _unique(hud_entries(repo, since, to, handlers)),
+        'Windows binary': _unique(windows_binaries(repo, since, to, packaging)),
     }
 
 

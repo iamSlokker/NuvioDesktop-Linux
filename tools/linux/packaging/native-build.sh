@@ -30,6 +30,8 @@ python3 tools/linux/packaging/torrserver/build.py /output
 python3 tools/linux/packaging/nuvio_engine/build.py /output
 # whisper.cpp, the speech engine of voice control (whisper/build.py): lib/native/libnuvio_whisper.so.
 python3 tools/linux/packaging/whisper/build.py /output
+# The built-in Usenet engine (usenet/build.py): lib/native/nuvio-usenet, started for Usenet releases.
+python3 tools/linux/packaging/usenet/build.py /output
 # The second stream resolver for music, as upstream's CI builds it; its GPL source goes with the release.
 python3 tools/linux/packaging/innertubex_source.py /output
 # The Kotlin compiler runs inside Gradle's heap: the desktop sources need about 4.5 GB

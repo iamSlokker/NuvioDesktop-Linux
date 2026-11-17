@@ -94,6 +94,9 @@ internal object LinuxNativeSelfTest {
                 com.nuvio.app.features.voice.WhisperNative.nativeSystemInfo().also { check(it.isNotBlank()) }
             }
         }
+        // The built-in Usenet engine, started as a child process; verify.py requires the file in every
+        // package. Stage 1's smoke layout does not have it yet.
+        probe("linux usenet engine") { com.nuvio.app.features.usenet.linuxUsenetEngineSelfTest() }
         probe("linux voice capture") { com.nuvio.app.features.voice.VoiceAudio.microphones().size.let { "microphones=$it" } }
         probe("linux inhibitor") {
             val handle = LinuxInhibitionNative.acquire(Runnable { })

@@ -87,6 +87,9 @@ Description: {CONFIG['display_name']}
     # whisper.cpp's (MIT): the tag and the JNI bridge.
     shutil.copy2(work / 'whisper/Nuvio-Whisper-source.tar.gz',
                  artifacts / f'Nuvio-Whisper-source-{info["git_commit"][:12]}.tar.gz')
+    # The Usenet engine's (GPL-3.0): the pinned commit, its vendored Go modules and the build steps.
+    shutil.copy2(work / 'usenet/Nuvio-Usenet-source.tar.gz',
+                 artifacts / f'Nuvio-Usenet-source-{info["git_commit"][:12]}.tar.gz')
     # InnerTubeX's and QuackJS's (GPL-3.0): the pinned tag archives of the JARs compiled into the executable.
     shutil.copy2(work / 'innertubex/Nuvio-InnerTubeX-source.tar.gz',
                  artifacts / f'Nuvio-InnerTubeX-source-{info["git_commit"][:12]}.tar.gz')
