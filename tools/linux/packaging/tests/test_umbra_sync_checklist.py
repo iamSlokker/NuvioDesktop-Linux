@@ -114,6 +114,20 @@ class ChecklistTest(unittest.TestCase):
         result = self.upstream_change({SHARED: 'fun old() = 1\n' + '// x\n' * 20 + 'val here = if (DesktopHostOs.current == DesktopHostOs.WINDOWS) 1 else 2\n'})
         self.assertEqual([], self.names(result['OS branch'], False))
 
+    def test_a_branch_rewritten_here_for_linux_counts(self):
+        windows = 'if (playback.ready && DesktopHostOs.current == DesktopHostOs.WINDOWS) start()\n'
+        self.write({SHARED: '// Linux too: hosts.kt\nif (playback.ready && DesktopHostOs.current in hosts) start()\n'})
+        self.commit('linux side')
+        result = self.upstream_change({SHARED: '// x\n' * 20 + windows})
+        self.assertEqual([], self.names(result['OS branch'], False))
+
+    def test_a_rewritten_branch_with_no_linux_word_still_counts_as_missing(self):
+        windows = 'if (playback.ready && DesktopHostOs.current == DesktopHostOs.WINDOWS) start()\n'
+        self.write({SHARED: '// x\nif (playback.ready && DesktopHostOs.current in hosts) start()\n'})
+        self.commit('no linux word')
+        result = self.upstream_change({SHARED: '// y\n' * 20 + windows})
+        self.assertEqual([windows.strip()], self.names(result['OS branch'], False))
+
     def test_other_os_files_and_ifdefs(self):
         result = self.upstream_change({
             WINDOWS_BRIDGE: 'void play() {}\n#ifdef _WIN32\n#endif\n',

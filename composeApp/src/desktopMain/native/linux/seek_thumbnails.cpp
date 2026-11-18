@@ -73,6 +73,14 @@ bool LinuxSeekThumbnails::current(uint64_t generation) const {
     return !stopping_ && generation_->load() == generation;
 }
 
+bool LinuxSeekThumbnails::adopt(int64_t position, uint64_t &generation, uint64_t &processed) {
+    std::lock_guard<std::mutex> lock(mutex_);
+    if (stopping_) return false;
+    const uint64_t latest = generation_->load();
+    if (latest != generation && positionMs_ == position) generation = processed = latest;
+    return latest == generation;
+}
+
 uint64_t LinuxSeekThumbnails::command(const char **args) {
     std::lock_guard<std::mutex> lock(mutex_);
     if (stopping_) return 0;
@@ -200,7 +208,9 @@ void LinuxSeekThumbnails::run() {
                 phase("seek-issued", generation);
                 bool entered = false;
                 reply = ready = false;
-                auto deadline = Clock::now() + std::chrono::seconds(3);
+                // A slow source (a Usenet preview fetches its keyframe article by article) can take
+                // well over 3 s, as on Windows: 15 s before the decoder is given up.
+                auto deadline = Clock::now() + std::chrono::seconds(15);
                 while (!stopping_ && !(reply && entered && ready)) {
                     if (Clock::now() >= deadline) throw std::runtime_error("Preview seek timed out.");
                     auto *e = event();
@@ -214,7 +224,9 @@ void LinuxSeekThumbnails::run() {
                     if (entered && e->event_id == MPV_EVENT_PLAYBACK_RESTART) ready = true;
                 }
                 phase("seek-ready", generation);
-                if (!current(generation)) continue;
+                // A repeat request for this same spot (the controls fading and coming back) takes
+                // this frame instead of seeking again.
+                if (!adopt(position, generation, processed)) continue;
                 screenshot = std::make_unique<Screenshot>();
                 const char *capture[] = {"screenshot-to-file", screenshot->path, "video", nullptr};
                 uint64_t captureId = command(capture);
@@ -229,7 +241,7 @@ void LinuxSeekThumbnails::run() {
                         reply = true;
                     }
                 }
-                if (!current(generation)) {
+                if (!adopt(position, generation, processed)) {
                     if (!stopping_) screenshot.reset(); // Reply consumed; writer is done.
                     continue;
                 }

@@ -4,6 +4,7 @@
 #include "controls_overlay.h"
 #include "awt_x11_lifecycle.h"
 #include "seek_thumbnails.h"
+#include "display_refresh.h"
 #include "separate_audio.h"
 #include "low_vram.h"
 #include "http_recovery_events.h"
@@ -260,6 +261,16 @@ struct Player {
     std::string speechLocalCopy; // setAudioSpotFile: a local copy the decodes read instead; under operations.
     // setSpotSource: the queued track the player moved on to, which the decodes read (gapless); under operations.
     std::string speechMovedOn;
+    // setAuxiliarySource (fork:usenet): the address the side decoders (seek thumbnails, speech
+    // decodes) open instead of [auxiliaryFor] while it plays; under operations. The thumbnails'
+    // own source and headers are kept so they can be reopened on it.
+    std::string auxiliaryFor;
+    std::string auxiliaryUrl;
+    std::string thumbnailSource;
+    std::vector<std::string> thumbnailHeaders;
+    const std::string &sideSource(const std::string &played) const {
+        return !auxiliaryUrl.empty() && played == auxiliaryFor ? auxiliaryUrl : played;
+    }
     std::vector<std::string> speechMovedOnHeaders;
     LinuxGaplessQueue gapless; // queueNext; under operations.
     uint64_t canvasXid = 0; // The Canvas mpv embeds in, for the Now Playing corners. Set once in create.
@@ -304,16 +315,19 @@ struct Player {
     void close() {
         stopping = true;
         std::unique_ptr<LinuxControlsOverlay> closingControls;
+        std::unique_ptr<LinuxSeekThumbnails> closingThumbnails;
         {
             std::lock_guard<std::mutex> lock(operations);
             closingControls = std::move(controls);
+            // Taken under the lock: setAuxiliarySource may swap the decoder until stopping is seen.
+            closingThumbnails = std::move(thumbnails);
             if (mpv && events.joinable()) mpv_wakeup(mpv);
         }
         // GTK callbacks can query mpv; do not hold operations while waiting for GTK.
         // Disconnect/destroy the native child before releasing mpv or the JNI sink.
         if (closingControls) closingControls->close();
         // No operations/JAWT/GTK lock while waiting for the windowless decoder.
-        if (thumbnails) thumbnails->close();
+        if (closingThumbnails) closingThumbnails->close();
         // Never hold the operation lock across callbacks/join.
         if (events.joinable()) events.join();
         std::lock_guard<std::mutex> lock(operations);
@@ -1110,6 +1124,20 @@ jlong publishPlayer(const std::shared_ptr<Player> &player) {
 }
 }
 
+// The player's windowless seek-preview decoder; frames go to its controls while it is alive.
+static std::unique_ptr<LinuxSeekThumbnails> seekThumbnailsFor(
+    std::weak_ptr<Player> weak, std::string source, std::vector<std::string> headers) {
+    return std::make_unique<LinuxSeekThumbnails>(std::move(source), std::move(headers),
+        [weak](int64_t position, const std::string &url,
+               LinuxSeekThumbnails::Generation generation, uint64_t request) {
+            if (auto current = weak.lock()) {
+                std::lock_guard<std::mutex> lock(current->operations);
+                if (!current->stopping && current->controls)
+                    current->controls->deliverSeekThumbnail(position, url, std::move(generation), request);
+            }
+        });
+}
+
 JNI_METHOD(jlong, create)(
     JNIEnv *env, jobject, jlong hostViewPtr, jstring sourceUrl, jstring sourceAudioUrl,
     jobjectArray headerLines, jboolean playWhenReady, jlong initialPositionMs,
@@ -1163,15 +1191,9 @@ JNI_METHOD(jlong, create)(
                 return std::string{};
             });
         if (player->controls) {
-            player->thumbnails = std::make_unique<LinuxSeekThumbnails>(source, std::move(headers),
-                [weak](int64_t position, const std::string &url,
-                       LinuxSeekThumbnails::Generation generation, uint64_t request) {
-                    if (auto current = weak.lock()) {
-                        std::lock_guard<std::mutex> lock(current->operations);
-                        if (!current->stopping && current->controls)
-                            current->controls->deliverSeekThumbnail(position, url, std::move(generation), request);
-                    }
-                });
+            player->thumbnailSource = source;
+            player->thumbnailHeaders = headers;
+            player->thumbnails = seekThumbnailsFor(weak, source, std::move(headers));
         }
         return publishPlayer(player);
     });
@@ -1322,6 +1344,46 @@ JNI_METHOD(void, seekWithinCacheBy)(JNIEnv *env, jobject, jlong handle, jlong of
         seekWithinCache(p, base + (double)offsetMs / 1000.0, "live step");
     });
 }
+// fork:usenet - while [forSourceUrl] plays, the seek thumbnails and speech decodes open
+// [auxiliaryUrl] (the Usenet engine's preview address, served without read-ahead) instead;
+// null puts them back on the source. Linux creates a player per source, so this applies to the
+// source playing now: a preview decoder already open on it is reopened on the new address.
+JNI_METHOD(void, setAuxiliarySource)(JNIEnv *env, jobject, jlong handle, jstring forSourceUrl, jstring auxiliaryUrl) {
+    guarded(env, [&] {
+        auto player = playerFromHandle(handle);
+        if (!player || !forSourceUrl) return;
+        const std::string played = text(env, forSourceUrl);
+        const std::string auxiliary = auxiliaryUrl ? text(env, auxiliaryUrl) : std::string();
+        std::unique_ptr<LinuxSeekThumbnails> retired;
+        {
+            std::lock_guard<std::mutex> lock(player->operations);
+            if (player->stopping) return;
+            const std::string before = player->sideSource(player->thumbnailSource);
+            player->auxiliaryFor = played;
+            player->auxiliaryUrl = auxiliary;
+            const std::string after = player->sideSource(player->thumbnailSource);
+            if (player->thumbnails && after != before) {
+                retired = std::move(player->thumbnails);
+                player->thumbnails = seekThumbnailsFor(player, after, player->thumbnailHeaders);
+            }
+        }
+        // Joined outside the lock: its delivery takes the operation lock.
+        if (retired) retired->close();
+    });
+}
+// Match display refresh rate (display_refresh.h): [window] is the player's X11 canvas, as
+// [hostViewPtr] is for create. Rates as the Windows bridge returns them; empty where the desktop
+// cannot switch.
+JNI_METHOD(jintArray, displayRefreshRates)(JNIEnv *env, jobject, jlong window) {
+    const auto rates = nuvio::refresh::rates(static_cast<unsigned long>(window));
+    std::vector<jint> values(rates.begin(), rates.end());
+    jintArray result = env->NewIntArray(static_cast<jsize>(values.size()));
+    if (result && !values.empty()) env->SetIntArrayRegion(result, 0, static_cast<jsize>(values.size()), values.data());
+    return result;
+}
+JNI_METHOD(jboolean, setDisplayRefreshRate)(JNIEnv *, jobject, jlong window, jint hz) {
+    return nuvio::refresh::set(static_cast<unsigned long>(window), hz) ? JNI_TRUE : JNI_FALSE;
+}
 JNI_METHOD(void, requestSeekThumbnail)(JNIEnv *env, jobject, jlong handle, jlong positionMs) {
     guarded(env, [&] {
         std::shared_ptr<Player> player;
@@ -1455,7 +1517,7 @@ static jint decodeAudioSpot(JNIEnv *env, jlong handle, jdouble startSeconds, jdo
             // Copy what the decode needs, then let it run (up to 90 s) without blocking the player.
             std::lock_guard<std::mutex> lock(player->operations);
             if (!player->mpv || player->stopping) return -1;
-            input = linuxSpeechSpotInput(player->speechSource, player->speechSeparateAudio,
+            input = linuxSpeechSpotInput(player->sideSource(player->speechSource), player->speechSeparateAudio,
                 player->stringProperty("aid"), player->speechLocalCopy, player->speechMovedOn);
             if (!player->speechLocalCopy.empty()) headers.clear();
             else if (!player->speechMovedOn.empty()) headers = player->speechMovedOnHeaders;

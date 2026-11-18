@@ -2090,7 +2090,8 @@ internal class NativePlayerController(
                     if (hiddenThrough >= 0 && attachGeneration.get() > hiddenThrough) {
                         tracksHiddenThroughGeneration = -1L
                     }
-                    if (livePending?.tracePlaybackStart == true && DesktopHostOs.current == DesktopHostOs.WINDOWS) {
+                    // Linux too: LinuxDisplayRefresh.kt.
+                    if (livePending?.tracePlaybackStart == true && DesktopHostOs.current in displayRefreshHosts) {
                         DisplayRefreshSwitcher.matchWhenKnown(liveHostViewPtr) {
                             decodeTracks { NativePlayerBridge.videoTracksJson(it) }.firstOrNull { it.selected }?.fps
                         }

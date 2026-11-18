@@ -30,6 +30,8 @@ public:
 private:
     void run();
     bool current(uint64_t generation) const;
+    // A newer request for [position] makes it current again (generation and processed move up).
+    bool adopt(int64_t position, uint64_t &generation, uint64_t &processed);
     uint64_t command(const char **args);
     void phase(const char *name, uint64_t generation = 0);
     void destroyDecoder();

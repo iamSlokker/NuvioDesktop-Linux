@@ -52,6 +52,7 @@ target_link_libraries(player_bridge PRIVATE JNI::JNI Threads::Threads ${CMAKE_DL
 target_link_options(player_bridge PRIVATE "LINKER:-z,defs")
 
 target_sources(player_bridge PRIVATE logind_power.cpp)
+target_sources(player_bridge PRIVATE display_refresh.cpp)
 
 get_filename_component(MPV_LIBRARY_DIR "${MPV_LIBRARY}" DIRECTORY)
 option(NUVIO_PACKAGE_BUILD "Use relocatable jpackage Linux library layout" OFF)
@@ -181,6 +182,15 @@ target_compile_options(linux_tone_mapping_test PRIVATE -Wall -Wextra -Werror)
 target_include_directories(linux_tone_mapping_test PRIVATE "${MPV_INCLUDE_DIR}" "${CMAKE_CURRENT_SOURCE_DIR}")
 target_link_libraries(linux_tone_mapping_test PRIVATE "${MPV_LIBRARY}")
 set_target_properties(linux_tone_mapping_test PROPERTIES BUILD_RPATH "${MPV_LIBRARY_DIR}")
+
+# Match display refresh rate (display_refresh.h) against a fake Mutter: run under dbus-run-session.
+add_executable(linux_display_refresh_test EXCLUDE_FROM_ALL tests/display_refresh_test.cpp display_refresh.cpp)
+target_compile_features(linux_display_refresh_test PRIVATE cxx_std_17)
+target_compile_options(linux_display_refresh_test PRIVATE -Wall -Wextra -Werror)
+target_compile_definitions(linux_display_refresh_test PRIVATE NUVIO_DISPLAY_REFRESH_TESTING)
+target_include_directories(linux_display_refresh_test PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}")
+target_include_directories(linux_display_refresh_test SYSTEM PRIVATE "${X11_INCLUDE_DIR}" "${X11_PROTOCOL_INCLUDE_DIR}")
+target_link_libraries(linux_display_refresh_test PRIVATE Threads::Threads ${CMAKE_DL_LIBS} PkgConfig::GTK3 "${X11_LIBRARY}")
 
 # Subtitle sync's audio decodes (speech_spot.h) with real libmpv: ao=pcm to a file, no device.
 add_executable(linux_gapless_queue_test EXCLUDE_FROM_ALL tests/gapless_queue_test.cpp)
