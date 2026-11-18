@@ -236,7 +236,10 @@ class PackagingContractTest(unittest.TestCase):
         self.assertNotIn('--socket=fallback-x11', permissions)
         self.assertEqual(['--share=ipc', '--share=network', '--socket=x11', '--socket=wayland',
                           '--socket=pulseaudio', '--device=dri', '--own-name=org.mpris.MediaPlayer2.Nuvio',
-                          '--talk-name=org.freedesktop.ScreenSaver', '--filesystem=xdg-run/discord-ipc-0',
+                          '--talk-name=org.freedesktop.ScreenSaver',
+                          # Match display refresh rate on GNOME (display_refresh.cpp): temporary
+                          # monitor configurations, never saved.
+                          '--talk-name=org.gnome.Mutter.DisplayConfig', '--filesystem=xdg-run/discord-ipc-0',
                           '--filesystem=xdg-run/app/com.discordapp.Discord:create',
                           '--env=GDK_BACKEND=x11'], permissions)
         # Discord Rich Presence: only the IPC socket of a host Discord and the runtime
