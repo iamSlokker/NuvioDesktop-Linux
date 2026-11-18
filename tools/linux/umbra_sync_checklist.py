@@ -40,6 +40,8 @@ OS_BRANCH = re.compile(r'DesktopHostOs\.(WINDOWS|MACOS)|\bisWindows(Host)?\b|\bi
                        r'|os\.name|#\s*if(def)?\b.*(_WIN32|_WIN64|__APPLE__)')
 LINUX_CASE = re.compile(r'LINUX|[Ll]inux|__linux__|\belse\s*->')
 HUD_ENTRY = re.compile(r'action:\s*"send:(\w+)"|data-command="(\w+)"')
+# Where an OS test starts in a line (`DesktopHostOs.current == ...` or the branch itself).
+OS_TEST = re.compile(r'DesktopHostOs\.current\b|' + OS_BRANCH.pattern)
 WINDOWS_BINARY = re.compile(r'"([A-Za-z0-9_.-]+)\.(?:exe|dll)"')
 # Where the Linux packages build a helper or library; its name there means Linux has its own copy.
 LINUX_PACKAGING = 'tools/linux/packaging/'
@@ -130,7 +132,13 @@ def os_branches(repo, since, to):
         if not linux:
             here = Path(repo, path)
             lines = here.read_text(errors='replace').splitlines() if here.is_file() else []
-            linux = any(has_linux_case(lines, index) for index, line in enumerate(lines) if line.strip() == stripped)
+            matches = [index for index, line in enumerate(lines) if line.strip() == stripped]
+            if not matches:
+                # Rewritten here for Linux: the same line up to its OS test, when that is distinctive.
+                head = stripped[:OS_TEST.search(stripped).start()]
+                if len(head) >= 16:
+                    matches = [index for index, line in enumerate(lines) if line.strip().startswith(head)]
+            linux = any(has_linux_case(lines, index) for index in matches)
         yield Item('OS branch', path, number, stripped[:100], linux)
 
 

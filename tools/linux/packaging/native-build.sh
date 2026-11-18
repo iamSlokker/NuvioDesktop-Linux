@@ -76,6 +76,8 @@ cmake --build /output/native --target linux_memory_breakdown_test
 /output/native/linux_memory_breakdown_test
 cmake --build /output/native --target linux_tone_mapping_test
 /output/native/linux_tone_mapping_test
+cmake --build /output/native --target linux_display_refresh_test
+dbus-run-session -- /output/native/linux_display_refresh_test
 /output/native/linux_speech_spot_test
 cmake --build /output/native --target linux_gapless_queue_test
 /output/native/linux_gapless_queue_test

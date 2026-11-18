@@ -49,6 +49,16 @@ internal object LinuxNativeSelfTest {
             withVideoFrame { _, host -> onEdt { "drawable=0x" + LinuxAwtViewResolver.resolveNativeViewPointer(host).toString(16) } }
         }
         probe("linux playback") { playback() }
+        // Match display refresh rate: the bridge's two calls are there and answer without a
+        // desktop that can switch (the smoke runs on Xvfb, which offers none). 0 restores nothing.
+        probe("linux display refresh") {
+            withVideoFrame { _, host ->
+                val window = onEdt { LinuxAwtViewResolver.resolveNativeViewPointer(host) }
+                val rates = NativePlayerBridge.displayRefreshRates(window)
+                check(NativePlayerBridge.setDisplayRefreshRate(window, 0)) { "restore with nothing switched failed" }
+                "rates=${rates.toList()}"
+            }
+        }
         // The packages point libraries and data directories at their own files; a program of the
         // host that inherits them fails with symbol errors (LinuxHostProcess).
         probe("linux child environment") { childEnvironment() }

@@ -536,3 +536,17 @@ cmake --build composeApp/build/native/linux --target linux_remote_pointer_portal
 python3 composeApp/src/desktopMain/native/linux/tests/remote_pointer_portal_test.py \
   composeApp/build/native/linux/linux_remote_pointer_portal_probe
 ```
+
+Settings > Playback > Match display refresh rate (upstream's `DisplayRefreshMatch.kt`) asks the bridge for the
+monitor's rates and to switch them (`displayRefreshRates`, `setDisplayRefreshRate`). `display_refresh.cpp` lists
+rates as Windows does (whole numbers, the NTSC family one lower) and switches through Mutter's
+`org.gnome.Mutter.DisplayConfig` on GNOME (checked with the verify method, then applied as a temporary configuration
+that is never saved, with HDR, RGB range and underscanning carried over) or XRandR in an X11 session (libXrandr is
+loaded at run time). Other desktops offer no rates. A switch is recorded in the cache folder
+(`nuviohtpc-display-refresh`); one a crashed run of the same boot left behind is undone at the next lookup, unless the
+mode was changed since. Its test drives a fake Mutter on a private bus:
+
+```sh
+cmake --build composeApp/build/native/linux --target linux_display_refresh_test
+dbus-run-session -- composeApp/build/native/linux/linux_display_refresh_test
+```

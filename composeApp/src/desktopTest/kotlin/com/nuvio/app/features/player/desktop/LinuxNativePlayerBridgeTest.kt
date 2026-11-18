@@ -1804,6 +1804,28 @@ class LinuxNativePlayerBridgeTest {
     }
 
     @Test
+    fun thumbnailRepeatedSpotKeepsItsSeekInsteadOfSeekingAgain() = withThumbnailProbe { probe ->
+        // Upstream's Usenet preview fix: the controls fading and coming back ask for the same spot
+        // again while its seek is still running; that seek's frame answers both.
+        probe.open()
+        repeat(10) { round ->
+            val spot = 500L + round * 100
+            probe.gate("seek-ready")
+            probe.send("REQUEST $spot")
+            probe.await("PHASE seek-ready ")
+            probe.send("REQUEST $spot")
+            probe.send("RELEASE")
+            while (true) {
+                val phase = probe.await("PHASE ")
+                assertFalse(phase.startsWith("PHASE seek-issued "), "The repeated spot was sought again: $phase")
+                if (phase.startsWith("PHASE capture-issued ")) break
+            }
+            probe.image(spot)
+        }
+        probe.dispose()
+    }
+
+    @Test
     fun thumbnailShutdownAtObservedPhasesJoinsWorker() = withThumbnailProbe { probe ->
         var maximum = 0L
         val phases = listOf("initializing", "load-issued", "waiting-file", "seek-issued",

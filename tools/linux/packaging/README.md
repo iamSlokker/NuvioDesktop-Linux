@@ -313,8 +313,9 @@ are required by current JAWT/Canvas/GTK overlay architecture (`GDK_BACKEND=x11`)
 HDR session (its capability probe and mpv's own Wayland window); it is not a
 native-Wayland embedding claim. Network supports streaming/APIs, PulseAudio supports audio, and `dri`
 provides normal GPU interfaces. Portals are available through Flatpak's standard
-filtered bus; only the existing MPRIS name ownership and ScreenSaver interface
-are additionally requested. For Discord Rich Presence (off by default), only
+filtered bus; only the existing MPRIS name ownership, the ScreenSaver interface and
+Mutter's `org.gnome.Mutter.DisplayConfig` (Match display refresh rate on GNOME, which applies
+temporary monitor configurations only) are additionally requested. For Discord Rich Presence (off by default), only
 `xdg-run/discord-ipc-0` and `xdg-run/app/com.discordapp.Discord` are exposed. No home/host filesystem, session/system-bus socket,
 Flatpak host-spawn, broad D-Bus name or all-device grant is requested. X11 access
 itself carries cross-client limitations; this is not a strong desktop-isolation
@@ -328,7 +329,8 @@ claim. Default Flatpak XDG config/data/cache directories persist normally.
 | Local media, downloads, backup, shaders, pre-show, subtitles, Discover files | Every picker goes through the FileChooser portal (`LinuxFileChooserPortal.kt`), which grants what the user chose as a persistent `/run/user/<uid>/doc` path; no filesystem permission is added. File drops redeem the FileTransfer portal's key, and a source that offers none gets an explanation. Typed paths outside the sandbox still cannot work. |
 | MPRIS | Explicit `org.mpris.MediaPlayer2.Nuvio` ownership; desktop/player acceptance still required. |
 | Notifications | Desktop OS notifications remain unimplemented; standard portal availability does not add them. |
-| Inhibition/screensaver | Existing portal is preferred. ScreenSaver allowed; logind fallback is not granted and GNOME/Mutter-specific probes are not exposed. App-idle fallback and generic Wayland limitations remain. |
+| Inhibition/screensaver | Existing portal is preferred. ScreenSaver allowed; logind fallback is not granted and GNOME/Mutter-specific idle probes are not exposed. App-idle fallback and generic Wayland limitations remain. |
+| Display refresh rate | Match display refresh rate (off by default) talks to `org.gnome.Mutter.DisplayConfig` on GNOME: it reads the monitors and applies temporary configurations (method 1, never written to `monitors.xml`), checked first with the verify method. Other desktops offer no rates; X11 sessions use XRandR over the X11 socket already granted. Users updating from 1.41.0 or earlier accept the new permission once with `flatpak update`, as the in-app update says. |
 | Controllers | `flatpak.grant_input_device` adds `input` to the devices in the metadata, because the runner's Flatpak 1.12 refuses `--device=input` at build-finish. Needs Flatpak 1.15.6+ on the user's side; older clients ignore it and see no controllers. It exposes evdev nodes, and only those the user may read (controllers, through udev's uaccess). No physical controller acceptance is claimed. |
 
 For local Flatpak export, the pinned GNOME Platform must already be installed.
