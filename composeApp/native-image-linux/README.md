@@ -45,8 +45,9 @@ from `lib/`; the "linux jdk libraries" probe fails if any of them is mapped twic
 
 GraalVM for JDK 25 (`-Pnuvio.graalvm.home`). native-image runs on the Gradle machine, or with
 `-Pnuvio.linux.nativeImageContainer=<image>` in that container; use the package builder image, so
-the glibc floor is Ubuntu 22.04's and not the developer's (4.5 min on 8 threads, 9-11 GB peak RSS
-with `-Pnuvio.native.builderHeap=9g`: never two at once; the executable needs GLIBC_2.34).
+the glibc floor is Ubuntu 22.04's and not the developer's (about 10 min on 4 threads, 13 GB peak RSS
+with the default `-Pnuvio.native.builderHeap=11g`; 9g runs out: never two at once; the executable
+needs GLIBC_2.34).
 
 GUI launches (`linuxNativeSmoke`, `linuxNativeImageTrace`) run only in the throwaway container
 from `../scripts/linux-native-smoke.Containerfile` (`-Pnuvio.linux.smokeImage`): private Xvfb,

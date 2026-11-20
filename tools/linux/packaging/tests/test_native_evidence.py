@@ -2,6 +2,7 @@
 import json
 from pathlib import Path
 import shutil
+import subprocess
 import sys
 import tempfile
 import unittest
@@ -202,6 +203,18 @@ class NativeSmokeTest(unittest.TestCase):
         self.assertIn('-Pnuvio.native.qa=false', script)
         self.assertIn('createLinuxNativeDistributable', script)
         self.assertIn('--native-evidence /output/native-image', script)
+
+    def test_build_script_raises_the_seeded_builder_heap(self):
+        # build.py (a seed input) still passes 9g; native-image's analysis ran out of it.
+        script = (Path(native_smoke.__file__).parent / 'native-build.sh').read_text()
+        block = script[script.index('native_heap='):script.index('fi\n', script.index('native_heap=')) + 3]
+        self.assertIn('-Pnuvio.native.builderHeap="$native_heap"', script)
+        for given, expected in [('9g', '11g'), ('10G', '11g'), ('11g', '11g'), ('14g', '14g'),
+                                ('12288m', '12288m'), (None, '11g')]:
+            env = {'PATH': '/usr/bin:/bin'} | ({} if given is None else {'NUVIO_NATIVE_BUILDER_HEAP': given})
+            out = subprocess.run(['bash', '-euo', 'pipefail', '-c', block + 'echo "HEAP $native_heap"'],
+                                 env=env, capture_output=True, text=True, check=True).stdout
+            self.assertEqual('HEAP ' + expected, out.splitlines()[-1], given)
 
 
 if __name__ == '__main__':

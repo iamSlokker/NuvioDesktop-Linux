@@ -111,7 +111,8 @@ recorded separately; application/native build inputs live in the pinned builder.
    focused JVM tests, then a second Gradle run of `createLinuxNativeDistributable`
    (`-Pnuvio.graalvm.home=/opt/graalvm`, never `-Pnuvio.native.qa`) so native-image
    runs in the Ubuntu 22.04 builder (glibc floor 2.34 for the executable) with
-   `NUVIO_NATIVE_BUILDER_HEAP` (default `9g`; ~9-11 GB peak RSS, one build on the
+   `NUVIO_NATIVE_BUILDER_HEAP` (at least `11g`, `native-build.sh` raises the seeded
+   `build.py`'s `9g`; ~13 GB peak RSS, one build on the
    16 GB runner). The JNI bridge and HDR helper are built from this source, then
    `stage.py` lays out the canonical image from the native layout and
    `native_evidence.py` retains the evidence in `<work>/native-image/`: the exact

@@ -22,7 +22,7 @@
 //
 // Properties: -Pnuvio.graalvm.home (or GRAALVM_HOME / local.properties): GraalVM for JDK 25.
 // -Pnuvio.native.qa=true: QA build (reports missing registrations, never package it).
-// -Pnuvio.native.march (default compatibility). -Pnuvio.native.builderHeap (default 10g).
+// -Pnuvio.native.march (default compatibility). -Pnuvio.native.builderHeap (default 11g).
 // -Pnuvio.native.optimize (default s): native-image's -O level.
 // -Pnuvio.linux.nativeRuntimeDir=<dir>: copied to lib/native (libplayer_bridge.so, libmpv, ...).
 // -Pnuvio.linux.smokeImage=<image>: container for linuxNativeSmoke / linuxNativeImageTrace.
@@ -58,7 +58,7 @@ val linuxNativeMarch = linuxNativeProperty("nuvio.native.march") ?: "compatibili
 // Flatpak repository, whose OSTree object must stay under GitHub's 100 MiB per-file limit (the
 // default -O2 build compressed to 115 MB; -Os to 100 MB, with the same first-frame time).
 val linuxNativeOptimize = linuxNativeProperty("nuvio.native.optimize") ?: "s"
-val linuxNativeBuilderHeap = linuxNativeProperty("nuvio.native.builderHeap") ?: "10g"
+val linuxNativeBuilderHeap = linuxNativeProperty("nuvio.native.builderHeap") ?: "11g"
 val linuxNativeContainer = linuxNativeProperty("nuvio.linux.nativeImageContainer")
 val linuxNativeRuntimeDir = linuxNativeProperty("nuvio.linux.nativeRuntimeDir")
 val linuxSmokeImage = linuxNativeProperty("nuvio.linux.smokeImage")
