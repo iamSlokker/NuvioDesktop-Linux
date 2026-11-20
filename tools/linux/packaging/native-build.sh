@@ -48,10 +48,20 @@ gradle_flags=(-Pnuvio.desktop.channel="$NUVIO_BUILD_CHANNEL" -Pnuvio.innertubex=
   --tests '*LinuxHeroHostGeometryTest' --tests '*LinuxNativeImageMetadataTest' --tests '*LinuxResourceContractTest' \
   --tests '*NativeImageMetadataTest' --tests '*LinuxDesktopRelaunchTest' "${gradle_flags[@]}"
 # The shipped executable: GraalVM native-image over those jars (a separate Gradle
-# run, so the compiler daemon's heap is gone before native-image's ~10 GB peak).
+# run, so the compiler daemon's heap is gone before native-image's ~13 GB peak).
 # Never a QA build; the layout is composeApp/native-image-linux/README.md's.
+# Builder heap: the analysis keeps ~7.8 GB live at its peak (Umbra f91732d42, 338k
+# reachable methods). 9g ran out (GC overhead limit) on the runner and locally on 4
+# threads; 10g passed with 112 s of GC, 11g with 87 s and 13.1 GB peak RSS, while
+# this second Gradle run stays under 1 GB, so one build fits the 16 GB runner. The
+# seeded build.py still passes its old default (9g), so a smaller value in g is raised.
+native_heap=${NUVIO_NATIVE_BUILDER_HEAP:-11g}
+if [[ $native_heap =~ ^([0-9]+)[gG]$ ]] && (( BASH_REMATCH[1] < 11 )); then
+  echo "native-image builder heap $native_heap raised to 11g (the analysis needs it)"
+  native_heap=11g
+fi
 ./gradlew :composeApp:createLinuxNativeDistributable -Pnuvio.graalvm.home=/opt/graalvm \
-  -Pnuvio.native.builderHeap="${NUVIO_NATIVE_BUILDER_HEAP:-9g}" -Pnuvio.native.qa=false "${gradle_flags[@]}"
+  -Pnuvio.native.builderHeap="$native_heap" -Pnuvio.native.qa=false "${gradle_flags[@]}"
 # nuvio-hdr-probe (required by NUVIO_PACKAGE_BUILD) uses the media runtime's
 # build-only SDK area: pinned wayland-scanner, color-management-v1.xml and Vulkan
 # headers/loader (the builder's wayland-protocols/scanner are too old). Only the
