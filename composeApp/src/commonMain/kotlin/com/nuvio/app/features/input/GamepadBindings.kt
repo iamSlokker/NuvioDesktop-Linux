@@ -96,3 +96,17 @@ enum class ControllerCursorSpeed(val maxPxPerSecond: Double) {
 /** Hold the middle mouse button to open the ring. */
 expect fun panelRingMouseState(): StateFlow<Boolean>
 expect fun setPanelRingMouse(enabled: Boolean)
+
+/**
+ * A DualSense's light bar. [LeaveAlone] never writes to the controller (the default: on Bluetooth any
+ * light change also switches the pad to its larger report). [Accent] follows the app's accent colour.
+ */
+enum class ControllerLightBar { LeaveAlone, Off, Accent }
+
+/** False where the app cannot write to the pad (Linux's sealed Flatpak has no hidraw); the lights section hides. */
+expect fun controllerLightsSupported(): Boolean
+expect fun controllerLightBarState(): StateFlow<ControllerLightBar>
+expect fun setControllerLightBar(mode: ControllerLightBar)
+/** The player light under the touchpad (the middle one, player 1). Only applied while the light bar is not [ControllerLightBar.LeaveAlone]. */
+expect fun controllerPlayerLightState(): StateFlow<Boolean>
+expect fun setControllerPlayerLight(enabled: Boolean)

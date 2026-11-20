@@ -550,3 +550,21 @@ mode was changed since. Its test drives a fake Mutter on a private bus:
 cmake --build composeApp/build/native/linux --target linux_display_refresh_test
 dbus-run-session -- composeApp/build/native/linux/linux_display_refresh_test
 ```
+
+Settings > Keyboard Shortcuts > Controller lights (upstream's `configureGamepads`) and a DualSense's mic button
+(push-to-talk for voice control) reach the pad beside its evdev node, because hid-playstation keeps the mic button
+to itself (it toggles the pad's own microphone mute) and exposes the lights only as root-owned LED files.
+`linux_gamepad.cpp` finds the pad's HID device through `/sys/class/input/eventN/device/device` and writes the light
+bar and player light to its LED files when they are writable, otherwise to its hidraw node with the output report
+upstream's Windows bridge sends (USB 0x02, Bluetooth 0x31 with sequence, tag and CRC-32). The mic button is read from
+the same hidraw node while voice control is on (upstream asks for full reports only then). Steam's udev rules
+(`steam-devices`, `60-steam-input.rules`) give the desktop user the DualSense's hidraw node; without them input
+still works and the log says once that the lights and mic button are unavailable. The sealed Flatpak shares
+`/dev/input` only and a read-only `/sys`, so it has neither, and the lights section is hidden there unless the user
+grants the Flatpak `--device=all`. Leave as is (the default) never writes to the pad. The tests replay USB and
+Bluetooth reports through a fake device boundary:
+
+```sh
+cmake --build composeApp/build/native/linux --target linux_gamepad_test
+composeApp/build/native/linux/linux_gamepad_test
+```

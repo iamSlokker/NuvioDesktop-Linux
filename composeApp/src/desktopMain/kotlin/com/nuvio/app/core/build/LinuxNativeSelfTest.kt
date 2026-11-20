@@ -1,5 +1,6 @@
 package com.nuvio.app.core.build
 
+import com.nuvio.app.features.input.LinuxGamepadNative
 import com.nuvio.app.features.player.desktop.LinuxAwtViewResolver
 import com.nuvio.app.features.player.desktop.LinuxInhibitionNative
 import com.nuvio.app.features.player.desktop.LinuxMprisSession
@@ -57,6 +58,18 @@ internal object LinuxNativeSelfTest {
                 val rates = NativePlayerBridge.displayRefreshRates(window)
                 check(NativePlayerBridge.setDisplayRefreshRate(window, 0)) { "restore with nothing switched failed" }
                 "rates=${rates.toList()}"
+            }
+        }
+        // Controllers: the reader's session and the DualSense settings call (lights, mic button) are in
+        // the bridge. Leave-alone settings write nothing; the smoke machine has no pad to open.
+        probe("linux gamepad") {
+            NativePlayerBridge.configureGamepads(false, 0, 0, false)
+            val handle = LinuxGamepadNative.open()
+            check(handle != 0L) { "no gamepad session" }
+            try {
+                "connected=${LinuxGamepadNative.poll(handle, 0xff, IntArray(64))}"
+            } finally {
+                LinuxGamepadNative.close(handle)
             }
         }
         // The packages point libraries and data directories at their own files; a program of the

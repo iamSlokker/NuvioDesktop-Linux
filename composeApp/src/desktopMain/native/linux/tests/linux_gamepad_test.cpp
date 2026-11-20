@@ -5,6 +5,7 @@
 #include <iostream>
 #include <map>
 #include <stdexcept>
+#include <tuple>
 
 using namespace nuvio::gamepad;
 #define CHECK(condition) do { if (!(condition)) throw std::runtime_error(std::string(__func__) + ":" + std::to_string(__LINE__) + " " #condition); } while (false)
@@ -41,6 +42,11 @@ struct FakeSystem : System {
         bool denied = false, failed = false, snapshotFailed = false;
         int emptyInterruptions = 0;
         std::function<void(Pad&)> afterSnapshot;
+        // HID side: hidraw reports queued for reading, what was written, the LED files' answer.
+        bool hidPresent = false, hidFailed = false, ledsWritable = false;
+        std::deque<std::vector<unsigned char>> reports;
+        std::vector<std::vector<unsigned char>> written;
+        std::vector<std::tuple<int, unsigned int, bool>> ledWrites;
     };
     std::map<std::string, Pad> pads;
     std::vector<Node> nodes;
@@ -79,7 +85,62 @@ struct FakeSystem : System {
         return !p.snapshotFailed;
     }
     void close(int fd) override { CHECK(handles.erase(fd) == 1); ++closes; }
+
+    std::map<int, std::string> hids;
+    int hidOpens = 0, hidCloses = 0;
+    std::vector<std::string> logs;
+    int openHid(const Node& n) override {
+        ++hidOpens;
+        if (!pads.at(n.path).hidPresent) return -1;
+        hids[next] = n.path;
+        return next++;
+    }
+    int readHid(int fd, unsigned char* buffer, size_t size) override {
+        auto& p = pads.at(hids.at(fd));
+        if (p.hidFailed) return -1;
+        if (p.reports.empty()) return 0;
+        const auto report = p.reports.front(); p.reports.pop_front();
+        const size_t length = std::min(size, report.size());
+        std::copy(report.begin(), report.begin() + length, buffer);
+        return static_cast<int>(length);
+    }
+    bool writeHid(int fd, const std::vector<unsigned char>& report) override {
+        pads.at(hids.at(fd)).written.push_back(report); return true;
+    }
+    bool writeLeds(const Node& n, int mode, unsigned int rgb, bool player) override {
+        auto& p = pads.at(n.path);
+        if (!p.ledsWritable) return false;
+        p.ledWrites.emplace_back(mode, rgb, player); return true;
+    }
+    void closeHid(int fd) override { CHECK(hids.erase(fd) == 1); ++hidCloses; }
+    void log(const std::string& line) override { logs.push_back(line); }
 };
+
+// DualSense fixtures: hid-playstation's evdev ids, and its hidraw input reports with the mic byte set or not.
+FakeSystem::Pad& dualSense(FakeSystem& sys, bool bluetooth, const std::string& path = "event0") {
+    auto& p = sys.add(path);
+    p.caps = standard(true);
+    p.caps.id.bustype = bluetooth ? BUS_BLUETOOTH : BUS_USB; p.caps.id.vendor = 0x054c; p.caps.id.product = 0x0ce6;
+    p.state = rest(p.caps);
+    p.hidPresent = true;
+    return p;
+}
+std::vector<unsigned char> micReport(bool bluetooth, bool held) {
+    std::vector<unsigned char> report(bluetooth ? 78 : 64, 0);
+    report[0] = bluetooth ? 0x31 : 0x01;
+    report[bluetooth ? 11 : 10] = held ? 0x04 | 0xF8 : 0xF8; // only bit 2 is the mic; the rest must not count
+    return report;
+}
+// Bitwise CRC-32, independent of the table the bridge uses.
+uint32_t referenceCrc(const std::vector<unsigned char>& bytes) {
+    uint32_t crc = 0xFFFFFFFFu;
+    for (unsigned char byte : bytes) {
+        crc ^= byte;
+        for (int k = 0; k < 8; ++k) crc = (crc >> 1) ^ (0xEDB88320u & (0u - (crc & 1u)));
+    }
+    return ~crc;
+}
+void resetConfig() { configure(false, 0, 0, false); }
 
 void qualification() {
     auto c = standard(); CHECK(qualifies(c));
@@ -428,6 +489,139 @@ void fullMaskDoesNotFloodDiscovery() {
     r.poll(255, out.data()); CHECK(sys.enumerations == 2);
 }
 
+void dualSenseMicButtonFromHidraw() {
+    for (bool bluetooth : {false, true}) {
+        resetConfig();
+        FakeSystem sys; auto& p = dualSense(sys, bluetooth); Reader r(sys); std::array<int, 64> out{};
+        r.poll(255, out.data());
+        // Voice control off: the hidraw node is not even opened, as upstream asks for full reports only then.
+        p.reports.push_back(micReport(bluetooth, true));
+        r.poll(1, out.data()); CHECK(sys.hidOpens == 0 && out[0] == 0);
+        configure(true, 0, 0, false);
+        r.poll(1, out.data()); CHECK(sys.hidOpens == 1 && out[0] == DualSenseMicBit);
+        // Nothing new queued: the button stays held, as the evdev state does between reports.
+        r.poll(1, out.data()); CHECK(out[0] == DualSenseMicBit);
+        p.reports = {micReport(bluetooth, true), micReport(bluetooth, false)};
+        r.poll(1, out.data()); CHECK(out[0] == 0);
+        // The mic bit rides beside the evdev buttons.
+        p.reports.push_back(micReport(bluetooth, true));
+        p.events = {event(EV_KEY, BTN_SOUTH, 1), event(EV_SYN, SYN_REPORT, 0)};
+        r.poll(1, out.data()); CHECK(out[0] == (0x1000 | DualSenseMicBit));
+        // Voice control off again: the mic is let go.
+        configure(false, 0, 0, false);
+        r.poll(1, out.data()); CHECK(out[0] == 0x1000);
+        CHECK(sys.pads.at("event0").written.empty());
+    }
+    resetConfig();
+}
+void dualSenseReportsWithoutTheMicByte() {
+    const auto usb = micReport(false, true), bt = micReport(true, true);
+    CHECK(dualSenseMicButton(false, usb.data(), usb.size()) == 1);
+    CHECK(dualSenseMicButton(true, bt.data(), bt.size()) == 1);
+    // Bluetooth's short 0x01 report carries a frame counter where the mic byte would be.
+    std::vector<unsigned char> shortReport(10, 0xFF); shortReport[0] = 0x01;
+    CHECK(dualSenseMicButton(true, shortReport.data(), shortReport.size()) == -1);
+    // Other report ids (feature or audio reports) and truncated ones say nothing.
+    auto other = usb; other[0] = 0x05; CHECK(dualSenseMicButton(false, other.data(), other.size()) == -1);
+    CHECK(dualSenseMicButton(false, usb.data(), 10) == -1);
+    CHECK(dualSenseMicButton(true, bt.data(), 11) == -1);
+}
+void onlyADualSenseHasAHidSide() {
+    configure(true, 2, 0x112233, true);
+    FakeSystem sys; auto& p = sys.add("event0"); p.caps = standard(true);
+    p.caps.id.bustype = BUS_USB; p.caps.id.vendor = 0x054c; p.caps.id.product = 0x09cc; // DualShock 4
+    p.hidPresent = true; p.ledsWritable = true; p.reports.push_back(micReport(false, true));
+    auto& xbox = sys.add("event1"); xbox.caps.id.bustype = BUS_USB; xbox.caps.id.vendor = 0x045e; xbox.hidPresent = true;
+    Reader r(sys); std::array<int, 64> out{};
+    CHECK(r.poll(255, out.data()) == 3 && r.poll(3, out.data()) == 3);
+    CHECK(sys.hidOpens == 0 && p.ledWrites.empty() && out[0] == 0);
+    resetConfig();
+}
+void dualSenseLightsPreferTheLedFiles() {
+    resetConfig();
+    FakeSystem sys; auto& p = dualSense(sys, false); p.ledsWritable = true; Reader r(sys); std::array<int, 64> out{};
+    r.poll(255, out.data()); CHECK(p.ledWrites.empty()); // Leave as is: nothing is ever written.
+    configure(false, 2, 0x3366FF, true);
+    r.poll(1, out.data()); r.poll(1, out.data());
+    CHECK(p.ledWrites.size() == 1 && p.ledWrites[0] == std::make_tuple(2, 0x3366FFu, true));
+    CHECK(sys.hidOpens == 0 && p.written.empty());
+    // Only a change writes again; the same settings sent twice a second do not.
+    configure(false, 2, 0x3366FF, true); r.poll(1, out.data()); CHECK(p.ledWrites.size() == 1);
+    configure(false, 1, 0x3366FF, false); r.poll(1, out.data());
+    CHECK(p.ledWrites.size() == 2 && p.ledWrites[1] == std::make_tuple(1, 0x3366FFu, false));
+    // Back to Leave as is: nothing is written, the pad keeps what it shows.
+    configure(false, 0, 0, false); r.poll(1, out.data()); CHECK(p.ledWrites.size() == 2);
+    resetConfig();
+}
+void dualSenseLightsOverHidraw() {
+    for (bool bluetooth : {false, true}) {
+        resetConfig();
+        FakeSystem sys; auto& p = dualSense(sys, bluetooth); Reader r(sys); std::array<int, 64> out{};
+        r.poll(255, out.data());
+        configure(false, 2, 0x3366FF, true);
+        r.poll(1, out.data());
+        CHECK(sys.hidOpens == 1 && p.written.size() == 1);
+        const auto& first = p.written[0];
+        const size_t header = bluetooth ? 3 : 1;
+        CHECK(first.size() == (bluetooth ? 78u : 63u) && first[0] == (bluetooth ? 0x31 : 0x02));
+        const unsigned char* common = first.data() + header;
+        CHECK(common[0] == 0 && common[1] == 0x14 && common[38] == 0x02 && common[41] == 0x02);
+        CHECK(common[43] == 0x04 && common[44] == 0x33 && common[45] == 0x66 && common[46] == 0xFF);
+        if (bluetooth) {
+            CHECK(first[1] == 0x00 && first[2] == 0x10);
+            std::vector<unsigned char> signed_(1, 0xA2); signed_.insert(signed_.end(), first.begin(), first.end() - 4);
+            const uint32_t crc = referenceCrc(signed_);
+            CHECK(first[74] == (crc & 0xFF) && first[75] == ((crc >> 8) & 0xFF) &&
+                  first[76] == ((crc >> 16) & 0xFF) && first[77] == ((crc >> 24) & 0xFF));
+        }
+        // The next change: no light-bar setup again, the light bar off, the player light off, the next sequence.
+        configure(false, 1, 0x3366FF, false);
+        r.poll(1, out.data());
+        CHECK(p.written.size() == 2);
+        const auto& second = p.written[1];
+        const unsigned char* again = second.data() + header;
+        CHECK(again[38] == 0 && again[41] == 0 && again[43] == 0 && again[44] == 0 && again[45] == 0 && again[46] == 0);
+        if (bluetooth) CHECK(second[1] == 0x10);
+        // A reconnected pad gets the settings again, with the setup.
+        p.failed = true; r.poll(1, out.data()); CHECK(sys.hidCloses == 1);
+        p.failed = false; r.poll(255, out.data()); r.poll(1, out.data());
+        CHECK(p.written.size() == 3 && p.written[2][header + 41] == 0x02);
+    }
+    resetConfig();
+}
+void dualSenseWithoutHidAccess() {
+    resetConfig();
+    FakeSystem sys; auto& p = dualSense(sys, false); p.hidPresent = false; Reader r(sys); std::array<int, 64> out{};
+    configure(true, 2, 0xFF0000, true);
+    p.events = {event(EV_KEY, BTN_SOUTH, 1), event(EV_SYN, SYN_REPORT, 0)};
+    CHECK(r.poll(255, out.data()) == 1 && r.poll(1, out.data()) == 1 && r.poll(1, out.data()) == 1);
+    // Input still works; the node is asked for once per connection and the log says why once.
+    CHECK(out[0] == 0x1000 && sys.hidOpens == 1 && sys.logs.size() == 1);
+    resetConfig();
+}
+void dualSenseHidFailureKeepsTheGamepad() {
+    resetConfig();
+    configure(true, 0, 0, false);
+    FakeSystem sys; auto& p = dualSense(sys, true); Reader r(sys); std::array<int, 64> out{};
+    p.reports.push_back(micReport(true, true));
+    r.poll(255, out.data()); r.poll(1, out.data()); CHECK(out[0] == DualSenseMicBit);
+    p.hidFailed = true;
+    CHECK(r.poll(1, out.data()) == 1 && out[0] == 0 && sys.hidCloses == 1 && sys.closes == 0);
+    // Not reopened every poll.
+    r.poll(1, out.data()); CHECK(sys.hidOpens == 1);
+    resetConfig();
+}
+void hidrawBacklogIsDrained() {
+    resetConfig();
+    configure(true, 0, 0, false);
+    FakeSystem sys; auto& p = dualSense(sys, false); Reader r(sys); std::array<int, 64> out{};
+    r.poll(255, out.data());
+    for (int i = 0; i < 300; ++i) p.reports.push_back(micReport(false, i % 2 == 0));
+    p.reports.push_back(micReport(false, true));
+    r.poll(1, out.data()); CHECK(p.reports.empty() && out[0] == DualSenseMicBit);
+    resetConfig();
+}
+
 int main() {
     const std::pair<const char*, std::function<void()>> tests[] = {
         {"qualification", qualification}, {"buttons and both dpad forms", buttonsAndHats},
@@ -450,6 +644,14 @@ int main() {
         {"eight slot limit", slotLimit}, {"permission recovery", permissionAndDirectoryRecovery},
         {"discovery cadence and cleanup", discoveryCadenceAndCleanup}, {"unrelated nodes", rejectUnrelatedDevices},
         {"full mask scan limit", fullMaskDoesNotFloodDiscovery},
+        {"DualSense mic button from hidraw", dualSenseMicButtonFromHidraw},
+        {"DualSense reports without the mic byte", dualSenseReportsWithoutTheMicByte},
+        {"only a DualSense has a HID side", onlyADualSenseHasAHidSide},
+        {"DualSense lights prefer the LED files", dualSenseLightsPreferTheLedFiles},
+        {"DualSense lights over hidraw", dualSenseLightsOverHidraw},
+        {"DualSense without hidraw access", dualSenseWithoutHidAccess},
+        {"DualSense hidraw failure keeps the gamepad", dualSenseHidFailureKeepsTheGamepad},
+        {"hidraw backlog drained", hidrawBacklogIsDrained},
     };
     int failed = 0;
     for (const auto& [name, test] : tests) {

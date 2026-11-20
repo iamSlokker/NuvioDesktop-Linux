@@ -37,4 +37,21 @@ class LinuxPlayerMenuTest {
         assertTrue("overflowCapableActions.splice" in LINUX_PLAYER_MENU_SCRIPT)
         assertTrue("[data-command=\"keyboardCycleAnimeSvp\"]" in LINUX_PLAYER_MENU_SCRIPT)
     }
+
+    @Test fun theVideoRowsTheLinuxHostRemovesStillExist() {
+        // Upstream moved SVP and the RTX switches into the mouse menu's Video rows (2026-11-20); the script
+        // filters the Video children by action and removes the rows built from them by toggle key.
+        val video = controlsJs.substringAfter("label: \"Video\", textKey: \"player_hud_video\"").substringBefore("\n  },")
+        for ((action, toggle) in listOf(
+            "keyboardCycleAnimeSvp" to "svpInChain",
+            "toggleRtxTrueHdr" to "rtxTrueHdrEnabled",
+            "toggleRtxVsr" to "rtxVsrEnabled",
+        )) {
+            assertTrue("action: \"send:$action:0\", toggleKey: \"$toggle\"" in video, "the Video rows have no $action row to remove")
+            assertTrue("'send:$action'" in LINUX_PLAYER_MENU_SCRIPT)
+            assertTrue("[data-toggle-key=\"$toggle\"]" in LINUX_PLAYER_MENU_SCRIPT)
+        }
+        assertTrue("contextMenuItems.find(item => item.label === 'Video')" in LINUX_PLAYER_MENU_SCRIPT)
+        assertTrue("if (item.toggleKey) button.dataset.toggleKey = item.toggleKey;" in controlsJs)
+    }
 }

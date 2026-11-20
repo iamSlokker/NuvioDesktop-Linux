@@ -16,6 +16,8 @@ class LinuxGamepadNativeTest {
         NativePlayerBridge.ensureNativeLibraryLoaded()
         assertEquals(0, LinuxGamepadNative.poll(0L, 255, IntArray(64)))
         LinuxGamepadNative.close(0L)
+        // Upstream's DualSense settings call: leave-alone settings, which write nothing to any pad.
+        NativePlayerBridge.configureGamepads(false, 0, 0, false)
         repeat(20) {
             val handle = LinuxGamepadNative.open()
             assertTrue(handle != 0L)
