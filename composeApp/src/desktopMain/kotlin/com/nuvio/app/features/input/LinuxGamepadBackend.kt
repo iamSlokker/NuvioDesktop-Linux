@@ -1,6 +1,9 @@
 package com.nuvio.app.features.input
 
+import com.nuvio.app.core.build.LinuxFlatpakSandbox
+import com.nuvio.app.features.player.desktop.DesktopHostOs
 import com.nuvio.app.features.player.desktop.NativePlayerBridge
+import java.io.File
 import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.withLock
 
@@ -68,3 +71,23 @@ internal class LinuxGamepadSessionGate {
         if (isCurrent()) block()
     }
 }
+
+/**
+ * A DualSense's lights (and its mic button) are reached through the pad's hidraw node, or its LED files
+ * where those are writable. The sealed Flatpak has neither: `--device=input` shares /dev/input only, so
+ * /dev has no hidraw nodes, and /sys is read-only. There the Controller lights section is hidden rather
+ * than left doing nothing; a user who grants the Flatpak `--device=all` gets hidraw nodes and the section.
+ */
+internal fun linuxControllerLightsReachable(
+    os: DesktopHostOs,
+    flatpak: Boolean,
+    deviceNames: () -> List<String>,
+): Boolean = os != DesktopHostOs.LINUX || !flatpak || deviceNames().any { it.startsWith("hidraw") }
+
+private val linuxControllerLightsReachableHere: Boolean by lazy {
+    linuxControllerLightsReachable(DesktopHostOs.current, LinuxFlatpakSandbox.isActive) {
+        File("/dev").list()?.toList().orEmpty()
+    }
+}
+
+internal fun linuxControllerLightsReachable(): Boolean = linuxControllerLightsReachableHere

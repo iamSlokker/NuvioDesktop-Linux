@@ -103,6 +103,8 @@ expect fun setPanelRingMouse(enabled: Boolean)
  */
 enum class ControllerLightBar { LeaveAlone, Off, Accent }
 
+/** False where the app cannot write to the pad (Linux's sealed Flatpak has no hidraw); the lights section hides. */
+expect fun controllerLightsSupported(): Boolean
 expect fun controllerLightBarState(): StateFlow<ControllerLightBar>
 expect fun setControllerLightBar(mode: ControllerLightBar)
 /** The player light under the touchpad (the middle one, player 1). Only applied while the light bar is not [ControllerLightBar.LeaveAlone]. */

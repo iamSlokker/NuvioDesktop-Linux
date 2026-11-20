@@ -12,6 +12,8 @@ actual fun gamepadSupported(): Boolean = gamepadBackendSupported(DesktopHostOs.c
 
 actual fun ensureGamepadSettingsLoaded() = GamepadSettingsRepository.ensureLoaded()
 
+actual fun controllerLightsSupported(): Boolean = gamepadSupported() && linuxControllerLightsReachable()
+
 actual fun controllerLightBarState(): StateFlow<ControllerLightBar> = GamepadSettingsRepository.lightBarState
 actual fun setControllerLightBar(mode: ControllerLightBar) = GamepadSettingsRepository.setLightBar(mode)
 actual fun controllerPlayerLightState(): StateFlow<Boolean> = GamepadSettingsRepository.playerLightState

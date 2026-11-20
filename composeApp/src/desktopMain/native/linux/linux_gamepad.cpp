@@ -6,7 +6,10 @@
 #include <chrono>
 #include <dirent.h>
 #include <fcntl.h>
+#include <cstdio>
+#include <linux/hidraw.h>
 #include <memory>
+#include <mutex>
 #include <sys/ioctl.h>
 #include <sys/stat.h>
 #include <unistd.h>
@@ -76,6 +79,7 @@ public:
             bits(fd, EVIOCGBIT(EV_ABS, (ABS_CNT + 7) / 8), caps.axes);
         if (bits(fd, EVIOCGPROP((INPUT_PROP_CNT + 7) / 8), properties))
             caps.accelerometer = properties[INPUT_PROP_ACCELEROMETER];
+        if (ioctl(fd, EVIOCGID, &caps.id) < 0) caps.id = input_id{};
         for (int i = 0; valid && i < ABS_CNT; ++i) {
             if (caps.axes[i] && ioctl(fd, EVIOCGABS(i), &caps.ranges[i]) < 0) valid = false;
         }
@@ -107,8 +111,179 @@ public:
         return true;
     }
     void close(int fd) override { ::close(fd); }
+
+    // /sys/class/input/eventN/device is the input device, and its parent the HID device that owns the
+    // hidraw node and the LED files: the same pad, never a guess by model.
+    static std::string hidDirectory(const Node& node) {
+        const auto slash = node.path.rfind('/');
+        return "/sys/class/input/" + node.path.substr(slash + 1) + "/device/device";
+    }
+    static std::vector<std::string> entries(const std::string& directory) {
+        std::vector<std::string> names;
+        const auto closeDirectory = [](DIR* d) { closedir(d); };
+        const std::unique_ptr<DIR, decltype(closeDirectory)> handle(opendir(directory.c_str()), closeDirectory);
+        if (!handle) return names;
+        for (int count = 0; count < MaxDiscoveryEntries; ++count) {
+            const auto* entry = readdir(handle.get());
+            if (!entry) break;
+            if (entry->d_name[0] != '.') names.emplace_back(entry->d_name);
+        }
+        std::sort(names.begin(), names.end());
+        return names;
+    }
+    static bool writeFile(const std::string& path, const std::string& text) {
+        const int fd = ::open(path.c_str(), O_WRONLY | O_CLOEXEC);
+        if (fd < 0) return false;
+        const bool ok = ::write(fd, text.data(), text.size()) == static_cast<ssize_t>(text.size());
+        ::close(fd);
+        return ok;
+    }
+
+    int openHid(const Node& node) override {
+        struct stat input{};
+        if (stat(node.path.c_str(), &input) != 0 || static_cast<uint64_t>(input.st_rdev) != node.device) return -1;
+        for (const auto& name : entries(hidDirectory(node) + "/hidraw")) {
+            if (name.compare(0, 6, "hidraw") != 0) continue;
+            const std::string path = "/dev/" + name;
+            int fd = ::open(path.c_str(), O_RDWR | O_NONBLOCK | O_CLOEXEC | O_NOFOLLOW);
+            if (fd < 0) fd = ::open(path.c_str(), O_RDONLY | O_NONBLOCK | O_CLOEXEC | O_NOFOLLOW);
+            if (fd < 0) return -1;
+            hidraw_devinfo info{};
+            if (ioctl(fd, HIDIOCGRAWINFO, &info) < 0 || static_cast<uint16_t>(info.vendor) != 0x054c) {
+                ::close(fd);
+                return -1;
+            }
+            return fd;
+        }
+        return -1;
+    }
+    int readHid(int fd, unsigned char* buffer, size_t size) override {
+        for (;;) {
+            const auto length = ::read(fd, buffer, size);
+            if (length > 0) return static_cast<int>(length);
+            if (length < 0 && errno == EINTR) continue;
+            if (length < 0 && (errno == EAGAIN || errno == EWOULDBLOCK)) return 0;
+            return -1;
+        }
+    }
+    bool writeHid(int fd, const std::vector<unsigned char>& report) override {
+        for (;;) {
+            const auto written = ::write(fd, report.data(), report.size());
+            if (written < 0 && errno == EINTR) continue;
+            return written == static_cast<ssize_t>(report.size());
+        }
+    }
+    bool writeLeds(const Node& node, int lightMode, unsigned int rgb, bool playerLight) override {
+        const std::string leds = hidDirectory(node) + "/leds/";
+        std::string bar;
+        std::vector<std::pair<std::string, int>> players;
+        for (const auto& name : entries(leds)) {
+            const auto ends = [&](const std::string& suffix) {
+                return name.size() > suffix.size() && name.compare(name.size() - suffix.size(), suffix.size(), suffix) == 0;
+            };
+            if (ends(":rgb:indicator")) bar = leds + name;
+            const auto player = name.find(":white:player-");
+            if (player != std::string::npos && name.size() == player + 15)
+                players.emplace_back(leds + name, name.back() - '0');
+        }
+        if (bar.empty() || players.size() != 5) return false;
+        const unsigned int color = lightMode == 2 ? rgb : 0u;
+        char intensity[32];
+        std::snprintf(intensity, sizeof(intensity), "%u %u %u", (color >> 16) & 0xFF, (color >> 8) & 0xFF, color & 0xFF);
+        // Root-owned on a stock system: a write that is refused leaves the pad as it was, and hidraw is tried.
+        if (!writeFile(bar + "/multi_intensity", intensity) || !writeFile(bar + "/brightness", color ? "255" : "0")) return false;
+        for (const auto& [path, index] : players) {
+            if (!writeFile(path + "/brightness", playerLight && index == 3 ? "1" : "0")) return false;
+        }
+        return true;
+    }
+    void closeHid(int fd) override { ::close(fd); }
+    void log(const std::string& line) override { std::fprintf(stderr, "Linux %s\n", line.c_str()); }
 };
+
+std::mutex configLock;
+PadConfig currentConfig{false, 0, 0, false, 1};
 } // namespace
+
+void configure(bool fullReports, int lightMode, unsigned int rgb, bool playerLight) {
+    std::lock_guard<std::mutex> guard(configLock);
+    const bool lightsChanged = currentConfig.lightMode != lightMode || currentConfig.rgb != rgb ||
+        currentConfig.playerLight != playerLight;
+    currentConfig.fullReports = fullReports;
+    currentConfig.lightMode = lightMode;
+    currentConfig.rgb = rgb & 0xFFFFFFu;
+    currentConfig.playerLight = playerLight;
+    if (lightsChanged) ++currentConfig.generation;
+}
+
+PadConfig padConfig() {
+    std::lock_guard<std::mutex> guard(configLock);
+    return currentConfig;
+}
+
+bool isDualSense(const input_id& id) {
+    // DualSense and DualSense Edge, over USB or Bluetooth. A DualShock 4 has neither the mic nor this report.
+    return id.vendor == 0x054c && (id.product == 0x0ce6 || id.product == 0x0df2) &&
+        (id.bustype == BUS_USB || id.bustype == BUS_BLUETOOTH);
+}
+
+// CRC-32 (zlib's), which a DualSense checks on every Bluetooth output report.
+uint32_t crc32(uint32_t crc, const unsigned char* data, size_t length) {
+    static const auto table = [] {
+        std::array<uint32_t, 256> values{};
+        for (uint32_t i = 0; i < 256; ++i) {
+            uint32_t c = i;
+            for (int k = 0; k < 8; ++k) c = (c & 1) ? 0xEDB88320u ^ (c >> 1) : c >> 1;
+            values[i] = c;
+        }
+        return values;
+    }();
+    crc = ~crc;
+    for (size_t i = 0; i < length; ++i) crc = table[(crc ^ data[i]) & 0xFF] ^ (crc >> 8);
+    return ~crc;
+}
+
+std::vector<unsigned char> dualSenseLightReport(bool bluetooth, int lightMode, unsigned int rgb, bool playerLight,
+                                                bool setup, unsigned char sequence) {
+    // Upstream's Windows writeLights(): the common block behind 0x02 (USB) or 0x31 + sequence/tag (Bluetooth).
+    std::vector<unsigned char> report(bluetooth ? DualSenseBluetoothOutputSize : DualSenseUsbOutputSize, 0);
+    const size_t header = bluetooth ? 3 : 1;
+    if (bluetooth) {
+        report[0] = 0x31;
+        report[1] = static_cast<unsigned char>((sequence & 0x0F) << 4);
+        report[2] = 0x10; // "HID data" tag
+    } else {
+        report[0] = 0x02;
+    }
+    unsigned char* common = report.data() + header;
+    common[1] = 0x04 | 0x10; // valid_flag1: light bar control, player indicator control
+    if (setup) {
+        common[38] = 0x02; // valid_flag2: light bar setup control
+        common[41] = 0x02; // light bar setup: light out (the fade the pad shows before a host takes over)
+    }
+    common[42] = 0x00; // player light brightness: high
+    common[43] = playerLight ? 0x04 : 0x00; // the middle of the five player lights: player 1
+    const unsigned int color = lightMode == 2 ? rgb : 0u;
+    common[44] = static_cast<unsigned char>((color >> 16) & 0xFF);
+    common[45] = static_cast<unsigned char>((color >> 8) & 0xFF);
+    common[46] = static_cast<unsigned char>(color & 0xFF);
+    if (bluetooth) {
+        const unsigned char seed = 0xA2; // the output report header the CRC starts from
+        const size_t at = DualSenseBluetoothOutputSize - 4;
+        const uint32_t crc = crc32(crc32(0, &seed, 1), report.data(), at);
+        for (int i = 0; i < 4; ++i) report[at + i] = static_cast<unsigned char>((crc >> (8 * i)) & 0xFF);
+    }
+    return report;
+}
+
+int dualSenseMicButton(bool bluetooth, const unsigned char* report, size_t length) {
+    // The third button byte (PS 0x01, touchpad 0x02, mic 0x04): USB report 0x01 has it at 10, the
+    // Bluetooth full report 0x31 one byte later. Bluetooth's short 0x01 report has no mic button, but
+    // hid-playstation always switches the pad to full reports when it binds.
+    if (!bluetooth && length >= 11 && report[0] == 0x01) return (report[10] & 0x04) ? 1 : 0;
+    if (bluetooth && length >= 12 && report[0] == 0x31) return (report[11] & 0x04) ? 1 : 0;
+    return -1;
+}
 
 bool qualifies(const Capabilities& caps) {
     // Standard gamepad face controls plus navigation. Reject sensor and touch collections.
@@ -165,6 +340,7 @@ Sample normalize(const Capabilities& caps, const State& state) {
 Reader::~Reader() { for (auto& device : devices_) disconnect(device); }
 
 void Reader::disconnect(Device& device) {
+    if (device.hid >= 0) system_.closeHid(device.hid);
     if (device.fd >= 0) system_.close(device.fd);
     device = Device{};
 }
@@ -246,6 +422,53 @@ bool Reader::drain(Device& device) {
     return true;
 }
 
+void Reader::applyHid(Device& device, const PadConfig& config) {
+    const bool bluetooth = device.caps.id.bustype == BUS_BLUETOOTH;
+    const auto ensureHid = [&] {
+        if (device.hid >= 0 || device.hidTried) return device.hid >= 0;
+        device.hidTried = true; // Once per connection: a pad that refuses is not asked again every poll.
+        device.hid = system_.openHid(device.node);
+        if (device.hid < 0)
+            system_.log("gamepad DualSense: no access to its hidraw node (Steam's udev rules grant it); mic button and lights unavailable");
+        return device.hid >= 0;
+    };
+    if (config.lightMode != 0 && device.appliedLightGeneration != config.generation) {
+        device.appliedLightGeneration = config.generation;
+        if (system_.writeLeds(device.node, config.lightMode, config.rgb, config.playerLight)) {
+            system_.log("gamepad DualSense lights set");
+        } else if (ensureHid()) {
+            const auto report = dualSenseLightReport(bluetooth, config.lightMode, config.rgb, config.playerLight,
+                                                     !device.lightSetupDone, device.outputSequence);
+            if (system_.writeHid(device.hid, report)) {
+                device.lightSetupDone = true;
+                if (bluetooth) device.outputSequence = static_cast<unsigned char>((device.outputSequence + 1) & 0x0F);
+                system_.log("gamepad DualSense lights set");
+            } else {
+                system_.log("gamepad DualSense lights write failed");
+            }
+        }
+    }
+    // Upstream reads the mic button only while voice control asks for full reports; so does this.
+    if (config.fullReports) ensureHid();
+    if (device.hid < 0) { device.micHeld = false; return; }
+    // Drained to EAGAIN: hidraw keeps 64 reports and drops the newest once full, so a backlog would go stale.
+    for (int i = 0; i < MaxEventsPerPoll * 2; ++i) {
+        unsigned char report[128];
+        const int length = system_.readHid(device.hid, report, sizeof(report));
+        if (length == 0) break;
+        if (length < 0) {
+            // The HID side went away (the evdev node usually follows); input keeps working without it.
+            system_.closeHid(device.hid);
+            device.hid = -1;
+            device.micHeld = false;
+            return;
+        }
+        const int mic = dualSenseMicButton(bluetooth, report, static_cast<size_t>(length));
+        if (mic >= 0) device.micHeld = mic == 1;
+    }
+    if (!config.fullReports) device.micHeld = false;
+}
+
 int Reader::poll(int slotMask, int* output) {
     std::fill(output, output + Slots * Stride, 0);
     if ((slotMask & 0xff) == 0xff) {
@@ -257,13 +480,16 @@ int Reader::poll(int slotMask, int* output) {
         }
     }
     int connected = 0;
+    const PadConfig config = padConfig();
     for (int i = 0; i < Slots; ++i) {
         auto& device = devices_[i];
         if (device.fd < 0) continue;
         // Always check open devices, even if the caller's last mask omitted a slot.
         if (!drain(device)) { disconnect(device); continue; }
+        if (isDualSense(device.caps.id)) applyHid(device, config);
         connected |= 1 << i;
         std::copy(device.committed.begin(), device.committed.end(), output + i * Stride);
+        if (device.micHeld) output[i * Stride] |= DualSenseMicBit;
     }
     return connected;
 }
@@ -291,6 +517,13 @@ Java_com_nuvio_app_features_input_LinuxGamepadNative_poll(JNIEnv* env, jobject, 
     catch (...) { state.fill(0); } // Allocation failure must not unwind through JNI.
     env->SetIntArrayRegion(out, 0, 64, state.data());
     return connected;
+}
+// Upstream's NativePlayerBridge.configureGamepads: applied to each DualSense on the next poll.
+extern "C" JNIEXPORT void JNICALL
+Java_com_nuvio_app_features_player_desktop_NativePlayerBridge_configureGamepads(
+    JNIEnv*, jobject, jboolean fullReports, jint lightMode, jint rgb, jboolean playerLight) {
+    nuvio::gamepad::configure(fullReports == JNI_TRUE, static_cast<int>(lightMode),
+                              static_cast<unsigned int>(rgb) & 0xFFFFFFu, playerLight == JNI_TRUE);
 }
 extern "C" JNIEXPORT void JNICALL
 Java_com_nuvio_app_features_input_LinuxGamepadNative_close(JNIEnv*, jobject, jlong handle) {

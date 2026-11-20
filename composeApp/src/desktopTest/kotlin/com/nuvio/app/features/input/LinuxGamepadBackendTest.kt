@@ -181,4 +181,15 @@ class LinuxGamepadBackendTest {
         assertEquals(20, opens)
         assertEquals(opens, closes)
     }
+
+    @Test
+    fun `controller lights are offered except in a Flatpak without hidraw`() {
+        val none = { error("only the Flatpak looks at /dev") }
+        assertTrue(linuxControllerLightsReachable(DesktopHostOs.LINUX, flatpak = false, deviceNames = none))
+        assertTrue(linuxControllerLightsReachable(DesktopHostOs.WINDOWS, flatpak = false, deviceNames = none))
+        // --device=input: /dev/input only.
+        assertFalse(linuxControllerLightsReachable(DesktopHostOs.LINUX, flatpak = true) { listOf("input", "dri", "null") })
+        // --device=all granted by the user: the pad's hidraw node is there.
+        assertTrue(linuxControllerLightsReachable(DesktopHostOs.LINUX, flatpak = true) { listOf("input", "hidraw3") })
+    }
 }

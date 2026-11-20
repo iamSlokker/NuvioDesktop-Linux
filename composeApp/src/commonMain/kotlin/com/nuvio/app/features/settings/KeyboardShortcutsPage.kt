@@ -67,6 +67,7 @@ import com.nuvio.app.features.input.gamepadTargetChoices
 import com.nuvio.app.features.input.panelRingMouseState
 import com.nuvio.app.features.input.ControllerLightBar
 import com.nuvio.app.features.input.controllerLightBarState
+import com.nuvio.app.features.input.controllerLightsSupported
 import com.nuvio.app.features.input.setControllerLightBar
 import com.nuvio.app.features.input.controllerPlayerLightState
 import com.nuvio.app.features.input.setControllerPlayerLight
@@ -217,7 +218,9 @@ internal fun LazyListScope.keyboardShortcutsContent(isTablet: Boolean) {
     item(key = "keyboard-shortcuts-panel-ring") { PanelRingSection(isTablet = isTablet) }
     if (gamepadSupported()) {
         item(key = "keyboard-shortcuts-controller-cursor") { ControllerCursorSection(isTablet = isTablet) }
-        item(key = "keyboard-shortcuts-controller-lights") { ControllerLightsSection(isTablet = isTablet) }
+        if (controllerLightsSupported()) {
+            item(key = "keyboard-shortcuts-controller-lights") { ControllerLightsSection(isTablet = isTablet) }
+        }
     }
 
     item(key = "keyboard-shortcuts-navigation") {
