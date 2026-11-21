@@ -1,13 +1,21 @@
 package com.nuvio.app.core.ui
 
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.tween
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.DefaultAlpha
 import androidx.compose.ui.graphics.FilterQuality
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asComposeImageBitmap
 import androidx.compose.ui.graphics.asSkiaBitmap
@@ -139,6 +147,17 @@ internal actual fun NuvioAsyncImage(
     // folder gets a different model, so the holder resets and cannot show the previous item's
     // artwork. Only a reload of *the same picture* keeps drawing it.
     val retained = remember(model) { RetainedArtwork() }
+    // First picture from the network fades in. The progress starts at 0, so the frame that flips
+    // the flag already draws transparent (no full-strength flash before the fade), and it is read
+    // only inside graphicsLayer, so the fade redraws the layer without recomposing the image.
+    var shouldFadeNetworkLoad by remember(model) { mutableStateOf(false) }
+    val networkFadeProgress = remember(model) { Animatable(0f) }
+    LaunchedEffect(model, shouldFadeNetworkLoad) {
+        if (shouldFadeNetworkLoad) {
+            UiMotion.markBusy(140L)
+            networkFadeProgress.animateTo(1f, tween(durationMillis = 140, easing = FastOutSlowInEasing))
+        }
+    }
     val transform: (AsyncImagePainter.State) -> AsyncImagePainter.State = remember(
         placeholder,
         error,
@@ -155,6 +174,10 @@ internal actual fun NuvioAsyncImage(
                 }
                 is AsyncImagePainter.State.Success -> {
                     val image = state.result.image
+                    val wasEmpty = retained.painter == null
+                    if (wasEmpty && state.result.dataSource == DataSource.NETWORK) {
+                        shouldFadeNetworkLoad = true
+                    }
                     DesktopArtworkTelemetry.recordLoad(
                         sourceUrl = state.result.memoryCacheKey?.key ?: state.result.diskCacheKey,
                         fromMemoryCache = state.result.dataSource == DataSource.MEMORY_CACHE,
@@ -209,7 +232,15 @@ internal actual fun NuvioAsyncImage(
         model = requestModel,
         contentDescription = contentDescription,
         // Attached for every path now: the hero sizes from layout as well.
-        modifier = modifier.then(artworkSizeResolver),
+        modifier = modifier
+            .then(artworkSizeResolver)
+            .then(
+                if (shouldFadeNetworkLoad) {
+                    Modifier.graphicsLayer { this.alpha = networkFadeProgress.value }
+                } else {
+                    Modifier
+                },
+            ),
         transform = transform,
         onState = onState,
         alignment = alignment,
