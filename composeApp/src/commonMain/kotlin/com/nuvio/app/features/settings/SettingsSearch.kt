@@ -598,7 +598,7 @@ private fun settingsSearchEntries(
         page = SettingsPage.Usenet,
         key = "usenet",
         title = resolve(Res.string.compose_settings_page_usenet),
-        description = "Usenet · NNTP · Newznab · NZB · User-Agent · 7z",
+        description = "Usenet · NNTP · Newznab · NZB · User-Agent · 7z · Usenet info · statistics",
         icon = Icons.Rounded.Newspaper,
     )
     addPage(
@@ -1572,6 +1572,15 @@ private fun settingsSearchEntries(
         key = "stream-addon-logo",
         title = resolve(Res.string.settings_stream_addon_logo_title),
         description = resolve(Res.string.settings_stream_addon_logo_description),
+        pageLabel = streamsPage,
+        section = resolve(Res.string.settings_stream_display_section),
+        icon = Icons.Rounded.Style,
+    )
+    addRow(
+        page = SettingsPage.Streams,
+        key = "stream-usenet-formatter",
+        title = resolve(Res.string.settings_stream_usenet_formatter_title),
+        description = resolve(Res.string.settings_stream_usenet_formatter_description),
         pageLabel = streamsPage,
         section = resolve(Res.string.settings_stream_display_section),
         icon = Icons.Rounded.Style,
