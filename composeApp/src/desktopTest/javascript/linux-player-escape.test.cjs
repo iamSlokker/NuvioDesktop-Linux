@@ -7,8 +7,12 @@ const { test } = require('node:test');
 const source = fs.readFileSync(path.join(__dirname, '../../desktopMain/resources/player-ui/controls.js'), 'utf8');
 const start = source.indexOf('function handlePlayerEscape(');
 assert.ok(start >= 0, 'production AWT Escape bridge policy must exist');
-const end = source.indexOf('\nsetProgress(0, 0);', start);
-assert.ok(end > start);
+// Through the end of the document keydown listener: the code after it (the keyup listener, window
+// listeners, start-up) is not part of the Escape policy.
+const keydown = source.indexOf('document.addEventListener("keydown", event => {', start);
+assert.ok(keydown > start, 'focused keydown listener follows the Escape policy');
+const end = source.indexOf('\n});\n', keydown) + '\n});'.length;
+assert.ok(end > keydown);
 const actual = source.slice(start, end);
 
 function fixture(overrides = {}) {
@@ -16,7 +20,7 @@ function fixture(overrides = {}) {
   let listener;
   const ctx = {
     isHeroTrailerSurface: false, state: { heroTrailerMode: false, skipSubmitToastDismissible: false },
-    subtitleHexField: '', contextMenuOpen: false, actionOverflowOpen: false,
+    subtitleHexField: '', contextMenuOpen: false, actionOverflowOpen: false, keyboardPanelMode: '',
     colorGradePanelOpen: false, activeModal: '', error: '', window: {},
     document: { addEventListener(type, fn) { assert.equal(type, 'keydown'); listener = fn; } },
     playbackErrorText: () => ctx.error,
