@@ -1,0 +1,35 @@
+name: Linux HUD JS tests
+
+# The node tests under composeApp/src/desktopTest/javascript check the Linux player HUD's
+# controls.js/css/html. Gradle's desktopTest does not run them, so they run here.
+on:
+  pull_request:
+    branches: [linux]
+    paths:
+      - 'composeApp/src/desktopMain/resources/player-ui/**'
+      - 'composeApp/src/desktopTest/javascript/**'
+      - '.github/workflows/linux-js-tests.yml'
+  push:
+    branches: [linux]
+    paths:
+      - 'composeApp/src/desktopMain/resources/player-ui/**'
+      - 'composeApp/src/desktopTest/javascript/**'
+      - '.github/workflows/linux-js-tests.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  node-tests:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      # The tests use only node: built-ins, so the runner's own Node is enough.
+      - name: Run node --test
+        run: |
+          node --version
+          node --test composeApp/src/desktopTest/javascript/*.test.cjs
