@@ -1284,6 +1284,14 @@ button svg * {
   100% { transform: translateX(280%); }
 }
 
+/* Linux (WebKitGTK): presses on the next-episode card, the skip prompt and the skip-submit toast
+   land on the button itself. renderNativePlaybackPrompts rewrites their labels with every
+   playerUpdate (4 a second here), and WebKit drops the click of a press whose target text node was
+   replaced before the release, as on live TV's badge. None of their children has a handler. */
+.player.linux-host :is(.next-episode-card, .skip-prompt, .skip-submit-toast) * {
+  pointer-events: none;
+}
+
 .header-actions {
   display: flex;
   gap: 10px;
