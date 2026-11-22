@@ -1230,6 +1230,18 @@ val windowsUnusedLibmpvRuntimeDllsAll = listOf(
     "libsyn123-0.dll", "libsystre-0.dll", "libtheora-1.dll", "libtiffxx-6.dll", "libtre-5.dll",
     "libturbojpeg.dll", "libudf-0.dll", "libvamp-hostsdk.dll", "libvamp-sdk.dll",
     "libvorbisfile-3.dll", "libwebpdecoder-3.dll", "libwebpdemux-2.dll", "tcl86.dll", "tk86.dll",
+    // Dropped by Nuvio's slim decoder-focused FFmpeg 9.0.2 build (scripts/ffmpeg-no-whisper.patch):
+    // software video encoders, SVG/JXL image chains, unused avdevice outputs, and gettext CLI libs.
+    // Verified unreachable from player_bridge/libmpv/vapoursynth/svpflow/ffmpeg/ffprobe PE imports.
+    "libx265-217.dll", "librsvg-2-2.dll", "libaom.dll", "libSvtAv1Enc-4.dll",
+    "libjxl.dll", "libjxl_cms.dll", "libjxl_threads.dll", "libhwy.dll",
+    "libvpx-1.dll", "librav1e.dll", "libopenal-1.dll", "SDL2.dll",
+    "libx264-165.dll", "xvidcore.dll", "libmp3lame-0.dll", "libmpg123-0.dll",
+    "libcaca++-0.dll",
+    "libcairo-2.dll", "libcairo-gobject-2.dll", "libpixman-1-0.dll",
+    "libpango-1.0-0.dll", "libpangoft2-1.0-0.dll", "libpangowin32-1.0-0.dll", "libpangocairo-1.0-0.dll",
+    "libthai-0.dll", "libdatrie-1.0-0.dll",
+    "libgettextlib-1-0.dll", "libtextstyle-0.dll", "libgettextpo-0.dll", "libgettextsrc-1-0.dll",
 )
 
 // CI escape hatch #2: the exclusion list above was traced against Nuvio's own FFmpeg/mpv build.
@@ -1326,20 +1338,26 @@ val leanDesktopJar = providers.gradleProperty("nuvio.desktop.leanJar")
     .map(String::toBoolean)
     .getOrElse(true)
 
+// TorrServer.exe is ~55 MB and only used if a user manually switches P2P away from the built-in
+// nuvio_engine.dll; omitted by default and downloaded on demand by TorrServerP2pBackend.
+val bundleTorrServer = providers.gradleProperty("nuvio.windows.bundleTorrServer")
+    .map(String::toBoolean)
+    .getOrElse(false)
+
 // Large desktop resources that rarely change. The app jar changes every release, so everything in
 // it is re-downloaded on every update; these ~30MB (compressed) instead ship as loose files under
 // <install>\resources\ with the same relative path, staged by the app-image step below, and only
 // download again when they actually change. Readers go through PackagedResources, which falls back
 // to the classpath — so with -Pnuvio.desktop.leanJar=false they simply stay in the jar.
-val externalDesktopResources = listOf(
-    "torrserver/**",
-    "backdrop-framing/**",
+val externalDesktopResources = buildList {
+    if (bundleTorrServer) add("torrserver/**")
+    add("backdrop-framing/**")
     // fork:visualiser - the Beat This! beat grid models (about 11 MB).
-    "beat-tracking/**",
-    "anime-list-mini.json",
-    // Third-party licence texts, so they ship beside the binaries they cover (<install>/resources/licenses).
-    "licenses/**",
-)
+    add("beat-tracking/**")
+    add("anime-list-mini.json")
+    // Third-party licence texts, so they ship beside the binaries they cover (<install>\resources\licenses).
+    add("licenses/**")
+}
 val desktopResourcesSourceDir = layout.projectDirectory.dir("src/desktopMain/resources").asFile
 
 tasks.withType<Jar>().configureEach {
@@ -1369,6 +1387,8 @@ tasks.withType<Jar>().configureEach {
         from(windowsPythonLibOutput) {
             into("native/windows/pylib")
         }
+        // Never embed the 55 MB TorrServer.exe into the jar; it's downloaded on demand.
+        exclude("torrserver/**")
         // Shipped as loose files under <install>\resources instead; see externalDesktopResources.
         if (leanDesktopJar) {
             exclude(externalDesktopResources)
@@ -1493,9 +1513,7 @@ if (isWindowsHost) {
                         }
                         into(imageDir.resolve("resources"))
                     }
-                    // TorrServer.exe is gitignored, so a checkout without it builds an image
-                    // without TorrServer exactly as the jar used to.
-                    if (!imageDir.resolve("resources/torrserver/windows-amd64/TorrServer.exe").isFile) {
+                    if (bundleTorrServer && !imageDir.resolve("resources/torrserver/windows-amd64/TorrServer.exe").isFile) {
                         logger.warn("TorrServer.exe not found under $desktopResourcesSourceDir; the app image ships without it.")
                     }
                 }
@@ -2455,6 +2473,7 @@ apply(from = "native-image-linux.gradle.kts")
 /** One `reflection` entry of a reachability-metadata.json. */
 class NativeMetadataEntry(val type: String) {
     var allDeclared = false
+    var allDeclaredMethods = false
     var jniAccessible = false
     val methods = sortedMapOf<String, List<String>>()
     val fields = sortedSetOf<String>()
@@ -2466,6 +2485,8 @@ class NativeMetadataEntry(val type: String) {
             put("allDeclaredConstructors", true)
             put("allDeclaredMethods", true)
             put("allDeclaredFields", true)
+        } else if (allDeclaredMethods) {
+            put("allDeclaredMethods", true)
         }
         if (methods.isNotEmpty()) {
             put("methods", methods.map { (key, params) -> mapOf("name" to key.substringBefore('('), "parameterTypes" to params) })
@@ -2475,12 +2496,15 @@ class NativeMetadataEntry(val type: String) {
 }
 
 /**
- * Serializers: every `X$$serializer` in the app's jars registers `X`, `X$Companion` (when it
- * exists) and `X$$serializer`, plus every named class of `kotlinx.serialization.json`. Native
- * sign-in once failed with "Serializer for class 'JsonLiteral' is not found" because one of these
- * was missing; the spike listed ~1,900 of them by hand.
+ * Serializers: kotlinx.serialization's JVM reflective lookup (`PlatformKt.constructSerializerForGivenTypeArgs`)
+ * finds `X.Companion` via `getDeclaredField("Companion")` and invokes `X$Companion.serializer(...)` via
+ * `getDeclaredMethod`, never reflecting on `X`'s data-class getters/copy/componentN/equals/hashCode.
+ * Registering only `X.Companion`, `X$Companion`'s declared methods, and `X$$serializer.INSTANCE` avoids
+ * ~35k unnecessary reflected methods and ~12k fields on the ~1,000 `@Serializable` data classes.
+ * Classes without a default `Companion` (named companions/objects) and `kotlinx.serialization.json.*`
+ * keep `allDeclared = true`.
  */
-fun collectSerializerTypes(jars: Collection<File>): Set<String> {
+fun collectSerializerEntries(jars: Collection<File>, into: MutableMap<String, NativeMetadataEntry>) {
     val classes = HashSet<String>()
     jars.forEach { jar ->
         ZipFile(jar).use { zip ->
@@ -2491,19 +2515,24 @@ fun collectSerializerTypes(jars: Collection<File>): Set<String> {
         }
     }
     val anonymous = Regex("""\$\d""")
-    return buildSet {
-        classes.filter { it.endsWith("\$\$serializer") }.forEach { serializer ->
-            val owner = serializer.removeSuffix("\$\$serializer")
-            add(owner)
-            add(serializer)
-            "$owner\$Companion".takeIf { it in classes }?.let(::add)
+    fun entry(name: String) = into.getOrPut(name) { NativeMetadataEntry(name) }
+    classes.filter { it.endsWith("\$\$serializer") }.forEach { serializer ->
+        val owner = serializer.removeSuffix("\$\$serializer")
+        val companion = "$owner\$Companion"
+        if (companion in classes) {
+            entry(owner).fields += "Companion"
+            entry(companion).allDeclaredMethods = true
+            entry(serializer).fields += "INSTANCE"
+        } else {
+            entry(owner).allDeclared = true
+            entry(serializer).allDeclared = true
         }
-        classes.filter { name ->
-            name.startsWith("kotlinx.serialization.json.") &&
-                '.' !in name.removePrefix("kotlinx.serialization.json.") &&
-                !anonymous.containsMatchIn(name)
-        }.forEach(::add)
     }
+    classes.filter { name ->
+        name.startsWith("kotlinx.serialization.json.") &&
+            '.' !in name.removePrefix("kotlinx.serialization.json.") &&
+            !anonymous.containsMatchIn(name)
+    }.forEach { entry(it).allDeclared = true }
 }
 
 /** `(Ljava/lang/String;[BJ)V` -> `["java.lang.String", "byte[]", "long"]`. */
@@ -2583,9 +2612,7 @@ val generateNativeMetadata = tasks.register("generateNativeMetadata") {
     outputs.dir(nativeImageGeneratedDir)
     doLast {
         val entries = sortedMapOf<String, NativeMetadataEntry>()
-        collectSerializerTypes(jars.get().files).forEach { type ->
-            entries.getOrPut(type) { NativeMetadataEntry(type) }.allDeclared = true
-        }
+        collectSerializerEntries(jars.get().files, entries)
         val serializerCount = entries.size
         collectJniEntries(nativeJniSources.files, entries)
         val out = nativeImageGeneratedDir.get().asFile.apply { deleteRecursively(); mkdirs() }
@@ -2676,7 +2703,7 @@ val nativeCompile = tasks.register<Exec>("nativeCompile") {
             add("-Dcompose.application.configure.swing.globals=true")
             add("-Djpackage.app-version=$desktopReleasePackageVersion")
             add("-march=$nativeImageMarch")
-            if (nativeImageQuick) add("-Ob")
+            if (nativeImageQuick) add("-Ob") else add("-Os")
             // native-image enables only file: and resource: URLs by default; without this every
             // java.net.URL http(s) connection throws (OkHttp is unaffected). The Discord artwork
             // probe read that as "proxy down" and sent posters un-letterboxed, so they rendered
@@ -2802,11 +2829,31 @@ val createNativeDistributable = tasks.register("createNativeDistributable") {
             .filterNot { it.extension == "jar" || it.extension == "jsa" || it.name == "startup-classes.lst" }
             .forEach { entry -> entry.copyRecursively(dist.resolve("app/${entry.name}")) }
         work.resolve("Nuvio.exe").copyTo(dist.resolve("Nuvio.exe"))
-        // The JDK libraries native-image emits (awt, jawt, fontmanager, ...): beside the exe, where
-        // the image loads them, and in runtime\bin, where skiko opens jawt via java.home.
+        // Unpack onnxruntime's win-x64 DLLs beside the app instead of embedding 16.5 MB
+        // uncompressed inside Nuvio.exe; OnnxRuntimeNatives.install() picks up app\onnxruntime.
+        val ortJar = root.resolve("app").listFiles { file ->
+            file.isFile && file.name.startsWith("onnxruntime") && file.name.endsWith(".jar")
+        }.orEmpty().singleOrNull()
+        if (ortJar != null) {
+            val ortOut = dist.resolve("app/onnxruntime").apply { mkdirs() }
+            ZipFile(ortJar).use { zip ->
+                zip.entries().asSequence()
+                    .filter { !it.isDirectory && it.name.startsWith("ai/onnxruntime/native/win-x64/") && it.name.endsWith(".dll") }
+                    .forEach { entry ->
+                        val outFile = ortOut.resolve(entry.name.substringAfterLast('/'))
+                        zip.getInputStream(entry).use { input -> outFile.outputStream().use { input.copyTo(it) } }
+                    }
+            }
+        }
+        // The JDK libraries native-image emits (awt, jawt, fontmanager, ...) live beside the exe,
+        // where the image loads them; runtime\bin only needs jawt.dll (plus the tiny java/jvm shims)
+        // for Skiko's java.home lookup, avoiding ~4.3 MB of duplicate awt/fontmanager/freetype DLLs.
+        val runtimeBinDlls = setOf("jawt.dll", "java.dll", "jvm.dll")
         work.listFiles { file -> file.extension == "dll" }.orEmpty().forEach { dll ->
             dll.copyTo(dist.resolve(dll.name))
-            dll.copyTo(dist.resolve("runtime/bin/${dll.name}"))
+            if (dll.name.lowercase() in runtimeBinDlls) {
+                dll.copyTo(dist.resolve("runtime/bin/${dll.name}"))
+            }
         }
         // AWT's font manager reads %java.home%\lib\fontconfig.bfc.
         resolveGraalVmHome().resolve("lib").listFiles { file ->
