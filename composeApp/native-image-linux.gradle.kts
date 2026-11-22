@@ -325,7 +325,23 @@ val linuxNativeCompile = tasks.register<Exec>("linuxNativeCompile") {
             log.takeIf { it.isFile }?.readLines()?.takeLast(40)?.forEach { logger.error(it) }
             throw GradleException("native-image failed; full log: $log")
         }
-        log.readLines().filter { "registered for" in it || "Finished generating" in it }.forEach { logger.lifecycle(it.trim()) }
+        val lines = log.readLines()
+        lines.filter { "registered for" in it || "Finished generating" in it || "Peak RSS" in it }.forEach { logger.lifecycle(it.trim()) }
+        // The builder's memory margin on the 16 GB runner. Measured on Umbra f91732d42 with 4
+        // threads: 9g ran out, 10g spent 18.9% of the build in GC, 11g 15.2% at 13.1 GB peak RSS,
+        // 14g 15.6 GB. So more GC than at 10g, or a peak near the runner's RAM, warns while the
+        // build still passes (a "::warning" line is a GitHub Actions annotation).
+        val summary = Regex("""([\d.]+)% of total time\) in \d+ GCs \| Peak RSS: ([\d.]+)GB""")
+        lines.firstNotNullOfOrNull { summary.find(it) }?.let { match ->
+            val gcPercent = match.groupValues[1].toDouble()
+            val peakRssGb = match.groupValues[2].toDouble()
+            if (gcPercent >= 18.0 || peakRssGb >= 14.5) {
+                logger.warn(
+                    "::warning title=native-image memory::builder heap $linuxNativeBuilderHeap spent $gcPercent% " +
+                        "of the build in GC with $peakRssGb GB peak RSS; the analysis is outgrowing it",
+                )
+            }
+        }
     }
 }
 
