@@ -4,6 +4,7 @@ import com.nuvio.app.core.perf.PerfTelemetry
 import com.nuvio.app.features.downloads.isSafeVideoDownloadReference
 import co.touchlab.kermit.Logger
 import com.nuvio.app.core.build.PackagedResources
+import com.nuvio.app.features.player.desktop.DesktopHostOs
 import com.nuvio.app.core.storage.DesktopStorage
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
@@ -577,7 +578,12 @@ internal object TorrServerP2pBackend : DesktopP2pBackend {
 
             extractBundledBinary(platform)?.let { return it.also { resolved -> resolvedBinaryFile = resolved } }
 
-            resolveCachedOrDownloadBinary(platform)?.let { return it.also { resolved -> resolvedBinaryFile = resolved } }
+            // Upstream stopped bundling TorrServer.exe and fetches it on first use. The Linux packages
+            // always carry their own TorrServer, built from the pinned source shipped with the release
+            // (torrserver/build.py), so Linux never downloads and runs an unverified binary instead.
+            if (DesktopHostOs.current != DesktopHostOs.LINUX) {
+                resolveCachedOrDownloadBinary(platform)?.let { return it.also { resolved -> resolvedBinaryFile = resolved } }
+            }
 
             throw P2pStreamingException(
                 "TorrServer desktop binary not found for ${platform.resourceDir}. " +
