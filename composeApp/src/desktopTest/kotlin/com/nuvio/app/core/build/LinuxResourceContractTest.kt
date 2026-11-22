@@ -34,6 +34,20 @@ class LinuxResourceContractTest {
     private val excluded = mapOf(
         // Windows' TorrServer.exe and its note. Linux builds its own from source (torrserver/build.py).
         "torrserver/windows-amd64/**" to "Windows binary",
+        // The Windows and macOS icon sets. Linux opens icons/nuvio-app-icon.png, and stage.py resizes
+        // that one for the desktop entry.
+        "icons/sizes/**" to "Windows/macOS icon sizes",
+        "icons/*.icns" to "macOS icon",
+    )
+
+    /** Paths the code opens only on other systems. Say why when adding one. */
+    private val notOpenedOnLinux = mapOf(
+        // The player bridge's jar copies (native/windows, native/macos): NativePlayerBridge loads the
+        // Linux bridge from lib/native and returns before it reaches them.
+        "native/**" to "Windows/macOS player runtime",
+        // OnnxRuntimeNatives.install() returns at once off Windows; on Linux ORT loads its linux-x64
+        // natives from the image (ai/onnxruntime/native/linux-x64/**).
+        "ai/onnxruntime/native/win-x64/**" to "Windows onnxruntime DLLs",
     )
 
     private val globs: List<String> by lazy {
@@ -102,6 +116,7 @@ class LinuxResourceContractTest {
     private fun problem(path: String): String? {
         val sample = path.removePrefix("/").replace('*', 'x')
         return when {
+            matchesAny(sample, notOpenedOnLinux.keys) -> null
             matchesAny(sample, globs) || installed.any { globMatches(path.removePrefix("/"), it) } -> {
                 val literal = '*' !in path && !path.removePrefix("/").startsWith("native/")
                 if (literal && !File(resources, path.removePrefix("/")).isFile && path.removePrefix("/") !in installed) {
@@ -122,6 +137,7 @@ class LinuxResourceContractTest {
         assertEquals(null, problem("/player-shaders/*.glsl"))
         assertEquals(null, problem("torrserver/linux-amd64/TorrServer"))
         assertEquals(null, problem("torrserver/*/*"))
+        assertEquals(null, problem("/native/*/runtime-files.txt"))
     }
 
     @Test

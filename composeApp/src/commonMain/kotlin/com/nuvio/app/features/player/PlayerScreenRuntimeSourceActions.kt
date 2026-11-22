@@ -34,6 +34,9 @@ import com.nuvio.app.features.watchprogress.buildPlaybackVideoId
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import nuvio.composeapp.generated.resources.Res
+import nuvio.composeapp.generated.resources.player_error_playback_failed
+import nuvio.composeapp.generated.resources.player_error_unable_to_play_stream
+import nuvio.composeapp.generated.resources.player_failover_trying_next
 import nuvio.composeapp.generated.resources.youtube_resolution_failed
 import nuvio.composeapp.generated.resources.usenet_compressed_skipped
 import org.jetbrains.compose.resources.getString
@@ -554,12 +557,41 @@ private const val STREAM_FAILOVER_POLL_INTERVAL_MS = 250L
  * the list is exhausted, exits via [exitAfterPlaybackFailure]. Returns false when failover is disabled
  * so the caller exits normally.
  */
+/**
+ * Fails over from [placeholderUrl], a provider's placeholder clip, holding it paused until the
+ * replacement plays (see placeholderHeldSourceUrl). Lets it play on if nothing could be started.
+ */
+internal suspend fun PlayerScreenRuntime.failOverFromPlaceholder(placeholderUrl: String) {
+    // The next episodes of this binge open this addon's links last (PlaceholderSourceMemory).
+    placeholderSources.record(activeStream)
+    placeholderHeldSourceUrl = placeholderUrl
+    playerController?.pause()
+    val started = tryFailoverToNextSource(
+        message = getString(Res.string.player_error_unable_to_play_stream),
+        playbackFailedToast = getString(Res.string.player_error_playback_failed),
+        tryingNextToast = getString(Res.string.player_failover_trying_next),
+        trigger = StreamFailoverTrigger.ProviderDiagnosticVideo,
+    )
+    if (started) {
+        // Not opened at all when the attach is still waiting on this answer.
+        ProviderProbeGate.skip(placeholderUrl)
+    } else {
+        ProviderProbeGate.attach(placeholderUrl)
+        if (placeholderHeldSourceUrl == placeholderUrl) {
+            placeholderHeldSourceUrl = null
+            if (shouldPlay) playerController?.play()
+        }
+    }
+}
+
 internal fun PlayerScreenRuntime.tryFailoverToNextSource(
     message: String,
     playbackFailedToast: String,
     tryingNextToast: String,
     trigger: StreamFailoverTrigger = StreamFailoverTrigger.PlaybackError,
     rateLimited: Boolean = false,
+    /** Carried by the retries of one failover, so each resumes where the first meant to. */
+    resumePositionMs: Long? = null,
 ): Boolean {
     // Live TV has no addon sources to fail over to, only the channel's other format.
     if (isIptvPlayback) return tryNextIptvFormat(message)
@@ -615,10 +647,11 @@ internal fun PlayerScreenRuntime.tryFailoverToNextSource(
     // A failed network seek can make mpv publish the file duration as its current position. Capture
     // a known-good resume point before the asynchronous source search so failover cannot inherit
     // that synthetic EOF. During very early startup, fall back to the requested initial resume.
-    val failoverResumePositionMs = selectFailoverResumePositionMs(
+    val failoverResumePositionMs = resumePositionMs ?: selectFailoverResumePositionMs(
         lastTrustedPositionMs = lastTrustedPlaybackPositionMs,
         initialPositionMs = activeInitialPositionMs,
         snapshotPositionMs = playbackSnapshot.positionMs,
+        placeholderPlaying = trigger == StreamFailoverTrigger.ProviderDiagnosticVideo,
     )
 
     failoverJob = scope.launch {
@@ -856,7 +889,14 @@ internal fun PlayerScreenRuntime.tryFailoverToNextSource(
                         } else {
                             tryingNextToast
                         }
-                        tryFailoverToNextSource(message, playbackFailedToast, nextToast, trigger, rateLimited)
+                        tryFailoverToNextSource(
+                            message,
+                            playbackFailedToast,
+                            nextToast,
+                            trigger,
+                            rateLimited,
+                            resumePositionMs = failoverResumePositionMs,
+                        )
                     }
                 },
             )
@@ -1040,10 +1080,19 @@ internal fun selectFailoverResumePositionMs(
     lastTrustedPositionMs: Long,
     initialPositionMs: Long?,
     snapshotPositionMs: Long,
-): Long = lastTrustedPositionMs
-    .takeIf { it > 0L }
-    ?: initialPositionMs?.coerceAtLeast(0L)
-    ?: snapshotPositionMs.coerceAtLeast(0L)
+    /**
+     * The failing source is a provider's placeholder clip: its position is the clip's, not the
+     * episode's, so resume where the source was asked to start (S1E4 started 7 s in, Nov 21).
+     */
+    placeholderPlaying: Boolean = false,
+): Long = if (placeholderPlaying) {
+    initialPositionMs?.coerceAtLeast(0L) ?: 0L
+} else {
+    lastTrustedPositionMs
+        .takeIf { it > 0L }
+        ?: initialPositionMs?.coerceAtLeast(0L)
+        ?: snapshotPositionMs.coerceAtLeast(0L)
+}
 
 /**
  * Opens the Sources panel on a given episode's streams, rather than the playing item's.
@@ -1131,6 +1180,7 @@ internal fun PlayerScreenRuntime.playNextEpisode() {
         sourceAffinity = sourceAffinity,
         currentStreamBingeGroup = currentStreamBingeGroup,
         currentStream = activeStream,
+        placeholderSources = placeholderSources.takeIf { playerSettingsUiState.preloadNextEpisodeSources },
         onDownloadedEpisodeSelected = { item, episode -> switchToDownloadedEpisode(item, episode) },
         onEpisodeStreamSelected = { stream, episode, onFailed ->
             switchToEpisodeStream(stream, episode, onPreparationFailed = onFailed)
@@ -1144,7 +1194,8 @@ internal fun PlayerScreenRuntime.playNextEpisode() {
         onSourceNameChanged = { nextEpisodeAutoPlaySourceName = it },
         onCountdownChanged = { nextEpisodeAutoPlayCountdown = it },
         onNextEpisodeCardVisibleChanged = { showNextEpisodeCard = it },
-        skipSourceCountdown = playerSettingsUiState.streamAutoPlayNextEpisodeEnabled,
+        skipSourceCountdown = playerSettingsUiState.streamAutoPlayNextEpisodeEnabled ||
+            playerSettingsUiState.nextEpisodeSkipCountdown,
     )?.let { job ->
         nextEpisodeAutoPlayJob = job
     } ?: run {
