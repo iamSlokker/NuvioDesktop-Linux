@@ -3,6 +3,7 @@
 #include "video_output_failure.h"
 #include "x11_error_handler_guard.h"
 #include <X11/Xlib.h>
+#include <dlfcn.h>
 #include <chrono>
 #include <cstdlib>
 #include <iostream>
@@ -26,6 +27,10 @@ bool waitForVerdict(mpv_handle *mpv, const char *video) {
 
 // 0 survived the X error through the toolkit handler, 3 the setup failed. Xlib's default exits with 1.
 extern "C" __attribute__((visibility("default"))) int x11GuardProbe(const char *video, int guarded) {
+    // As AWT does once the bridge has loaded: libawt_xawt is opened RTLD_GLOBAL, which puts libX11 in
+    // the global scope that libmpv's first XSetErrorHandler lookup searches before the bridge.
+    if (!dlopen("libX11.so.6", RTLD_LAZY | RTLD_GLOBAL)) { std::cerr << dlerror() << '\n'; return 3; }
+    if (linuxX11ErrorGuardBoundImports() < 1) { std::cerr << "libmpv's XSetErrorHandler import was not bound\n"; return 3; }
     Display *display = XOpenDisplay(nullptr);
     if (!display) { std::cerr << "no display\n"; return 3; }
     XSetErrorHandler(toolkitHandler);

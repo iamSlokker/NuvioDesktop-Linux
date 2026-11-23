@@ -1,7 +1,8 @@
 // An X error after a video output failed to start, with real libmpv and a real X server. The driver
 // list must offer no usable device, so mpv reaches its X11 setup and gives up after it: the builder's
 // software Vulkan is one, since libplacebo refuses CPU devices. Negative control: without the guard,
-// mpv must leave Xlib's fatal default behind and the same error must end the process.
+// mpv must leave Xlib's fatal default behind and the same error must end the process. libX11 goes
+// into the global scope before mpv's output opens, as AWT puts it there in the app (the probe does it).
 #include <dlfcn.h>
 #include <sys/wait.h>
 #include <unistd.h>
