@@ -710,12 +710,17 @@ object StreamsRepository {
             } + listOfNotNull(
                 if (searchUsenet) {
                     launch {
-                        publishAddonGroup(
-                            presentStreamGroup(
-                                com.nuvio.app.features.usenet.BuiltInUsenet.group(type, effectiveVideoId, effectiveSeason, effectiveEpisode),
-                            ),
-                        )
-                        autoSelectOnResponse()
+                        com.nuvio.app.features.usenet.BuiltInUsenet.searchProgressive(
+                            type = type,
+                            videoId = effectiveVideoId,
+                            season = effectiveSeason,
+                            episode = effectiveEpisode,
+                        ) { group ->
+                            publishAddonGroup(presentStreamGroup(group))
+                            // Only once every indexer has answered: a fast indexer's partial list
+                            // must not be auto-played ahead of better or higher-priority releases.
+                            if (!group.isLoading) autoSelectOnResponse()
+                        }
                     }
                 } else {
                     null
