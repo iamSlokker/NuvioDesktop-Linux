@@ -968,9 +968,13 @@ const send = (type, value = 0) => {
 // dropped file does over the rest of the app. The page cannot read a dropped file's path, so the
 // files go to the bridge as WebView2 additional objects, which carry it. Without preventDefault
 // the WebView would try to open the file itself (the bridge cancels that navigation as well).
+// fork:linux - WebKitGTK has no additional objects: the Linux bridge takes the paths from the GTK drag
+// (controls_overlay.cpp), so the page only says that the drop happened.
 (() => {
   const webViewBridge = window.chrome && window.chrome.webview;
-  if (!webViewBridge || typeof webViewBridge.postMessageWithAdditionalObjects !== "function") return;
+  const linuxBridge = window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.player;
+  const windowsDrop = !!webViewBridge && typeof webViewBridge.postMessageWithAdditionalObjects === "function";
+  if (!windowsDrop && !linuxBridge) return;
   const carriesFiles = (event) =>
     !!event.dataTransfer && Array.from(event.dataTransfer.types || []).includes("Files");
   const accept = (event) => {
@@ -985,7 +989,8 @@ const send = (type, value = 0) => {
     event.preventDefault();
     const files = event.dataTransfer.files;
     if (files && files.length > 0) {
-      webViewBridge.postMessageWithAdditionalObjects({ type: "filesDropped", value: files.length }, files);
+      if (windowsDrop) webViewBridge.postMessageWithAdditionalObjects({ type: "filesDropped", value: files.length }, files);
+      else linuxBridge.postMessage({ type: "filesDropped", value: files.length });
     }
   });
 })();

@@ -17,12 +17,11 @@ ELF_HEADER = '  Class:                             ELF64\n  Machine:            
 class UsenetRecipeTest(unittest.TestCase):
     def test_inputs_are_pinned_and_name_one_commit(self):
         manifest = usenet.MANIFEST
-        for spec in (manifest['source'], manifest['go']):
-            self.assertTrue(spec['url'].startswith('https://'), spec['url'])
-            self.assertRegex(spec['sha256'], '^[0-9a-f]{64}$')
+        go = manifest['go']
+        self.assertTrue(go['url'].startswith('https://'), go['url'])
+        self.assertRegex(go['sha256'], '^[0-9a-f]{64}$')
         self.assertRegex(manifest['version'], '^[0-9a-f]{40}$')
-        self.assertTrue(manifest['source']['url'].endswith('/' + manifest['version']))
-        self.assertEqual('nuvio-usenet-engine-' + manifest['version'], manifest['source']['top'])
+        self.assertNotIn('url', manifest['source'])
         self.assertIn('-buildid=', manifest['build']['ldflags'])
         self.assertIn('-static-libstdc++', manifest['build']['ldflags'])
         self.assertTrue(manifest['go']['url'].endswith('/' + manifest['go']['version'] + '.linux-amd64.tar.gz'))
@@ -30,6 +29,27 @@ class UsenetRecipeTest(unittest.TestCase):
     def test_it_is_the_commit_windows_builds(self):
         gradle = (REPO / 'composeApp/build.gradle.kts').read_text()
         self.assertIn(f'val usenetExpectedCommit = "{usenet.MANIFEST["version"]}"', gradle)
+
+    def test_it_builds_the_tree_the_app_carries(self):
+        # The same directory Windows builds (usenetSourceDir's default), fork changes included.
+        self.assertEqual(REPO / 'composeApp/src/desktopMain/native/nuvio-usenet-engine', usenet.SOURCE)
+        gradle = (REPO / 'composeApp/build.gradle.kts').read_text()
+        self.assertIn('projectDir.resolve("src/desktopMain/native/nuvio-usenet-engine")', gradle)
+        usenet.check_tree(usenet.SOURCE)
+        self.assertIn('NuvioDesktop fork changes', (usenet.SOURCE / 'NOTICE.md').read_text(encoding='utf-8'))
+        self.assertTrue((usenet.SOURCE / usenet.PREBUILT).is_file())
+
+    def test_the_tree_digest_covers_names_and_bytes(self):
+        import tempfile
+        with tempfile.TemporaryDirectory() as raw:
+            tree = Path(raw)
+            (tree / 'a').write_bytes(b'1')
+            first = usenet.tree_digest(tree)
+            (tree / 'a').write_bytes(b'2')
+            second = usenet.tree_digest(tree)
+            (tree / 'a').rename(tree / 'b')
+            third = usenet.tree_digest(tree)
+        self.assertEqual(3, len({first, second, third}))
 
     def test_the_build_is_vendored_and_cgo(self):
         command = usenet.build_command(Path('out'))

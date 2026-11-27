@@ -156,6 +156,11 @@ struct LinuxControlsOverlay::State : std::enable_shared_from_this<State> {
     int x = 0, y = 0, width = 0, height = 0, lastScale = 0;
     Message message;
     Snapshot snapshot;
+    // The page cannot read a dropped file's path (WebView2 hands it over as an additional object;
+    // WebKitGTK has nothing like it), so the paths come from the drag's text/uri-list. GTK thread only.
+    std::vector<std::string> dragPaths;
+    std::mutex droppedLock;
+    std::vector<std::string> droppedPaths; // Under droppedLock, until the bridge's takeDroppedFiles.
 
     bool overlayGeometry(HudGeometry &geometry) {
         if (!window || !gtk_widget_get_realized(window)) return false;
@@ -272,6 +277,18 @@ struct LinuxControlsOverlay::State : std::enable_shared_from_this<State> {
                 self.ready = true;
                 self.deliver();
                 self.syncPlayback();
+            } else if (name == "filesDropped") {
+                // The drop the page just saw is the drag whose paths drag-data-received kept.
+                std::vector<std::string> paths;
+                paths.swap(self.dragPaths);
+                if (paths.empty()) return;
+                const double count = static_cast<double>(paths.size());
+                {
+                    std::lock_guard<std::mutex> lock(self.droppedLock);
+                    self.droppedPaths.insert(self.droppedPaths.end(), paths.begin(), paths.end());
+                }
+                std::fprintf(stderr, "Linux controls: %zu file(s) dropped on the player\n", paths.size());
+                if (self.message) self.message(name, count);
             } else if (name == "setControlsUiScalePercent") {
                 self.controlsUiScaleFactor = std::clamp(1.0 + number / 100.0, 0.5, 1.5);
                 self.applyControlsZoom();
@@ -441,6 +458,23 @@ struct LinuxControlsOverlay::State : std::enable_shared_from_this<State> {
                 std::lock_guard<std::mutex> lock(self->inbox);
                 self->hudLabelsDelivered = false;
             }
+        }), this);
+        // WebKitGTK asks for a drag's data as it enters, before the page sees dragenter, and this
+        // handler runs ahead of WebKit's own: keep the local paths of a file drag for "filesDropped".
+        // Files from a Flatpak'd sender arrive through the document portal, as paths here all the same.
+        g_signal_connect(view, "drag-data-received", G_CALLBACK(+[](GtkWidget *, GdkDragContext *, gint, gint,
+            GtkSelectionData *data, guint, guint, gpointer state) {
+            gchar **uris = data ? gtk_selection_data_get_uris(data) : nullptr;
+            if (!uris) return;
+            std::vector<std::string> paths;
+            for (gchar **uri = uris; *uri; ++uri) {
+                gchar *path = g_filename_from_uri(*uri, nullptr, nullptr);
+                // JNI strings are UTF-8; a name in another encoding could not be handed back intact.
+                if (path && g_utf8_validate(path, -1, nullptr)) paths.emplace_back(path);
+                g_free(path);
+            }
+            g_strfreev(uris);
+            static_cast<State *>(state)->dragPaths = std::move(paths);
         }), this);
         g_signal_connect(view, "load-failed", G_CALLBACK(+[](WebKitWebView *, WebKitLoadEvent,
             const gchar *, GError *error, gpointer) -> gboolean {
@@ -676,6 +710,13 @@ void LinuxControlsOverlay::updateControls(const std::string &json) {
         state_->hudLabelsDelivered = false;
     }
     state_->scheduleDelivery();
+}
+
+std::vector<std::string> LinuxControlsOverlay::takeDroppedFiles() {
+    std::vector<std::string> paths;
+    std::lock_guard<std::mutex> lock(state_->droppedLock);
+    paths.swap(state_->droppedPaths);
+    return paths;
 }
 
 void LinuxControlsOverlay::runJavaScript(const std::string &script) {

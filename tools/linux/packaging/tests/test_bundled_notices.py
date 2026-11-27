@@ -50,12 +50,17 @@ class BundledNoticesTest(unittest.TestCase):
         directory = RESOURCES / 'player-shaders'
         public_domain = {'Anime4K_AutoDownscalePre_x2.glsl', 'Anime4K_AutoDownscalePre_x4.glsl'}
         amd_cas = 'Nuvio_CAS_Sharpen.glsl'
+        # Upstream's own pass (RTX Video True HDR chroma), under the app's licence: no third-party notice.
+        own = {'Nuvio_Chroma_Realign.glsl'}
         shaders = sorted(directory.glob('*.glsl'))
-        self.assertEqual(len(shaders), 17)
+        self.assertEqual(len(shaders), 18)
         mit = []
         for shader in shaders:
             text = shader.read_text()
-            if shader.name == amd_cas:
+            if shader.name in own:
+                self.assertNotIn('Copyright', text)
+                self.assertNotIn(shader.name, (directory / 'LICENSE.md').read_text())
+            elif shader.name == amd_cas:
                 self.assertIn('Copyright (c) 2020 Advanced Micro Devices, Inc.', text)
                 self.assertIn('Permission is hereby granted', text)
                 self.assertIn('THE SOFTWARE IS PROVIDED "AS IS"', text)
