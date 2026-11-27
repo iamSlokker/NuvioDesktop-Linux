@@ -1,8 +1,13 @@
 package com.nuvio.app.core.portal
 
+import java.awt.datatransfer.DataFlavor
+import java.awt.datatransfer.Transferable
+import java.io.File
+import java.nio.file.Files
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
+import kotlin.test.assertTrue
 
 class LinuxFlatpakFileDropTest {
     @Test
@@ -24,5 +29,28 @@ class LinuxFlatpakFileDropTest {
     fun `only existing videos are played from a drop`() {
         val paths = listOf("/run/user/1/doc/a/film.MKV", "/run/user/1/doc/b/notes.txt", "/home/u/gone.mkv")
         assertEquals(listOf("/run/user/1/doc/a/film.MKV"), playableDropPaths(paths) { it != "/home/u/gone.mkv" })
+    }
+
+    @Test
+    fun `a drop target takes the visible files it keeps, at once`() {
+        val dir = Files.createTempDirectory("nuvio-drop").toFile()
+        try {
+            val subtitle = File(dir, "film.srt").apply { writeText("1") }
+            val video = File(dir, "film.mkv").apply { writeText("1") }
+            val delivered = mutableListOf<List<String>>()
+            val taken = LinuxFlatpakFileDrop.handle(fileList(subtitle, video), { paths -> paths.filter { it.endsWith(".srt") } }) {
+                delivered += it
+            }
+            assertTrue(taken)
+            assertEquals(listOf(listOf(subtitle.path)), delivered)
+        } finally {
+            dir.deleteRecursively()
+        }
+    }
+
+    private fun fileList(vararg files: File) = object : Transferable {
+        override fun getTransferDataFlavors() = arrayOf(DataFlavor.javaFileListFlavor)
+        override fun isDataFlavorSupported(flavor: DataFlavor) = flavor == DataFlavor.javaFileListFlavor
+        override fun getTransferData(flavor: DataFlavor): Any = files.toList()
     }
 }

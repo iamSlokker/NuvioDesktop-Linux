@@ -24,25 +24,35 @@ internal object LinuxFlatpakFileDrop {
     private val transferMimeTypes = listOf("application/vnd.portal.filetransfer", "application/vnd.portal.files")
 
     /** Hover check beside the plain file list: some sources offer only the portal's type. */
-    fun canAccept(event: DropTargetDragEvent): Boolean =
-        LinuxFileChooserPortal.applies && portalFlavor(event.currentDataFlavors) != null
+    fun canAccept(event: DropTargetDragEvent): Boolean = canAccept(event.currentDataFlavors)
+
+    fun canAccept(flavors: Array<DataFlavor>): Boolean =
+        LinuxFileChooserPortal.applies && portalFlavor(flavors) != null
 
     /**
      * Handles a drop in the Flatpak. Files the sandbox can already see go straight through, and
      * anything else is redeemed through the portal off the UI thread, or explained if it cannot be.
      * Returns whether the drop was taken.
      */
-    fun handle(transferable: Transferable): Boolean {
+    fun handle(transferable: Transferable): Boolean =
+        handle(transferable, { playableDropPaths(it) }) { it.forEach(LocalFileDrop::emit) }
+
+    /**
+     * [handle] for any drop target: [keep] picks the paths the target takes from those dropped, and
+     * [deliver] gets them, on the drop's thread when the sandbox can already see them and on the
+     * portal's worker thread when they had to be redeemed.
+     */
+    fun handle(transferable: Transferable, keep: (List<String>) -> List<String>, deliver: (List<String>) -> Unit): Boolean {
         val visible = runCatching {
             if (transferable.isDataFlavorSupported(DataFlavor.javaFileListFlavor)) {
                 @Suppress("UNCHECKED_CAST")
-                playableDropPaths((transferable.getTransferData(DataFlavor.javaFileListFlavor) as List<File>).map(File::getPath))
+                keep((transferable.getTransferData(DataFlavor.javaFileListFlavor) as List<File>).map(File::getPath))
             } else {
                 emptyList()
             }
         }.getOrDefault(emptyList())
         if (visible.isNotEmpty()) {
-            visible.forEach(LocalFileDrop::emit)
+            deliver(visible)
             return true
         }
         // The key has to be read while the drop is in progress; redeeming it does not.
@@ -55,17 +65,17 @@ internal object LinuxFlatpakFileDrop {
             tellNotShared()
             return false
         }
-        Thread({ redeem(key) }, "nuvio-file-drop-portal").apply { isDaemon = true }.start()
+        Thread({ redeem(key, keep, deliver) }, "nuvio-file-drop-portal").apply { isDaemon = true }.start()
         return true
     }
 
-    private fun redeem(key: String) {
+    private fun redeem(key: String, keep: (List<String>) -> List<String>, deliver: (List<String>) -> Unit) {
         val paths = runCatching {
             NativePlayerBridge.ensureNativeLibraryLoaded()
             transferredFiles(LinuxFileChooserPortalNative.retrieveFiles(key, RetrieveTimeoutMs))
         }.onFailure { log.w(it) { "File transfer portal failed" } }.getOrNull()
-        val playable = paths?.let { playableDropPaths(it) }.orEmpty()
-        if (playable.isEmpty()) tellNotShared() else playable.forEach(LocalFileDrop::emit)
+        val kept = paths?.let(keep).orEmpty()
+        if (kept.isEmpty()) tellNotShared() else deliver(kept)
     }
 
     private fun tellNotShared() {
