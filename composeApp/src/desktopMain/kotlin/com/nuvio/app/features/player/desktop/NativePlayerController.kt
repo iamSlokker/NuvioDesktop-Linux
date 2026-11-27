@@ -230,6 +230,12 @@ internal class NativePlayerController(
         }
     } else null
 
+    // fork:linux - the HUD is unmapped while another window is focused, as during any drag from a file
+    // manager, so the video's Canvas takes files dropped on the player (see LinuxPlayerFileDrop).
+    private val linuxFileDrop = LinuxPlayerFileDrop.install(
+        DesktopHostOs.current, !linuxHeroSurface && !linuxMusicSurface, host,
+    ) { paths -> if (!disposed) loadDroppedPaths(paths) }
+
     private val linuxPiPInput = LinuxPiPSurfaceInput.install(
         DesktopHostOs.current, host,
         if (DesktopHostOs.current != DesktopHostOs.LINUX) null else LinuxPiPHud(host, { runCatching { snapshot() }.getOrNull() },
@@ -1799,6 +1805,12 @@ internal class NativePlayerController(
         val current = handle.takeIf { it != 0L } ?: return
         val paths = runCatching { json.decodeFromString<List<String>>(NativePlayerBridge.takeDroppedFiles(current)) }
             .getOrDefault(emptyList())
+        loadDroppedPaths(paths)
+    }
+
+    /** [loadDroppedFiles] for paths already in hand (fork:linux: the Linux player's own drop target). EDT. */
+    private fun loadDroppedPaths(paths: List<String>) {
+        val current = handle.takeIf { it != 0L } ?: return
         if (paths.isEmpty()) return
         val subtitles = paths.filter { droppedSubtitleFile(it) }
         if (subtitles.isEmpty()) {
@@ -2360,6 +2372,7 @@ internal class NativePlayerController(
         linuxMpris = null
         linuxPiPInput?.close()
         linuxWindowFocus?.close()
+        linuxFileDrop?.close()
         linuxHeroGeometry?.close()
         usenetDiagnosticsJob?.cancel()
         usenetDiagnosticsJob = null
