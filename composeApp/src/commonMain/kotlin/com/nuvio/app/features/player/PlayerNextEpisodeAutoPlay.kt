@@ -11,6 +11,11 @@ import com.nuvio.app.features.downloads.DownloadsRepository
 import com.nuvio.app.features.locallibrary.LocalLibraryRepository
 import com.nuvio.app.features.player.skip.NextEpisodeInfo
 import com.nuvio.app.features.streams.BingeReleaseHint
+import com.nuvio.app.features.streams.PlaybackPick
+import com.nuvio.app.features.streams.PlaybackPickRules
+import com.nuvio.app.features.streams.PlaybackPickSettingsRepository
+import com.nuvio.app.features.streams.PlaybackSources
+import com.nuvio.app.features.streams.NextEpisodePick
 import com.nuvio.app.features.streams.AddonStreamGroup
 import com.nuvio.app.features.streams.StreamAutoPlayMode
 import com.nuvio.app.features.streams.StreamAutoPlayPolicy
@@ -31,16 +36,17 @@ import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeoutOrNull
 
+/**
+ * The streams next-episode autoplay may consider. Local files stay in: whether one may play, and where, is the local
+ * files row of Source priority (the pick's rules), as at the first click.
+ */
 internal fun eligibleAutoPlayStreams(
     streams: List<StreamItem>,
-    sourceAffinity: PlayerSourceAffinity,
+    @Suppress("UNUSED_PARAMETER") sourceAffinity: PlayerSourceAffinity,
     /** This binge's addons that gave a placeholder go last; null when the memory does not apply. */
     avoid: PlaceholderSourceMemory? = null,
     keepMarkedIfOnly: Boolean = true,
-): List<StreamItem> = when (sourceAffinity) {
-    PlayerSourceAffinity.Local -> streams
-    PlayerSourceAffinity.Stream -> streams.filterNot { it.streamType.equals("local", ignoreCase = true) }
-}.filterNot { stream ->
+): List<StreamItem> = streams.filterNot { stream ->
     // A Usenet release that already failed to open this run (missing articles, a password) fails
     // the same way again; picking it would leave the next-episode card waiting on nothing.
     stream.needsUsenetPreparation && UsenetEngine.hasFailed(stream)
@@ -50,13 +56,8 @@ internal fun eligibleAutoPlayStreams(
 private const val NEXT_EPISODE_OPEN_FAILOVER_ATTEMPTS = 3
 
 /**
- * Whether the next episode should first try the same binge group as the stream currently playing.
- *
- * This is a same-session preference keyed on the live in-memory binge group, so it stands on the
- * "Prefer Binge Group" toggle alone. The separate "Reuse Binge Group" toggle governs only the
- * cross-session persisted cache read in `StreamsRepository`, and must not gate this — previously it
- * did, so turning Reuse off silently disabled binge preference for next-episode autoplay even with
- * Prefer still on, which contradicted both toggles' descriptions.
+ * Whether the next episode should first try the binge group of the stream playing now: What plays > Next episode is
+ * "Same release first", and the stream is online (a local-file binge takes the next file as it comes).
  */
 internal fun shouldPreferNextEpisodeBingeGroup(
     sourceAffinity: PlayerSourceAffinity,
@@ -67,98 +68,30 @@ internal fun shouldPreferNextEpisodeBingeGroup(
     !scoreOverridesBingeGroup
 
 /**
- * Whether a next-episode transition should hand the choice back to the user instead of picking a
- * stream for them ("Apply To Next Episode", under Stream Auto-Play).
- *
- * This path has always substituted [StreamAutoPlayMode.FIRST_STREAM] over an unfiltered list when
- * the mode is MANUAL, so a transition can never stall waiting on a picker. That is a sensible
- * default and a surprising one: the setting whose whole meaning is "always let me choose" stopped
- * applying the moment binge or the next-episode card advanced, and nothing on screen said so. The
- * toggle makes the substitution a choice.
- *
- * Local affinity keeps the substitution unconditionally: it exists to take the on-disk file, which
- * is not a source choice to offer.
+ * Whether a next-episode transition opens the source list instead of picking: What plays > Next episode is "Ask me".
+ * A local-file binge never asks: the next file on disk is not a source choice.
  */
 internal fun shouldOpenManualNextEpisodeSelection(
-    mode: StreamAutoPlayMode,
-    manualNextEpisodeEnabled: Boolean,
     sourceAffinity: PlayerSourceAffinity,
-): Boolean = mode == StreamAutoPlayMode.MANUAL &&
-    manualNextEpisodeEnabled &&
-    sourceAffinity != PlayerSourceAffinity.Local
+    nextEpisode: NextEpisodePick = PlaybackPickSettingsRepository.current.nextEpisode,
+): Boolean = nextEpisode == NextEpisodePick.ASK_ME && sourceAffinity != PlayerSourceAffinity.Local
 
 /**
  * How next-episode autoplay picks a stream from a list. Shared with Preload Next Episode Sources,
  * which runs the same pick over the preloaded answers to warm that stream's link before the episode
  * ends (see [PlaybackSourceWarmup]); a pick that differs at advance time only costs the warm-up.
  */
-internal class NextEpisodeAutoPlayPicker(
-    val source: StreamAutoPlaySource,
-    val selectedAddons: Set<String>,
-    val selectedPlugins: Set<String>,
-    val installedAddonNames: Set<String>,
-    private val mode: StreamAutoPlayMode,
-    private val regex: String,
-    private val preferredBingeGroup: String?,
-    private val preferredRelease: BingeReleaseHint?,
-    private val preferBingeGroup: Boolean,
-    private val debridEnabled: Boolean,
-    private val activeResolverProviderId: String?,
-    private val scoreProfile: StreamScoreProfile,
-    private val scoreContext: StreamScoreContext,
-) {
-    /** The configured selection, falling back to the first stream the scope allows. */
-    fun select(streams: List<StreamItem>): StreamItem? =
-        StreamAutoPlaySelector.selectAutoPlayStream(
-            streams = streams,
-            mode = mode,
-            regexPattern = regex,
-            source = source,
-            installedAddonNames = installedAddonNames,
-            selectedAddons = selectedAddons,
-            selectedPlugins = selectedPlugins,
-            preferredBingeGroup = preferredBingeGroup,
-            preferredRelease = preferredRelease,
-            preferBingeGroupInSelection = preferBingeGroup,
-            bingeGroupOnly = false,
-            debridEnabled = debridEnabled,
-            activeResolverProviderId = activeResolverProviderId,
-            scoreProfile = scoreProfile,
-            scoreContext = scoreContext,
-        ) ?: StreamAutoPlaySelector.selectAutoPlayStream(
-            streams = streams,
-            mode = StreamAutoPlayMode.FIRST_STREAM,
-            regexPattern = "",
-            source = source,
-            installedAddonNames = installedAddonNames,
-            selectedAddons = selectedAddons,
-            selectedPlugins = selectedPlugins,
-            preferredBingeGroup = preferredBingeGroup,
-            preferredRelease = preferredRelease,
-            preferBingeGroupInSelection = preferBingeGroup,
-            bingeGroupOnly = false,
-            debridEnabled = debridEnabled,
-            activeResolverProviderId = activeResolverProviderId,
-        )
+internal class NextEpisodeAutoPlayPicker(val rules: PlaybackPickRules) {
+    val installedAddonNames: Set<String> get() = rules.installedAddonNames
+
+    /** The What plays pick over every source that has answered. */
+    fun select(streams: List<StreamItem>): StreamItem? = rules.select(streams)
 
     /** The early pick autoplay takes while providers are still answering: the current binge group. */
     fun selectBingeGroupOnly(streams: List<StreamItem>): StreamItem? {
-        if (preferredBingeGroup == null || !preferBingeGroup) return null
-        return StreamAutoPlaySelector.selectAutoPlayStream(
-            streams = streams,
-            mode = mode,
-            regexPattern = regex,
-            source = source,
-            installedAddonNames = installedAddonNames,
-            selectedAddons = selectedAddons,
-            selectedPlugins = selectedPlugins,
-            preferredBingeGroup = preferredBingeGroup,
-            preferredRelease = preferredRelease,
-            preferBingeGroupInSelection = true,
-            bingeGroupOnly = true,
-            debridEnabled = debridEnabled,
-            activeResolverProviderId = activeResolverProviderId,
-        )
+        if (!rules.preferBingeGroup) return null
+        // A binge-group-only pick reads nothing but the group, the release and the auto-play switches.
+        return rules.select(streams, bingeGroupOnly = true)
     }
 
     /** What autoplay ends up with given every provider's answer: the binge-group match, else [select]. */
@@ -176,27 +109,21 @@ internal fun nextEpisodeAutoPlayPicker(
     parentMetaId: String,
     contentType: String,
 ): NextEpisodeAutoPlayPicker {
-    val shouldUseFirstAvailable = sourceAffinity == PlayerSourceAffinity.Local ||
-        settings.streamAutoPlayMode == StreamAutoPlayMode.MANUAL
-    val scoreProfile = StreamScoreRepository.profile
-    val configuredMode = if (shouldUseFirstAvailable) StreamAutoPlayMode.FIRST_STREAM else settings.streamAutoPlayMode
-    // The first-play path runs the configured mode through this policy (StreamsRepository); this one
-    // never did, so "Apply scoring to -> choosing the first stream" governed the episode you started
-    // by hand and then silently stopped applying to every episode binge advanced into.
-    //
-    // Local affinity is excluded: it forces FIRST_STREAM over an unfiltered list precisely to take
-    // the on-disk file, and ranking that list could float a remote stream above it.
-    val effectiveMode = if (sourceAffinity == PlayerSourceAffinity.Local) {
-        configuredMode
-    } else {
-        StreamAutoPlayPolicy.effectiveMode(configuredMode, scoreProfile)
+    // A title set to online keeps its local copy out of the pick, as at the first click.
+    val pickSettings = PlaybackPickSettingsRepository.current.let { settings ->
+        if (PlaybackPick.nextEpisodeLocalFirst(parentMetaId, null) == null) {
+            settings.copy(autoPlay = settings.autoPlay + (PlaybackSources.LOCAL to false))
+        } else {
+            settings
+        }
     }
-    val shouldPreferBingeGroup = shouldPreferNextEpisodeBingeGroup(
-        sourceAffinity = sourceAffinity,
-        preferenceEnabled = settings.streamAutoPlayPreferBingeGroup,
-        scoreOverridesBingeGroup = StreamAutoPlayPolicy.scoreOverridesBingeGroup(effectiveMode, scoreProfile),
-    )
-    val preferredBingeGroup = if (shouldPreferBingeGroup) currentStreamBingeGroup else null
+    val localAffinity = sourceAffinity == PlayerSourceAffinity.Local
+    val preferredBingeGroup = currentStreamBingeGroup.takeIf {
+        shouldPreferNextEpisodeBingeGroup(
+            sourceAffinity = sourceAffinity,
+            preferenceEnabled = pickSettings.nextEpisode == NextEpisodePick.SAME_RELEASE_FIRST,
+        )
+    }
     val preferredRelease = if (preferredBingeGroup != null && currentStream?.behaviorHints?.bingeGroup == preferredBingeGroup) {
         BingeReleaseHint.forEpisode(
             lastFilename = currentStream.behaviorHints.filename,
@@ -207,27 +134,23 @@ internal fun nextEpisodeAutoPlayPicker(
     } else {
         null
     }
-    val debridSettings = DebridSettingsRepository.snapshot()
     return NextEpisodeAutoPlayPicker(
-        source = if (shouldUseFirstAvailable) StreamAutoPlaySource.ALL_SOURCES else settings.streamAutoPlaySource,
-        selectedAddons = if (shouldUseFirstAvailable) emptySet() else settings.streamAutoPlaySelectedAddons,
-        selectedPlugins = if (shouldUseFirstAvailable) emptySet() else settings.streamAutoPlaySelectedPlugins,
-        installedAddonNames = AddonRepository.uiState.value.addons
-            .enabledAddons()
-            .map { it.displayTitle }
-            .toSet(),
-        mode = effectiveMode,
-        regex = if (shouldUseFirstAvailable) "" else settings.streamAutoPlayRegex,
-        preferredBingeGroup = preferredBingeGroup,
-        preferredRelease = preferredRelease,
-        preferBingeGroup = shouldPreferBingeGroup,
-        debridEnabled = debridSettings.canResolvePlayableLinks,
-        activeResolverProviderId = debridSettings.activeResolverProviderId,
-        scoreProfile = scoreProfile,
-        scoreContext = StreamScoreContexts.forPlayback(
-            isEpisode = true,
-            contentId = parentMetaId,
-            contentType = contentType,
+        PlaybackPick.nextEpisode(
+            settings = pickSettings,
+            localAffinity = localAffinity,
+            currentStreamBingeGroup = preferredBingeGroup,
+            release = preferredRelease,
+            installedAddonNames = AddonRepository.uiState.value.addons
+                .enabledAddons()
+                .map { it.displayTitle }
+                .toSet(),
+            debridSettings = DebridSettingsRepository.snapshot(),
+            scoreProfile = StreamScoreRepository.profile,
+            scoreContext = StreamScoreContexts.forPlayback(
+                isEpisode = true,
+                contentId = parentMetaId,
+                contentType = contentType,
+            ),
         ),
     )
 }
@@ -271,27 +194,26 @@ internal fun CoroutineScope.launchPlayerNextEpisodeAutoPlay(
     val nextSeasonNumber = nextVideo.playbackSeasonNumber()
     val nextEpisodeNumber = nextVideo.playbackEpisodeNumber()
 
-    // A title set to play its best online source keeps its local copy as a backup, as on the first
-    // click (App.kt folds the same override in): the next episode streams instead of taking the file.
-    val localCopyIsBackup = LocalLibraryRepository.routingFor(parentMetaId, nextVideo.id).ignoresLocalFile
-    val downloadedNextEpisode = if (!allowDownloaded || localCopyIsBackup) null else DownloadsRepository.findPlayableDownload(
+    // What plays > local files: first, the next episode's download plays at once; last, it plays only when nothing
+    // online can be picked; never (or the title set to online), it is not used.
+    val localFirst = PlaybackPick.nextEpisodeLocalFirst(parentMetaId, nextVideo.id)
+    val downloadedNextEpisode = if (!allowDownloaded || localFirst == null) null else DownloadsRepository.findPlayableDownload(
         parentMetaId = parentMetaId,
         seasonNumber = nextSeasonNumber,
         episodeNumber = nextEpisodeNumber,
         videoId = nextVideo.id,
     )
-    if (downloadedNextEpisode != null) {
+    if (downloadedNextEpisode != null && localFirst == true) {
         onDownloadedEpisodeSelected(downloadedNextEpisode, nextVideo)
         return null
     }
+    val downloadedFallback = downloadedNextEpisode.takeIf { localFirst == false }
 
     // Opted in to choosing the source for every episode: open the picker straight away rather than
     // running a 3-20s search whose result would be thrown away. Returns no job, which the callers
     // already handle (they clear the loading card when nothing was launched).
     if (
         shouldOpenManualNextEpisodeSelection(
-            mode = settings.streamAutoPlayMode,
-            manualNextEpisodeEnabled = settings.streamAutoPlayManualNextEpisode,
             sourceAffinity = sourceAffinity,
         )
     ) {
@@ -326,9 +248,6 @@ internal fun CoroutineScope.launchPlayerNextEpisodeAutoPlay(
         parentMetaId = parentMetaId,
         contentType = type,
     )
-    val effectiveSource = picker.source
-    val effectiveSelectedAddons = picker.selectedAddons
-    val effectiveSelectedPlugins = picker.selectedPlugins
 
     return launch {
         // forceRefresh is essential here. Without it, loadEpisodeStreams dedups against the last
@@ -388,34 +307,24 @@ internal fun CoroutineScope.launchPlayerNextEpisodeAutoPlay(
 
         fun trySelectStream(streams: List<StreamItem>): StreamItem? = picker.select(streams)
 
-        fun tryBingeGroupOnly(streams: List<StreamItem>): StreamItem? = picker.selectBingeGroupOnly(streams)
-
         val innerJob = launch {
             PlayerStreamsRepository.episodeStreamsState.collectLatest { state ->
                 if (PlayerStreamsRepository.episodeStreamsRequestKey() != ownRequestKey) return@collectLatest
                 if (state.groups.isEmpty() && state.isAnyLoading) return@collectLatest
 
+                // Only sources whose list is final (a Usenet search still running waits).
                 val allStreams = eligibleAutoPlayStreams(
-                    streams = state.groups.flatMap { it.streams },
+                    streams = PlaybackPick.answered(state.groups, waitOver = timeoutElapsed),
                     sourceAffinity = sourceAffinity,
                     avoid = placeholderSources,
                     keepMarkedIfOnly = !state.isAnyLoading,
                 )
 
-                if (autoSelectTriggered) {
-                    // Already resolved.
-                } else if (timeoutElapsed) {
-                    if (allStreams.isNotEmpty()) {
-                        val candidate = trySelectStream(allStreams)
-                        if (candidate != null) {
-                            selectStream(candidate)
-                        }
-                    }
-                } else if (allStreams.isNotEmpty()) {
-                    val earlyMatch = tryBingeGroupOnly(allStreams)
-                    if (earlyMatch != null) {
-                        selectStream(earlyMatch)
-                    }
+                if (!autoSelectTriggered) {
+                    // After the wait, the full pick; before it, the same release, or under priority order the first
+                    // ready stream of a source every higher source has already answered above.
+                    PlaybackPick.pickOnResponse(picker.rules, state.groups, allStreams, waitOver = timeoutElapsed)
+                        ?.let(::selectStream)
                 }
 
                 if (!autoSelectTriggered && !state.isAnyLoading) {
@@ -449,7 +358,7 @@ internal fun CoroutineScope.launchPlayerNextEpisodeAutoPlay(
                 timeoutElapsed = true
                 if (!autoSelectTriggered) {
                     val allStreams = eligibleAutoPlayStreams(
-                        ownState().groups.flatMap { it.streams },
+                        PlaybackPick.answered(ownState().groups, waitOver = true),
                         sourceAffinity,
                         avoid = placeholderSources,
                     )
@@ -478,18 +387,12 @@ internal fun CoroutineScope.launchPlayerNextEpisodeAutoPlay(
                     awaitNextEpisodeGraceWindow(
                         autoSelectSettled = autoSelectSettled,
                         hasScopedProviderInFlight = {
-                            hasScopedAutoPlayProviderInFlight(
-                                groups = ownState().groups,
-                                installedAddonNames = installedAddonNames,
-                                source = effectiveSource,
-                                selectedAddons = effectiveSelectedAddons,
-                                selectedPlugins = effectiveSelectedPlugins,
-                            )
+                            hasAutoPlayProviderInFlight(ownState().groups, picker.rules)
                         },
                     )
                     if (!autoSelectTriggered) {
                         val allStreams = eligibleAutoPlayStreams(
-                            ownState().groups.flatMap { it.streams },
+                            PlaybackPick.answered(ownState().groups, waitOver = true),
                             sourceAffinity,
                             avoid = placeholderSources,
                         )
@@ -502,10 +405,12 @@ internal fun CoroutineScope.launchPlayerNextEpisodeAutoPlay(
             }
             innerJob.cancel()
         } else {
-            timeoutElapsed = true
-            if (!autoSelectTriggered) {
+            // Instant picks as streams arrive; unlimited waits for every source (the collector's final pick once
+            // nothing is loading), up to the hard timeout.
+            timeoutElapsed = PlaybackPick.waitEndsAtOnce(timeoutSeconds)
+            if (timeoutElapsed && !autoSelectTriggered) {
                 val allStreams = eligibleAutoPlayStreams(
-                    ownState().groups.flatMap { it.streams },
+                    PlaybackPick.answered(ownState().groups, waitOver = true),
                     sourceAffinity,
                     avoid = placeholderSources,
                 )
@@ -517,7 +422,7 @@ internal fun CoroutineScope.launchPlayerNextEpisodeAutoPlay(
             innerJob.cancel()
             if (completed == null && !autoSelectTriggered) {
                 val allStreams = eligibleAutoPlayStreams(
-                    ownState().groups.flatMap { it.streams },
+                    PlaybackPick.answered(ownState().groups, waitOver = true),
                     sourceAffinity,
                     avoid = placeholderSources,
                 )
@@ -539,6 +444,23 @@ internal fun CoroutineScope.launchPlayerNextEpisodeAutoPlay(
                 "selected=${selected != null} source=${selected?.addonName ?: "<none>"} " +
                 "providers=$providerCount loading=$loadingProviderCount errors=$errorProviderCount " +
                 "streams=$returnedStreamCount retriesRemaining=$emptyResultRetriesRemaining"
+        }
+        val pickedFrom = eligibleAutoPlayStreams(finalState.groups.flatMap { it.streams }, sourceAffinity, placeholderSources)
+        PlaybackPick.logPick(
+            trigger = "next episode S${nextSeasonNumber}E$nextEpisodeNumber",
+            rules = picker.rules,
+            stream = selected,
+            candidates = pickedFrom.size,
+        )
+        // The local files row below an online source: a library file was already a candidate at its place; a completed
+        // download (not a source row in the player) plays when nothing could be picked.
+        if (selected == null && downloadedFallback != null) {
+            BingeAdvanceLog.i { "nothing picked for S${nextSeasonNumber}E${nextEpisodeNumber}; playing its download" }
+            onSearchingChanged(false)
+            onSourceNameChanged(null)
+            onCountdownChanged(null)
+            onDownloadedEpisodeSelected(downloadedFallback, nextVideo)
+            return@launch
         }
         if (shouldRetryEmptyNextEpisodeSearch(selected, emptyResultRetriesRemaining)) {
             BingeAdvanceLog.i {
@@ -669,6 +591,13 @@ private suspend fun awaitNextEpisodeGraceWindow(
  * granularity: an unscoped provider can return a thousand streams without any of them being
  * selectable, so its being in flight is no reason to keep waiting.
  */
+/** Whether a source that may auto-play under [rules] is still answering (so a pick may yet come from it). */
+internal fun hasAutoPlayProviderInFlight(groups: List<AddonStreamGroup>, rules: PlaybackPickRules): Boolean =
+    groups.any { group ->
+        group.isLoading &&
+            (rules.sources?.mayAutoPlay(PlaybackSources.keyForGroup(group.addonId, group.addonName, rules.installedAddonNames)) ?: true)
+    }
+
 internal fun hasScopedAutoPlayProviderInFlight(
     groups: List<AddonStreamGroup>,
     installedAddonNames: Set<String>,

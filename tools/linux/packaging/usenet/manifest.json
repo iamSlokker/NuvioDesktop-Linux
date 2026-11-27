@@ -1,12 +1,11 @@
 {
-  "schema_version": 1,
-  "version": "e4b0717ae5bfe44e76ca8c7662022bff326f3806",
+  "schema_version": 2,
+  "version": "1f64198502f8455da0a2f885f1b58e43b5c3a3da",
   "license": "GPL-3.0",
   "homepage": "https://github.com/NuvioMedia/nuvio-usenet-engine",
   "source": {
-    "url": "https://codeload.github.com/NuvioMedia/nuvio-usenet-engine/tar.gz/e4b0717ae5bfe44e76ca8c7662022bff326f3806",
-    "sha256": "d2723e4800efeb42bf8dfc9cf4b3f353bf786121a449e25dae02ac32b3ab526d",
-    "top": "nuvio-usenet-engine-e4b0717ae5bfe44e76ca8c7662022bff326f3806"
+    "path": "composeApp/src/desktopMain/native/nuvio-usenet-engine",
+    "top": "nuvio-usenet-engine"
   },
   "go": {
     "version": "go1.27.4",

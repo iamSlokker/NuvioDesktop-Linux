@@ -147,10 +147,16 @@ internal object NativePlayerBridge {
     )
 
     /**
-     * Registers the process AppUserModelID and the matching Start Menu shortcut, without which
-     * Windows labels the media session "Unknown app" and shows no icon. Call once at startup.
+     * Sets the process AppUserModelID, without which Windows labels the media session "Unknown app"
+     * and shows no icon. Once at startup, before any window exists.
      */
-    external fun initializeAppIdentity()
+    external fun setAppUserModelId()
+
+    /**
+     * Writes the Start Menu shortcut carrying that AUMID and repairs taskbar/desktop shortcuts to
+     * this exe that lack it (COM, every .lnk there). Slow; on its own thread, after [setAppUserModelId].
+     */
+    external fun repairAppShortcuts()
 
     external fun beginVideoProfile(handle: Long)
     external fun endVideoProfile(handle: Long)
@@ -182,6 +188,10 @@ internal object NativePlayerBridge {
     external fun selectAudioTrack(handle: Long, trackId: Int): Boolean
     external fun selectSubtitleTrack(handle: Long, trackId: Int): Boolean
     external fun addSubtitleUrl(handle: Long, url: String)
+    /** The files dropped on the controls page since the last call, as a JSON array of paths. */
+    external fun takeDroppedFiles(handle: Long): String
+    /** A subtitle file the viewer dropped: loaded, selected and listed with the built-in tracks. */
+    external fun addLocalSubtitleFile(handle: Long, path: String)
     external fun clearExternalSubtitles(handle: Long)
     external fun clearExternalSubtitlesAndSelect(handle: Long, trackId: Int)
     external fun applyWindowChrome(
@@ -191,6 +201,8 @@ internal object NativePlayerBridge {
         borderColorRgb: Int,
         textColorRgb: Int,
     )
+
+    external fun setWindowCloaked(windowHwnd: Long, cloaked: Boolean)
 
     external fun setBorderlessFullscreen(windowHwnd: Long, enabled: Boolean)
     external fun setBorderlessFullscreenSuspended(windowHwnd: Long, suspended: Boolean)

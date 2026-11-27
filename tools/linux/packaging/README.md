@@ -186,11 +186,13 @@ with the JNI bridge, CPU only, AVX2 as on Windows. The models are not bundled: t
 one from Settings > Voice control. The source is `Nuvio-Whisper-source-<commit12>.tar.gz`, listed for
 every package. The microphone is Java Sound's ALSA line, so nothing new is asked of Flatpak.
 
-**The Usenet engine (built-in Usenet).** `usenet/build.py` runs in the build phase: it verifies the
-pinned commit of NuvioMedia/nuvio-usenet-engine (`usenet/manifest.json`, the commit Windows pins) and
-Go, compiles RapidYenc from the checkout's own `third_party/rapidyenc-native` in place of its prebuilt
-Linux archive, vendors and verifies the Go modules, and builds `lib/native/nuvio-usenet` from the
-vendor tree with libstdc++ and libgcc linked in, so it needs only the C library. Before it ships it
+**The Usenet engine (built-in Usenet).** `usenet/build.py` runs in the build phase: it builds the
+engine copy the app carries, `composeApp/src/desktopMain/native/nuvio-usenet-engine` (NuvioMedia/
+nuvio-usenet-engine at the commit Windows pins plus the Windows fork's own changes, which live only
+there; Windows builds the same directory), with pinned Go. In a scratch copy it compiles RapidYenc from
+the tree's own `third_party/rapidyenc-native` in place of its prebuilt Linux archive, vendors and
+verifies the Go modules, and builds `lib/native/nuvio-usenet` from the vendor tree with libstdc++ and
+libgcc linked in, so it needs only the C library. Before it ships it
 must start as the app starts it, refuse a request without the token and stop when its stdin closes;
 the native smoke runs the same start as "linux usenet engine". The source is
 `Nuvio-Usenet-source-<commit12>.tar.gz`, listed for every package. The engine binds 127.0.0.1 only

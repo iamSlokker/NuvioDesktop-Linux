@@ -1,6 +1,7 @@
 package com.nuvio.app.features.player
 
 import com.nuvio.app.features.streams.AddonStreamGroup
+import com.nuvio.app.features.streams.NextEpisodePick
 import com.nuvio.app.features.streams.StreamAutoPlaySource
 import com.nuvio.app.features.streams.StreamItem
 import com.nuvio.app.features.streams.StreamAutoPlayMode
@@ -12,12 +13,13 @@ import kotlin.test.assertTrue
 class PlayerSourceAffinityTest {
 
     @Test
-    fun `stream affinity excludes local files from autoplay candidates`() {
+    fun `stream affinity leaves local files to the local files row`() {
+        // Whether a local file may play, and where, is What plays > Source priority (the pick's rules).
         val local = stream("local")
         val remote = stream("url")
 
         assertEquals(
-            listOf(remote),
+            listOf(local, remote),
             eligibleAutoPlayStreams(listOf(local, remote), PlayerSourceAffinity.Stream),
         )
     }
@@ -40,41 +42,12 @@ class PlayerSourceAffinityTest {
     }
 
     @Test
-    fun `manual next episode selection needs manual mode and the opt-in`() {
-        // Manual mode + opt-in → hand the choice back instead of substituting FIRST_STREAM.
-        assertTrue(
-            shouldOpenManualNextEpisodeSelection(
-                mode = StreamAutoPlayMode.MANUAL,
-                manualNextEpisodeEnabled = true,
-                sourceAffinity = PlayerSourceAffinity.Stream,
-            ),
-        )
-        // Opt-in off → the long-standing substitution stands, so transitions never stall.
-        assertFalse(
-            shouldOpenManualNextEpisodeSelection(
-                mode = StreamAutoPlayMode.MANUAL,
-                manualNextEpisodeEnabled = false,
-                sourceAffinity = PlayerSourceAffinity.Stream,
-            ),
-        )
-        // The opt-in is meaningless for the auto-play modes: they already pick for you by design.
-        for (mode in StreamAutoPlayMode.entries.filter { it != StreamAutoPlayMode.MANUAL }) {
-            assertFalse(
-                shouldOpenManualNextEpisodeSelection(
-                    mode = mode,
-                    manualNextEpisodeEnabled = true,
-                    sourceAffinity = PlayerSourceAffinity.Stream,
-                ),
-            )
-        }
-        // Local affinity takes the on-disk file; there is no source choice to offer.
-        assertFalse(
-            shouldOpenManualNextEpisodeSelection(
-                mode = StreamAutoPlayMode.MANUAL,
-                manualNextEpisodeEnabled = true,
-                sourceAffinity = PlayerSourceAffinity.Local,
-            ),
-        )
+    fun `next episode asks for the source only with Ask me and an online stream`() {
+        assertTrue(shouldOpenManualNextEpisodeSelection(PlayerSourceAffinity.Stream, NextEpisodePick.ASK_ME))
+        assertFalse(shouldOpenManualNextEpisodeSelection(PlayerSourceAffinity.Stream, NextEpisodePick.SAME_RELEASE_FIRST))
+        assertFalse(shouldOpenManualNextEpisodeSelection(PlayerSourceAffinity.Stream, NextEpisodePick.SAME_RULES_AS_PLAY))
+        // A local-file binge takes the next file on disk; there is no source choice to offer.
+        assertFalse(shouldOpenManualNextEpisodeSelection(PlayerSourceAffinity.Local, NextEpisodePick.ASK_ME))
     }
 
     @Test

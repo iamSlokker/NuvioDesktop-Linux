@@ -85,7 +85,17 @@ import com.nuvio.app.features.player.primarySubtitleTargetsForSettings
 import com.nuvio.app.features.player.preferredMpvMediaTitle
 import com.nuvio.app.features.player.resolvePreferredAudioLanguageTargets
 import com.nuvio.app.features.player.toStorageHexString
+import com.nuvio.app.features.usenet.UsenetEngine
+import com.nuvio.app.features.usenet.UsenetEngineUrls
+import com.nuvio.app.features.usenet.formatUsenetMpvDiagnostics
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.decodeFromString
@@ -127,6 +137,8 @@ internal class NativePlayerController(
         }
     }
     private var diagnosticsOverlayEnabled = false
+    private val usenetDiagnosticsScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+    @Volatile private var usenetDiagnosticsJob: Job? = null
     private data class AnimeShaderChoice(
         val mode: DesktopAnimeMode,
         val customShaderPath: String = "",
@@ -604,11 +616,19 @@ internal class NativePlayerController(
                 // Live TV over HLS with subtitles plays a local copy of its master playlist so the
                 // provider's repeated subtitle cues can be dropped (IptvHlsSubtitleServer). One
                 // playlist fetch, made here off the UI thread and outside the lifecycle lock.
-                val mpvSourceUrl = if (com.nuvio.app.features.iptv.IptvPlaybackSession.isIptvUrl(pending.sourceUrl)) {
+                val isIptv = com.nuvio.app.features.iptv.IptvPlaybackSession.isIptvUrl(pending.sourceUrl)
+                val mpvSourceUrl = if (isIptv) {
                     com.nuvio.app.features.iptv.IptvHlsSubtitleServer.playbackUrlFor(pending.sourceUrl, pending.headerLines)
                 } else {
                     // fork:faststream-optin - the loopback copy while FastStream is on for this stream.
                     com.nuvio.app.features.youtube.YouTubeFastStream.playbackUrl(pending.sourceUrl)
+                }
+                // ClearKey DASH channels (inline kid:key or remote license URL) resolve off the UI
+                // thread so FFmpeg's dash demuxer receives cenc_decryption_key before loadfile.
+                val iptvClearKeyOptions = if (isIptv) {
+                    com.nuvio.app.features.iptv.resolveIptvClearKeyMpvOptions(pending.sourceUrl, pending.headerLines)
+                } else {
+                    emptyList()
                 }
                 val mpvAudioUrl = com.nuvio.app.features.youtube.YouTubeFastStream.playbackAudio(pending.sourceAudioUrl)
                 synchronized(nativeProcessLifecycleLock) {
@@ -700,7 +720,7 @@ internal class NativePlayerController(
                             nvidiaRtxHdrEnabled = pending.nvidiaRtxHdrEnabled,
                             isAnimeContent = pending.isAnimeContent,
                             animeSvpFilter = pending.animeSvpFilter,
-                            extraMpvOptions = (pending.extraMpvOptions +
+                            extraMpvOptions = (pending.extraMpvOptions + iptvClearKeyOptions +
                                 if (linux && linuxHeroSurface) linuxHeroStartupAudioOptions(controlsState)
                                 else emptyList()).toTypedArray(),
                             eventSink = generationEventSink,
@@ -820,12 +840,14 @@ internal class NativePlayerController(
             }
         }
         lastResizeMode?.let { setResizeMode(it, lastQuickAutoCrop) }
+        if (parkedBlackout) applyParkedBlackout(current)
         applyPendingSubtitleConfiguration(current)
         if (pendingVideoRedraw) {
             pendingVideoRedraw = false
             NativePlayerBridge.forceVideoRedraw(current)
         }
         updateControls(controlsState)
+        syncUsenetDiagnosticsPoller()
     }
 
     /** A retained/paused hero keeps its shared state, but no Linux native lifetime. */
@@ -1106,6 +1128,33 @@ internal class NativePlayerController(
         linuxCornerRadiusPx = radiusPx
         val current = handle.takeIf { it != 0L } ?: return
         runCatching { NativePlayerBridge.setCornerRadius(current, radiusPx) }
+    }
+
+    /**
+     * Hero trailers: covers the picture with a black OSD overlay while the surface is parked at 1px before its reveal.
+     * Grown to full size at the reveal, the window showed its last 1px frame stretched across it (Windows scales the
+     * old buffer until mpv draws at the new size), a frame of one flat colour from a single pixel of the video
+     * (2026-11-24). An OSD overlay, not a colour adjustment, so Auto Crop's grabs (screenshot-raw "video", no OSD) still
+     * see the real picture. Applied again on each attach.
+     */
+    @Volatile
+    private var parkedBlackout = false
+
+    fun setParkedBlackout(on: Boolean) {
+        parkedBlackout = on
+        handle.takeIf { it != 0L }?.let(::applyParkedBlackout)
+    }
+
+    private fun applyParkedBlackout(current: Long) {
+        val args = if (parkedBlackout) {
+            arrayOf("osd-overlay", PARKED_BLACKOUT_OVERLAY_ID, "ass-events", PARKED_BLACKOUT_ASS, "100", "100", "0", "no", "no")
+        } else {
+            arrayOf("osd-overlay", PARKED_BLACKOUT_OVERLAY_ID, "none", "", "0", "0", "0", "no", "no")
+        }
+        try {
+            NativePlayerBridge.mpvCommand(current, args)
+        } catch (_: UnsatisfiedLinkError) {
+        }
     }
 
     fun setMpvProperty(key: String, value: String) {
@@ -1741,6 +1790,27 @@ internal class NativePlayerController(
         NativePlayerBridge.runJavaScript(current, "window.nuvioShowVolumePill && window.nuvioShowVolumePill($percentage, $muted)")
     }
 
+    /**
+     * Files dropped on the player: each subtitle file loads and the last one is selected, with the user's subtitle
+     * style applied. Anything else is left alone (a video dropped on the rest of the app opens; during playback the
+     * app takes no new video), with a pill saying only subtitles can be added.
+     */
+    private fun loadDroppedFiles() {
+        val current = handle.takeIf { it != 0L } ?: return
+        val paths = runCatching { json.decodeFromString<List<String>>(NativePlayerBridge.takeDroppedFiles(current)) }
+            .getOrDefault(emptyList())
+        if (paths.isEmpty()) return
+        val subtitles = paths.filter { droppedSubtitleFile(it) }
+        if (subtitles.isEmpty()) {
+            showPresetPill(localizedString(Res.string.player_hud_drop_subtitles_only), File(paths.first()).name)
+            return
+        }
+        subtitles.forEach { NativePlayerBridge.addLocalSubtitleFile(current, it) }
+        applyPendingSubtitleConfiguration(current)
+        droppedFilesLog.i { "Loaded ${subtitles.size} dropped subtitle file(s)" }
+        showPresetPill(localizedString(Res.string.player_hud_subtitle_dropped), File(subtitles.last()).name)
+    }
+
     private fun handlePlayerEvent(type: String, value: Double) {
         if (disposed) return
         linuxHdr?.onPlayerEvent(type)
@@ -1890,6 +1960,10 @@ internal class NativePlayerController(
                     "thumbnail=${item?.thumbnail?.ifBlank { "<none>" } ?: "<unknown item>"} " +
                     "fallback=${controlsState.episodes.episodeFallbackThumbnail.ifBlank { "<none>" }}"
             }
+            return
+        }
+        if (type == "filesDropped") {
+            loadDroppedFiles()
             return
         }
         if (type == "keyboardPanelOpened") {
@@ -2287,6 +2361,9 @@ internal class NativePlayerController(
         linuxPiPInput?.close()
         linuxWindowFocus?.close()
         linuxHeroGeometry?.close()
+        usenetDiagnosticsJob?.cancel()
+        usenetDiagnosticsJob = null
+        usenetDiagnosticsScope.cancel()
         autoFastStreamTimer.stop()
         attachGeneration.incrementAndGet()
         pendingSource?.takeIf { it.fastStreamEligible }?.let { closing ->
@@ -2556,6 +2633,43 @@ internal class NativePlayerController(
         if (diagnosticsOverlayEnabled == enabled) return
         NativePlayerBridge.toggleStatsOverlay(current)
         diagnosticsOverlayEnabled = enabled
+        syncUsenetDiagnosticsPoller()
+    }
+
+    /**
+     * Feeds live Usenet session diagnostics into mpv's `user-data/nuvio-usenet` property (read by
+     * `player-scripts/stats.lua`) only while the diagnostics overlay is open on a Usenet session.
+     */
+    private fun syncUsenetDiagnosticsPoller() {
+        usenetDiagnosticsJob?.cancel()
+        usenetDiagnosticsJob = null
+        val (current, enabled, sourceUrl) = synchronized(handleLock) {
+            Triple(handle, diagnosticsOverlayEnabled, livePending?.sourceUrl)
+        }
+        if (current == 0L) return
+        val usenetUrl = sourceUrl?.takeIf { UsenetEngineUrls.isSession(it) }
+        if (disposed || !enabled || usenetUrl == null) {
+            NativePlayerBridge.setMpvProperty(current, "user-data/nuvio-usenet", "")
+            return
+        }
+        usenetDiagnosticsJob = usenetDiagnosticsScope.launch {
+            var lastMissing = -1L
+            var lastErrors = -1L
+            while (isActive && !disposed) {
+                val activeHandle = synchronized(handleLock) {
+                    if (diagnosticsOverlayEnabled && handle == current && livePending?.sourceUrl == usenetUrl) current else 0L
+                }
+                if (activeHandle == 0L) break
+                val live = UsenetEngine.liveStats(usenetUrl)
+                if (live != null) {
+                    val payload = formatUsenetMpvDiagnostics(live, lastMissing, lastErrors)
+                    NativePlayerBridge.setMpvProperty(activeHandle, "user-data/nuvio-usenet", payload)
+                    lastMissing = live.missing
+                    lastErrors = live.errors
+                }
+                delay(1_000L)
+            }
+        }
     }
 
     /**
@@ -3649,6 +3763,16 @@ internal fun mpvOptionsAllowSourceReplacement(liveOptions: List<String>, nextOpt
 private const val PIP_CLOSE_SETTLE_MS = 400
 
 private val episodeArtworkLog = Logger.withTag("PlayerEpisodeArtwork")
+private val droppedFilesLog = Logger.withTag("PlayerDroppedFiles")
+
+/** Subtitle formats mpv reads that a viewer may drop on the player. */
+internal val DROPPED_SUBTITLE_EXTENSIONS = setOf("srt", "ass", "ssa", "vtt", "sub", "sup", "idx", "smi", "ttml", "lrc")
+
+/** Whether [path] is a subtitle file that can be loaded into the player (not a folder, not a video). */
+internal fun droppedSubtitleFile(path: String): Boolean {
+    val file = File(path)
+    return file.extension.lowercase() in DROPPED_SUBTITLE_EXTENSIONS && file.isFile
+}
 
 /**
  * Guards the hand-built controls payload, which is assembled by [toControlsJson] as a raw string
@@ -4258,6 +4382,12 @@ internal fun PlayerControlsState.toControlsJson(
         appendJsonField("streamFailoverEnabled", hud.streamFailoverEnabled)
         append(',')
         appendJsonField("postShowInput", heroTrailer.postShowInput)
+        append(',')
+        appendJsonField("heroTrailerRevealCoverUrl", heroTrailer.revealCoverUrl)
+        append(',')
+        appendJsonField("heroTrailerRevealCoverPosition", heroTrailer.revealCoverPosition)
+        append(',')
+        appendJsonField("heroTrailerRevealed", heroTrailer.revealed)
         append('}')
     }
 
@@ -4770,3 +4900,9 @@ private fun String.toJsonString(): String =
         }
         append('"')
     }
+
+/** The OSD overlay slot [NativePlayerController.setParkedBlackout] uses, clear of any other overlay ids. */
+private const val PARKED_BLACKOUT_OVERLAY_ID = "58"
+
+/** A black box over the whole 100x100 OSD. */
+private const val PARKED_BLACKOUT_ASS = "{\\an7\\pos(0,0)\\bord0\\shad0\\1c&H000000&\\p1}m 0 0 l 100 0 100 100 0 100"

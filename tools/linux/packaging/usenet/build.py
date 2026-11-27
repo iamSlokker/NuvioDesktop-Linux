@@ -3,20 +3,24 @@
 packages, inside the pinned builder.
 
 Settings > Usenet plays a release through this engine, run as a child process
-(features/usenet/UsenetEngine.kt): lib/native/nuvio-usenet, the commit the Windows app pins
-(usenetExpectedCommit in composeApp/build.gradle.kts).
+(features/usenet/UsenetEngine.kt): lib/native/nuvio-usenet. The source is the copy the app itself
+carries, composeApp/src/desktopMain/native/nuvio-usenet-engine (manifest.json's source.path): the
+engine at the commit the Windows app pins (usenetExpectedCommit in composeApp/build.gradle.kts)
+plus the Windows fork's own changes, which live only there (its NOTICE.md lists them). Umbra
+vendored it in df0c02b2; Windows builds the same directory.
 
-Runs in native-build.sh's build phase (network for Go modules). Every input is pinned by SHA-256
-(manifest.json). RapidYenc's static library is compiled here from the engine's own
-third_party/rapidyenc-native, as its Android build does, and replaces the prebuilt archive the
-checkout carries for Linux. Go modules are verified against go.sum and the Go checksum database,
-vendored, and the binary is built from that vendor tree only. libstdc++ and libgcc are linked in,
-so the executable needs only the C library:
+Runs in native-build.sh's build phase (network for Go modules). The engine source is the source
+snapshot's own; Go is pinned by SHA-256 (manifest.json). RapidYenc's static library is compiled
+here from the engine's own third_party/rapidyenc-native, as its Android build does, and replaces
+the prebuilt archive the tree carries for Linux (in a scratch copy: the snapshot is not changed).
+Go modules are verified against go.sum and the Go checksum database, vendored, and the binary is
+built from that vendor tree only. libstdc++ and libgcc are linked in, so the executable needs only
+the C library:
 
   <work>/usenet/nuvio-usenet                   linux/amd64 executable (needs libc.so.6 only)
   <work>/usenet/licenses/                      the engine's, Go's and every vendored module's notices
-  <work>/usenet/Nuvio-Usenet-source.tar.gz     the pinned upstream tarball (original bytes), the
-                                               vendored modules and the exact build steps
+  <work>/usenet/Nuvio-Usenet-source.tar.gz     the engine tree as the app carries it, the vendored
+                                               modules and the exact build steps
 
 Before anything ships, the binary must start the way UsenetEngine does, report protocol 1 on
 127.0.0.1, refuse a request without the token, and stop when its stdin closes.
@@ -30,35 +34,40 @@ import subprocess
 import sys
 import tempfile
 import gzip
+import hashlib
 import tarfile
 import time
 import urllib.error
 import urllib.request
 
 HERE = Path(__file__).resolve().parent
+REPO = HERE.parents[3]
 sys.path.insert(0, str(HERE.parent))
 from fetch import fetch  # noqa: E402
 from torrserver.build import add_bytes, add_tree, extract, go_environment, is_notice, sha256, vendored_modules  # noqa: E402
 
 MANIFEST = json.loads((HERE / 'manifest.json').read_text())
+SOURCE = REPO / MANIFEST['source']['path']
 SOURCE_ARCHIVE = 'Nuvio-Usenet-source.tar.gz'
 EXECUTABLE = 'nuvio-usenet'
 PREBUILT = 'third_party/rapidyenc/librapidyenc_linux_amd64.a'
 # The C library alone: libstdc++ and libgcc are linked statically (manifest's -extldflags).
 ALLOWED_NEEDED = {'libc.so.6'}
 
-BUILD_TXT = """nuvio-usenet-engine {version} as built for Nuvio Desktop (Linux x86_64)
+BUILD_TXT = """nuvio-usenet-engine {version} with Nuvio Desktop's changes, as built for Nuvio Desktop
+(Linux x86_64)
 
-upstream/{tarball}   the commit archive from {url}
-                     (SHA-256 {source_sha256}), unmodified
-vendor/              the Go modules the build used: `go mod vendor`, checked against go.sum and
-                     the Go checksum database
-manifest.json        the pinned inputs
+{top}/   the engine source exactly as Nuvio Desktop carries it ({path}):
+                      {homepage} at {version}
+                      plus the changes its NOTICE.md lists under "NuvioDesktop fork changes"
+                      (all files SHA-256 {tree_sha256}, see build.json)
+vendor/               the Go modules the build used: `go mod vendor`, checked against go.sum and
+                      the Go checksum database
+manifest.json         the pinned inputs
 
 Rebuild with Go {go_version} ({go_url}, SHA-256 {go_sha256}),
 CMake and a C++ compiler:
 
-  tar -xzf upstream/{tarball}
   cd {top}
   cmake -S third_party/rapidyenc-native -B rapidyenc-build -DCMAKE_BUILD_TYPE=Release \\
     -DCMAKE_POSITION_INDEPENDENT_CODE=ON -DDISABLE_SHARED=ON -DDISABLE_TOOL=ON -DDISABLE_CRC=ON
@@ -174,8 +183,9 @@ def collect_notices(source, vendor, go_root, licenses):
     missing = [module for module in vendored_modules(vendor)
                if not any(path == module or path.startswith(module + '/') for path in covered)]
     (licenses / 'NOTICE.txt').write_text(
-        f'nuvio-usenet-engine {MANIFEST["version"]} ({MANIFEST["homepage"]}), licensed under the\n'
-        'GNU GPL version 3 (LICENSE); NOTICE.md and engine/ are its provenance and adapted notices.\n'
+        f'nuvio-usenet-engine {MANIFEST["version"]} ({MANIFEST["homepage"]}) with Nuvio\n'
+        "Desktop's changes, licensed under the GNU GPL version 3 (LICENSE); NOTICE.md and engine/ are\n"
+        'its provenance, the changes and the adapted notices.\n'
         'Nuvio runs it as a separate program. Its complete corresponding source, with the Go modules\n'
         'it was built from and the build steps, is the release asset ending in -source-usenet.tar.gz.\n\n'
         'rapidyenc/: the yEnc wrapper and kernels, compiled from the checkout.\n'
@@ -185,21 +195,38 @@ def collect_notices(source, vendor, go_root, licenses):
     return missing
 
 
-def archive_source(output, upstream, vendor, epoch):
+def check_tree(tree):
+    """The engine directory of the source snapshot: the command, its module, no links, no vendor
+    tree, and a NOTICE.md naming the commit it was carried onto."""
+    if not (tree / 'cmd/nuvio-usenet').is_dir() or not (tree / 'go.mod').is_file():
+        raise ValueError(f'No nuvio-usenet-engine sources under {tree}')
+    if (tree / 'vendor').exists():
+        raise ValueError('The engine source already carries a vendor tree')
+    links = [path for path in tree.rglob('*') if path.is_symlink()]
+    if links:
+        raise ValueError(f'Symbolic link in the engine source: {links[0]}')
+    if MANIFEST['version'][:7] not in (tree / 'NOTICE.md').read_text(encoding='utf-8'):
+        raise ValueError(f'NOTICE.md does not name {MANIFEST["version"][:7]}, the commit manifest.json pins')
+
+
+def tree_digest(tree):
+    """SHA-256 over every file's path and SHA-256, in path order: one value for the whole tree."""
+    lines = ''.join(f'{sha256(path)}  {path.relative_to(tree).as_posix()}\n'
+                    for path in sorted(tree.rglob('*')) if path.is_file())
+    return hashlib.sha256(lines.encode()).hexdigest()
+
+
+def archive_source(output, tree, vendor, epoch):
     source = MANIFEST['source']
-    text = BUILD_TXT.format(version=MANIFEST['version'], tarball=upstream.name, url=source['url'],
-                            source_sha256=source['sha256'], go_version=MANIFEST['go']['version'],
+    text = BUILD_TXT.format(version=MANIFEST['version'], homepage=MANIFEST['homepage'], path=source['path'],
+                            tree_sha256=tree_digest(tree), go_version=MANIFEST['go']['version'],
                             go_url=MANIFEST['go']['url'], go_sha256=MANIFEST['go']['sha256'],
                             top=source['top'], prebuilt=PREBUILT, **MANIFEST['build'])
     with output.open('wb') as raw, gzip.GzipFile(filename='', mode='wb', fileobj=raw, mtime=0) as compressed, \
             tarfile.open(fileobj=compressed, mode='w', format=tarfile.GNU_FORMAT) as tar:
         add_bytes(tar, 'BUILD.txt', text.encode(), epoch)
         add_bytes(tar, 'manifest.json', (HERE / 'manifest.json').read_bytes(), epoch)
-        info = tarfile.TarInfo('upstream/' + upstream.name)
-        info.size, info.mode, info.mtime, info.uid, info.gid, info.uname, info.gname = (
-            upstream.stat().st_size, 0o644, epoch, 0, 0, '', '')
-        with upstream.open('rb') as stream:
-            tar.addfile(info, stream)
+        add_tree(tar, tree, source['top'], epoch)
         add_tree(tar, vendor, 'vendor', epoch)
 
 
@@ -208,12 +235,12 @@ def build(work):
     shutil.rmtree(root, ignore_errors=True)
     scratch = root / 'build'
     epoch = int(os.environ.get('SOURCE_DATE_EPOCH', '0'))
-    upstream = fetch(MANIFEST['source'], scratch / 'downloads' / (MANIFEST['source']['top'] + '.tar.gz'))
+    check_tree(SOURCE)
     toolchain = fetch(MANIFEST['go'], scratch / 'downloads' / Path(MANIFEST['go']['url']).name)
     go_root = extract(toolchain, scratch, 'go')
-    source = extract(upstream, scratch / 'src', MANIFEST['source']['top'])
-    if (source / 'vendor').exists():
-        raise ValueError('The pinned engine source already carries a vendor tree')
+    # A scratch copy: RapidYenc's rebuilt archive and the vendor tree go there, not into the snapshot.
+    source = scratch / 'src' / MANIFEST['source']['top']
+    shutil.copytree(SOURCE, source)
     rapidyenc = scratch / 'rapidyenc'
     subprocess.run(rapidyenc_command(source, rapidyenc), check=True)
     subprocess.run(['cmake', '--build', str(rapidyenc), '--target', 'rapidyenc_static'], check=True)
@@ -235,10 +262,10 @@ def build(work):
     print(f'USENET_ENGINE_PASS {MANIFEST["version"][:12]} stopped={started["stopped_seconds"]}s', flush=True)
     missing = collect_notices(source, source / 'vendor', go_root, root / 'licenses')
     archive = root / SOURCE_ARCHIVE
-    archive_source(archive, upstream, source / 'vendor', epoch)
-    record = dict(schema_version=1, version=MANIFEST['version'], go=MANIFEST['go']['version'], needed=needed,
+    archive_source(archive, SOURCE, source / 'vendor', epoch)
+    record = dict(schema_version=2, version=MANIFEST['version'], go=MANIFEST['go']['version'], needed=needed,
                   binary_sha256=sha256(binary), source_archive_sha256=sha256(archive),
-                  upstream_sha256=MANIFEST['source']['sha256'],
+                  source_path=MANIFEST['source']['path'], source_tree_sha256=tree_digest(SOURCE),
                   modules=len(vendored_modules(source / 'vendor')), modules_without_notice=missing)
     (root / 'build.json').write_text(json.dumps(record, indent=2, sort_keys=True) + '\n')
     if missing:

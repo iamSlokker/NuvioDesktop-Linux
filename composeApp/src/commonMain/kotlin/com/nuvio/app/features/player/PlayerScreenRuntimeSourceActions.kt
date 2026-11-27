@@ -1037,10 +1037,7 @@ internal fun StreamItem.preferredAudioLanguageRank(preferredAudioLanguages: List
 internal fun StreamItem.advertisedAudioLanguages(): Set<String> {
     val structured = audioLanguages +
         clientResolve?.stream?.raw?.parsed?.languages.orEmpty()
-    val supportedCodes = AvailableLanguageOptions
-        .mapNotNull { option -> normalizeLanguageCode(option.code) }
-        .map { it.substringBefore('-') }
-        .toSet() + setOf("multi", "mul")
+    val supportedCodes = SupportedAudioLanguageCodes
 
     val normalizedStructured = structured
         .mapNotNull(::normalizeLanguageCode)
@@ -1075,6 +1072,17 @@ internal fun StreamItem.advertisedAudioLanguages(): Set<String> {
 }
 
 private val languageTokenRegex = Regex("""[\p{L}]{2,20}""")
+
+/**
+ * The language codes [advertisedAudioLanguages] accepts. Built once: it was rebuilt (every option
+ * normalised) for each stream ranked, on the UI thread when Play picks a fallback (Nov 25).
+ */
+private val SupportedAudioLanguageCodes: Set<String> by lazy {
+    AvailableLanguageOptions
+        .mapNotNull { option -> normalizeLanguageCode(option.code) }
+        .map { it.substringBefore('-') }
+        .toSet() + setOf("multi", "mul")
+}
 
 internal fun selectFailoverResumePositionMs(
     lastTrustedPositionMs: Long,
@@ -1141,8 +1149,8 @@ internal fun PlayerScreenRuntime.playNextEpisode() {
     val nextVideo = nextVideoId?.let { id -> playerMetaVideos.firstOrNull { video -> video.id == id } }
     BingeAdvanceLog.i {
         "playNextEpisode nextVideoId=$nextVideoId resolved=${nextVideo != null} " +
-            "hasAired=${nextEpisodeInfo?.hasAired} mode=${playerSettingsUiState.streamAutoPlayMode} " +
-            "manualNextEpisode=${playerSettingsUiState.streamAutoPlayManualNextEpisode} " +
+            "hasAired=${nextEpisodeInfo?.hasAired} " +
+            "nextEpisode=${com.nuvio.app.features.streams.PlaybackPickSettingsRepository.current.nextEpisode} " +
             "affinity=$sourceAffinity"
     }
     if (nextVideo == null || nextEpisodeInfo?.hasAired != true) {
@@ -1155,8 +1163,6 @@ internal fun PlayerScreenRuntime.playNextEpisode() {
     // the user dismisses the picker (it clears only once the target episode is genuinely playing),
     // silently disabling auto-advance for the rest of the session.
     val opensManualSelection = shouldOpenManualNextEpisodeSelection(
-        mode = playerSettingsUiState.streamAutoPlayMode,
-        manualNextEpisodeEnabled = playerSettingsUiState.streamAutoPlayManualNextEpisode,
         sourceAffinity = sourceAffinity,
     )
     if (!opensManualSelection) {

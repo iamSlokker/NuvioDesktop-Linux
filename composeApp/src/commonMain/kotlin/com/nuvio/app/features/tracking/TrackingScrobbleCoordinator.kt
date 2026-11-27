@@ -4,8 +4,12 @@ import co.touchlab.kermit.Logger
 import com.nuvio.app.features.profiles.ProfileRepository
 import com.nuvio.app.features.watchprogress.WatchProgressClock
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.supervisorScope
 
 data class TrackingScrobbleFailure(
@@ -37,6 +41,16 @@ data class TrackingScrobbleDispatch(
 internal const val TrackingScrobbleWatchedProgressThresholdPercent = 80.0
 
 /**
+ * Below this progress a stop abandons its session (see [TrackingScrobbleEvent.abandonsSession]),
+ * and a provider's resume point is not a resume point: about a minute into a feature film.
+ */
+internal const val TrackingScrobbleAbandonedPercent = 1.0
+
+/** Whether a resume point read back from a provider is too early to be worth resuming. */
+internal fun isNegligibleResumeProgress(progressPercent: Float): Boolean =
+    progressPercent < TrackingScrobbleAbandonedPercent
+
+/**
  * Whether a provider reply to this request could describe *this* scrobble marking the item watched.
  *
  * The reply parser is deliberately loose — `status: completed`, `watched: true`, any `watched_at` —
@@ -66,6 +80,12 @@ internal fun isPauseThatStopWouldRecordAsWatched(event: TrackingScrobbleEvent): 
 
 object TrackingScrobbleCoordinator {
     private val log = Logger.withTag("TrackingScrobble")
+    private val detachedScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+
+    /** Runs a scrobble stop independently of a disposing player Compose scope. */
+    fun launchDetached(block: suspend () -> Unit) {
+        detachedScope.launch { block() }
+    }
 
     suspend fun scrobble(
         profileId: Int,

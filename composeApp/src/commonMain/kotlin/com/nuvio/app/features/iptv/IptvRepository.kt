@@ -3,12 +3,15 @@ package com.nuvio.app.features.iptv
 import co.touchlab.kermit.Logger
 import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.atomic.AtomicInteger
 import java.util.zip.GZIPInputStream
 import java.util.zip.GZIPOutputStream
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -47,7 +50,7 @@ data class IptvSettings(
      * fork:live-tv-on-now - Settings > Live TV > On Now. The tab opens on what is on (sport with scores, films,
      * the usual channels), copies of one channel become one row, and a programme can be started over.
      */
-    val onNow: Boolean = false,
+    val onNow: Boolean = true,
     /** fork:live-tv-on-now - when each channel was put on, newest last, for "Your channels" ([IptvUsuals]). */
     val plays: List<IptvPlay> = emptyList(),
     /** fork:live-tv-triage - by playlist id: the countries and kinds its triage kept. No entry = everything shows. */
@@ -59,11 +62,11 @@ data class IptvSettings(
     /** fork:live-tv-lineup - by playlist id: the keys of every copy of the channels thrown out with "Never again". */
     val never: Map<String, Set<String>> = emptyMap(),
     /** fork:live-tv-departure - Settings > Live TV > Starting soon. The On Now wall gets a departure board; programmes can have a reminder. */
-    val departure: Boolean = false,
+    val departure: Boolean = true,
     /** fork:live-tv-departure - the reminders waiting, earliest first ([IptvReminderRules]). */
     val reminders: List<IptvReminder> = emptyList(),
     /** fork:live-tv-decide - Settings > Live TV > Decide for me: Three things, I have N minutes, Earlier today, Following. */
-    val decide: Boolean = false,
+    val decide: Boolean = true,
     /** fork:live-tv-decide - the minutes dialled on "I have N minutes". */
     val minutes: Int = IptvDecide.DEFAULT_MINUTES,
     /** fork:live-tv-decide - tonight's reshuffle of Three things. */
@@ -72,8 +75,8 @@ data class IptvSettings(
     val follows: List<String> = emptyList(),
     /** fork:live-tv-stage - Live TV as full-screen stages; off by default. */
     val stage: Boolean = false,
-    /** fork:live-tv-on-demand - offer a programme under way from the start through the add-ons; off by default. */
-    val onDemand: Boolean = false,
+    /** fork:live-tv-on-demand - offer a programme under way from the start through the add-ons (it asks first). */
+    val onDemand: Boolean = true,
     /** fork:live-tv-stage - what was asked on Just ask, newest first. */
     val asks: List<IptvAsked> = emptyList(),
     /** fork:live-tv-weed - overnight checks of the lineup's channels; off by default. */
@@ -643,8 +646,92 @@ object IptvRepository {
         }
     }
 
+    /**
+     * [playlistId]'s channels for background work (the overnight weed), read back from the disk cache
+     * when [evictInMemoryCachesIfIdle] has released them. Never downloads. The caller should
+     * [scheduleIdleEvictionIfOffTab] once done, so a reload off the Live TV tab is released again.
+     */
+    suspend fun contentForBackgroundUse(playlistId: String): IptvPlaylistContent? {
+        val state = contentStates.getOrPut(playlistId) { MutableStateFlow(IptvContentState()) }
+        state.value.content?.let { return it }
+        val playlist = playlist(playlistId) ?: return null
+        val lock = loadLocks.getOrPut(playlistId) { Mutex() }
+        lock.withLock {
+            state.value.content?.let { return it }
+            val cached = readCachedContent(playlist) ?: return null
+            state.update { it.copy(content = cached) }
+            return cached
+        }
+    }
+
     // Not tied to a screen: a refresh started from Settings keeps going after the page closes.
     private val backgroundScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+
+    private const val OFF_TAB_EVICT_DELAY_MS = 5 * 60 * 1000L
+    private val activeLiveTvScreens = AtomicInteger(0)
+    private val evictJobLock = Any()
+    private var idleEvictJob: Job? = null
+
+    /**
+     * Tracks whether the Live TV tab is currently mounted. Leaving the tab schedules a delayed
+     * release of the in-memory channel and EPG caches (100+ MB on large playlists) so returning
+     * within a few minutes stays instant while long movies/browsing away from Live TV reclaim the
+     * heap. Reopening later reloads from the local `.json.gz` cache without hitting the provider.
+     */
+    fun onLiveTvScreenMounted() {
+        activeLiveTvScreens.incrementAndGet()
+        synchronized(evictJobLock) {
+            idleEvictJob?.cancel()
+            idleEvictJob = null
+        }
+    }
+
+    fun onLiveTvScreenDisposed() {
+        val remaining = activeLiveTvScreens.updateAndGet { (it - 1).coerceAtLeast(0) }
+        if (remaining == 0) scheduleIdleEvictionIfOffTab()
+    }
+
+    internal fun scheduleIdleEvictionIfOffTab(delayMs: Long = OFF_TAB_EVICT_DELAY_MS) {
+        if (activeLiveTvScreens.get() > 0) return
+        synchronized(evictJobLock) {
+            idleEvictJob?.cancel()
+            idleEvictJob = backgroundScope.launch {
+                delay(delayMs)
+                evictInMemoryCachesIfIdle()
+            }
+        }
+    }
+
+    internal fun evictInMemoryCachesIfIdle(): Boolean {
+        if (activeLiveTvScreens.get() > 0) return false
+        if (IptvPlaybackSession.active.value != null) return false
+        if (_settings.value.reminders.isNotEmpty()) return false
+        if (contentStates.values.any { it.value.loading }) return false
+
+        var evictedPlaylists = 0
+        for ((playlistId, state) in contentStates) {
+            val lock = loadLocks.getOrPut(playlistId) { Mutex() }
+            if (!lock.tryLock()) continue
+            try {
+                if (!state.value.loading && state.value.content != null) {
+                    state.value = IptvContentState()
+                    evictedPlaylists++
+                }
+            } finally {
+                lock.unlock()
+            }
+        }
+        val evictedGuides = IptvEpgRepository.evictInMemoryCache()
+        if (evictedPlaylists > 0 || evictedGuides) {
+            // Release cached derived/stage snapshots too so they do not keep the evicted
+            // playlist and merged-channel lists pinned in heap.
+            IptvScreenDerivedCache.clear()
+            IptvStageModelCache.clear()
+            log.i { "Evicted idle IPTV in-memory caches (playlists=$evictedPlaylists, guides=$evictedGuides)" }
+            return true
+        }
+        return false
+    }
 
     /** [refresh] then the playlist's guide, off any screen's scope. */
     fun refreshInBackground(playlistId: String, force: Boolean = false) {

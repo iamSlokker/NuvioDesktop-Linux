@@ -60,8 +60,13 @@ internal object DesktopStorage {
      */
     val accountDir: Path by lazy { DesktopAccountSlots.activeSlotDir() }
 
-    fun store(name: String): Store = synchronized(stores) {
-        stores.getOrPut(name) { Store(storeFile(name)) }
+    fun store(name: String): Store {
+        // Resolve storeFile (and therefore accountDir) outside the stores lock so another thread
+        // resolving accountDir -> activeSlotDir() -> store(REGISTRY_STORE) cannot invert locks.
+        val file = storeFile(name)
+        return synchronized(stores) {
+            stores.getOrPut(name) { Store(file) }
+        }
     }
 
     /**
@@ -74,7 +79,10 @@ internal object DesktopStorage {
      * launch means the screen that needs the store later finds it in memory. A few threads, because
      * one stuck open must not hold up the rest.
      */
+    private val prewarmStarted = java.util.concurrent.atomic.AtomicBoolean(false)
+
     fun prewarmStoresAsync() {
+        if (!prewarmStarted.compareAndSet(false, true)) return
         Thread({
             val files = runCatching {
                 listOf(accountDir, rootDir).distinct().flatMap { dir ->
@@ -86,10 +94,12 @@ internal object DesktopStorage {
                 log.w(error) { "store prewarm could not list the data directory" }
                 return@Thread
             }
-            val names = files.map { it.fileName.toString().removeSuffix(".properties") }
+            val (deferred, names) = files.map { it.fileName.toString().removeSuffix(".properties") }
                 // A same-named file in the other folder is not that store; storeFile decides.
                 .filter { name -> files.any { it == storeFile(name) } }
                 .distinct()
+                .partition { it in PREWARM_AFTER_HOME }
+            if (deferred.isNotEmpty()) prewarmAfterHome(deferred)
             val startedAt = System.nanoTime()
             val pool = Executors.newFixedThreadPool(PREWARM_THREADS) { runnable ->
                 Thread(runnable, "nuvio-storage-prewarm").apply {
@@ -105,6 +115,57 @@ internal object DesktopStorage {
     }
 
     private const val PREWARM_THREADS = 4
+
+    /**
+     * Big or non-Home stores prewarmed a few seconds after Home is up instead of during `0-500ms`:
+     * prewarming all 136 stores at launch had `nuvio_simkl_calendar_cache` (2.9 MB, 253-277ms parse),
+     * `nuvio_music_library` (1.2 MB), `nuvio_local_library` (772 KB), etc. contending with Window
+     * init, ImageDiskCache journal replay, and early startup bootstrap. Still prewarmed after Home
+     * on a low-priority pool so a slow scanner-held open never lands on the UI thread later.
+     */
+    private val PREWARM_AFTER_HOME = setOf(
+        "nuvio_plugin_code",
+        "nuvio_simkl_calendar_cache",
+        "nuvio_music_lyric_cache",
+        "nuvio_music_library",
+        "nuvio_local_library",
+        "nuvio_stream_link_cache",
+        "nuvio_downloads",
+        "nuvio_discover_rows_cache",
+        "nuvio_trivia_cache",
+        "nuvio_trakt_library",
+        "nuvio_library_title_facts",
+        "nuvio_library",
+        "nuvio_simkl_list_cache",
+        "nuvio_filename_lookups",
+        "nuvio_postshow_cache",
+        "nuvio_playback_redirect_verdicts_v2",
+        "nuvio_prewarm_failed_urls",
+    )
+    private const val PREWARM_AFTER_HOME_DELAY_MS = 3_000L
+    private const val PREWARM_AFTER_HOME_THREADS = 2
+
+    private fun prewarmAfterHome(names: List<String>) {
+        com.nuvio.app.core.build.StartupReadySignal.onHomeReady {
+            Thread({
+                runCatching { Thread.sleep(PREWARM_AFTER_HOME_DELAY_MS) }
+                val startedAt = System.nanoTime()
+                val pool = Executors.newFixedThreadPool(PREWARM_AFTER_HOME_THREADS) { runnable ->
+                    Thread(runnable, "nuvio-storage-prewarm-late").apply {
+                        isDaemon = true
+                        priority = Thread.MIN_PRIORITY
+                    }
+                }
+                names.forEach { name -> pool.execute { runCatching { store(name).contains("") } } }
+                pool.shutdown()
+                pool.awaitTermination(2, TimeUnit.MINUTES)
+                log.i { "store prewarm after Home: ${names.size} stores in ${(System.nanoTime() - startedAt) / 1_000_000}ms" }
+            }, "nuvio-storage-prewarm-late-main").apply {
+                isDaemon = true
+                priority = Thread.MIN_PRIORITY
+            }.start()
+        }
+    }
 
     /** Where [name]'s file lives: the data directory for machine stores, else [accountDir]. */
     fun storeFile(name: String): Path =
@@ -444,19 +505,86 @@ internal object DesktopStorage {
     private val flushExecutor: ScheduledExecutorService by lazy {
         Executors.newSingleThreadScheduledExecutor { runnable ->
             Thread(runnable, "nuvio-storage-flush").apply { isDaemon = true }
-        }.also {
-            Runtime.getRuntime().addShutdownHook(Thread({ flushAll() }, "nuvio-storage-exit-flush"))
-        }
+        }.also { installExitFlush() }
     }
+
+    private val exitFlushInstalled = java.util.concurrent.atomic.AtomicBoolean(false)
+
+    /**
+     * The shutdown hook for exit paths that skip main()'s own flush (exitProcess, a restart, the
+     * session ending). First the batched disk caches (CoalescingCachePersister: lookups that would
+     * otherwise be fetched again next launch), whose writes land in stores here, then every store.
+     * One hook, in that order: JVM shutdown hooks run concurrently, so two hooks could flush the
+     * stores before the caches had written into them. Installed from main() too, so it exists even
+     * before the first store write.
+     */
+    fun installExitFlush() {
+        if (!exitFlushInstalled.compareAndSet(false, true)) return
+        Runtime.getRuntime().addShutdownHook(
+            Thread({
+                runCatching {
+                    kotlinx.coroutines.runBlocking {
+                        kotlinx.coroutines.withTimeoutOrNull(EXIT_CACHE_FLUSH_TIMEOUT_MS) {
+                            CoalescingCachePersister.flushAll()
+                        }
+                    }
+                }
+                flushAll()
+            }, "nuvio-storage-exit-flush"),
+        )
+    }
+
+    private const val EXIT_CACHE_FLUSH_TIMEOUT_MS = 2_000L
 
     private const val FLUSH_DELAY_MS = 1_500L
     private const val MAX_RETRY_DELAY_MS = 30_000L
     private val LOAD_RETRY_DELAYS_MS = longArrayOf(50L, 250L, 1_000L)
 
+    private val flushListeners = java.util.concurrent.CopyOnWriteArrayList<() -> Unit>()
+
+    /** Registers a non-properties storage (e.g. a coalesced blob file) to flush on [flushAll]. */
+    fun registerFlushListener(listener: () -> Unit) {
+        flushListeners.addIfAbsent(listener)
+    }
+
     /** Writes every store with pending changes, on the calling thread. Safe to call repeatedly. */
     fun flushAll() {
+        flushListeners.forEach { listener -> runCatching { listener() } }
         val snapshot = synchronized(stores) { stores.values.toList() }
         snapshot.forEach { store -> store.flush() }
+    }
+
+    /**
+     * Releases in-memory [Properties] maps from clean, idle large stores so their raw serialized
+     * JSON/JS strings do not sit in the live heap after startup (23.7 MB across 142 stores in the
+     * 2026-11-25 baseline). Re-accessed stores reload transparently from disk, and unchanged
+     * [Store.putString] calls short-circuit via stored fingerprints without touching disk.
+     */
+    internal fun evictIdleStores(
+        nowMs: Long = System.currentTimeMillis(),
+        idleMs: Long = IDLE_STORE_EVICT_MS,
+        minChars: Long = IDLE_STORE_MIN_CHARS,
+    ): Long {
+        val snapshot = synchronized(stores) { stores.values.toList() }
+        var evictedChars = 0L
+        for (store in snapshot) {
+            evictedChars += store.evictIfIdleAndClean(nowMs, idleMs, minChars)
+        }
+        return evictedChars
+    }
+
+    private const val IDLE_STORE_EVICT_MS = 90_000L
+    private const val IDLE_STORE_MIN_CHARS = 128L * 1024L
+
+    private data class ValueStamp(val length: Int, val hash: Long)
+
+    private fun valueStamp(value: String): ValueStamp {
+        var h = -3750763034362895579L // FNV-1a 64-bit offset basis
+        for (i in value.indices) {
+            h = h xor value[i].code.toLong()
+            h *= 1099511628211L
+        }
+        return ValueStamp(value.length, h)
     }
 
     internal class Store(
@@ -469,10 +597,19 @@ internal object DesktopStorage {
         /** Serialises disk writes and deletes of this store's files. Always taken before [lock]. */
         private val ioLock = Any()
         private val properties = Properties()
+        private val evictedStamps = HashMap<String, ValueStamp>()
+
+        /**
+         * Changes made while evicted, applied on the next load (null = removed). Lets a write to an
+         * evicted store return at once instead of re-reading the whole file on the caller's thread,
+         * often the UI's; the scheduled flush does the reload on the flush thread.
+         */
+        private val evictedOverrides = HashMap<String, String?>()
         private var loaded = false
         private var dirty = false
         private var flushScheduled = false
         private var consecutiveFailures = 0
+        private var lastAccessMs = 0L
 
         /**
          * Set when the file exists but could not be read. Every later write would replace the real
@@ -488,16 +625,34 @@ internal object DesktopStorage {
         private val tempFile: Path get() = file.resolveSibling("${file.fileName}.tmp")
 
         fun contains(key: String): Boolean = synchronized(lock) {
+            lastAccessMs = System.currentTimeMillis()
+            if (!loaded && evictedStamps.isNotEmpty()) return evictedStamps.containsKey(key)
             ensureLoaded()
             properties.containsKey(key)
         }
 
         fun getString(key: String): String? = synchronized(lock) {
+            lastAccessMs = System.currentTimeMillis()
+            if (!loaded && evictedOverrides.containsKey(key)) return evictedOverrides[key]
             ensureLoaded()
             properties.getProperty(key)
         }
 
         fun putString(key: String, value: String?) = synchronized(lock) {
+            lastAccessMs = System.currentTimeMillis()
+            if (!loaded && evictedStamps.isNotEmpty()) {
+                val unchanged = if (value == null) {
+                    !evictedStamps.containsKey(key)
+                } else {
+                    evictedStamps[key] == valueStamp(value)
+                }
+                if (unchanged) {
+                    PerfTelemetry.recordStoreWrite(perfName, key, changed = false)
+                    return@synchronized
+                }
+                writeWhileEvictedLocked(key, value)
+                return@synchronized
+            }
             ensureLoaded()
             val previous = if (value == null) {
                 properties.remove(key)
@@ -513,6 +668,8 @@ internal object DesktopStorage {
         }
 
         fun keys(): Set<String> = synchronized(lock) {
+            lastAccessMs = System.currentTimeMillis()
+            if (!loaded && evictedStamps.isNotEmpty()) return evictedStamps.keys.toSet()
             ensureLoaded()
             properties.stringPropertyNames()
         }
@@ -548,6 +705,15 @@ internal object DesktopStorage {
         }
 
         fun remove(key: String) = synchronized(lock) {
+            lastAccessMs = System.currentTimeMillis()
+            if (!loaded && evictedStamps.isNotEmpty()) {
+                if (!evictedStamps.containsKey(key)) {
+                    PerfTelemetry.recordStoreWrite(perfName, key, changed = false)
+                } else {
+                    writeWhileEvictedLocked(key, null)
+                }
+                return@synchronized
+            }
             ensureLoaded()
             val previous = properties.remove(key)
             PerfTelemetry.recordStoreWrite(perfName, key, changed = previous != null)
@@ -555,6 +721,7 @@ internal object DesktopStorage {
         }
 
         fun removeAll(keys: Iterable<String>) = synchronized(lock) {
+            lastAccessMs = System.currentTimeMillis()
             ensureLoaded()
             keys.forEach(properties::remove)
             markDirty()
@@ -568,18 +735,48 @@ internal object DesktopStorage {
         fun deleteAll() = synchronized(ioLock) {
             synchronized(lock) {
                 properties.clear()
+                evictedStamps.clear()
+                evictedOverrides.clear()
                 loaded = false
                 dirty = false
                 readOnly = false
                 consecutiveFailures = 0
+                lastAccessMs = 0L
             }
             listOf(file, backupFile, tempFile).forEach { path -> runCatching { Files.deleteIfExists(path) } }
         }
+
+        internal fun evictIfIdleAndClean(nowMs: Long, idleMs: Long, minChars: Long): Long = synchronized(lock) {
+            if (!loaded || dirty || readOnly || flushScheduled || evictedOverrides.isNotEmpty()) return 0L
+            if (nowMs - lastAccessMs < idleMs) return 0L
+            var chars = 0L
+            for (entry in properties.entries) {
+                val k = entry.key as? String ?: continue
+                val v = entry.value as? String ?: continue
+                chars += k.length + v.length
+            }
+            if (chars < minChars) return 0L
+            evictedStamps.clear()
+            for (entry in properties.entries) {
+                val k = entry.key as? String ?: continue
+                val v = entry.value as? String ?: continue
+                evictedStamps[k] = valueStamp(v)
+            }
+            properties.clear()
+            loaded = false
+            chars
+        }
+
+        internal val isLoadedInMemory: Boolean
+            get() = synchronized(lock) { loaded }
 
         /** Writes pending changes now, on the calling thread. */
         fun flush() = synchronized(ioLock) {
             val snapshot = synchronized(lock) {
                 flushScheduled = false
+                // A write made while evicted is only an override: the file has to be read back to
+                // write it out, here on the flush thread rather than on the writer's.
+                if (dirty && !readOnly && !loaded) ensureLoaded()
                 if (!dirty || readOnly) {
                     null
                 } else {
@@ -636,9 +833,28 @@ internal object DesktopStorage {
             }
         }
 
+        private fun writeWhileEvictedLocked(key: String, value: String?) {
+            evictedOverrides[key] = value
+            if (value == null) evictedStamps.remove(key) else evictedStamps[key] = valueStamp(value)
+            PerfTelemetry.recordStoreWrite(perfName, key, changed = true)
+            markDirty()
+        }
+
         private fun ensureLoaded() {
             if (loaded) return
+            loadFromDiskLocked()
+            if (evictedOverrides.isNotEmpty()) {
+                for ((key, value) in evictedOverrides) {
+                    if (value == null) properties.remove(key) else properties.setProperty(key, value)
+                }
+                evictedOverrides.clear()
+            }
+        }
+
+        private fun loadFromDiskLocked() {
             properties.clear()
+            evictedStamps.clear()
+            lastAccessMs = System.currentTimeMillis()
             // notExists, not !exists: `exists()` is also false when existence "cannot be
             // determined", which is exactly the locked-by-a-scanner case where treating the store
             // as new would let the next write wipe it.

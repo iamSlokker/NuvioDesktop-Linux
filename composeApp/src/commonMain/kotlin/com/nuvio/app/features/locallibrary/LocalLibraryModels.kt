@@ -149,6 +149,30 @@ enum class LocalLibraryPlaybackPreference {
 }
 
 /**
+ * What a plain click does with a title's local copy, from What plays ([onPlay], where the local files row sits:
+ * [placement]) and the title's own [override]:
+ *
+ * - The title set to its local file plays it; set to online, the file is a backup (listed, never auto-played).
+ * - Show me the sources: the picker, with the file in it (the alternate click plays the file).
+ * - Local files at the top of Source priority: the file plays straight away.
+ * - Lower down, or switched off: the stream search runs as if there were no file; the file is listed, and where it may
+ *   auto-play it is picked at its place in the order (StreamsRepository).
+ */
+fun localTitleRouting(
+    override: LocalTitlePlayback?,
+    onPlay: com.nuvio.app.features.streams.PlayClick,
+    placement: com.nuvio.app.features.streams.LocalFilesPick,
+): LocalTitleRouting = when {
+    override == LocalTitlePlayback.LOCAL_FILE -> LocalTitleRouting(LocalLibraryPlaybackPreference.LOCAL_LIBRARY, ignoresLocalFile = false)
+    override == LocalTitlePlayback.ONLINE_SOURCE -> LocalTitleRouting(LocalLibraryPlaybackPreference.SOURCE_PICKER, ignoresLocalFile = true)
+    onPlay == com.nuvio.app.features.streams.PlayClick.SHOW_SOURCES ->
+        LocalTitleRouting(LocalLibraryPlaybackPreference.SOURCE_PICKER, ignoresLocalFile = false)
+    placement == com.nuvio.app.features.streams.LocalFilesPick.FIRST ->
+        LocalTitleRouting(LocalLibraryPlaybackPreference.LOCAL_LIBRARY, ignoresLocalFile = false)
+    else -> LocalTitleRouting(LocalLibraryPlaybackPreference.SOURCE_PICKER, ignoresLocalFile = true)
+}
+
+/**
  * A per-title override of what a plain click does when the title has a local copy, for a library
  * where only some downloads are meant for local playback and the rest are a backup of a title the
  * user still streams. Absent means the title follows [LocalLibraryPlaybackPreference].

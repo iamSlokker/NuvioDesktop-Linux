@@ -215,6 +215,25 @@ private val ImmersiveHeroBackdropAlignment = BiasAlignment(
     verticalBias = -0.6f,
 )
 
+/** The extra tags each title's genre line first showed, kept so they never change under the reader (see HeroGenreLine). */
+private object HeroLineTagMemory {
+    private const val MAX = 300
+    private val tags = object : LinkedHashMap<String, List<String>>(64, 0.75f, true) {
+        override fun removeEldestEntry(eldest: MutableMap.MutableEntry<String, List<String>>?): Boolean = size > MAX
+    }
+
+    fun getOrPut(key: String, pick: () -> List<String>): List<String> = tags.getOrPut(key, pick)
+}
+
+/** A hero backdrop alignment as CSS object-position, for the controls page's copy of the artwork. */
+private fun heroBackdropCssPosition(alignment: BiasAlignment): String {
+    fun percent(bias: Float) = "${((bias.coerceIn(-1f, 1f) + 1f) * 50f).toInt()}%"
+    return "${percent(alignment.horizontalBias)} ${percent(alignment.verticalBias)}"
+}
+
+/** The hero trailer's crop, biased to the top like [ImmersiveHeroBackdropAlignment] (mpv video-align-y). */
+private const val HERO_TRAILER_CROP_VERTICAL_ALIGN = -0.6f
+
 object HomeHeroPeoplePanelToggleTrigger {
     private val _tokens = MutableSharedFlow<Int>(extraBufferCapacity = 1)
     val tokens: SharedFlow<Int> = _tokens.asSharedFlow()
@@ -544,7 +563,18 @@ fun HomeHeroSection(
         val prefetchSlots = remember { Semaphore(HERO_METADATA_PREFETCH_CONCURRENCY) }
         // Lookups already running, so a restart does not queue a second one for the same title.
         val warmInFlight = remember { mutableSetOf<String>() }
-        LaunchedEffect(metadataTargets, HeroDiscoveryMetadataService.CACHE_VERSION) {
+        val lastMetadataWarmAt = remember { longArrayOf(0L) }
+        val metadataTargetKeys = metadataTargets.map { "${it.type}:${it.id}" }
+        LaunchedEffect(metadataTargetKeys, HeroDiscoveryMetadataService.CACHE_VERSION) {
+            val now = WatchProgressClock.nowEpochMs()
+            val prev = lastMetadataWarmAt[0]
+            lastMetadataWarmAt[0] = now
+            // Debounce only during rapid scrolling so flying past rows does not queue dozens of
+            // uncancellable heroWarmScope lookups (cast, badges, credits, interests, ratings)
+            // and their UI state updates for titles already scrolled past.
+            if (shouldDebounceRapidHeroChange(prev, now, HeroMetadataRapidScrollWindowMs)) {
+                delay(HeroMetadataRapidScrollSettleMs)
+            }
             val settings = MdbListSettingsRepository.snapshot()
             fun launchOnce(tag: String, block: suspend kotlinx.coroutines.CoroutineScope.() -> Unit) {
                 if (!warmInFlight.add(tag)) return
@@ -647,6 +677,13 @@ fun HomeHeroSection(
             HeroCastPortraitPreloader(
                 cast = (castCache.values.flatten() + displayItemsWithCast.flatMap(MetaPreview::cast))
                     .filter { person -> !person.photo.isNullOrBlank() },
+                // One size per mode: immersive shows the People panel's chips and no cast row
+                // (showExtendedMetadata = immersiveMode), every other mode the row.
+                portraitSize = if (immersiveMode) {
+                    IMMERSIVE_HERO_PEOPLE_CHIP_SIZE
+                } else {
+                    heroCastRowPortraitSize(layout.heroHeightScale)
+                },
             )
 
             HorizontalPager(
@@ -939,6 +976,12 @@ private fun HeroBackdropImage(
         framingPriorBias = framingPriorBias,
     )
 }
+
+internal const val HeroMetadataRapidScrollWindowMs = 700L
+internal const val HeroMetadataRapidScrollSettleMs = 350L
+
+internal fun shouldDebounceRapidHeroChange(prevMs: Long, nowMs: Long, windowMs: Long): Boolean =
+    prevMs != 0L && (nowMs - prevMs) < windowMs
 
 /** See the diagnostic in [HeroBackdropImage]. */
 private class HeroBackdropSwapTracker {
@@ -1824,7 +1867,9 @@ private fun DesktopHomeHeroFrame(
                             .graphicsLayer {
                                 // Hide the static backdrop once the trailer has a frame so the
                                 // video blends into the background instead of seaming against it.
-                                alpha = if (heroTrailerReady) 0f else layer.visibility
+                                // Full screen keeps it: the trailer covers it, and the controls page dissolves
+                                // its copy of it into the video, so hiding it here only flashed black.
+                                alpha = if (heroTrailerReady && !heroTrailerFullscreen) 0f else layer.visibility
                                 translationX = -layer.offset * heroWidthPx * HERO_BACKGROUND_PARALLAX
                                 translationY = heroScrollTranslationY
                                 scaleX = heroScrollScale
@@ -1925,6 +1970,22 @@ private fun DesktopHomeHeroFrame(
                     },
                     navDismissEdge = heroTrailerNavDismissEdge,
                     navDismissBandFraction = heroTrailerNavDismissBandFraction,
+                    // The video runs the full width of a box much wider than 16:9, and its lower part fades into
+                    // the shelf: keep the top of the frame, as the still artwork's alignment does, rather than
+                    // cutting heads off for a bottom nobody sees (2026-11-24).
+                    cropVerticalAlign = if (heroTrailerFullscreen) 0f else HERO_TRAILER_CROP_VERTICAL_ALIGN,
+                    // Full screen in one step: the artwork stays up until the video is moving, then dissolves into it
+                    // (the controls page draws the same backdrop over the video and fades it out), with no lights-out
+                    // wait and no black between them (2026-11-24).
+                    revealCoverUrl = if (heroTrailerFullscreen) heroBackdropModel(currentItem).orEmpty() else "",
+                    revealCoverPosition = heroBackdropCssPosition(
+                        when {
+                            immersiveMode -> ImmersiveHeroBackdropAlignment
+                            adaptiveHeroMode -> BiasAlignment(horizontalBias = 0f, verticalBias = adaptiveHeroVerticalBias)
+                            else -> DesktopHeroBackdropAlignment
+                        },
+                    ),
+                    revealDelayFrames = if (heroTrailerFullscreen) 0 else 4,
                     onReady = { heroTrailerSurfaceReady = true },
                     onEnded = {
                         heroTrailerLog.i { "trailer ended for $heroTrailerFocusKey" }
@@ -2347,6 +2408,15 @@ private const val HeroCastPortraitGrowth = 1.15f
 /** Past this the names (bodyLarge from 48dp) start truncating in the capped content column. */
 private val HeroCastPortraitMaxSize = 46.dp
 
+/**
+ * The hero cast row's portrait size; portraits grow with the hero, into the room the raised
+ * content leaves. Shared with [HeroCastPortraitPreloader], whose request has to be this exact size
+ * to land in the memory-cache entry the row then reads (desktop keys card artwork by size).
+ */
+private fun heroCastRowPortraitSize(heroHeightScale: Float): Dp =
+    (HeroCastPortraitSize * heroHeightScale.coerceIn(1f, 1.5f) * HeroCastPortraitGrowth)
+        .coerceIn(HeroCastPortraitSize, HeroCastPortraitMaxSize)
+
 @Composable
 private fun HeroPageIndicatorRow(
     itemCount: Int,
@@ -2558,7 +2628,15 @@ private fun DesktopHeroContentBlock(
         id = item.metadataId,
         releaseDate = item.rawReleaseDate,
     )
-    val ratings = ratingsCache["${item.type}:${item.id}"].orEmpty()
+    // The hero's own cache is filled by an effect, a frame after the line first draws; until then the ratings service's
+    // in-memory cache answers, so the row is there from the first frame and the synopsis does not drop a frame later.
+    val ratings = ratingsCache["${item.type}:${item.id}"] ?: remember(item.type, item.id) {
+        com.nuvio.app.features.mdblist.MdbListMetadataService.cachedRatingsOrNull(
+            meta = com.nuvio.app.features.details.MetaDetails(id = item.id, type = item.type, name = item.name),
+            fallbackItemId = item.id,
+            settings = com.nuvio.app.features.mdblist.MdbListSettingsRepository.snapshot(),
+        )
+    }.orEmpty()
     BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
         // TV Mode hands this block a box of fixed height (a fraction of the viewport) while every row
         // in it is fixed dp, so at a raised UI scale the rows no longer fit. Budget them: the logo slot
@@ -2758,9 +2836,7 @@ private fun DesktopHeroContentBlock(
                     HeroCastRow(
                         cast,
                         onCastClick = onCastClick,
-                        // Portraits grow with the hero too, into the room the raised content leaves.
-                        imageSize = (HeroCastPortraitSize * sizeScale * HeroCastPortraitGrowth)
-                            .coerceIn(HeroCastPortraitSize, HeroCastPortraitMaxSize),
+                        imageSize = heroCastRowPortraitSize(sizeScale),
                     )
                 }
                 Spacer(modifier = Modifier.height(2.dp))
@@ -2790,6 +2866,7 @@ private fun DesktopHeroContentBlock(
                             parts = genreParts,
                             keywords = keywords,
                             interests = interests,
+                            tagKey = "${item.type}:${item.id}",
                             modifier = Modifier.weight(1f, fill = false),
                         )
                     }
@@ -3221,7 +3298,7 @@ private fun HeroProductionRow(
 private fun HeroProductionChip(
     credit: HeroProductionCredit,
     modifier: Modifier = Modifier,
-    imageSize: Dp = 52.dp,
+    imageSize: Dp = IMMERSIVE_HERO_PEOPLE_CHIP_SIZE,
     textFillsWidth: Boolean = true,
     onCastClick: ((HeroCastMember) -> Unit)? = null,
 ) {
@@ -3326,7 +3403,7 @@ private fun HeroCastGrid(
                     HeroCastChip(
                         person = person,
                         modifier = Modifier.weight(1f),
-                        imageSize = 52.dp,
+                        imageSize = IMMERSIVE_HERO_PEOPLE_CHIP_SIZE,
                         onCastClick = onCastClick,
                     )
                 }
@@ -3339,7 +3416,7 @@ private fun HeroCastGrid(
 }
 
 @Composable
-private fun HeroCastPortraitPreloader(cast: List<HeroCastMember>) {
+private fun HeroCastPortraitPreloader(cast: List<HeroCastMember>, portraitSize: Dp) {
     val photoUrls = cast
         .mapNotNull { person -> person.photo?.takeIf(String::isNotBlank) }
         .distinct()
@@ -3348,19 +3425,19 @@ private fun HeroCastPortraitPreloader(cast: List<HeroCastMember>) {
 
     val context = LocalPlatformContext.current
     val density = LocalDensity.current
-    // Both hero layouts use one of these portrait sizes. Match their requests, including DPI,
-    // without retaining hidden image components or decoding the original portrait resolution.
-    val portraitSizes = with(density) { listOf(34.dp.roundToPx(), 52.dp.roundToPx()).distinct() }
-    DisposableEffect(context, photoUrls, portraitSizes) {
+    // Only the size this hero mode draws, including DPI, so its portraits are found in memory.
+    // Preloading both sizes doubled the decodes landing on Home's first frames (48 at once,
+    // 2026-11-24 startup report), and the old 34dp one never matched the row, which has drawn
+    // larger portraits since they started growing with the hero.
+    val portraitPx = with(density) { portraitSize.roundToPx() }
+    DisposableEffect(context, photoUrls, portraitPx) {
         val loader = SingletonImageLoader.get(context)
-        val requests = photoUrls.flatMap { url ->
-            portraitSizes.map { size ->
-                loader.enqueue(ImageRequest.Builder(context)
-                    .data(url)
-                    .scale(Scale.FILL)
-                    .nuvioArtworkRequestSize(size, size)
-                    .build())
-            }
+        val requests = photoUrls.map { url ->
+            loader.enqueue(ImageRequest.Builder(context)
+                .data(url)
+                .scale(Scale.FILL)
+                .nuvioArtworkRequestSize(portraitPx, portraitPx)
+                .build())
         }
         onDispose { requests.forEach { it.dispose() } }
     }
@@ -3761,17 +3838,30 @@ private fun HeroGenreLine(
     parts: List<HeroGenrePart>,
     keywords: List<String>,
     interests: List<ImdbInterest>,
+    /**
+     * The title, for [HeroLineTagMemory]: the extra tags are picked once, from whatever keywords and IMDb interests
+     * are loaded when the line first shows, and kept for that title for the session. Picked again as each source
+     * landed, they changed a moment after appearing (2026-11-24). Null picks them afresh each time.
+     */
+    tagKey: String? = null,
     modifier: Modifier = Modifier,
 ) {
     val genres = parts.mapNotNull { it.genre }
     val card = GenreSubgenres.card(genres, interests, keywords)
     // A couple of the card's tags join the genres on the line (deduplicated against them), right after the last
     // genre and with the same hover, so the most telling ones are seen without hovering.
-    val shownParts = remember(parts, card) {
+    val shownParts = remember(parts, card, tagKey) {
         // Not beside an episode (a Continue watching or Next up item: "S12E7 • Borders and Boundaries"): the line has
         // no room for both, and the tags pushed the episode title into an ellipsis (Nov 16).
         val showsEpisode = parts.any { it.genre == null && HeroEpisodeCode.containsMatchIn(it.text) }
-        val tags = if (showsEpisode) emptyList() else GenreSubgenres.lineTags(card, genres).map { HeroGenrePart(it, genre = it) }
+        val picked = if (tagKey == null) {
+            GenreSubgenres.lineTags(card, genres)
+        } else {
+            // Still deduplicated against the genres shown now, should those have changed since.
+            HeroLineTagMemory.getOrPut(tagKey) { GenreSubgenres.lineTags(card, genres) }
+                .filterNot { tag -> genres.any { it.equals(tag, ignoreCase = true) } }
+        }
+        val tags = if (showsEpisode) emptyList() else picked.map { HeroGenrePart(it, genre = it) }
         val afterGenres = parts.indexOfLast { it.genre != null } + 1
         if (tags.isEmpty() || afterGenres == 0) parts else parts.take(afterGenres) + tags + parts.drop(afterGenres)
     }

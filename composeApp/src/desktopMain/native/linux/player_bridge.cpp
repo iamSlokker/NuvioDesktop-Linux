@@ -1713,6 +1713,31 @@ JNI_METHOD(void, addSubtitleUrl)(JNIEnv *env, jobject, jlong handle, jstring url
         checkMpv(p.subtitleAdds.add(p.mpv, subtitle), "sub-add");
     });
 }
+// Upstream's subtitle drop on the player (NativePlayerController.loadDroppedFiles): the paths the HUD
+// collected (controls_overlay.cpp, "filesDropped") as a JSON array, emptying the queue.
+JNI_METHOD(jstring, takeDroppedFiles)(JNIEnv *env, jobject, jlong handle) {
+    if (handle == 0) return env->NewStringUTF("[]");
+    return withPlayer(env, handle, [&](Player &p) {
+        std::string json = "[";
+        if (p.controls) {
+            for (const auto &path : p.controls->takeDroppedFiles()) {
+                if (json.size() > 1) json += ',';
+                json += jsonString(path);
+            }
+        }
+        json += ']';
+        return env->NewStringUTF(json.c_str());
+    });
+}
+// A subtitle file dropped on the player: added and selected the way an addon subtitle is (subtitle_add.h),
+// so the last choice still wins; mpv lists it with the other external tracks, under its file name.
+JNI_METHOD(void, addLocalSubtitleFile)(JNIEnv *env, jobject, jlong handle, jstring path) {
+    withPlayer(env, handle, [&](Player &p) {
+        std::string file = text(env, path);
+        if (file.empty()) return;
+        checkMpv(p.subtitleAdds.add(p.mpv, file), "sub-add");
+    });
+}
 JNI_METHOD(void, clearExternalSubtitles)(JNIEnv *env, jobject, jlong handle) {
     withPlayer(env, handle, [&](Player &p) {
         p.subtitleAdds.abandon(p.mpv, "no");

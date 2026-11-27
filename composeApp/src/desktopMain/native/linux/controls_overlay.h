@@ -5,6 +5,7 @@
 #include <functional>
 #include <memory>
 #include <string>
+#include <vector>
 #include "pip_hud_geometry.h"
 
 // Linux/X11 only. GTK types and its thread stay outside the shared JNI contract.
@@ -26,6 +27,8 @@ public:
     ~LinuxControlsOverlay();
     void updateControls(const std::string &json);
     void runJavaScript(const std::string &script);
+    // Paths of the files dropped on the HUD since the last call (controls.js "filesDropped").
+    std::vector<std::string> takeDroppedFiles();
     void deliverSeekThumbnail(int64_t positionMs, const std::string &dataUrl,
         std::shared_ptr<std::atomic<uint64_t>> generation, uint64_t request);
     void setCursorHidden(bool hidden);
