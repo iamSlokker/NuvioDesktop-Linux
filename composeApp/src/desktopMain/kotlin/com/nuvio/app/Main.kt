@@ -25,7 +25,6 @@ import androidx.compose.ui.input.key.onKeyEvent
 import androidx.compose.ui.input.key.type
 import androidx.compose.ui.draganddrop.DragAndDropEvent
 import androidx.compose.ui.draganddrop.DragAndDropTarget
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.WindowPlacement
 import androidx.compose.ui.window.WindowPosition
@@ -75,6 +74,7 @@ import com.nuvio.app.features.player.desktop.LinuxPictureInPictureTransition
 import com.nuvio.app.features.player.desktop.DesktopWindowModeStorage
 import com.nuvio.app.features.player.desktop.applyNativeBorderlessFullscreen
 import com.nuvio.app.features.player.desktop.applyNativeDesktopWindowChrome
+import com.nuvio.app.features.player.desktop.applyNativeWindowCloaked
 import com.nuvio.app.features.player.desktop.applyNativeCompactPlayerWindow
 import com.nuvio.app.features.player.desktop.desktopAppFullscreenState
 import com.nuvio.app.features.player.desktop.desktopPictureInPictureState
@@ -86,11 +86,15 @@ import com.nuvio.app.features.player.desktop.repairLinuxWindowedSizeAfterFullscr
 import com.nuvio.app.features.player.desktop.setDesktopPictureInPicture
 import com.nuvio.app.features.player.desktop.suspendNativeBorderlessFullscreen
 import com.nuvio.app.features.player.desktop.toggleDesktopAppFullscreen
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import androidx.compose.runtime.withFrameNanos
+import kotlin.math.abs
 import java.awt.AWTEvent
 import java.awt.Color as AwtColor
 import java.awt.EventQueue
@@ -321,29 +325,58 @@ private val NuvioDesktopNativeBackground = AwtColor(0x0D, 0x0D, 0x0D)
 private const val NuvioDesktopIconPath = "icons/nuvio-app-icon.png"
 private const val MacosDarkAquaAppearance = "NSAppearanceNameDarkAqua"
 
-private fun installDesktopTray(
+// fork:linux - a StatusNotifierItem where the desktop has a host for it; the AWT (XEmbed) tray
+// otherwise. Run off the UI thread like prepareDesktopTray: it decodes the icon sizes too.
+private fun installLinuxStatusNotifierTray(
     window: java.awt.Window,
     onExit: () -> Unit,
-    onAvailableChanged: (Boolean) -> Unit = {},
+    onAvailableChanged: (Boolean) -> Unit,
 ): (() -> Unit)? {
-    // fork:linux - a StatusNotifierItem where the desktop has a host for it; XEmbed below otherwise.
-    if (DesktopHostOs.current == DesktopHostOs.LINUX) {
-        Thread.currentThread().contextClassLoader.getResource(NuvioDesktopIconPath)?.let { url ->
-            com.nuvio.app.core.ui.LinuxStatusNotifierTray.install(
-                window, url, "Nuvio HTPC", localizedString(Res.string.tray_open_nuvio),
-                "Nuvio ${AppVersionPolicy.displayVersionName}", "Exit", onExit, onAvailableChanged,
-            )
-        }?.let { return it }
-    }
+    if (DesktopHostOs.current != DesktopHostOs.LINUX) return null
+    val url = Thread.currentThread().contextClassLoader.getResource(NuvioDesktopIconPath) ?: return null
+    return com.nuvio.app.core.ui.LinuxStatusNotifierTray.install(
+        window, url, "Nuvio HTPC", localizedString(Res.string.tray_open_nuvio),
+        "Nuvio ${AppVersionPolicy.displayVersionName}", "Exit", onExit, onAvailableChanged,
+    )
+}
+
+/** What the tray needs that is slow to get: the decoded icon and the localized menu label. */
+private class PreparedDesktopTray(
+    val tray: SystemTray,
+    val iconUrl: java.net.URL,
+    val renderedIcon: java.awt.Image?,
+    val openLabel: String,
+)
+
+/**
+ * Off the UI thread: decoding the 1080 px icon master into tray-sized variants and resolving the
+ * menu label (a blocking resource read) both ran in the tray's DisposableEffect on the UI thread,
+ * during the window's first frames (2026-11-24 startup report).
+ */
+private fun prepareDesktopTray(): PreparedDesktopTray? {
     if (!SystemTray.isSupported()) return null
     val iconUrl = Thread.currentThread().contextClassLoader.getResource(NuvioDesktopIconPath)
         ?: return null
     val tray = SystemTray.getSystemTray()
     // Pre-rendered variants beat isImageAutoSize, which scales the 1080px master down to 16px with
     // the toolkit's fast path and leaves the icon visibly aliased in the tray.
-    val renderedIcon = loadDesktopTrayIconImage(iconUrl, tray.trayIconSize)
+    return PreparedDesktopTray(
+        tray = tray,
+        iconUrl = iconUrl,
+        renderedIcon = loadDesktopTrayIconImage(iconUrl, tray.trayIconSize),
+        openLabel = localizedString(Res.string.tray_open_nuvio),
+    )
+}
+
+private fun installDesktopTray(
+    window: java.awt.Window,
+    onExit: () -> Unit,
+    prepared: PreparedDesktopTray,
+): (() -> Unit)? {
+    val tray = prepared.tray
+    val renderedIcon = prepared.renderedIcon
     val trayIcon = TrayIcon(
-        renderedIcon ?: Toolkit.getDefaultToolkit().getImage(iconUrl),
+        renderedIcon ?: Toolkit.getDefaultToolkit().getImage(prepared.iconUrl),
         "Nuvio HTPC",
     ).apply {
         isImageAutoSize = renderedIcon == null
@@ -362,7 +395,7 @@ private fun installDesktopTray(
     // No PopupMenu is attached, so the right-click reaches us as a plain mouse event and the menu
     // is ours to draw. See DesktopTrayMenu for why the native one had to go.
     val menuEntries = listOf(
-        DesktopTrayMenuEntry.Action(localizedString(Res.string.tray_open_nuvio)) { restoreWindow() },
+        DesktopTrayMenuEntry.Action(prepared.openLabel) { restoreWindow() },
         DesktopTrayMenuEntry.Separator,
         DesktopTrayMenuEntry.Info("Nuvio ${AppVersionPolicy.displayVersionName}"),
         DesktopTrayMenuEntry.Separator,
@@ -516,6 +549,7 @@ fun main(args: Array<String>) {
     // Now that this copy owns the data directory and before any store is read: a settings import
     // staged by the previous session lands here (see applyPendingSettingsImport).
     com.nuvio.app.features.settings.applyPendingSettingsImport(com.nuvio.app.core.storage.DesktopStorage.rootDir)
+    com.nuvio.app.core.storage.DesktopStorage.installExitFlush()
     // Not from a nativeSmoke launch: it would point the user's nuvio:// links at the build folder.
     if (!com.nuvio.app.core.build.NativeImageSupport.selfTestRequested) DesktopUrlScheme.registerInBackground()
     if (!com.nuvio.app.core.build.NativeImageSupport.selfTestRequested) com.nuvio.app.features.player.desktop.LinuxAppImageHudSandbox.checkInBackground()
@@ -544,7 +578,24 @@ fun main(args: Array<String>) {
     // A launch without a usable class archive builds one in a short UI-less run and restarts,
     // instead of being the user's slow session; see AppClassArchiveTraining. Returns at once
     // otherwise.
-    com.nuvio.app.core.build.AppClassArchiveTraining.runIfNeeded()    // Before any window exists: Windows caches the process AppUserModelID early, and the media
+    com.nuvio.app.core.build.AppClassArchiveTraining.runIfNeeded()
+    // Opens the image disk cache now, off the UI thread, so the first poster does not pay for it.
+    // First of the startup steps: replaying its journal takes ~1.5 s in the native image and
+    // otherwise finishes just as Home asks for its first poster.
+    desktopStartupStep("image disk cache open") {
+        com.nuvio.app.core.ui.ImageDiskCacheWarmup.start { com.nuvio.app.core.ui.buildArtworkDiskCache() }
+    }
+    // Prewarm property stores and overlap auth/profile/Home disk restore with Window creation
+    // (~430 ms) so Home-critical data is ready in memory before the first Compose frame lands.
+    desktopStartupStep("store prewarm start") {
+        com.nuvio.app.core.storage.DesktopStorage.prewarmStoresAsync()
+    }
+    if (!smokeLaunch) {
+        desktopStartupStep("early app bootstrap") {
+            com.nuvio.app.StartupBootstrap.start()
+        }
+    }
+    // Before any window exists: Windows caches the process AppUserModelID early, and the media
     // session created later is labelled "Unknown app" without it.
     desktopStartupStep("app identity") {
         runCatching { com.nuvio.app.features.player.desktop.registerDesktopAppIdentity() }
@@ -554,6 +605,7 @@ fun main(args: Array<String>) {
     desktopStartupStep("startup class preload") { com.nuvio.app.core.build.StartupClassPreloader.start() }    // Same idea for the one native library Home's first composition loads: see warmPhysicalMemoryProbe.
     desktopStartupStep("memory probe warm") { com.nuvio.app.core.ui.warmPhysicalMemoryProbe() }
     desktopStartupStep("configure renderer") { configureDesktopRenderer() }
+    desktopStartupStep("configure chrome") { configureDesktopChrome() }
     limitSwingBackBuffer()
     com.nuvio.app.core.ui.IdleHeapCollector.start()
     // Before the first Skia layer exists: the vsync properties this flips are read at layer
@@ -564,15 +616,14 @@ fun main(args: Array<String>) {
     System.out.println(
         "Info: (DesktopStartup) " + com.nuvio.app.core.ui.FrameProfiler.startIfBenching()
     )
-    desktopStartupStep("configure chrome") { configureDesktopChrome() }
-    desktopStartupStep("subtitle font warm request") { com.nuvio.app.features.player.warmSubtitleFontCache() }
+    // After Home rather than now: AWT's font scan competes with the window coming up, and a player
+    // opened before it finishes simply shows the default font until it does (SubtitleFonts).
+    desktopStartupStep("subtitle font warm request") {
+        com.nuvio.app.core.build.StartupReadySignal.onHomeReady { com.nuvio.app.features.player.warmSubtitleFontCache() }
+    }
     desktopStartupStep("app font warm request") { com.nuvio.app.core.ui.warmSystemFontCache() }
     // Idle until Home has rows and the user opted in; see ArtworkPrewarmer.
     desktopStartupStep("artwork prewarm") { com.nuvio.app.core.ui.ArtworkPrewarmer.start() }
-    // Opens the image disk cache now, off the UI thread, so the first poster does not pay for it.
-    desktopStartupStep("image disk cache open") {
-        com.nuvio.app.core.ui.ImageDiskCacheWarmup.start { com.nuvio.app.core.ui.buildArtworkDiskCache() }
-    }
     System.out.println("Info: (DesktopStartup) entering Compose application")
 
     application {
@@ -616,6 +667,12 @@ fun main(args: Array<String>) {
         val restoreWindowPlacement = remember { mutableStateOf(WindowPlacement.Floating) }
         val isBorderlessFullscreen = remember { mutableStateOf(false) }
         val isWindowsHost = remember { DesktopHostOs.current == DesktopHostOs.WINDOWS }
+        remember(isWindowsHost, smokePlayerUrl) {
+            if (isWindowsHost && smokePlayerUrl == null) {
+                com.nuvio.app.StartupWindowRevealGate.arm()
+            }
+            Unit
+        }
         val closeToTray by remember {
             DesktopWindowStartupPreference.ensureLoaded()
             DesktopWindowStartupPreference.closeToTray
@@ -699,7 +756,10 @@ fun main(args: Array<String>) {
             },
             title = if (smokePlayerUrl == null) "Nuvio HTPC" else "Nuvio Player Smoke",
             state = windowState,
-            icon = painterResource(NuvioDesktopIconPath),
+            // Window/taskbar icons are loaded off the UI thread below via loadDesktopWindowIconImages;
+            // omitting the synchronous painterResource avoids a main-thread PNG decode + redundant
+            // WWindowPeer.setIconImagesData during startup.
+            icon = null,
             // An arrow no control took (often because the control holding focus left the screen) is handled by the
             // focus router's fallback in the key listener below (KeyLayers): Music and Settings register there.
         ) {
@@ -722,6 +782,47 @@ fun main(args: Array<String>) {
                     composeDefault?.onException(error) ?: throw error
                 }
             }
+            val startupWindowUncloaked = remember(window) { java.util.concurrent.atomic.AtomicBoolean(false) }
+            val startupWindowCloaked = remember(window) { java.util.concurrent.atomic.AtomicBoolean(false) }
+            val cloakStartupWindowIfPossible = remember(window, isWindowsHost) {
+                {
+                    if (isWindowsHost &&
+                        !startupWindowUncloaked.get() &&
+                        !startupWindowCloaked.get() &&
+                        window.isDisplayable
+                    ) {
+                        // Apply dark DWM chrome and cloak BEFORE ShowWindow so DWM never composites
+                        // an unpainted Swing/GDI surface, white title bar, or windowed-to-fullscreen jump.
+                        applyNativeDesktopWindowChrome(window)
+                        if (applyNativeWindowCloaked(window, true)) {
+                            startupWindowCloaked.set(true)
+                            System.out.println(
+                                "Info: (DesktopStartup) startup window cloaked after " +
+                                    "${System.currentTimeMillis() - desktopStartupStartedAt}ms " +
+                                    "(showing=${window.isShowing})"
+                            )
+                        }
+                    }
+                }
+            }
+            val uncloakStartupWindowIfNeeded = remember(window, isWindowsHost) {
+                { reason: String ->
+                    startupWindowUncloaked.set(true)
+                    if (isWindowsHost && startupWindowCloaked.compareAndSet(true, false)) {
+                        applyNativeWindowCloaked(window, false)
+                        System.out.println(
+                            "Info: (DesktopStartup) startup window uncloaked ($reason) after " +
+                                "${System.currentTimeMillis() - desktopStartupStartedAt}ms"
+                        )
+                    }
+                    com.nuvio.app.StartupWindowRevealGate.release()
+                }
+            }
+            remember(window) {
+                applyDarkDesktopWindowBackgrounds(window)
+                cloakStartupWindowIfPossible()
+                Unit
+            }
             val windowSideEffectLogged = remember { java.util.concurrent.atomic.AtomicBoolean(false) }
             SideEffect {
                 desktopWindow.value = window
@@ -730,12 +831,25 @@ fun main(args: Array<String>) {
                         "Info: (DesktopStartup) Window side effect after " +
                             "${System.currentTimeMillis() - desktopStartupStartedAt}ms"
                     )
-                    com.nuvio.app.core.storage.DesktopStorage.prewarmStoresAsync()
                 }
-                window.background = NuvioDesktopNativeBackground
-                window.rootPane.background = NuvioDesktopNativeBackground
-                window.contentPane.background = NuvioDesktopNativeBackground
-                (window.contentPane as? JComponent)?.isOpaque = true
+                applyDarkDesktopWindowBackgrounds(window)
+                cloakStartupWindowIfPossible()
+            }
+            DisposableEffect(window, isWindowsHost) {
+                val cloakHierarchyListener =
+                    if (isWindowsHost && !startupWindowCloaked.get() && !startupWindowUncloaked.get()) {
+                        java.awt.event.HierarchyListener { event ->
+                            if ((event.changeFlags and java.awt.event.HierarchyEvent.DISPLAYABILITY_CHANGED.toLong()) != 0L) {
+                                cloakStartupWindowIfPossible()
+                            }
+                        }.also { window.rootPane.addHierarchyListener(it) }
+                    } else {
+                        null
+                    }
+                onDispose {
+                    cloakHierarchyListener?.let(window.rootPane::removeHierarchyListener)
+                    uncloakStartupWindowIfNeeded("dispose")
+                }
             }
             // Replaces the single 192dp render Compose gave AWT for `icon` with one image per size
             // the shell asks for, cropped to the glyph like the tray icon - otherwise the taskbar
@@ -752,6 +866,7 @@ fun main(args: Array<String>) {
             DisposableEffect(window) {
                 DesktopSingleInstance.onActivate = {
                     EventQueue.invokeLater {
+                        uncloakStartupWindowIfNeeded("single-instance-activate")
                         window.isVisible = true
                         if (window.extendedState and Frame.ICONIFIED != 0) {
                             window.extendedState = Frame.NORMAL
@@ -763,14 +878,31 @@ fun main(args: Array<String>) {
                 }
                 onDispose { DesktopSingleInstance.onActivate = null }
             }
-            DisposableEffect(window, closeToTray) {
-                val uninstallTray = if (closeToTray) {
-                    installDesktopTray(window, exitDesktopApplication) { trayInstalled.value = it }
-                } else {
-                    null
+            LaunchedEffect(window, closeToTray) {
+                if (!closeToTray) {
+                    trayInstalled.value = false
+                    return@LaunchedEffect
+                }
+                // Set inside the IO block, so a cancel while it runs still reaches the finally below.
+                var statusNotifier: (() -> Unit)? = null
+                try {
+                    withContext(Dispatchers.IO) {
+                        statusNotifier = runCatching {
+                            installLinuxStatusNotifierTray(window, exitDesktopApplication) { trayInstalled.value = it }
+                        }.getOrNull()
+                    }
+                } catch (cancelled: kotlinx.coroutines.CancellationException) {
+                    statusNotifier?.invoke()
+                    throw cancelled
+                }
+                val uninstallTray = statusNotifier ?: run {
+                    val prepared = withContext(Dispatchers.IO) { runCatching { prepareDesktopTray() }.getOrNull() }
+                    prepared?.let { installDesktopTray(window, exitDesktopApplication, it) }
                 }
                 trayInstalled.value = uninstallTray != null
-                onDispose {
+                try {
+                    kotlinx.coroutines.awaitCancellation()
+                } finally {
                     trayInstalled.value = false
                     uninstallTray?.invoke()
                 }
@@ -941,7 +1073,7 @@ fun main(args: Array<String>) {
                     when (event.id) {
                         KeyEvent.KEY_PRESSED -> {
                             val keyCode = (event as KeyEvent).keyCode
-                            if (keyCode in KEYBOARD_NAVIGATION_KEYS) com.nuvio.app.core.ui.KeyboardInputMode.active = true
+                            if (isKeyboardNavigationPress(event as KeyEvent)) com.nuvio.app.core.ui.KeyboardInputMode.active = true
                             // Any other key (a hotkey) that reached nobody because nothing held focus: put focus back
                             // on the screen on top and send it again (KeyLayers). Navigation keys are handled below.
                             if (
@@ -1107,41 +1239,94 @@ fun main(args: Array<String>) {
             }
 
             LaunchedEffect(window) {
-                if (startWindowed) {
-                    if (isWindowsHost) {
-                        withContext(Dispatchers.IO) { runCatching { ensureNativePlayerBridgeLoaded() } }
-                        var shownWaitMs = 0
-                        while (!window.isShowing && shownWaitMs < 10_000) {
-                            delay(16)
-                            shownWaitMs += 16
-                        }
-                        if (window.isShowing) applyNativeDesktopWindowChrome(window)
-                    }
-                    desktopAppFullscreenState.value = false
-                    return@LaunchedEffect
-                }
                 if (!isWindowsHost) {
-                    delay(400)
-                    toggleDesktopAppFullscreen(window)
+                    if (startWindowed) {
+                        desktopAppFullscreenState.value = false
+                    } else {
+                        delay(400)
+                        toggleDesktopAppFullscreen(window)
+                    }
                     return@LaunchedEffect
                 }
-                // Load the bridge off the AWT event thread (warmed from main(), so this is
-                // usually already done), then wait for Compose to actually show the window.
-                // Native styling must only ever touch a showing window: applying it pre-show
-                // desyncs AWT's own show/bounds bookkeeping and breaks activation/focus.
-                withContext(Dispatchers.IO) { runCatching { ensureNativePlayerBridgeLoaded() } }
-                var shownWaitMs = 0
-                while (!window.isShowing && shownWaitMs < 10_000) {
-                    delay(16)
-                    shownWaitMs += 16
+                // Hard safety net: never leave the window cloaked even if startup stalls.
+                val safetyUncloakJob = launch {
+                    delay(2_000)
+                    uncloakStartupWindowIfNeeded("safety-timeout")
                 }
-                if (window.isShowing) {
-                    desktopStartupStep("apply startup borderless fullscreen") {
-                        applyNativeDesktopWindowChrome(window)
-                        applyNativeBorderlessFullscreen(window, true)
-                        isBorderlessFullscreen.value = true
-                        desktopAppFullscreenState.value = true
+                try {
+                    // Load the bridge off the AWT event thread (warmed from main(), so this is
+                    // usually already done), then wait for Compose to actually show the window.
+                    // Native styling must only ever touch a showing window: applying it pre-show
+                    // desyncs AWT's own show/bounds bookkeeping and breaks activation/focus.
+                    withContext(Dispatchers.IO) { runCatching { ensureNativePlayerBridgeLoaded() } }
+                    cloakStartupWindowIfPossible()
+
+                    if (!window.isShowing) {
+                        val shown = CompletableDeferred<Unit>()
+                        val listener = object : java.awt.event.ComponentAdapter() {
+                            override fun componentShown(e: java.awt.event.ComponentEvent?) {
+                                shown.complete(Unit)
+                            }
+                        }
+                        window.addComponentListener(listener)
+                        try {
+                            if (window.isShowing) {
+                                shown.complete(Unit)
+                            } else {
+                                withTimeoutOrNull(10_000) {
+                                    while (!window.isShowing) {
+                                        withTimeoutOrNull(50) { shown.await() }
+                                    }
+                                }
+                            }
+                        } finally {
+                            window.removeComponentListener(listener)
+                        }
                     }
+
+                    if (window.isShowing) {
+                        applyDarkDesktopWindowBackgrounds(window)
+                        if (startWindowed) {
+                            applyNativeDesktopWindowChrome(window)
+                            desktopAppFullscreenState.value = false
+                            // Wait for Skiko to present the first AppLaunchOverlay frames before uncloaking.
+                            withFrameNanos { }
+                            withFrameNanos { }
+                        } else {
+                            desktopStartupStep("apply startup borderless fullscreen") {
+                                applyNativeDesktopWindowChrome(window)
+                                applyNativeBorderlessFullscreen(window, true)
+                                isBorderlessFullscreen.value = true
+                                desktopAppFullscreenState.value = true
+                            }
+                            // Wait for SWP_ASYNCWINDOWPOS + DesktopBorderlessRootPaneFix to settle at
+                            // full-monitor bounds and Skiko to present 2 AppLaunchOverlay frames into
+                            // the final fullscreen surface before uncloaking.
+                            val settleDeadlineNs = System.nanoTime() + 400_000_000L
+                            var settledFrames = 0
+                            while (settledFrames < 2 && System.nanoTime() < settleDeadlineNs) {
+                                withFrameNanos { }
+                                val rp = window.rootPane.bounds
+                                val monitor = window.graphicsConfiguration?.bounds
+                                val fillsWindow = rp.x == 0 && rp.y == 0 &&
+                                    rp.width == window.width && rp.height == window.height &&
+                                    window.width > 0 && window.height > 0
+                                val matchesMonitor = monitor == null ||
+                                    (abs(window.width - monitor.width) <= 2 && abs(window.height - monitor.height) <= 2)
+                                if (fillsWindow && matchesMonitor) {
+                                    settledFrames++
+                                } else {
+                                    settledFrames = 0
+                                }
+                            }
+                            if (settledFrames == 0) {
+                                withFrameNanos { }
+                            }
+                        }
+                    }
+                } finally {
+                    safetyUncloakJob.cancel()
+                    uncloakStartupWindowIfNeeded(if (startWindowed) "windowed-ready" else "fullscreen-ready")
                 }
             }
 
@@ -1359,13 +1544,9 @@ fun main(args: Array<String>) {
     // between the user and the process going away.
     runBlocking {
         withTimeoutOrNull(CACHE_FLUSH_TIMEOUT_MS) {
-            runCatching { HeroCastMetadataService.flushPendingWrites() }
-            runCatching { MdbListMetadataService.flushPendingWrites() }
-            runCatching { com.nuvio.app.features.details.LightweightMetaDiskCache.flushPendingWrites() }
-            runCatching { com.nuvio.app.features.home.HeroBundleCache.flushPendingWrites() }
-            runCatching { com.nuvio.app.features.metadata.AnimeArtworkDiskCache.flushPendingWrites() }
-            runCatching { com.nuvio.app.features.details.filler.AnimeFillerRepository.flushPendingWrites() }
-            runCatching { com.nuvio.app.features.streams.CwStreamCache.flushPendingWrites() }
+            // Every batched cache that has pending writes (the shutdown hook does the same for exit
+            // paths that never reach this line).
+            runCatching { com.nuvio.app.core.storage.CoalescingCachePersister.flushAll() }
         }
     }
     // Home settings are encoded off the UI thread now; a change made just before exit is written
@@ -1390,6 +1571,34 @@ private fun configureDesktopChrome() {
     if (System.getProperty("os.name").contains("mac", ignoreCase = true)) {
         System.setProperty("apple.awt.application.appearance", MacosDarkAquaAppearance)
     }
+    if (DesktopHostOs.current == DesktopHostOs.WINDOWS) {
+        // Prevent AWT's native WComponentPeer from GDI-erasing the client area with the default
+        // white/light-gray brush on WM_ERASEBKGND during window show and fullscreen resize.
+        System.setProperty("sun.awt.noerasebackground", "true")
+    }
+}
+
+private fun applyDarkDesktopWindowBackgrounds(window: java.awt.Window) {
+    window.background = NuvioDesktopNativeBackground
+    val rootPane = (window as? javax.swing.RootPaneContainer)?.rootPane ?: return
+    rootPane.background = NuvioDesktopNativeBackground
+    rootPane.isOpaque = true
+    rootPane.layeredPane?.background = NuvioDesktopNativeBackground
+    rootPane.glassPane?.background = NuvioDesktopNativeBackground
+    rootPane.contentPane?.let { content ->
+        content.background = NuvioDesktopNativeBackground
+        (content as? JComponent)?.isOpaque = true
+    }
+    fun darkenChildren(container: java.awt.Container) {
+        for (i in 0 until container.componentCount) {
+            val child = container.getComponent(i)
+            if (child.background != NuvioDesktopNativeBackground) {
+                child.background = NuvioDesktopNativeBackground
+            }
+            if (child is java.awt.Container) darkenChildren(child)
+        }
+    }
+    darkenChildren(rootPane)
 }
 
 // Selects the Compose/Skiko UI graphics backend from the persisted renderer setting. Skiko
@@ -1530,3 +1739,17 @@ private val KEYBOARD_NAVIGATION_KEYS = setOf(
     KeyEvent.VK_UP, KeyEvent.VK_DOWN, KeyEvent.VK_LEFT, KeyEvent.VK_RIGHT,
     KeyEvent.VK_TAB, KeyEvent.VK_ENTER, KeyEvent.VK_PAGE_UP, KeyEvent.VK_PAGE_DOWN, KeyEvent.VK_HOME, KeyEvent.VK_END,
 )
+
+private val WASD_KEYS = setOf(KeyEvent.VK_W, KeyEvent.VK_A, KeyEvent.VK_S, KeyEvent.VK_D)
+
+/**
+ * A key that moves keyboard focus, so focus rings should show. With WASD navigation on, W/A/S/D outside a text field
+ * count as the arrows; before 2026-11-23 they moved focus but left the rings hidden (Settings showed no focus at all).
+ */
+private fun isKeyboardNavigationPress(event: KeyEvent): Boolean {
+    if (event.keyCode in KEYBOARD_NAVIGATION_KEYS) return true
+    return event.keyCode in WASD_KEYS &&
+        com.nuvio.app.core.ui.WasdNavigation.enabled &&
+        !event.isControlDown && !event.isAltDown && !event.isMetaDown &&
+        !TextInputFocusTracker.active.value
+}

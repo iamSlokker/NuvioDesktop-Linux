@@ -54,8 +54,12 @@ internal class HighQualityBitmapDecoder(
 
             val nothingToReduce = targetWidth >= encoded.width && targetHeight >= encoded.height
             val jpegScaled = if (nothingToReduce) null else decodeJpegEighths(bytes, targetWidth, targetHeight)
+            val maxHeroWidth = ImageCacheSettingsRepository.settings.value.backdropResolution.maxWidthPx
+            // Backdrop Resolution governs hero backdrops only; other artwork keeps its own sizing.
+            val cappedBelowSource = maxHeroWidth != null && options.size.isHeroArtworkSize() &&
+                encoded.width > maxHeroWidth && targetWidth < encoded.width
             val keepSourceSize = nothingToReduce ||
-                keepsSourceSizeForGpu(encoded.width, encoded.height, targetWidth, targetHeight)
+                (!cappedBelowSource && keepsSourceSizeForGpu(encoded.width, encoded.height, targetWidth, targetHeight))
             val bitmap = if (jpegScaled != null) {
                 if (keepsSourceSizeForGpu(jpegScaled.width, jpegScaled.height, targetWidth, targetHeight)) {
                     jpegScaled

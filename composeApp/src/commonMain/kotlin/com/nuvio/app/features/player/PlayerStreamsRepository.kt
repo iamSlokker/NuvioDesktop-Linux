@@ -9,6 +9,7 @@ import com.nuvio.app.features.addons.enabledAddons
 import com.nuvio.app.features.addons.httpGetText
 import com.nuvio.app.features.debrid.DebridSettingsRepository
 import com.nuvio.app.features.debrid.DebridStreamPresentation
+import com.nuvio.app.features.streams.PlaybackSources
 import com.nuvio.app.features.streams.StreamScoreContexts
 import com.nuvio.app.features.streams.StreamScoreRepository
 import com.nuvio.app.features.streams.StreamScoring
@@ -355,7 +356,8 @@ object PlayerStreamsRepository {
         val installedAddonOrder = streamAddons.map { it.addonName }
         // The local file rides along as an already-loaded group next to the addon results, so
         // episode switching still offers it even when scrapers are also in play.
-        val initialGroups = listOfNotNull(localGroup) + StreamAutoPlaySelector.orderAddonStreams(streamAddons.map { addon ->
+        // The local file rides along at the local files row's place in Source priority.
+        val initialGroups = PlaybackSources.orderAddonStreams(listOfNotNull(localGroup) + streamAddons.map { addon ->
             AddonStreamGroup(
                 addonName = addon.addonName,
                 addonId = addon.addonId,
@@ -436,7 +438,7 @@ object PlayerStreamsRepository {
 
             fun publishStreamGroup(group: AddonStreamGroup) {
                 stateFlow.update { current ->
-                    val updated = StreamAutoPlaySelector.orderAddonStreams(
+                    val updated = PlaybackSources.orderAddonStreams(
                         groups = current.groups.map { currentGroup ->
                             if (currentGroup.addonId == group.addonId) group else currentGroup
                         },
@@ -697,7 +699,7 @@ object PlayerStreamsRepository {
                         }
 
                         stateFlow.update { current ->
-                            val updated = StreamAutoPlaySelector.orderAddonStreams(
+                            val updated = PlaybackSources.orderAddonStreams(
                                 groups = current.groups.map { group ->
                                     if (group.addonId != completion.addonId) {
                                         group

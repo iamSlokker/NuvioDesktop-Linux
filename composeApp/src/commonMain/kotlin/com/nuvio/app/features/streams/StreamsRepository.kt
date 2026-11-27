@@ -18,6 +18,7 @@ import com.nuvio.app.features.player.PlaybackStartTrace
 import com.nuvio.app.features.player.PlayerSettingsRepository
 import com.nuvio.app.features.plugins.PluginRepository
 import com.nuvio.app.features.plugins.PluginsUiState
+import com.nuvio.app.features.downloads.DownloadsRepository
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.currentCoroutineContext
@@ -36,6 +37,7 @@ import nuvio.composeapp.generated.resources.*
 import org.jetbrains.compose.resources.getString
 import kotlinx.coroutines.async
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 object StreamsRepository {
     private const val LOCAL_LIBRARY_GROUP_ID = "local-library"
@@ -187,7 +189,11 @@ object StreamsRepository {
         val streamBadgeRules = StreamBadgeSettingsRepository.snapshot()
         currentCoroutineContext().ensureActive()
         PlaybackStartTrace.markPendingOrActive("streamsPrepare:settings")
-        val localStreams = MetaDetailsRepository.findLocalStreams(effectiveVideoId)
+        // A completed download is a local copy too: listed (and picked at the local files row's place) when the
+        // library has no file for this title. A click that plays local files first opened it before this point.
+        val localStreams = MetaDetailsRepository.findLocalStreams(effectiveVideoId).ifEmpty {
+            if (preferLocalStreams) emptyList() else downloadedStreams(parentMetaId, season, episode, effectiveVideoId)
+        }
         // Media servers (upstream's servers feature): one group per connection that can serve this
         // title, loaded alongside the addons; a server set to "list first" goes on top.
         val serverSources = com.nuvio.app.features.servers.ServerStreams.sources(
@@ -231,29 +237,22 @@ object StreamsRepository {
         // Scoring turns any automatic pick into a best-score pick; see StreamAutoPlayPolicy.
         // fork:live-tv-on-demand - a play armed to pick its own source does so even with the picker set.
         val forcedAuto = !manualSelection && StreamAutoPlayOverride.take(videoId, effectiveVideoId)
-        val autoPlayMode = StreamAutoPlayPolicy.effectiveMode(playerSettings.streamAutoPlayMode, scoreProfile).let { mode ->
-            if (forcedAuto) StreamAutoPlayOverride.modeFor(mode, StreamAutoPlayPolicy.isRegexSelectionConfigured(playerSettings.streamAutoPlayRegex)) else mode
-        }
-        val isAutoPlayEnabled = !manualSelection && autoPlayMode != StreamAutoPlayMode.MANUAL &&
-            !(autoPlayMode == StreamAutoPlayMode.REGEX_MATCH &&
-                !StreamAutoPlayPolicy.isRegexSelectionConfigured(playerSettings.streamAutoPlayRegex))
-
-        // Look up persisted binge group when both settings are enabled, unless the score profile is
-        // set to override binge affinity — every downstream use here keys off this being non-null, so
-        // clearing it is all it takes to hand the pick back to the scored order.
-        val persistedBingeGroup = if (
-            playerSettings.streamAutoPlayPreferBingeGroup &&
-            playerSettings.streamAutoPlayReuseBingeGroup &&
-            !StreamAutoPlayPolicy.scoreOverridesBingeGroup(autoPlayMode, scoreProfile)
-        ) {
-            parentMetaId?.let { BingeGroupCacheRepository.get(it) }
-        } else null
-        // The release watched last within that group (upstream d2cc0fb8a), aimed at this episode in
-        // the numbering filenames use, so autoplay picks the same release rather than any row that
-        // happens to share the group.
-        val persistedRelease = if (persistedBingeGroup != null) {
-            parentMetaId?.let { BingeGroupCacheRepository.releaseHint(it, season, episode) }
-        } else null
+        // Every rule a first click picks by (scoring, Live TV's forced pick, the remembered binge group): PlaybackPick.
+        val pickSettings = PlaybackPickSettingsRepository.current
+        val firstPlayPick = PlaybackPick.firstPlay(
+            settings = pickSettings,
+            debridSettings = debridSettings,
+            scoreProfile = scoreProfile,
+            scoreContext = scoreContext,
+            manualSelection = manualSelection,
+            forcedAuto = forcedAuto,
+            parentMetaId = parentMetaId,
+            season = season,
+            episode = episode,
+        )
+        val isAutoPlayEnabled = firstPlayPick.isAutoPlayEnabled
+        val persistedBingeGroup = firstPlayPick.bingeGroup
+        val pickTrigger = if (effectiveEpisode != null) "first play S${effectiveSeason}E$effectiveEpisode" else "first play"
 
         // A local file reached from Home/Search is an additional source, not a silent override
         // for add-on streams. Keep the picker open so the user can choose between them.
@@ -273,6 +272,9 @@ object StreamsRepository {
         val localCopyIsBackup = includeLocalInPicker && !manualSelection &&
             LocalLibraryRepository.routingFor(parentMetaId, effectiveVideoId).ignoresLocalFile
         val isDirectAutoPlayFlow = (!includeLocalInPicker || localCopyIsBackup || forcedAuto) && isAutoPlayEnabled
+        // The local files row below an online source: the local copy is picked at its place in Source priority, so it
+        // plays when no source above it has a stream.
+        val localAmongSources = localCopyIsBackup && PlaybackPick.localFilesAmongSources(parentMetaId, effectiveVideoId)
 
         currentCoroutineContext().ensureActive()
         if (isDirectAutoPlayFlow) {
@@ -330,7 +332,7 @@ object StreamsRepository {
 
         if (installedAddons.isEmpty() && pluginProviderGroups.isEmpty()) {
             if (includeLocalInPicker) {
-                _uiState.value = localOnlyStreamsState(requestToken, localStreams, streamBadgeRules)
+                _uiState.value = localOnlyStreamsState(requestToken, localStreams, streamBadgeRules, playLocal = localAmongSources && isAutoPlayEnabled)
                 return
             }
             _uiState.value = StreamsUiState(
@@ -363,7 +365,7 @@ object StreamsRepository {
 
         if (streamAddons.isEmpty() && pluginProviderGroups.isEmpty() && serverSources.isEmpty() && !searchUsenet) {
             if (includeLocalInPicker) {
-                _uiState.value = localOnlyStreamsState(requestToken, localStreams, streamBadgeRules)
+                _uiState.value = localOnlyStreamsState(requestToken, localStreams, streamBadgeRules, playLocal = localAmongSources && isAutoPlayEnabled)
                 return
             }
             _uiState.value = StreamsUiState(
@@ -376,7 +378,7 @@ object StreamsRepository {
 
         // Initialise loading placeholders
         val installedAddonOrder = streamAddons.map { it.addonName }
-        val initialGroups = StreamAutoPlaySelector.orderAddonStreams(
+        val initialGroups = PlaybackSources.orderAddonStreams(
             groups = buildList {
                 if (includeLocalInPicker) {
                     add(
@@ -444,6 +446,7 @@ object StreamsRepository {
                 pluginProviderGroups.sumOf { it.scrapers.size }
 
             val installedAddonNames = installedAddonOrder.toSet()
+            val pickRules = firstPlayPick.rules(installedAddonNames)
             val installedAddonIds = streamAddons.map { it.addonId }.toSet()
             val debridAvailabilityJobs = mutableListOf<Job>()
             var autoSelectTriggered = false
@@ -455,32 +458,17 @@ object StreamsRepository {
             // and "unlimited" modes set immediately — any eligible stream may be selected.
             // This is what gives those modes their documented select-on-each-response
             // behavior instead of waiting for the slowest addon to finish.
+            //
+            // Only sources whose list is final count (a Usenet search still running waits). Before the timeout, the
+            // remembered release may play, and under priority order so may the first ready stream of a source that
+            // every higher source has already answered above.
             fun autoSelectOnResponse() {
                 if (!isDirectAutoPlayFlow || autoSelectTriggered) return
-                if (!timeoutElapsed && persistedBingeGroup == null) return
-                val allStreams = _uiState.value.groups
-                    .filterNot { it.addonId == LOCAL_LIBRARY_GROUP_ID }
-                    .flatMap { it.streams }
-                    .autoPlayEligible()
-                if (allStreams.isEmpty()) return
-                val selected = StreamAutoPlaySelector.selectAutoPlayStream(
-                    streams = allStreams,
-                    mode = autoPlayMode,
-                    scoreProfile = scoreProfile,
-                    scoreContext = scoreContext,
-                    regexPattern = playerSettings.streamAutoPlayRegex,
-                    source = playerSettings.streamAutoPlaySource,
-                    installedAddonNames = installedAddonNames,
-                    selectedAddons = playerSettings.streamAutoPlaySelectedAddons,
-                    selectedPlugins = playerSettings.streamAutoPlaySelectedPlugins,
-                    preferredBingeGroup = persistedBingeGroup,
-                    preferredRelease = persistedRelease,
-                    preferBingeGroupInSelection = persistedBingeGroup != null,
-                    bingeGroupOnly = !timeoutElapsed,
-                    debridEnabled = debridSettings.canResolvePlayableLinks,
-                    activeResolverProviderId = debridSettings.activeResolverProviderId,
-                ) ?: return
+                val groups = _uiState.value.groups.filterNot { it.addonId == LOCAL_LIBRARY_GROUP_ID && !localAmongSources }
+                val allStreams = PlaybackPick.answered(groups, waitOver = timeoutElapsed).autoPlayEligible()
+                val selected = PlaybackPick.pickOnResponse(pickRules, groups, allStreams, waitOver = timeoutElapsed) ?: return
                 autoSelectTriggered = true
+                PlaybackPick.logPick("$pickTrigger (on response)", pickRules, selected, allStreams.size)
                 PlaybackStartTrace.mark("autoSelect:${selected.addonName}")
                 _uiState.update { it.copy(autoPlayStream = selected) }
             }
@@ -503,7 +491,7 @@ object StreamsRepository {
 
             fun publishAddonGroup(group: AddonStreamGroup) {
                 _uiState.update { current ->
-                    val updated = StreamAutoPlaySelector.orderAddonStreams(
+                    val updated = PlaybackSources.orderAddonStreams(
                         groups = current.groups.map { currentGroup ->
                             if (currentGroup.addonId == group.addonId) group else currentGroup
                         },
@@ -600,10 +588,11 @@ object StreamsRepository {
                 // Timeout semantics:
                 // - 0 (instant): timeoutElapsed immediately, full select on each response
                 // - 1-30 (bounded): wait the configured delay, then full select
-                // - unlimited (Int.MAX_VALUE): timeoutElapsed immediately, full select on each response,
-                //   with 60s hard fallback to stream picker
+                // - unlimited (Int.MAX_VALUE): wait for every source (the final pick once all have answered), with a
+                //   60s hard fallback. It used to select on each response like instant, so the first source to answer
+                //   played whatever Best score or Source priority said.
                 if (timeoutSeconds <= 0 || isUnlimitedTimeout) {
-                    timeoutElapsed = true
+                    timeoutElapsed = PlaybackPick.waitEndsAtOnce(timeoutSeconds)
                     // For unlimited: launch a hard 60s fallback to dismiss overlay
                     if (isUnlimitedTimeout) {
                         launch {
@@ -611,27 +600,12 @@ object StreamsRepository {
                             if (!autoSelectTriggered) {
                                 autoSelectTriggered = true
                                 val allStreams = _uiState.value.groups
-                                    .filterNot { it.addonId == LOCAL_LIBRARY_GROUP_ID }
+                                    .filterNot { it.addonId == LOCAL_LIBRARY_GROUP_ID && !localAmongSources }
                                     .flatMap { it.streams }
                                     .autoPlayEligible()
                                 if (allStreams.isNotEmpty()) {
-                                    val selected = StreamAutoPlaySelector.selectAutoPlayStream(
-                                        streams = allStreams,
-                                        mode = autoPlayMode,
-                                        scoreProfile = scoreProfile,
-                                        scoreContext = scoreContext,
-                                        regexPattern = playerSettings.streamAutoPlayRegex,
-                                        source = playerSettings.streamAutoPlaySource,
-                                        installedAddonNames = installedAddonNames,
-                                        selectedAddons = playerSettings.streamAutoPlaySelectedAddons,
-                                        selectedPlugins = playerSettings.streamAutoPlaySelectedPlugins,
-                                        preferredBingeGroup = persistedBingeGroup,
-                                        preferredRelease = persistedRelease,
-                                        preferBingeGroupInSelection = persistedBingeGroup != null,
-                                        bingeGroupOnly = false,
-                                        debridEnabled = debridSettings.canResolvePlayableLinks,
-                                        activeResolverProviderId = debridSettings.activeResolverProviderId,
-                                    )
+                                    val selected = pickRules.select(allStreams)
+                                    PlaybackPick.logPick("$pickTrigger (60 s fallback)", pickRules, selected, allStreams.size)
                                     selected?.let { PlaybackStartTrace.mark("autoSelect:fallback60s:${it.addonName}") }
                                     _uiState.update { it.copy(autoPlayStream = selected) }
                                 }
@@ -654,30 +628,16 @@ object StreamsRepository {
                         delay(timeoutSeconds * 1_000L)
                         timeoutElapsed = true
                         if (!autoSelectTriggered) {
-                            val allStreams = _uiState.value.groups
-                                .filterNot { it.addonId == LOCAL_LIBRARY_GROUP_ID }
-                                .flatMap { it.streams }
-                                .autoPlayEligible()
+                            val groups = _uiState.value.groups.filterNot { it.addonId == LOCAL_LIBRARY_GROUP_ID && !localAmongSources }
+                            val allStreams = PlaybackPick.answered(groups, waitOver = true).autoPlayEligible()
+                            // A source still answering may yet have the pick: keep listening (autoSelectOnResponse,
+                            // now past the timeout) instead of giving up; the final pick below ends the wait.
+                            val stillAnswering = groups.any { it.isLoading }
                             if (allStreams.isNotEmpty()) {
-                                val evaluation = StreamAutoPlaySelector.evaluateAutoPlayStream(
-                                    streams = allStreams,
-                                    mode = autoPlayMode,
-                                    scoreProfile = scoreProfile,
-                                    scoreContext = scoreContext,
-                                    regexPattern = playerSettings.streamAutoPlayRegex,
-                                    source = playerSettings.streamAutoPlaySource,
-                                    installedAddonNames = installedAddonNames,
-                                    selectedAddons = playerSettings.streamAutoPlaySelectedAddons,
-                                    selectedPlugins = playerSettings.streamAutoPlaySelectedPlugins,
-                                    preferredBingeGroup = persistedBingeGroup,
-                                    preferredRelease = persistedRelease,
-                                    preferBingeGroupInSelection = persistedBingeGroup != null,
-                                    bingeGroupOnly = false,
-                                    debridEnabled = debridSettings.canResolvePlayableLinks,
-                                    activeResolverProviderId = debridSettings.activeResolverProviderId,
-                                )
-                                if (evaluation.stream != null || !evaluation.hasPendingDebridCandidate) {
+                                val evaluation = pickRules.evaluate(allStreams)
+                                if (evaluation.stream != null || (!evaluation.hasPendingDebridCandidate && !stillAnswering)) {
                                     autoSelectTriggered = true
+                                    PlaybackPick.logPick("$pickTrigger (timeout)", pickRules, evaluation.stream, allStreams.size)
                                     evaluation.stream?.let { PlaybackStartTrace.mark("autoSelect:timeout:${it.addonName}") }
                                     _uiState.update {
                                         it.copy(
@@ -686,7 +646,7 @@ object StreamsRepository {
                                         )
                                     }
                                 }
-                                if (evaluation.stream == null && !evaluation.hasPendingDebridCandidate) {
+                                if (evaluation.stream == null && !evaluation.hasPendingDebridCandidate && !stillAnswering) {
                                     _uiState.update {
                                         it.copy(
                                             isDirectAutoPlayFlow = false,
@@ -986,7 +946,7 @@ object StreamsRepository {
                         offerToCwCache(completion.providerId, completion.cacheableAnswer)
 
                         _uiState.update { current ->
-                            val updated = StreamAutoPlaySelector.orderAddonStreams(
+                            val updated = PlaybackSources.orderAddonStreams(
                                 groups = current.groups.map { group ->
                                     if (group.addonId != completion.addonId) {
                                         group
@@ -1072,30 +1032,16 @@ object StreamsRepository {
             if (isDirectAutoPlayFlow && !autoSelectTriggered) {
                 autoSelectTriggered = true
                 val allStreams = _uiState.value.groups
-                    .filterNot { it.addonId == LOCAL_LIBRARY_GROUP_ID }
+                    .filterNot { it.addonId == LOCAL_LIBRARY_GROUP_ID && !localAmongSources }
                     .flatMap { it.streams }
                     .autoPlayEligible()
-                val evaluation = StreamAutoPlaySelector.evaluateAutoPlayStream(
-                    streams = allStreams,
-                    mode = autoPlayMode,
-                    scoreProfile = scoreProfile,
-                    scoreContext = scoreContext,
-                    regexPattern = playerSettings.streamAutoPlayRegex,
-                    source = playerSettings.streamAutoPlaySource,
-                    installedAddonNames = installedAddonNames,
-                    selectedAddons = playerSettings.streamAutoPlaySelectedAddons,
-                    selectedPlugins = playerSettings.streamAutoPlaySelectedPlugins,
-                    preferredBingeGroup = persistedBingeGroup,
-                    preferredRelease = persistedRelease,
-                    preferBingeGroupInSelection = persistedBingeGroup != null,
-                    bingeGroupOnly = false,
-                    debridEnabled = debridSettings.canResolvePlayableLinks,
-                    activeResolverProviderId = debridSettings.activeResolverProviderId,
-                )
-                evaluation.stream?.let { PlaybackStartTrace.mark("autoSelect:allResponses:${it.addonName}") }
+                val evaluation = pickRules.evaluate(allStreams)
+                val picked = evaluation.stream
+                PlaybackPick.logPick("$pickTrigger (all answered)", pickRules, picked, allStreams.size)
+                picked?.let { PlaybackStartTrace.mark("autoSelect:allResponses:${it.addonName}") }
                 _uiState.update {
                     it.copy(
-                        autoPlayStream = evaluation.stream,
+                        autoPlayStream = picked,
                         autoPlayCandidates = evaluation.readyStreams,
                     )
                 }
@@ -1174,10 +1120,38 @@ object StreamsRepository {
         }
     }
 
+    /** The completed download of this title, as a local stream row (one stat of the file, off the UI thread). */
+    private suspend fun downloadedStreams(parentMetaId: String?, season: Int?, episode: Int?, videoId: String): List<StreamItem> {
+        if (!AppFeaturePolicy.downloadsEnabled || parentMetaId.isNullOrBlank()) return emptyList()
+        return withContext(Dispatchers.IO) {
+            val item = DownloadsRepository.findPlayableDownload(
+                parentMetaId = parentMetaId,
+                seasonNumber = season,
+                episodeNumber = episode,
+                videoId = videoId,
+            ) ?: return@withContext emptyList()
+            val uri = DownloadsRepository.playableLocalFileUri(item) ?: return@withContext emptyList()
+            listOf(
+                StreamItem(
+                    name = item.streamTitle.ifBlank { item.fileName },
+                    title = item.fileName,
+                    url = uri,
+                    addonName = DOWNLOADS_GROUP_NAME,
+                    addonId = "locallibrary",
+                    streamType = "local",
+                ),
+            )
+        }
+    }
+
+    private const val DOWNLOADS_GROUP_NAME = "Downloads"
+
+    /** Only local copies to offer; with [playLocal] (the local files row may auto-play) the first one plays. */
     private fun localOnlyStreamsState(
         requestToken: String,
         localStreams: List<StreamItem>,
         badgeRules: StreamBadgeRules,
+        playLocal: Boolean = false,
     ): StreamsUiState {
         val group = AddonStreamGroup(
             addonName = localStreams.first().addonName,
@@ -1194,6 +1168,9 @@ object StreamsRepository {
             groups = listOf(presentedGroup),
             activeAddonIds = setOf(LOCAL_LIBRARY_GROUP_ID),
             isAnyLoading = false,
+            autoPlayStream = localStreams.first().takeIf { playLocal },
+            isDirectAutoPlayFlow = playLocal,
+            showDirectAutoPlayOverlay = playLocal,
         )
     }
 

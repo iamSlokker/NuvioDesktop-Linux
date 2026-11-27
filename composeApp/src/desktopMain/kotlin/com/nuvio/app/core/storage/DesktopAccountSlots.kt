@@ -27,6 +27,7 @@ internal val MACHINE_STORE_NAMES = setOf(
     "nuvio_osk_layout",
     "nuvio_updater",
     "nuvio_image_cache_settings",
+    "nuvio_prewarm_failed_urls",
     "nuvio_hs_err_pid",
     "nuvio_safepoint_pid",
     "nuvio_local_library",
@@ -49,6 +50,7 @@ internal val MACHINE_STORE_NAMES = setOf(
     "nuvio_library_title_facts",
     "nuvio_binge_group_cache",
     "nuvio_voice_control", // fork:voice-control - which speech model and microphone this PC uses
+    "nuvio_auth_session", // the test-profile sign-in (DataDirSessionManager); picks the account folder
 )
 
 /**

@@ -225,7 +225,7 @@ data class HomeCatalogSettingsUiState(
     val discoverCustomRows: List<CustomDiscoverRow> = emptyList(),
     val discoverImportedRows: List<ImportedDiscoverRow> = emptyList(),
     val discoverAiRows: List<AiDiscoverRow> = emptyList(),
-    val hideCatalogUnderline: Boolean = false,
+    val hideCatalogUnderline: Boolean = true,
     val catalogRowShuffleEnabled: Boolean = false,
     val adaptiveHeroEnabled: Boolean = false,
     val adaptiveHeroVerticalBias: Float = ADAPTIVE_HERO_VERTICAL_BIAS_DEFAULT,
@@ -240,6 +240,7 @@ data class HomeCatalogSettingsUiState(
     val hoverPreviewAdaptiveEnabled: Boolean = false,
     val catalogSeeMoreEnabled: Boolean = false,
     val catalogRowNumbersEnabled: Boolean = false,
+    val collectionFocusGifsEnabled: Boolean = true,
     val collectionGifsOnFocusOnly: Boolean = true,
     val catalogProviderTagEnabled: Boolean = false,
     val tvRowDotsEnabled: Boolean = false,
@@ -300,6 +301,8 @@ data class HomeCatalogSettingsUiState(
             append(catalogSeeMoreEnabled)
             append('|')
             append(catalogRowNumbersEnabled)
+            append('|')
+            append(collectionFocusGifsEnabled)
             append('|')
             append(collectionGifsOnFocusOnly)
             append('|')
@@ -554,7 +557,7 @@ private data class StoredHomeCatalogSettingsPayload(
     val discoverCustomRows: List<CustomDiscoverRow> = emptyList(),
     val discoverImportedRows: List<ImportedDiscoverRow> = emptyList(),
     val discoverAiRows: List<AiDiscoverRow> = emptyList(),
-    val hideCatalogUnderline: Boolean = false,
+    val hideCatalogUnderline: Boolean = true,
     val catalogRowShuffleEnabled: Boolean = false,
     @SerialName("tvModeEnabled")
     val adaptiveHeroEnabled: Boolean = false,
@@ -571,6 +574,7 @@ private data class StoredHomeCatalogSettingsPayload(
     val hoverPreviewAdaptiveEnabled: Boolean = false,
     val catalogSeeMoreEnabled: Boolean = false,
     val catalogRowNumbersEnabled: Boolean = false,
+    val collectionFocusGifsEnabled: Boolean = true,
     val collectionGifsOnFocusOnly: Boolean = true,
     val catalogProviderTagEnabled: Boolean = false,
     val tvRowDotsEnabled: Boolean = false,
@@ -639,7 +643,8 @@ object HomeCatalogSettingsRepository {
      * one. Losing it across a restart costs the user one slider drag.
      */
     private val discoverRowCountBeforeOff = mutableMapOf<DiscoverRowFamily, Int>()
-    private var hideCatalogUnderline = false
+    // On by default since 2026-11-24: the rows read cleaner without the accent underline.
+    private var hideCatalogUnderline = true
     private var catalogRowShuffleEnabled = false
     private var adaptiveHeroEnabled = false
     private var adaptiveHeroVerticalBias = ADAPTIVE_HERO_VERTICAL_BIAS_DEFAULT
@@ -653,6 +658,7 @@ object HomeCatalogSettingsRepository {
     private var hoverPreviewAdaptiveEnabled = false
     private var catalogSeeMoreEnabled = false
     private var catalogRowNumbersEnabled = false
+    private var collectionFocusGifsEnabled = true
     private var collectionGifsOnFocusOnly = true
     private var catalogProviderTagEnabled = false
     private var tvRowDotsEnabled = false
@@ -698,7 +704,7 @@ object HomeCatalogSettingsRepository {
         discoverImportedRows = emptyList()
         discoverAiRows = emptyList()
         discoverRowCountBeforeOff.clear()
-        hideCatalogUnderline = false
+        hideCatalogUnderline = true
         catalogRowShuffleEnabled = false
         adaptiveHeroEnabled = false
         adaptiveHeroVerticalBias = ADAPTIVE_HERO_VERTICAL_BIAS_DEFAULT
@@ -712,6 +718,7 @@ object HomeCatalogSettingsRepository {
         hoverPreviewAdaptiveEnabled = false
         catalogSeeMoreEnabled = false
         catalogRowNumbersEnabled = false
+        collectionFocusGifsEnabled = true
         collectionGifsOnFocusOnly = true
         catalogProviderTagEnabled = false
         tvRowDotsEnabled = false
@@ -762,7 +769,7 @@ object HomeCatalogSettingsRepository {
         discoverImportedRows = emptyList()
         discoverAiRows = emptyList()
         discoverRowCountBeforeOff.clear()
-        hideCatalogUnderline = false
+        hideCatalogUnderline = true
         catalogRowShuffleEnabled = false
         adaptiveHeroEnabled = false
         adaptiveHeroVerticalBias = ADAPTIVE_HERO_VERTICAL_BIAS_DEFAULT
@@ -776,6 +783,7 @@ object HomeCatalogSettingsRepository {
         hoverPreviewAdaptiveEnabled = false
         catalogSeeMoreEnabled = false
         catalogRowNumbersEnabled = false
+        collectionFocusGifsEnabled = true
         collectionGifsOnFocusOnly = true
         catalogProviderTagEnabled = false
         tvRowDotsEnabled = false
@@ -825,7 +833,11 @@ object HomeCatalogSettingsRepository {
         // every catalog from every addon on each return to home.
         val catalogKeys = definitions.map(HomeCatalogDefinition::key) +
             collectionDefinitions.map(CollectionCatalogDefinition::key)
-        val catalogSetChanged = lastSyncedCatalogKeys != catalogKeys
+        // First sync of the session (lastSyncedCatalogKeys == null) is not a user catalog edit:
+        // HomeRepository already revalidates every disk-restored row and fetches any missing row
+        // with force=false, while letting the startup grace window avoid competing with Home's
+        // first draw and launch-overlay fade-out.
+        val catalogSetChanged = lastSyncedCatalogKeys != null && lastSyncedCatalogKeys != catalogKeys
         lastSyncedCatalogKeys = catalogKeys
         lastCatalogSync = Triple(definitions, collectionDefinitions, _uiState.value)
         HomeRepository.refresh(addons.enabledAddons(), force = catalogSetChanged)
@@ -1381,7 +1393,16 @@ object HomeCatalogSettingsRepository {
         persist()
     }
 
-    /** Collection folder GIFs play only on the highlighted card; the rest show their first frame. */
+    /** Master client switch for collection folder focus GIF / hover artwork. */
+    fun setCollectionFocusGifsEnabled(enabled: Boolean) {
+        ensureLoaded()
+        if (collectionFocusGifsEnabled == enabled) return
+        collectionFocusGifsEnabled = enabled
+        publish()
+        persist()
+    }
+
+    /** Collection folder GIFs play only on the highlighted card; the rest show their cover image. */
     fun setCollectionGifsOnFocusOnly(enabled: Boolean) {
         ensureLoaded()
         if (collectionGifsOnFocusOnly == enabled) return
@@ -1606,7 +1627,7 @@ object HomeCatalogSettingsRepository {
         discoverImportedRows = emptyList()
         discoverAiRows = emptyList()
         discoverRowCountBeforeOff.clear()
-        hideCatalogUnderline = false
+        hideCatalogUnderline = true
         catalogRowShuffleEnabled = false
         adaptiveHeroEnabled = false
         adaptiveHeroVerticalBias = ADAPTIVE_HERO_VERTICAL_BIAS_DEFAULT
@@ -1620,6 +1641,7 @@ object HomeCatalogSettingsRepository {
         hoverPreviewAdaptiveEnabled = false
         catalogSeeMoreEnabled = false
         catalogRowNumbersEnabled = false
+        collectionFocusGifsEnabled = true
         collectionGifsOnFocusOnly = true
         catalogProviderTagEnabled = false
         tvRowDotsEnabled = false
@@ -1755,6 +1777,7 @@ object HomeCatalogSettingsRepository {
             hoverPreviewAdaptiveEnabled = parsedPayload.hoverPreviewAdaptiveEnabled
             catalogSeeMoreEnabled = parsedPayload.catalogSeeMoreEnabled
             catalogRowNumbersEnabled = parsedPayload.catalogRowNumbersEnabled
+            collectionFocusGifsEnabled = parsedPayload.collectionFocusGifsEnabled
             collectionGifsOnFocusOnly = parsedPayload.collectionGifsOnFocusOnly
             catalogProviderTagEnabled = parsedPayload.catalogProviderTagEnabled
             tvRowDotsEnabled = parsedPayload.tvRowDotsEnabled
@@ -1945,6 +1968,7 @@ object HomeCatalogSettingsRepository {
             hoverPreviewAdaptiveEnabled = hoverPreviewAdaptiveEnabled,
             catalogSeeMoreEnabled = catalogSeeMoreEnabled,
             catalogRowNumbersEnabled = catalogRowNumbersEnabled,
+            collectionFocusGifsEnabled = collectionFocusGifsEnabled,
             collectionGifsOnFocusOnly = collectionGifsOnFocusOnly,
             catalogProviderTagEnabled = catalogProviderTagEnabled,
             // Reported raw (not && tvModeEnabled) so the settings row keeps showing what the user
@@ -2066,6 +2090,7 @@ object HomeCatalogSettingsRepository {
                     hoverPreviewAdaptiveEnabled = hoverPreviewAdaptiveEnabled,
                     catalogSeeMoreEnabled = catalogSeeMoreEnabled,
                     catalogRowNumbersEnabled = catalogRowNumbersEnabled,
+                    collectionFocusGifsEnabled = collectionFocusGifsEnabled,
                     collectionGifsOnFocusOnly = collectionGifsOnFocusOnly,
             catalogProviderTagEnabled = catalogProviderTagEnabled,
                     tvRowDotsEnabled = tvRowDotsEnabled,

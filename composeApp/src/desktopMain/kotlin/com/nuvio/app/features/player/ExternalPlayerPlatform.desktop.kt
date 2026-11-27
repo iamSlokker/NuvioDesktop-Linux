@@ -2,6 +2,7 @@ package com.nuvio.app.features.player
 
 import co.touchlab.kermit.Logger
 import com.nuvio.app.core.storage.DesktopStorage
+import com.nuvio.app.core.ui.NuvioToastController
 import com.nuvio.app.features.lights.LightsController
 import com.nuvio.app.features.lights.LightsPlaybackSource
 import java.awt.Desktop
@@ -235,6 +236,15 @@ internal actual object ExternalPlayerPlatform {
         if (isWindows) detectWindowsDefaultMediaAssociation() else null
     }
 
+    /**
+     * All Windows `App Paths` entries across HKCU and HKLM, read in 2 `reg.exe` queries instead
+     * of ~30 per-executable queries (cutting background player detection from ~6 s to ~300 ms).
+     * HKCU wins over HKLM, matching the previous lookup precedence.
+     */
+    private val windowsAppPaths: Map<String, String> by lazy {
+        if (isWindows) loadWindowsAppPaths() else emptyMap()
+    }
+
     private fun linuxTarget(def: DesktopPlayerDefinition): LinuxExternalPlayerTarget? =
         linuxDiscovery.resolve(def.id, customPlayerStore.getString(customPlayerPathKey(def.id)))
 
@@ -380,9 +390,25 @@ internal actual object ExternalPlayerPlatform {
                         diagnosticContext = "player=system association=${knownDefinition?.id ?: "unknown"} source=$sourceSummary",
                         tracking = request.tracking,
                         reader = channel?.reader,
-                        source = request.sourceUrl,
+                        sourceUrl = request.sourceUrl,
+                        playerName = knownDefinition?.displayName ?: association.displayName,
                     )
                 ) return ExternalPlayerOpenResult.Opened
+            }
+            // No video association with a program to pass a link to (Windows' own Media Player app
+            // has none). The shell hands a web link to the browser, which downloads it instead of
+            // playing it (a debrid file landed in a download manager, a plugin's HLS stream as a
+            // tiny .m3u8, Nov 24), so a web stream goes to the first player found installed.
+            // Only a local file is left to the shell's file association.
+            if (!PlaybackSourcePolicy.isLocalDrivePath(request.sourceUrl) &&
+                !request.sourceUrl.startsWith("file:", ignoreCase = true)
+            ) {
+                val fallback = definitions.firstOrNull { resolvedPath(it) != null } ?: run {
+                    externalPlayerLog.w { "System default: no video player installed to hand a web stream to source=$sourceSummary" }
+                    return ExternalPlayerOpenResult.NoPlayerAvailable
+                }
+                externalPlayerLog.i { "System default: no usable video association; using ${fallback.id} source=$sourceSummary" }
+                return open(request, fallback.id)
             }
             return if (openUri(request.sourceUrl, sourceSummary)) ExternalPlayerOpenResult.Opened
             else ExternalPlayerOpenResult.Failed
@@ -405,7 +431,8 @@ internal actual object ExternalPlayerPlatform {
                     diagnosticContext = "player=$effectiveId source=$sourceSummary",
                     tracking = request.tracking,
                     reader = channel?.channel?.reader,
-                    source = request.sourceUrl,
+                    sourceUrl = request.sourceUrl,
+                    playerName = def.displayName,
                 )
             ) {
                 ExternalPlayerOpenResult.Opened
@@ -432,7 +459,8 @@ internal actual object ExternalPlayerPlatform {
                 diagnosticContext = "player=$effectiveId source=$sourceSummary",
                 tracking = request.tracking,
                 reader = channel?.reader,
-                source = request.sourceUrl,
+                sourceUrl = request.sourceUrl,
+                playerName = def.displayName,
             )
         ) ExternalPlayerOpenResult.Opened else ExternalPlayerOpenResult.Failed
     }
@@ -462,6 +490,50 @@ internal actual object ExternalPlayerPlatform {
     }
 
     /**
+     * What a player that has exited leaves behind: a toast when it quit within [QuickExitMs] on its
+     * own (PotPlayer closes itself, exit code 0, when a stream does not open: nothing else showed),
+     * and the built-in Usenet session it was reading, released as the in-app player releases it.
+     *
+     * Neither applies when another copy of the same program is still running: a single-instance
+     * player hands the link to its open window and exits at once, and that window is now the one
+     * playing (and reading the session).
+     */
+    private fun onPlayerExited(
+        executable: String,
+        pid: Long,
+        runMs: Long,
+        sourceUrl: String?,
+        playerName: String?,
+        diagnosticContext: String,
+    ) {
+        val handedOff = runCatching {
+            ProcessHandle.allProcesses().anyMatch { handle ->
+                handle.pid() != pid &&
+                    handle.info().command().map { it.equals(executable, ignoreCase = true) }.orElse(false)
+            }
+        }.getOrDefault(false)
+        if (handedOff) {
+            externalPlayerLog.i { "External player handed off to its open window $diagnosticContext" }
+            return
+        }
+        if (com.nuvio.app.features.usenet.UsenetEngine.isSessionUrl(sourceUrl)) {
+            com.nuvio.app.features.usenet.UsenetEngine.release(sourceUrl)
+        }
+        if (playerName != null && runMs < QuickExitMs) {
+            externalPlayerLog.w { "External player closed after ${runMs}ms $diagnosticContext" }
+            runCatching {
+                NuvioToastController.show(
+                    localizedString(Res.string.external_player_closed_quickly, playerName),
+                    durationMillis = 5_000L,
+                )
+            }
+        }
+    }
+
+    /** A stream the player cannot open has it gone within this; nobody watches that little. */
+    private const val QuickExitMs = 15_000L
+
+    /**
      * Starts a child process without keeping its stdio pipes attached. This is essential: with the
      * default [ProcessBuilder] behaviour the child's stdout/stderr are piped to us, and because we
      * never read them a chatty player (mpv prints a status line every frame; PotPlayer logs too)
@@ -474,9 +546,12 @@ internal actual object ExternalPlayerPlatform {
         diagnosticContext: String,
         tracking: ExternalPlaybackTracking? = null,
         reader: ExternalPlayerReader? = null,
-        source: String? = null,
+        // Set for a player launch (not the system handler): see onPlayerExited.
+        sourceUrl: String? = null,
+        playerName: String? = null,
     ): Boolean {
         val executable = command.firstOrNull() ?: "none"
+        val startedAtNs = System.nanoTime()
         externalPlayerLog.i {
             "Starting external process $diagnosticContext executable=$executable argumentCount=${(command.size - 1).coerceAtLeast(0)}"
         }
@@ -495,7 +570,7 @@ internal actual object ExternalPlayerPlatform {
                 .start()
         }.onSuccess { process ->
             externalPlayerLog.i { "External process started $diagnosticContext pid=${process.pid()}" }
-            source?.let { launchGuard.launched(it, process::isAlive) }
+            sourceUrl?.let { launchGuard.launched(it, process::isAlive) }
             // The process is the only playback signal an external player gives us: alive means
             // playing, so the lights go down now and come back when it exits. (The system-handler
             // fallback in [openUri] has no process to watch and so never touches the room.)
@@ -505,6 +580,16 @@ internal actual object ExternalPlayerPlatform {
                     "External process exited $diagnosticContext pid=${completed.pid()} exitCode=${completed.exitValue()}"
                 }
                 LightsController.ended(LightsPlaybackSource.External)
+                if (playerName != null || sourceUrl != null) {
+                    onPlayerExited(
+                        executable = executable,
+                        pid = completed.pid(),
+                        runMs = (System.nanoTime() - startedAtNs) / 1_000_000L,
+                        sourceUrl = sourceUrl,
+                        playerName = playerName,
+                        diagnosticContext = diagnosticContext,
+                    )
+                }
             }
             tracking?.let { ExternalPlaybackMonitor.watch(process, it, reader, diagnosticContext) }
         }.onFailure { error ->
@@ -534,13 +619,9 @@ internal actual object ExternalPlayerPlatform {
         // side by side (64-bit and 32-bit VLC). Then known install locations, then PATH.
         val candidates = sequence {
             if (isWindows) {
+                val appPaths = windowsAppPaths
                 def.executableNames.forEach { exe ->
-                    listOf("HKCU", "HKLM").forEach { hive ->
-                        queryRegistryValue(
-                            key = "$hive\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\App Paths\\$exe",
-                            valueName = null,
-                        )?.trim('"')?.let(::expandEnvPlaceholders)?.let { yield(it) }
-                    }
+                    appPaths[exe.lowercase(Locale.ROOT)]?.let { yield(it) }
                 }
             }
             def.candidatePaths.forEach { candidate -> expandEnvPlaceholders(candidate)?.let { yield(it) } }
@@ -643,6 +724,49 @@ internal actual object ExternalPlayerPlatform {
             executablePath = executable,
             displayName = knownName ?: File(executable).nameWithoutExtension,
         )
+    }
+
+    private fun loadWindowsAppPaths(): Map<String, String> {
+        val systemRoot = System.getenv("SystemRoot") ?: return emptyMap()
+        val regExe = File(systemRoot, "System32\\reg.exe").takeIf(File::isFile) ?: return emptyMap()
+        val result = HashMap<String, String>()
+        listOf("HKCU", "HKLM").forEach { hive ->
+            runCatching {
+                val process = ProcessBuilder(
+                    regExe.absolutePath,
+                    "query",
+                    "$hive\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\App Paths",
+                    "/s",
+                    "/ve",
+                )
+                    .redirectErrorStream(true)
+                    .start()
+                // Drain output before waitFor so a large App Paths tree cannot fill the pipe buffer.
+                val output = process.inputStream.bufferedReader().use { it.readText() }
+                if (!process.waitFor(3, TimeUnit.SECONDS)) {
+                    process.destroyForcibly()
+                    return@runCatching
+                }
+                if (process.exitValue() != 0) return@runCatching
+                var currentExe: String? = null
+                output.lineSequence().forEach { line ->
+                    val trimmed = line.trim()
+                    if (trimmed.isEmpty()) {
+                        currentExe = null
+                    } else if (trimmed.startsWith("HKEY_", ignoreCase = true)) {
+                        val afterAppPaths = trimmed.substringAfter("\\App Paths\\", missingDelimiterValue = "")
+                        currentExe = afterAppPaths.takeIf { it.isNotEmpty() && '\\' !in it }?.lowercase(Locale.ROOT)
+                    } else if (currentExe != null) {
+                        REGISTRY_STRING_VALUE.find(line)?.groupValues?.getOrNull(1)?.trim()
+                            ?.trim('"')
+                            ?.let(::expandEnvPlaceholders)
+                            ?.takeIf { it.isNotBlank() }
+                            ?.let { path -> result.putIfAbsent(currentExe!!, path) }
+                    }
+                }
+            }
+        }
+        return result
     }
 
     private fun queryRegistryValue(key: String, valueName: String?): String? {

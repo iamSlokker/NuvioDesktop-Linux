@@ -1,5 +1,7 @@
 package com.nuvio.app
 
+import androidx.compose.ui.graphics.drawscope.clipPath
+import androidx.compose.ui.draw.drawBehind
 import com.nuvio.app.core.ui.requestFocusLogged
 import androidx.compose.ui.draw.clip
 import com.nuvio.app.core.ui.NuvioGlass
@@ -880,29 +882,50 @@ private fun registerTrackingProviders() {
     TrackingProviderRegistry.registerWatchedProvider(YamtrackWatchedAdapter)
 }
 
-private suspend fun warmProfileStartupRepositories() {
+internal suspend fun warmProfileStartupRepositories() {
     registerTrackingProviders()
     withContext(Dispatchers.Default) {
         val startedAt = System.currentTimeMillis()
         appStartupLog.i { "critical profile warm started" }
-        startupWarmStep("addons local load") { AddonRepository.initialize() }
-        startupWarmStep("collections local load") { CollectionRepository.initialize() }
-        startupWarmStep("continue watching preferences load") { ContinueWatchingPreferencesRepository.ensureLoaded() }
-        // Home reads it in its first composition; cold, that was a file load and JSON decode on
-        // the UI thread.
-        startupWarmStep("continue watching enrichment cache load") {
-            com.nuvio.app.features.watchprogress.ContinueWatchingEnrichmentCache.warm()
-        }
+        // Start the two async operations first (addon manifest network refreshes + cached Home
+        // rows disk restore) so they overlap with the heavy JSON decodes below.
         startupWarmStep("home catalog settings load") { HomeCatalogSettingsRepository.snapshot() }
         // Background: parses last launch's rows while the rest of the warm-up and the gate run, so
         // Home opens with them in place. Needs the catalog settings above to know which rows show.
         startupWarmStep("home rows disk restore start") { HomeRepository.restoreFromDiskInBackground() }
-        startupWarmStep("player settings load") { PlayerSettingsRepository.ensureLoaded() }
-        startupWarmStep("p2p settings load") { P2pSettingsRepository.ensureLoaded() }
-        startupWarmStep("trakt settings load") { TraktSettingsRepository.ensureLoaded() }
-        startupWarmStep("trakt auth load") { TraktAuthRepository.ensureLoaded() }
-        startupWarmStep("watch progress load") { WatchProgressRepository.ensureLoaded() }
-        startupWarmStep("watched state load") { WatchedRepository.ensureLoaded() }
+        startupWarmStep("addons local load") { AddonRepository.initialize() }
+        // Lightweight Home-visible settings and tracking credentials before WatchProgressRepository
+        // loads (its init checks connected tracking providers; on cold start selectProfile no
+        // longer eagerly reloads all ~40 repositories).
+        startupWarmStep("home startup settings load") {
+            ContinueWatchingPreferencesRepository.ensureLoaded()
+            ContinueWatchingSourceRepository.ensureLoaded()
+            com.nuvio.app.features.tmdb.TmdbSettingsRepository.ensureLoaded()
+            MdbListSettingsRepository.ensureLoaded()
+            SimklSettingsRepository.ensureLoaded()
+            SimklAuthRepository.ensureLoaded()
+            TraktSettingsRepository.ensureLoaded()
+            TraktAuthRepository.ensureLoaded()
+            com.nuvio.app.core.ui.PosterCardStyleRepository.ensureLoaded()
+            com.nuvio.app.features.posterservice.CustomPosterSettingsRepository.ensureLoaded()
+            com.nuvio.app.features.collection.CollectionMobileSettingsRepository.ensureLoaded()
+            PlayerSettingsRepository.ensureLoaded()
+            P2pSettingsRepository.ensureLoaded()
+        }
+        // Heavy JSON decodes (collections ~565 KB, CW enrichment ~100 KB, watched ~2.6 MB,
+        // watch progress ~810 KB) run in parallel instead of serially.
+        kotlinx.coroutines.coroutineScope {
+            launch { startupWarmStep("collections local load") { CollectionRepository.initialize() } }
+            launch {
+                // Home reads it in its first composition; cold, that was a file load and JSON
+                // decode on the UI thread.
+                startupWarmStep("continue watching enrichment cache load") {
+                    com.nuvio.app.features.watchprogress.ContinueWatchingEnrichmentCache.warm()
+                }
+            }
+            launch { startupWarmStep("watched state load") { WatchedRepository.ensureLoaded() } }
+            launch { startupWarmStep("watch progress load") { WatchProgressRepository.ensureLoaded() } }
+        }
         appStartupLog.i { "critical profile warm completed in ${System.currentTimeMillis() - startedAt}ms" }
     }
 }
@@ -1028,6 +1051,9 @@ private suspend fun warmProfileDeferredRepositories() {
                 // The step above already imported it; a second forced pull here would only spend
                 // another request against the provider's daily budget.
                 reimportProviderHistory = false,
+                // Refresh episode thumbnails periodically (6 h cooldown) rather than busting the
+                // CW artwork cache on every launch; manual resync still forces an immediate refresh.
+                forceArtworkRefresh = false,
             )
         }.onSuccess {
             appStartupLog.i {
@@ -1124,11 +1150,19 @@ fun App() {
         // SkipDB publishes its whole database as one file rebuilt daily, so it is kept locally and
         // refreshed at most once a day rather than queried per episode. Deliberately off the
         // startup path and not awaited: playback answers from the previous copy meanwhile, and a
-        // user who has turned skip detection off should not be downloading it at all.
+        // user who has turned skip detection off should not be downloading it at all. A few seconds
+        // after Home is up, not at the first composition: the daily refresh is a ~36 MB download
+        // and parse, and it landed in Home's first frames (1.8 s, 2026-11-24 startup report).
         LaunchedEffect(Unit) {
-            PlayerSettingsRepository.ensureLoaded()
-            if (PlayerSettingsRepository.uiState.value.skipIntroEnabled) {
-                SkipDbDumpRepository.syncInBackground()
+            com.nuvio.app.core.build.StartupReadySignal.onHomeReady {
+                deferredStartupScope.launch {
+                    delay(HEAVY_STARTUP_WARM_DELAY_MS)
+                    // ensureLoaded is not thread-safe; Home has long since loaded it on Main anyway.
+                    withContext(Dispatchers.Main) { PlayerSettingsRepository.ensureLoaded() }
+                    if (PlayerSettingsRepository.uiState.value.skipIntroEnabled) {
+                        SkipDbDumpRepository.syncInBackground()
+                    }
+                }
             }
         }
 
@@ -1159,7 +1193,17 @@ fun App() {
             )
         }
 
-        var gateScreen by rememberSaveable { mutableStateOf(AppGateScreen.Loading.name) }
+        val bootstrapState by StartupBootstrap.state.collectAsStateWithLifecycle()
+        val windowSurfaceReady by StartupWindowRevealGate.ready.collectAsStateWithLifecycle()
+        var gateScreen by rememberSaveable {
+            mutableStateOf(
+                if (StartupBootstrap.isReadyFor(AuthRepository.state.value, ProfileRepository.state.value)) {
+                    AppGateScreen.Main.name
+                } else {
+                    AppGateScreen.Loading.name
+                },
+            )
+        }
         var editingProfile by remember { mutableStateOf<NuvioProfile?>(null) }
         var isNewProfile by remember { mutableStateOf(false) }
         var autoSkipProfileSelection by rememberSaveable { mutableStateOf(false) }
@@ -1186,28 +1230,16 @@ fun App() {
         }
 
         fun enterProfileGate(profiles: List<NuvioProfile>, syncOnEnter: Boolean) {
-            if (profiles.isEmpty()) {
-                autoSkipProfileSelection = true
-                gateScreen = AppGateScreen.ProfileSelection.name
+            val autoProfile = ProfileRepository.resolveAutoStartupProfile(
+                profileState = ProfileRepository.state.value.copy(profiles = profiles),
+                activeId = ProfileRepository.activeProfileId,
+            )
+            if (autoProfile != null) {
+                requestProfileSwitch(autoProfile, syncOnEnter)
                 return
             }
-
-            rememberedStartupProfile(profiles)?.let { profile ->
-                requestProfileSwitch(profile, syncOnEnter)
-                return
-            }
-
             autoSkipProfileSelection = true
-            if (profiles.size == 1) {
-                val onlyProfile = profiles.first()
-                if (onlyProfile.pinEnabled) {
-                    gateScreen = AppGateScreen.ProfileSelection.name
-                    return
-                }
-                requestProfileSwitch(onlyProfile, syncOnEnter)
-            } else {
-                gateScreen = AppGateScreen.ProfileSelection.name
-            }
+            gateScreen = AppGateScreen.ProfileSelection.name
         }
 
         LaunchedEffect(gateScreen, pendingProfileSwitch) {
@@ -1235,7 +1267,7 @@ fun App() {
             }
         }
 
-        LaunchedEffect(authState, networkStatusUiState.condition, profileState.profiles) {
+        LaunchedEffect(authState, networkStatusUiState.condition, profileState.profiles, bootstrapState) {
             if (gateScreen == AppGateScreen.ProfileSwitching.name) return@LaunchedEffect
 
             val cachedProfiles = profileState.profiles
@@ -1272,12 +1304,27 @@ fun App() {
                     } else {
                         // Also covers signing out mid-session (profiles wiped, so no cached
                         // access): the user must land back on the auth gate, not stay inside.
+                        StartupBootstrap.invalidate()
                         ProfileRepository.clearInMemory()
                         gateScreen = AppGateScreen.Auth.name
                     }
                 }
                 is AuthState.Authenticated -> {
                     val authenticatedState = authState as AuthState.Authenticated
+                    if (gateScreen == AppGateScreen.Loading.name) {
+                        val ready = bootstrapState as? StartupBootstrapState.Ready
+                        if (ready != null && ready.userId == authenticatedState.userId) {
+                            // Early bootstrap in main() already activated and warmed this profile.
+                            autoSkipProfileSelection = false
+                            gateScreen = AppGateScreen.Main.name
+                            return@LaunchedEffect
+                        }
+                        if (bootstrapState is StartupBootstrapState.Running) {
+                            // Early bootstrap is already warming this profile off the UI thread;
+                            // wait for it rather than starting a duplicate switchToProfile pass.
+                            return@LaunchedEffect
+                        }
+                    }
                     ProfileRepository.ensureLoaded(authenticatedState.userId)
                     if (gateScreen == AppGateScreen.Loading.name || gateScreen == AppGateScreen.Auth.name) {
                         // Warm startups now pass through here (they used to enter via the
@@ -1295,7 +1342,9 @@ fun App() {
         LaunchedEffect((authState as? AuthState.Authenticated)?.userId) {
             val authenticatedState = authState as? AuthState.Authenticated ?: return@LaunchedEffect
             ProfileRepository.ensureLoaded(authenticatedState.userId)
-            ProfileRepository.pullProfiles()
+            if (!StartupBootstrap.consumePulledProfiles(authenticatedState.userId)) {
+                ProfileRepository.pullProfiles()
+            }
         }
 
         // Explicit "Sign In" request from deep inside Settings (see ReauthenticationTrigger):
@@ -1304,6 +1353,7 @@ fun App() {
         // the main app indefinitely.
         LaunchedEffect(Unit) {
             ReauthenticationTrigger.events.collect {
+                StartupBootstrap.invalidate()
                 ProfileRepository.clearInMemory()
                 gateScreen = AppGateScreen.Auth.name
             }
@@ -1346,18 +1396,37 @@ fun App() {
             modifier = Modifier.fillMaxSize(),
             uiScalePercent = desktopAppUiScalePercent,
         ) {
+          Box(
+              modifier = Modifier
+                  .fillMaxSize()
+                  .background(MaterialTheme.nuvio.colors.background),
+          ) {
             AnimatedContent(
                 targetState = gateScreen,
                 label = "app_gate",
                 transitionSpec = {
-                    (fadeIn(tween(400)) + scaleIn(tween(400), initialScale = 0.94f))
-                        .togetherWith(fadeOut(tween(250)))
+                    val coveredByLaunchOverlay =
+                        initialState == AppGateScreen.Loading.name ||
+                            initialState == AppGateScreen.ProfileSwitching.name ||
+                            targetState == AppGateScreen.Loading.name ||
+                            targetState == AppGateScreen.ProfileSwitching.name
+                    if (coveredByLaunchOverlay) {
+                        // AppLaunchOverlay already covers Loading/ProfileSwitching and fades out
+                        // once Home has content; scaling MainAppContent off-screen underneath only
+                        // adds 400ms of full-resolution Skia graphicsLayer compositing.
+                        androidx.compose.animation.EnterTransition.None
+                            .togetherWith(androidx.compose.animation.ExitTransition.None)
+                    } else {
+                        (fadeIn(tween(400)) + scaleIn(tween(400), initialScale = 0.94f))
+                            .togetherWith(fadeOut(tween(250)))
+                    }
                 },
             ) { currentGate ->
                 when (currentGate) {
                     AppGateScreen.Loading.name,
                     AppGateScreen.ProfileSwitching.name -> {
-                        AppLaunchOverlay(modifier = Modifier.fillMaxSize())
+                        // Covered by the one launch overlay below.
+                        Box(modifier = Modifier.fillMaxSize())
                     }
                     AppGateScreen.Auth.name -> {
                         AuthScreen(modifier = Modifier.fillMaxSize())
@@ -1400,17 +1469,58 @@ fun App() {
                         )
                     }
                     AppGateScreen.Main.name -> {
-                        MainAppContent(
-                            onSwitchProfile = {
-                                autoSkipProfileSelection = false
-                                gateScreen = AppGateScreen.ProfileSelection.name
-                            },
-                        )
+                        if (windowSurfaceReady) {
+                            MainAppContent(
+                                onSwitchProfile = {
+                                    autoSkipProfileSelection = false
+                                    gateScreen = AppGateScreen.ProfileSelection.name
+                                },
+                            )
+                        } else {
+                            // Window is still cloaked while settling borderless fullscreen +
+                            // rootPane bounds; keep only AppLaunchOverlay in the tree so
+                            // pinRootPane / SkiaLayer.reshape runs once on a 2-node scene
+                            // instead of laying out and rendering Home twice.
+                            Box(modifier = Modifier.fillMaxSize())
+                        }
                     }
                 }
             }
+
+            // One launch overlay from the first frame until Home has content, across Loading,
+            // ProfileSwitching and Main's wait for Home. It used to be three: one per gate inside the
+            // cross-fade above (two identical overlays fading into each other) and Main's own on top,
+            // each drawing the same full-screen wash: three `(LaunchOverlay) up` lines a launch, each
+            // with its own first-frame gap (Nov 25).
+            LaunchedEffect(gateScreen) {
+                // Main entered again later (after profile selection) starts covered, as it did.
+                if (gateScreen != AppGateScreen.Main.name) LaunchOverlayCover.mainNeedsCover = true
+            }
+            val launchCoverVisible = gateScreen == AppGateScreen.Loading.name ||
+                gateScreen == AppGateScreen.ProfileSwitching.name ||
+                (gateScreen == AppGateScreen.Main.name && LaunchOverlayCover.mainNeedsCover)
+            val launchCoverState = remember { androidx.compose.animation.core.MutableTransitionState(true) }
+            launchCoverState.targetState = launchCoverVisible
+            androidx.compose.animation.AnimatedVisibility(
+                visibleState = launchCoverState,
+                enter = fadeIn(),
+                exit = fadeOut(
+                    tween(
+                        durationMillis = 220,
+                        easing = androidx.compose.animation.core.FastOutSlowInEasing,
+                    ),
+                ),
+            ) {
+                AppLaunchOverlay(modifier = Modifier.fillMaxSize())
+            }
+          }
         }
     }
+}
+
+/** Whether MainAppContent still needs the launch overlay over it (Home not ready, or a profile switch). */
+private object LaunchOverlayCover {
+    var mainNeedsCover by mutableStateOf(true)
 }
 
 /**
@@ -1856,6 +1966,7 @@ private fun MainAppContent(
     fun submitSearch(query: String, confidentQuery: String = query) {
         val trimmed = query.trim()
         submittedSearchQuery = trimmed
+        searchQuery = ""
         searchOverlayActive = false
         handleRootTabClick(AppScreenTab.Search)
         navigateToContentCount++
@@ -1953,12 +2064,17 @@ private fun MainAppContent(
     LaunchedEffect(navController) {
         com.nuvio.app.features.panelring.PanelRingController.selections.collect { slot ->
             if (navController.currentDestination?.hasRoute<PlayerRoute>() == true) return@collect
+            if (slot == com.nuvio.app.features.panelring.PanelRingSlot.CloseApp) {
+                platformExitApp()
+                return@collect
+            }
             navController.navigate(TabsRoute) {
                 popUpTo<TabsRoute> { inclusive = false }
                 launchSingleTop = true
             }
             when (slot) {
                 com.nuvio.app.features.panelring.PanelRingSlot.Settings -> latestRootTabClick.value(AppScreenTab.Settings)
+                com.nuvio.app.features.panelring.PanelRingSlot.CloseApp -> Unit
                 is com.nuvio.app.features.panelring.PanelRingSlot.Nav ->
                     com.nuvio.app.features.navbar.NavBarNavigation.request(slot.entry)
             }
@@ -2637,7 +2753,9 @@ private fun MainAppContent(
                 )
             ) {
                 is ExternalPlayerIntentResult.Success -> {
-                    val launched = launchExternalPlayer(intentResult)
+                    // Off the UI thread: starting the player process (and a first player lookup)
+                    // held it 183 ms at a Play click (Nov 25).
+                    val launched = withContext(Dispatchers.IO) { launchExternalPlayer(intentResult) }
                     if (!launched) {
                         NuvioToastController.show(externalPlayerFailedText)
                     }
@@ -5076,7 +5194,7 @@ private fun MainAppContent(
             val continueWatchingRouting = remember(selectedContinueWatching, localLibraryUiState) {
                 selectedContinueWatching?.let { item ->
                     LocalLibraryRepository.routingFor(item.parentMetaId, item.videoId)
-                } ?: localLibraryUiState.playbackPreference.forTitle(null)
+                } ?: LocalLibraryRepository.routingFor(null, null)
             }
             val continueWatchingAlternateOpensPicker = continueWatchingRouting
                 .alternateOpensSourcePicker(selectedContinueWatchingHasLocalPlayback)
@@ -5104,8 +5222,9 @@ private fun MainAppContent(
             val titlePlaybackDefaultLabel = stringResource(Res.string.local_title_playback_default)
             val continueWatchingTitlePlaybackActions = continueWatchingLocalTitle?.let { title ->
                 val current = localLibraryUiState.titlePlayback[title.key]
-                val defaultPlaysLocal =
-                    localLibraryUiState.playbackPreference == LocalLibraryPlaybackPreference.LOCAL_LIBRARY
+                val defaultPlaysLocal = LocalLibraryRepository.routingFor(null, null).let { routing ->
+                    routing.preference == LocalLibraryPlaybackPreference.LOCAL_LIBRARY && !routing.ignoresLocalFile
+                }
                 fun entry(icon: ImageVector, label: String, playback: LocalTitlePlayback?) =
                     PosterZoomOverlayAction(
                         icon = icon,
@@ -5281,13 +5400,23 @@ private fun MainAppContent(
                 },
             )
 
-            androidx.compose.animation.AnimatedVisibility(
-                visible = !initialHomeReady || profileSwitchLoading,
-                enter = fadeIn(),
-                exit = fadeOut(androidx.compose.animation.core.tween(400)),
-            ) {
-                AppLaunchOverlay(modifier = Modifier.fillMaxSize())
+            // The launch overlay itself is drawn once, above the gate in App(); this only says
+            // whether Main still needs it covering (see LaunchOverlayCover). Once Home reports
+            // ready (lifting Scaffold's alpha to 1f), hold the opaque overlay for two rendered
+            // frames so Home completes its first real layout, draw, and GPU texture upload behind
+            // the cover before the fade-out begins.
+            var homePaintedBehindCover by remember { mutableStateOf(false) }
+            LaunchedEffect(initialHomeReady, profileSwitchLoading) {
+                if (!initialHomeReady || profileSwitchLoading) {
+                    homePaintedBehindCover = false
+                } else {
+                    androidx.compose.runtime.withFrameNanos { }
+                    androidx.compose.runtime.withFrameNanos { }
+                    homePaintedBehindCover = true
+                }
             }
+            val needsLaunchCover = !initialHomeReady || profileSwitchLoading || !homePaintedBehindCover
+            SideEffect { LaunchOverlayCover.mainNeedsCover = needsLaunchCover }
 
             // fork:voice-control - the push-to-talk pill; a bare Box takes no input, so the screen below stays usable.
             Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.BottomCenter) {
@@ -5693,7 +5822,13 @@ private fun MainAppContent(
                                 stream = opened,
                                 sourceFromLinkCache = true,
                             )
-                            // The engine's link lives with its session, so it always plays here.
+                            // The engine's link lives with its session; an external player reads it
+                            // as a local URL and the session is released when that player exits.
+                            if (playerSettings.externalPlayerEnabled) {
+                                openExternalPlayback(usenetLaunch)
+                                StreamsRepository.setOverlayVisible(false)
+                                return@LaunchedEffect
+                            }
                             StreamsRepository.clear()
                             StreamPickerController.close(clearStreams = false)
                             navController.navigateToPlayer(usenetLaunch)
@@ -6083,12 +6218,14 @@ private fun MainAppContent(
                                     sourceIdentityKey,
                                 )
                             }
+                            // The engine's link is a plain local URL, so an external player can
+                            // read it as well as ours; the session is released when either exits.
                             openSelectedStream(
                                 stream = opened,
                                 resolvedResumePositionMs = resolvedResumePositionMs,
                                 resolvedResumeProgressFraction = resolvedResumeProgressFraction,
-                                forceExternal = false,
-                                forceInternal = true,
+                                forceExternal = forceExternal,
+                                forceInternal = forceInternal,
                                 sourceIdentityKey = sourceIdentityKey,
                                 // The engine's link lives only as long as its session.
                                 saveForReuse = false,
@@ -7745,23 +7882,71 @@ private fun TabletFloatingTopBar(
     BoxWithConstraints(
         modifier = modifier
             .fillMaxWidth()
-            .padding(top = statusBarPadding + NavBarTopOffset, bottom = tokens.spacing.controlGap)
-            .alpha(barAlpha),
+            // Alpha before padding: an alpha < 1f allocates an offscreen layer clipped to the
+            // node's bounds, so padding must sit inside it to leave room for NavGlowSpread above
+            // and below the pill while the bar fades in or out.
+            .alpha(barAlpha)
+            .padding(
+                top = statusBarPadding + NavBarTopOffset,
+                bottom = maxOf(tokens.spacing.controlGap, NavGlowSpread + 2.dp),
+            ),
         contentAlignment = Alignment.TopCenter,
     ) {
         val pickerMaxHeight = (
             maxHeight - statusBarPadding - NavBarTopOffset - 44.dp - tokens.spacing.controlGap - 8.dp - SearchPanelGap
         ).coerceIn(120.dp, 360.dp)
+        // fork:navbar-glow - the poster Glow highlight's bloom (PosterCardHighlight.kt) round the whole pill: the accent
+        // lifted 20% toward white, in 1dp rings fading out over 6.5dp, even all the way round, with the bar's edge drawn in
+        // the same colour so the bloom reads as its luminous rim. Settings > Appearance > Navigation bar glow sets how
+        // strong; 0 is the plain bar. Clipped to the outside, so the icons sit on the plain glass; gone while searching.
+        val navGlowPercent by com.nuvio.app.features.settings.ThemeSettingsRepository.navBarGlowPercent.collectAsState()
+        val glowStrength by animateFloatAsState(
+            targetValue = if (navGlowPercent > 0 && !isSearchActive && !attachedPanelVisible) navGlowPercent / 100f else 0f,
+            animationSpec = tween(durationMillis = 220),
+            label = "nav_glow_strength",
+        )
+        val glowColor = androidx.compose.ui.graphics.lerp(tokens.colors.accent, Color.White, 0.2f)
+        val navGlowModifier = Modifier.drawBehind {
+            if (glowStrength <= 0f) return@drawBehind
+            val radius = size.height / 2
+            val pill = androidx.compose.ui.graphics.Path().apply {
+                addRoundRect(
+                    androidx.compose.ui.geometry.RoundRect(
+                        0f, 0f, size.width, size.height,
+                        androidx.compose.ui.geometry.CornerRadius(radius),
+                    ),
+                )
+            }
+            val step = 1.dp.toPx()
+            val rings = (NavGlowSpread.toPx() / step).toInt().coerceAtLeast(1)
+            // 50% is the poster glow's own 0.8; 100% builds to 0.96. Each ring adds its share, so the inside is dense
+            // and the outer rings fade (the exponential falloff).
+            val total = 1.0 - Math.pow(0.2, glowStrength * 2.0)
+            val layer = 1f - Math.pow(1.0 - total, 1.0 / rings).toFloat()
+            clipPath(pill, androidx.compose.ui.graphics.ClipOp.Difference) {
+                for (i in rings downTo 1) {
+                    val grow = i * step
+                    drawRoundRect(
+                        color = glowColor.copy(alpha = glowColor.alpha * layer),
+                        topLeft = androidx.compose.ui.geometry.Offset(-grow, -grow),
+                        size = androidx.compose.ui.geometry.Size(size.width + grow * 2, size.height + grow * 2),
+                        cornerRadius = androidx.compose.ui.geometry.CornerRadius(radius + grow),
+                    )
+                }
+            }
+        }
+        val navEdgeColor = androidx.compose.ui.graphics.lerp(dividerColor, glowColor, (glowStrength * 2f).coerceAtMost(1f))
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             Surface(
             color = floatingSearchSurfaceColor,
             shape = if (attachedPanelVisible) androidx.compose.foundation.shape.RoundedCornerShape(topStartPercent = 50, topEndPercent = 50) else tokens.shapes.chip,
             tonalElevation = 0.dp,
             shadowElevation = if (attachedPanelVisible) 0.dp else tokens.elevation.overlay,
-            border = BorderStroke(1.dp, dividerColor),
+            border = BorderStroke(1.dp, navEdgeColor),
             modifier = Modifier
                 .height(NavBarHeight)
                 .width(topBarWidth)
+                .then(navGlowModifier)
                 .onPointerEvent(PointerEventType.Enter) {
                     activationZoneHovered = true
                 }
@@ -8281,6 +8466,9 @@ private fun RowScope.NavQuadrant(
 /** How much of the night-blue glass base shows; the rest is the page behind it. */
 private const val NavBarGlassOpacity = 0.84f
 private val NavBarHeight = 48.dp
+
+/** How far the top bar's bloom reaches past the pill: the poster Glow's 7dp, a touch tighter on the larger shape. */
+private val NavGlowSpread = 6.5.dp
 private val SearchPanelGap = 8.dp
 // Bar centred 41dp from the top with 22dp icons: the same line and size as the nav icons in the
 // settings top bar (82dp tall, see DesktopSettingsRootNavigation), so switching to Settings leaves

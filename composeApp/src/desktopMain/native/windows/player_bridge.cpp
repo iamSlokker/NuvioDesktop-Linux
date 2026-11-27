@@ -395,6 +395,7 @@ std::string sourceHostSummary(const std::string &sourceUrl) {
 }
 const wchar_t *kMessageWindowClass = L"NuvioPlayerBridgeMessageWindow";
 const wchar_t *kContainerWindowClass = L"NuvioPlayerBridgeContainerWindow";
+constexpr DWORD kDwmwaCloak = 13;
 constexpr DWORD kDwmwaUseImmersiveDarkMode = 20;
 constexpr DWORD kDwmwaUseImmersiveDarkModeLegacy = 19;
 constexpr DWORD kDwmwaBorderColor = 34;
@@ -785,6 +786,12 @@ void applyDwmWindowChrome(HWND hwnd, bool darkMode, COLORREF captionColor, COLOR
     setDwmWindowAttribute(hwnd, kDwmwaCaptionColor, &captionColor, sizeof(captionColor));
     setDwmWindowAttribute(hwnd, kDwmwaBorderColor, &borderColor, sizeof(borderColor));
     setDwmWindowAttribute(hwnd, kDwmwaTextColor, &textColor, sizeof(textColor));
+}
+
+void setWindowCloaked(HWND hwnd, bool cloaked) {
+    if (!hwnd || !IsWindow(hwnd)) return;
+    BOOL value = cloaked ? TRUE : FALSE;
+    setDwmWindowAttribute(hwnd, kDwmwaCloak, &value, sizeof(value));
 }
 
 bool containsCaseInsensitive(const std::string &haystack, const std::string &needle) {
@@ -1607,9 +1614,15 @@ bool removeLegacyStartMenuShortcut(const std::wstring &exePath) {
     return DeleteFileW(linkPath.c_str()) != 0;
 }
 
-void initializeAppIdentity() {
+// Must run before any window exists (Windows caches the process AppUserModelID early); cheap.
+void setAppUserModelId() {
     SetCurrentProcessExplicitAppUserModelID(kNuvioAppUserModelId);
+}
 
+// The Start Menu shortcut and the AUMID repair on existing pins: COM and a walk of every .lnk on
+// the taskbar and desktop, so it runs on its own thread after the AUMID is set, not before the
+// window (it was most of the 165-533 ms "app identity" step, Nov 24).
+void repairAppShortcuts() {
     const std::wstring exePath = currentExecutablePath();
     if (exePath.empty()) return;
 
@@ -3668,6 +3681,30 @@ public:
         refreshSubtitleAssOverrideMode();
     }
 
+    // The dropped paths as a JSON array of strings, emptying the queue.
+    std::string takeDroppedFilesJson() {
+        std::vector<std::string> paths;
+        {
+            std::lock_guard<std::mutex> lock(droppedFilePathsMutex);
+            paths.swap(droppedFilePaths);
+        }
+        std::string json = "[";
+        for (size_t index = 0; index < paths.size(); index++) {
+            if (index > 0) json += ",";
+            json += "\"" + jsonEscape(paths[index]) + "\"";
+        }
+        return json + "]";
+    }
+
+    // A subtitle file the viewer brought (dropped on the player). Unlike addSubtitleUrl it is not
+    // marked app-added, so it is listed with the built-in tracks, as a sibling .srt mpv loads is.
+    void addLocalSubtitleFile(const std::string &path) {
+        if (path.empty()) return;
+        markTrackJsonDirty();
+        command({"sub-add", path, "select"});
+        refreshSubtitleAssOverrideMode();
+    }
+
     void removeExternalSubtitles() {
         removeExternalSubtitleTracks();
         setStringProperty("sid", "no");
@@ -4595,6 +4632,9 @@ private:
     // because addSubtitleUrl (UI thread) and subtitleTracksJson (timer thread) race.
     std::unordered_set<std::string> appAddedSubtitleUrls;
     std::mutex appAddedSubtitleUrlsMutex;
+    // Paths of files dropped on the controls page (UTF-8), waiting for Kotlin's takeDroppedFiles.
+    std::vector<std::string> droppedFilePaths;
+    std::mutex droppedFilePathsMutex;
     // User's desktop mpv options ("key=value"), applied just before mpv_initialize so they
     // override Nuvio's built-in options. Carries the audio-passthrough and custom-options settings.
     std::vector<std::string> extraMpvOptions;
@@ -4925,10 +4965,13 @@ private:
                                 // Lock the HUD to its own page. Without this, dragging a file or link
                                 // onto the player navigated the HUD to it and the controls were gone
                                 // for the rest of the session, and whatever page loaded kept
-                                // chrome.webview.postMessage into handleWebMessage.
+                                // chrome.webview.postMessage into handleWebMessage. The full player
+                                // takes file drops again (a subtitle or video, see "filesDropped"):
+                                // controls.js handles the drop and the navigation guard below still
+                                // cancels anything it lets through. Trailer surfaces take none.
                                 ComPtr<ICoreWebView2Controller4> controller4;
                                 if (SUCCEEDED(createdController->QueryInterface(IID_PPV_ARGS(&controller4))) && controller4) {
-                                    controller4->put_AllowExternalDrop(FALSE);
+                                    controller4->put_AllowExternalDrop(controllerSelf->passiveSurface ? FALSE : TRUE);
                                 }
                                 if (controllerSelf->webView) {
                                     EventRegistrationToken navigationToken = {};
@@ -4978,6 +5021,12 @@ private:
                                                 if (!trustedSource) return S_OK;
                                                 PWSTR messageJson = nullptr;
                                                 if (SUCCEEDED(args->get_WebMessageAsJson(&messageJson)) && messageJson) {
+                                                    // Files dropped on the page arrive as additional objects
+                                                    // that carry their paths; take them before the event.
+                                                    if (!messageSelf->passiveSurface &&
+                                                        extractJsonString(std::wstring(messageJson), L"type") == "filesDropped") {
+                                                        messageSelf->collectDroppedFiles(args);
+                                                    }
                                                     messageSelf->handleWebMessage(std::wstring(messageJson));
                                                     CoTaskMemFree(messageJson);
                                                 }
@@ -5713,6 +5762,32 @@ private:
         if (attached) {
             AttachThreadInput(thisThread, targetThread, FALSE);
         }
+    }
+
+    // The paths of the files a "filesDropped" message carries (WebView2 1.0.1661+: older runtimes
+    // have no additional objects, and the drop is then just ignored).
+    void collectDroppedFiles(ICoreWebView2WebMessageReceivedEventArgs *args) {
+        ComPtr<ICoreWebView2WebMessageReceivedEventArgs2> args2;
+        if (FAILED(args->QueryInterface(IID_PPV_ARGS(&args2))) || !args2) return;
+        ComPtr<ICoreWebView2ObjectCollectionView> objects;
+        if (FAILED(args2->get_AdditionalObjects(&objects)) || !objects) return;
+        UINT32 count = 0;
+        if (FAILED(objects->get_Count(&count))) return;
+        std::vector<std::string> paths;
+        for (UINT32 index = 0; index < count && index < 16; index++) {
+            ComPtr<IUnknown> object;
+            if (FAILED(objects->GetValueAtIndex(index, &object)) || !object) continue;
+            ComPtr<ICoreWebView2File> file;
+            if (FAILED(object.As(&file)) || !file) continue;
+            PWSTR path = nullptr;
+            if (SUCCEEDED(file->get_Path(&path)) && path) {
+                paths.push_back(toUtf8(std::wstring(path)));
+                CoTaskMemFree(path);
+            }
+        }
+        logBridge("files dropped on the player: " + std::to_string(paths.size()));
+        std::lock_guard<std::mutex> lock(droppedFilePathsMutex);
+        droppedFilePaths.insert(droppedFilePaths.end(), paths.begin(), paths.end());
     }
 
     void handleWebMessage(const std::wstring &messageJson) {
@@ -8107,8 +8182,13 @@ Java_com_nuvio_app_features_player_desktop_NativePlayerBridge_setDataDirectory(J
 }
 
 extern "C" JNIEXPORT void JNICALL
-Java_com_nuvio_app_features_player_desktop_NativePlayerBridge_initializeAppIdentity(JNIEnv *, jobject) {
-    initializeAppIdentity();
+Java_com_nuvio_app_features_player_desktop_NativePlayerBridge_setAppUserModelId(JNIEnv *, jobject) {
+    setAppUserModelId();
+}
+
+extern "C" JNIEXPORT void JNICALL
+Java_com_nuvio_app_features_player_desktop_NativePlayerBridge_repairAppShortcuts(JNIEnv *, jobject) {
+    repairAppShortcuts();
 }
 
 extern "C" JNIEXPORT void JNICALL
@@ -8297,6 +8377,21 @@ Java_com_nuvio_app_features_player_desktop_NativePlayerBridge_addSubtitleUrl(JNI
     player->postMpvCall([p = player.get(), urlText]() { p->addSubtitleUrl(urlText); });
 }
 
+extern "C" JNIEXPORT jstring JNICALL
+Java_com_nuvio_app_features_player_desktop_NativePlayerBridge_takeDroppedFiles(JNIEnv *env, jobject, jlong handle) {
+    auto player = playerFromHandle(handle);
+    std::string json = player ? player->takeDroppedFilesJson() : std::string("[]");
+    return newJavaStringUtf8(env, json);
+}
+
+extern "C" JNIEXPORT void JNICALL
+Java_com_nuvio_app_features_player_desktop_NativePlayerBridge_addLocalSubtitleFile(JNIEnv *env, jobject, jlong handle, jstring path) {
+    auto player = playerFromHandle(handle);
+    if (!player) return;
+    std::string pathText = jstringToUtf8(env, path);
+    player->postMpvCall([p = player.get(), pathText]() { p->addLocalSubtitleFile(pathText); });
+}
+
 extern "C" JNIEXPORT void JNICALL
 Java_com_nuvio_app_features_player_desktop_NativePlayerBridge_setCornerRadius(JNIEnv *, jobject, jlong handle, jint radiusPx) {
     auto player = playerFromHandle(handle);
@@ -8475,6 +8570,16 @@ Java_com_nuvio_app_features_player_desktop_NativePlayerBridge_applyWindowChrome(
         rgbIntToColorRef(borderColorRgb),
         rgbIntToColorRef(textColorRgb)
     );
+}
+
+extern "C" JNIEXPORT void JNICALL
+Java_com_nuvio_app_features_player_desktop_NativePlayerBridge_setWindowCloaked(
+    JNIEnv *,
+    jobject,
+    jlong windowHwnd,
+    jboolean cloaked
+) {
+    setWindowCloaked((HWND)(intptr_t)windowHwnd, cloaked == JNI_TRUE);
 }
 
 extern "C" JNIEXPORT void JNICALL

@@ -352,8 +352,15 @@ internal fun PlayerScreenRuntime.emitTrackingScrobbleStop(
     paused: Boolean = false,
 ) {
     val request = prepareTrackingScrobbleStop(progressPercent, viaSeek, paused) ?: return
-    scope.launch(NonCancellable) { request() }
+    TrackingScrobbleCoordinator.launchDetached { request() }
 }
+
+/**
+ * Whether a stop at [percent] abandons its session ([TrackingScrobbleEvent.abandonsSession]).
+ * A seek's stop never does: its restart follows at once, so there is nothing to drop.
+ */
+internal fun scrobbleStopAbandonsSession(percent: Float, viaSeek: Boolean): Boolean =
+    !viaSeek && percent.isFinite() && percent < com.nuvio.app.features.tracking.TrackingScrobbleAbandonedPercent
 
 /** The stop counterpart of [prepareTrackingScrobbleStart]; see there for why this is split. */
 private fun PlayerScreenRuntime.prepareTrackingScrobbleStop(
@@ -375,6 +382,7 @@ private fun PlayerScreenRuntime.prepareTrackingScrobbleStop(
     val profileId = ProfileRepository.activeProfileId
     val positionSeconds = playbackSnapshot.positionSecondsOrNull()
     val durationSeconds = playbackSnapshot.durationSecondsOrNull()
+    val abandons = scrobbleStopAbandonsSession(percent, viaSeek)
     val request: suspend () -> Unit = {
         dispatchTrackingScrobble(
             profileId = profileId,
@@ -385,6 +393,7 @@ private fun PlayerScreenRuntime.prepareTrackingScrobbleStop(
             positionSeconds = positionSeconds,
             durationSeconds = durationSeconds,
             paused = paused,
+            abandonsSession = abandons,
         )
     }
     currentTrackingScrobbleMedia = null
@@ -403,6 +412,7 @@ private suspend fun dispatchTrackingScrobble(
     positionSeconds: Long?,
     durationSeconds: Long?,
     paused: Boolean = false,
+    abandonsSession: Boolean = false,
 ): TrackingScrobbleDispatch {
     val event = TrackingScrobbleEvent(
         media = media,
@@ -410,6 +420,7 @@ private suspend fun dispatchTrackingScrobble(
         positionSeconds = positionSeconds,
         durationSeconds = durationSeconds,
         isPauseRatherThanStop = paused,
+        abandonsSession = abandonsSession,
     )
     return if (viaSeek) {
         TrackingScrobbleCoordinator.scrobbleSeek(profileId = profileId, action = action, event = event)
@@ -486,7 +497,9 @@ internal fun flushScrobbleStopKind(
         // re-flushes on every position update, so it repeated the stop for as long as it stayed there.
         return if (!completionSent || sessionRunning) FlushScrobbleStopKind.COMPLETION else FlushScrobbleStopKind.NONE
     }
-    return if (effectivePercent >= 0.1f && sessionRunning) FlushScrobbleStopKind.PROGRESS else FlushScrobbleStopKind.NONE
+    // Once a scrobble start has been sent, closing or pausing must still send the stop even below
+    // 0.1% (6–10 seconds into a feature film), otherwise trackers stay stuck on "currently watching".
+    return if (sessionRunning) FlushScrobbleStopKind.PROGRESS else FlushScrobbleStopKind.NONE
 }
 
 internal fun PlayerScreenRuntime.tryShowParentalGuide() {
@@ -556,11 +569,19 @@ internal fun PlayerScreenRuntime.flushWatchProgress(paused: Boolean = false) {
         initialProgressFraction = activeInitialProgressFraction,
         resumeReached = initialResumeReached,
     ) ?: run {
-        // A controller can be disposed before its first meaningful sample. Do not let the
-        // zero-valued placeholder replace an existing resume point or start a 0% scrobble.
-        hasRequestedScrobbleStartForCurrentItem = false
-        scrobbleStartRequestGeneration += 1L
-        currentTrackingScrobbleMedia = null
+        // A controller can be disposed before its first 1s sample, but scrobble start may already
+        // have gone out as soon as playback began. Close any running scrobble session without
+        // writing a 0-second resume point to local Continue Watching.
+        if (hasRequestedScrobbleStartForCurrentItem) {
+            emitTrackingScrobbleStop(
+                progressPercent = currentPlaybackProgressPercent(),
+                paused = paused,
+            )
+        } else {
+            hasRequestedScrobbleStartForCurrentItem = false
+            scrobbleStartRequestGeneration += 1L
+            currentTrackingScrobbleMedia = null
+        }
         return
     }
     emitStopScrobbleForCurrentProgress(snapshot, paused = paused)

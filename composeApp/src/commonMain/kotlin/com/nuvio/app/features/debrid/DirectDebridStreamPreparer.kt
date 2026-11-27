@@ -4,7 +4,8 @@ import co.touchlab.kermit.Logger
 import com.nuvio.app.features.player.PlayerSettingsUiState
 import com.nuvio.app.features.streams.AddonStreamGroup
 import com.nuvio.app.features.streams.StreamAutoPlayMode
-import com.nuvio.app.features.streams.StreamAutoPlaySelector
+import com.nuvio.app.features.streams.PlaybackPick
+import com.nuvio.app.features.streams.PlaybackPickSettingsRepository
 import com.nuvio.app.features.streams.StreamScoreRepository
 import com.nuvio.app.features.streams.StreamScoreProfile
 import com.nuvio.app.features.streams.StreamScoreContext
@@ -111,6 +112,7 @@ object DirectDebridStreamPreparer {
         installedAddonNames: Set<String>,
         scoreProfile: StreamScoreProfile = StreamScoreProfile(),
         scoreContext: StreamScoreContext = StreamScoreContext.MOVIE,
+        pickSettings: com.nuvio.app.features.streams.PlaybackPickSettings = PlaybackPickSettingsRepository.current,
     ): List<StreamItem> {
         if (limit <= 0) return emptyList()
         val candidates = streams
@@ -123,25 +125,20 @@ object DirectDebridStreamPreparer {
         if (candidates.isEmpty()) return emptyList()
 
         val prioritized = mutableListOf<StreamItem>()
-        val autoPlaySelection = StreamAutoPlaySelector.selectAutoPlayStream(
-            streams = streams,
-            mode = playerSettings.streamAutoPlayMode,
-            regexPattern = playerSettings.streamAutoPlayRegex,
-            source = playerSettings.streamAutoPlaySource,
+        val autoPlaySelection = PlaybackPick.debridPreparation(
+            settings = pickSettings,
             installedAddonNames = installedAddonNames,
-            selectedAddons = playerSettings.streamAutoPlaySelectedAddons,
-            selectedPlugins = playerSettings.streamAutoPlaySelectedPlugins,
             scoreProfile = scoreProfile,
             scoreContext = scoreContext,
-        )
+        ).select(streams)
         if (autoPlaySelection?.let { it.isAddonDebridCandidate && (it.isDirectDebridStream || it.isCachedDebridTorrentStream) } == true) {
             candidates.firstOrNull { it.preparationKey() == autoPlaySelection.preparationKey() }
                 ?.let(prioritized::add)
         }
 
-        if (playerSettings.streamAutoPlayMode == StreamAutoPlayMode.REGEX_MATCH) {
+        if (pickSettings.regexFilter.isNotBlank()) {
             val regex = runCatching {
-                Regex(playerSettings.streamAutoPlayRegex.trim(), RegexOption.IGNORE_CASE)
+                Regex(pickSettings.regexFilter.trim(), RegexOption.IGNORE_CASE)
             }.getOrNull()
             if (regex != null) {
                 candidates

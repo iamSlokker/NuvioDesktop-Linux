@@ -963,6 +963,33 @@ const send = (type, value = 0) => {
   if (webViewBridge) webViewBridge.postMessage({ type, value });
 };
 
+// --- Files dropped on the player ----------------------------------------------------------------
+// A subtitle (.srt, .ass...) dropped during playback loads into the player; a video opens as a
+// dropped file does over the rest of the app. The page cannot read a dropped file's path, so the
+// files go to the bridge as WebView2 additional objects, which carry it. Without preventDefault
+// the WebView would try to open the file itself (the bridge cancels that navigation as well).
+(() => {
+  const webViewBridge = window.chrome && window.chrome.webview;
+  if (!webViewBridge || typeof webViewBridge.postMessageWithAdditionalObjects !== "function") return;
+  const carriesFiles = (event) =>
+    !!event.dataTransfer && Array.from(event.dataTransfer.types || []).includes("Files");
+  const accept = (event) => {
+    if (!carriesFiles(event)) return;
+    event.preventDefault();
+    event.dataTransfer.dropEffect = "copy";
+  };
+  window.addEventListener("dragenter", accept);
+  window.addEventListener("dragover", accept);
+  window.addEventListener("drop", (event) => {
+    if (!carriesFiles(event)) return;
+    event.preventDefault();
+    const files = event.dataTransfer.files;
+    if (files && files.length > 0) {
+      webViewBridge.postMessageWithAdditionalObjects({ type: "filesDropped", value: files.length }, files);
+    }
+  });
+})();
+
 // --- Optimistic subtitle style ------------------------------------------------------------------
 // The Style tab answers a click at once: the change is predicted here and drawn before Kotlin has
 // saved it and pushed the new state back, which made every step feel like it was waiting on
@@ -3524,6 +3551,13 @@ const setContextMenuDynamicItems = (key, items) => {
     selected: Boolean(item.selected),
     swatch: item.swatch,
   })), submenu);
+  // Track names (an addon subtitle's release name, since upstream's longer labels) run far past the
+  // menu's width: these lists get a wider flyout whose rows wrap to two lines, with the whole name on
+  // hover. Colour and font lists keep the narrow flyout.
+  if (key === "subtitleTracks" || key === "addonSubtitles" || key === "audioTracks") {
+    submenu.classList.add("context-menu-submenu-tracks");
+    submenu.querySelectorAll(".context-menu-label").forEach(label => { label.title = label.textContent; });
+  }
   if (normalized.length === 0) {
     const empty = document.createElement("div");
     empty.className = "context-menu-empty";
@@ -3892,12 +3926,22 @@ const positionSubmenu = group => {
   submenu.style.top = "";
   submenu.style.maxHeight = "";
   submenu.style.overflowY = "";
+  submenu.style.maxWidth = "";
   if (!hasNested) {
     submenu.style.maxHeight = `${Math.max(120, window.innerHeight - margin * 2)}px`;
     submenu.style.overflowY = "auto";
   }
-  const rect = submenu.getBoundingClientRect();
+  let rect = submenu.getBoundingClientRect();
   if (rect.height <= 0) return;
+  // A wide flyout (a track list) narrows to the room left beside its parent rather than running off
+  // the window; its rows then wrap sooner.
+  if (rect.right > window.innerWidth - margin) {
+    submenu.style.maxWidth = `${Math.max(180, Math.floor(window.innerWidth - margin - rect.left))}px`;
+    rect = submenu.getBoundingClientRect();
+  } else if (rect.left < margin) {
+    submenu.style.maxWidth = `${Math.max(180, Math.floor(rect.right - margin))}px`;
+    rect = submenu.getBoundingClientRect();
+  }
   if (rect.bottom > window.innerHeight - margin) {
     const groupRect = group.getBoundingClientRect();
     const shift = rect.bottom - (window.innerHeight - margin);
@@ -6078,6 +6122,43 @@ const moveKeyboardEpisodeStream = delta => {
   renderEpisodeStreams();
 };
 
+// Left/Right on a source list steps through its addon chips (a TV remote has no other way to
+// reach them). Returns the neighbouring chip's id, or null at either end of the row.
+const steppedFilterId = (filters, selectedId, delta) => {
+  const list = normalizeItems(filters);
+  if (list.length < 2) return null;
+  const ids = list.map(filter => String(filter.id || ""));
+  const at = Math.max(0, ids.indexOf(String(selectedId || "")));
+  const next = at + delta;
+  return next >= 0 && next < ids.length ? ids[next] : null;
+};
+
+const revealSelectedFilterChip = container => {
+  const chip = container && container.querySelector(".filter-chip.selected");
+  if (chip) chip.scrollIntoView({ block: "nearest", inline: "nearest" });
+};
+
+const stepKeyboardSourceFilter = delta => {
+  const next = steppedFilterId(state.sourceFilters, sourceFilterId, delta);
+  if (next == null) return;
+  sourceFilterId = next;
+  keyboardSourceIndex = 0;
+  pinSourceListTop();
+  renderSourceModal();
+  revealSelectedFilterChip(sourceFilterList);
+};
+
+// False at the first chip, so Left there can still go back to the episode list.
+const stepKeyboardEpisodeStreamFilter = delta => {
+  const next = steppedFilterId(state.episodeStreamFilters, episodeStreamFilterId, delta);
+  if (next == null) return false;
+  episodeStreamFilterId = next;
+  keyboardEpisodeStreamIndex = 0;
+  renderEpisodeStreams();
+  revealSelectedFilterChip(episodeStreamFilterList);
+  return true;
+};
+
 const moveKeyboardSeason = delta => {
   const seasons = normalizeItems(state.episodeSeasons);
   if (seasons.length === 0) return;
@@ -7273,6 +7354,14 @@ const updatePlayerClock = () => {
 };
 window.setInterval(updatePlayerClock, 1000);
 
+// Full-screen hero trailers: the hero's own backdrop over the video until it is moving, then dissolved away, so the
+// artwork melts into the trailer instead of cutting to black (2026-11-24). Under the scrim and the hero text.
+const heroTrailerRevealCover = document.createElement("img");
+heroTrailerRevealCover.id = "heroTrailerRevealCover";
+heroTrailerRevealCover.alt = "";
+heroTrailerRevealCover.style.display = "none";
+root.appendChild(heroTrailerRevealCover);
+
 const heroTrailerFade = document.createElement("div");
 heroTrailerFade.id = "heroTrailerFade";
 heroTrailerFade.style.display = "none";
@@ -7472,9 +7561,29 @@ function applyHeroTrailerContent() {
   }
 }
 
+const applyHeroTrailerRevealCover = (active) => {
+  const url = active ? String(state.heroTrailerRevealCoverUrl || "").trim() : "";
+  if (!url) {
+    heroTrailerRevealCover.style.display = "none";
+    heroTrailerRevealCover.classList.remove("revealed");
+    heroTrailerRevealCover.dataset.src = "";
+    return;
+  }
+  if (heroTrailerRevealCover.dataset.src !== url) {
+    // A new trailer: back to fully covering, without a transition, before the new picture shows.
+    heroTrailerRevealCover.classList.remove("revealed");
+    heroTrailerRevealCover.dataset.src = url;
+    heroTrailerRevealCover.src = url;
+  }
+  heroTrailerRevealCover.style.objectPosition = String(state.heroTrailerRevealCoverPosition || "50% 50%");
+  heroTrailerRevealCover.style.display = "block";
+  heroTrailerRevealCover.classList.toggle("revealed", Boolean(state.heroTrailerRevealed));
+};
+
 const applyHeroTrailer = () => {
   const active = Boolean(state.heroTrailerMode);
   root.classList.toggle("hero-trailer-active", active);
+  applyHeroTrailerRevealCover(active && !isChromelessSurface);
   if (!active) {
     heroTrailerFade.style.display = "none";
     heroTrailerContent.style.display = "none";
@@ -9162,6 +9271,8 @@ window.nuvioHandleKeyboardPanelKey = code => {
   if (keyboardPanelMode === "sources") {
     if (code === "ArrowUp") moveKeyboardSource(-1);
     if (code === "ArrowDown") moveKeyboardSource(1);
+    if (code === "ArrowLeft") stepKeyboardSourceFilter(-1);
+    if (code === "ArrowRight") stepKeyboardSourceFilter(1);
     if (code === "Enter") {
       const item = sourceVirtualItems[keyboardSourceIndex];
       if (item) send("selectSource", Number(item.index) || 0);
@@ -9172,7 +9283,8 @@ window.nuvioHandleKeyboardPanelKey = code => {
     if (keyboardEpisodeShowingStreams) {
       if (code === "ArrowUp") moveKeyboardEpisodeStream(-1);
       if (code === "ArrowDown") moveKeyboardEpisodeStream(1);
-      if (code === "ArrowLeft") send("backToEpisodes", 0);
+      if (code === "ArrowLeft" && !stepKeyboardEpisodeStreamFilter(-1)) send("backToEpisodes", 0);
+      if (code === "ArrowRight") stepKeyboardEpisodeStreamFilter(1);
       if (code === "Enter") {
         const item = visibleKeyboardEpisodeStreams()[keyboardEpisodeStreamIndex];
         if (item) send("selectEpisodeStream", Number(item.index) || 0);

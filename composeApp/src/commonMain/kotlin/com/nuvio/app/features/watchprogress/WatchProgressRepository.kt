@@ -398,6 +398,8 @@ object WatchProgressRepository {
         publish()
     }
 
+    private val loadLock = Any()
+
     fun ensureLoaded() {
         TraktAuthRepository.ensureLoaded()
         TraktSettingsRepository.ensureLoaded()
@@ -406,8 +408,12 @@ object WatchProgressRepository {
         SimklAuthRepository.ensureLoaded()
         MdbListProgressRepository.ensureLoaded()
         SimklProgressRepository.ensureLoaded()
-        if (hasLoaded) return
-        loadFromDisk(ProfileRepository.activeProfileId)
+        val loadedNow = synchronized(loadLock) {
+            if (hasLoaded) return
+            loadFromDisk(ProfileRepository.activeProfileId)
+            true
+        }
+        if (!loadedNow) return
         when {
             shouldUseMdbListProgress() -> MdbListProgressRepository.refreshAsync()
             shouldUseSimklProgress() -> SimklProgressRepository.refreshAsync()
@@ -424,16 +430,20 @@ object WatchProgressRepository {
         profileId: Int,
         reimportProviderHistory: Boolean = true,
         rereadHistoryInFull: Boolean = true,
+        forceArtworkRefresh: Boolean = true,
     ) {
         ensureLoaded()
         // Counts as a pull for the foreground rate limit: the startup sync and the window's first
         // focus event land within a second of each other, and refreshing twice on launch is the
         // one thing this whole change must not turn into.
         lastRemoteContinueWatchingPullAtMs = WatchProgressClock.nowEpochMs()
-        // A manual resync is the user asking for everything to be re-read, artwork included, so
-        // Up Next cards that are still missing an episode thumbnail get re-resolved past the meta
-        // LRU rather than repainting from the cached blank.
-        ContinueWatchingEnrichmentCache.requestArtworkRefresh()
+        // A manual resync always refreshes artwork so newly published episode stills land at once;
+        // the automatic startup sync checks a cooldown so rapid restarts do not bust the meta cache.
+        if (forceArtworkRefresh) {
+            ContinueWatchingEnrichmentCache.requestArtworkRefresh()
+        } else {
+            ContinueWatchingEnrichmentCache.requestArtworkRefreshIfDue()
+        }
         // The provider's watched history is re-read too: it is what Details ticks and Up Next seeds
         // come from, and refreshing only the source left a resync answering half the question — the
         // row moved on but the episode list behind it did not. Forced, because a user-initiated
